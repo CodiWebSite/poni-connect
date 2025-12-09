@@ -28,10 +28,15 @@ const Announcements = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    content: string;
+    priority: 'low' | 'normal' | 'high' | 'urgent';
+    is_pinned: boolean;
+  }>({
     title: '',
     content: '',
-    priority: 'normal' as const,
+    priority: 'normal',
     is_pinned: false,
   });
 
