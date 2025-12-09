@@ -19,16 +19,16 @@ interface Announcement {
   created_at: string;
 }
 
-interface Event {
+interface CalendarEvent {
   id: string;
   title: string;
-  start_date: string;
+  startDate: string;
   location?: string;
 }
 
 const Dashboard = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [stats, setStats] = useState({
     employees: 0,
     announcements: 0,

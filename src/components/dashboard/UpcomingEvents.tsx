@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { Calendar, MapPin, Clock } from 'lucide-react';
 
-interface Event {
+interface CalendarEvent {
   id: string;
   title: string;
   startDate: string;
@@ -10,7 +10,7 @@ interface Event {
 }
 
 interface UpcomingEventsProps {
-  events: Event[];
+  events: CalendarEvent[];
 }
 
 const UpcomingEvents = ({ events }: UpcomingEventsProps) => {
