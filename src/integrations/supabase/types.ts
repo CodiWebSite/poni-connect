@@ -438,6 +438,7 @@ export type Database = {
     Functions: {
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_procurement: { Args: { _user_id: string }; Returns: boolean }
       can_view_sensitive_profile_data: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
