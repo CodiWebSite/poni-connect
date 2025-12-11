@@ -271,6 +271,8 @@ export type Database = {
       }
       procurement_requests: {
         Row: {
+          approver_signature: string | null
+          approver_signed_at: string | null
           budget_source: string | null
           category: Database["public"]["Enums"]["procurement_category"]
           cfp_approved_at: string | null
@@ -286,6 +288,8 @@ export type Database = {
           director_approved_at: string | null
           director_id: string | null
           director_notes: string | null
+          employee_signature: string | null
+          employee_signed_at: string | null
           estimated_value: number
           id: string
           items: Json
@@ -304,6 +308,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approver_signature?: string | null
+          approver_signed_at?: string | null
           budget_source?: string | null
           category?: Database["public"]["Enums"]["procurement_category"]
           cfp_approved_at?: string | null
@@ -319,6 +325,8 @@ export type Database = {
           director_approved_at?: string | null
           director_id?: string | null
           director_notes?: string | null
+          employee_signature?: string | null
+          employee_signed_at?: string | null
           estimated_value: number
           id?: string
           items?: Json
@@ -337,6 +345,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approver_signature?: string | null
+          approver_signed_at?: string | null
           budget_source?: string | null
           category?: Database["public"]["Enums"]["procurement_category"]
           cfp_approved_at?: string | null
@@ -352,6 +362,8 @@ export type Database = {
           director_approved_at?: string | null
           director_id?: string | null
           director_notes?: string | null
+          employee_signature?: string | null
+          employee_signed_at?: string | null
           estimated_value?: number
           id?: string
           items?: Json
