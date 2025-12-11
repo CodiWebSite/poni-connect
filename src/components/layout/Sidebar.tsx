@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import {
   Home,
@@ -14,23 +15,26 @@ import {
   ChevronLeft,
   ChevronRight,
   UserCog,
+  Shield,
 } from 'lucide-react';
 import { useState } from 'react';
-
-const menuItems = [
-  { icon: Home, label: 'Dashboard', path: '/' },
-  { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
-  { icon: Users, label: 'Angajați', path: '/employees' },
-  { icon: FileText, label: 'Documente', path: '/documents' },
-  { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
-  { icon: Calendar, label: 'Calendar', path: '/calendar' },
-  { icon: Settings, label: 'Setări', path: '/settings' },
-];
 
 const Sidebar = () => {
   const location = useLocation();
   const { signOut } = useAuth();
+  const { role } = useUserRole();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const menuItems = [
+    { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
+    { icon: Users, label: 'Angajați', path: '/employees' },
+    { icon: FileText, label: 'Documente', path: '/documents' },
+    { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
+    { icon: Calendar, label: 'Calendar', path: '/calendar' },
+    { icon: Settings, label: 'Setări', path: '/settings' },
+    ...(role === 'super_admin' ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
+  ];
 
   return (
     <aside
