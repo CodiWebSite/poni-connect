@@ -66,6 +66,11 @@ export function SignaturePad({ onSave, existingSignature, disabled = false, labe
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (disabled) return;
     
+    // Prevent page scrolling on touch devices
+    if ('touches' in e) {
+      e.preventDefault();
+    }
+    
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!ctx) return;
@@ -78,6 +83,11 @@ export function SignaturePad({ onSave, existingSignature, disabled = false, labe
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing || disabled) return;
+    
+    // Prevent page scrolling on touch devices
+    if ('touches' in e) {
+      e.preventDefault();
+    }
     
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -117,7 +127,7 @@ export function SignaturePad({ onSave, existingSignature, disabled = false, labe
       <div className={`border-2 rounded-lg overflow-hidden ${disabled ? 'bg-muted' : 'bg-white'} ${existingSignature ? 'border-green-500' : 'border-border'}`}>
         <canvas
           ref={canvasRef}
-          className={`w-full h-32 ${disabled ? 'cursor-not-allowed' : 'cursor-crosshair'}`}
+          className={`w-full h-32 touch-none ${disabled ? 'cursor-not-allowed' : 'cursor-crosshair'}`}
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
