@@ -269,6 +269,108 @@ export type Database = {
         }
         Relationships: []
       }
+      procurement_requests: {
+        Row: {
+          budget_source: string | null
+          category: Database["public"]["Enums"]["procurement_category"]
+          cfp_approved_at: string | null
+          cfp_notes: string | null
+          cfp_officer_id: string | null
+          created_at: string
+          currency: string
+          department: string
+          department_head_approved_at: string | null
+          department_head_id: string | null
+          department_head_notes: string | null
+          description: string
+          director_approved_at: string | null
+          director_id: string | null
+          director_notes: string | null
+          estimated_value: number
+          id: string
+          items: Json
+          justification: string
+          procurement_approved_at: string | null
+          procurement_notes: string | null
+          procurement_officer_id: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          request_number: string
+          status: Database["public"]["Enums"]["procurement_status"]
+          title: string
+          updated_at: string
+          urgency: Database["public"]["Enums"]["procurement_urgency"]
+          user_id: string
+        }
+        Insert: {
+          budget_source?: string | null
+          category?: Database["public"]["Enums"]["procurement_category"]
+          cfp_approved_at?: string | null
+          cfp_notes?: string | null
+          cfp_officer_id?: string | null
+          created_at?: string
+          currency?: string
+          department: string
+          department_head_approved_at?: string | null
+          department_head_id?: string | null
+          department_head_notes?: string | null
+          description: string
+          director_approved_at?: string | null
+          director_id?: string | null
+          director_notes?: string | null
+          estimated_value: number
+          id?: string
+          items?: Json
+          justification: string
+          procurement_approved_at?: string | null
+          procurement_notes?: string | null
+          procurement_officer_id?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          request_number: string
+          status?: Database["public"]["Enums"]["procurement_status"]
+          title: string
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["procurement_urgency"]
+          user_id: string
+        }
+        Update: {
+          budget_source?: string | null
+          category?: Database["public"]["Enums"]["procurement_category"]
+          cfp_approved_at?: string | null
+          cfp_notes?: string | null
+          cfp_officer_id?: string | null
+          created_at?: string
+          currency?: string
+          department?: string
+          department_head_approved_at?: string | null
+          department_head_id?: string | null
+          department_head_notes?: string | null
+          description?: string
+          director_approved_at?: string | null
+          director_id?: string | null
+          director_notes?: string | null
+          estimated_value?: number
+          id?: string
+          items?: Json
+          justification?: string
+          procurement_approved_at?: string | null
+          procurement_notes?: string | null
+          procurement_officer_id?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          request_number?: string
+          status?: Database["public"]["Enums"]["procurement_status"]
+          title?: string
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["procurement_urgency"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -340,6 +442,7 @@ export type Database = {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
       }
+      generate_procurement_request_number: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -363,6 +466,23 @@ export type Database = {
         | "hr"
       hr_request_status: "pending" | "approved" | "rejected"
       hr_request_type: "concediu" | "adeverinta" | "delegatie" | "demisie"
+      procurement_category:
+        | "consumabile_laborator"
+        | "echipamente_it"
+        | "birotica"
+        | "echipamente_cercetare"
+        | "servicii"
+        | "mobilier"
+        | "altele"
+      procurement_status:
+        | "draft"
+        | "pending_department_head"
+        | "pending_procurement"
+        | "pending_director"
+        | "pending_cfp"
+        | "approved"
+        | "rejected"
+      procurement_urgency: "normal" | "urgent" | "foarte_urgent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -501,6 +621,25 @@ export const Constants = {
       ],
       hr_request_status: ["pending", "approved", "rejected"],
       hr_request_type: ["concediu", "adeverinta", "delegatie", "demisie"],
+      procurement_category: [
+        "consumabile_laborator",
+        "echipamente_it",
+        "birotica",
+        "echipamente_cercetare",
+        "servicii",
+        "mobilier",
+        "altele",
+      ],
+      procurement_status: [
+        "draft",
+        "pending_department_head",
+        "pending_procurement",
+        "pending_director",
+        "pending_cfp",
+        "approved",
+        "rejected",
+      ],
+      procurement_urgency: ["normal", "urgent", "foarte_urgent"],
     },
   },
 } as const

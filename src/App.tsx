@@ -14,6 +14,7 @@ import Settings from "./pages/Settings";
 import HumanResources from "./pages/HumanResources";
 import MyProfile from "./pages/MyProfile";
 import HRManagement from "./pages/HRManagement";
+import Procurement from "./pages/Procurement";
 import Admin from "./pages/Admin";
 import IntranetUpdates from "./pages/IntranetUpdates";
 import NotFound from "./pages/NotFound";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/hr" element={<HumanResources />} />
             <Route path="/my-profile" element={<MyProfile />} />
             <Route path="/hr-management" element={<HRManagement />} />
+            <Route path="/procurement" element={<Procurement />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/intranet-updates" element={<IntranetUpdates />} />

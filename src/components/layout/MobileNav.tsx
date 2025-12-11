@@ -18,6 +18,7 @@ import {
   Shield,
   UserCircle,
   ClipboardList,
+  ShoppingCart,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -34,6 +35,7 @@ const MobileNav = () => {
     { icon: Users, label: 'Angajați', path: '/employees' },
     { icon: FileText, label: 'Documente', path: '/documents' },
     { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
+    { icon: ShoppingCart, label: 'Achiziții Publice', path: '/procurement' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
