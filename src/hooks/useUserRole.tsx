@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-export type AppRole = 'admin' | 'user' | 'super_admin' | 'department_head' | 'secretariat' | 'director' | 'hr';
+export type AppRole = 'admin' | 'user' | 'super_admin' | 'department_head' | 'secretariat' | 'director' | 'hr' | 'achizitii_contabilitate';
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -40,6 +40,7 @@ export function useUserRole() {
   const isDirector = role === 'director';
   const isSecretariat = role === 'secretariat';
   const isHR = role === 'hr';
+  const isProcurement = role === 'achizitii_contabilitate';
   
   // Can manage content (announcements, documents, events)
   const canManageContent = ['admin', 'super_admin', 'department_head', 'director', 'secretariat'].includes(role || '');
@@ -49,6 +50,9 @@ export function useUserRole() {
   
   // Can manage employee records and documents (HR department)
   const canManageHR = ['admin', 'super_admin', 'hr', 'director'].includes(role || '');
+  
+  // Can manage procurement requests
+  const canManageProcurement = ['admin', 'super_admin', 'director', 'achizitii_contabilitate'].includes(role || '');
 
   return { 
     role, 
@@ -58,9 +62,11 @@ export function useUserRole() {
     isDirector,
     isSecretariat,
     isHR,
+    isProcurement,
     canManageContent,
     canApproveHR,
     canManageHR,
+    canManageProcurement,
     loading 
   };
 }
