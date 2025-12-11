@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { Plus, Megaphone } from 'lucide-react';
 
@@ -27,6 +28,7 @@ const Announcements = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
+  const { canManageContent } = useUserRole();
   
   const [formData, setFormData] = useState<{
     title: string;
@@ -86,15 +88,16 @@ const Announcements = () => {
 
   return (
     <MainLayout title="Anunțuri" description="Comunicate și informații importante">
-      <div className="flex justify-end mb-6">
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button variant="hero">
-              <Plus className="w-4 h-4 mr-2" />
-              Anunț nou
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+      {canManageContent && (
+        <div className="flex justify-end mb-6">
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="hero">
+                <Plus className="w-4 h-4 mr-2" />
+                Anunț nou
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>Adaugă anunț nou</DialogTitle>
             </DialogHeader>
@@ -156,6 +159,7 @@ const Announcements = () => {
           </DialogContent>
         </Dialog>
       </div>
+      )}
 
       {announcements.length === 0 ? (
         <div className="bg-card rounded-xl p-12 border border-border text-center">

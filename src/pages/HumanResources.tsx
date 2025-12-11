@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useNotifications } from '@/hooks/useNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -96,8 +97,9 @@ const statusConfig: Record<RequestStatus, { label: string; variant: 'default' | 
 
 const HumanResources = () => {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { canApproveHR } = useUserRole();
   const { toast } = useToast();
+  const { createNotification } = useNotifications();
   
   const [requests, setRequests] = useState<HRRequest[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -159,7 +161,7 @@ const HumanResources = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [user, isAdmin]);
+  }, [user, canApproveHR]);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -376,6 +378,16 @@ const HumanResources = () => {
       console.error('Error processing approval:', error);
       toast({ title: 'Eroare', description: 'Nu s-a putut procesa cererea.', variant: 'destructive' });
     } else {
+      // Send notification to the employee
+      await createNotification(
+        selectedRequest.user_id,
+        approved ? 'Cerere Aprobată' : 'Cerere Respinsă',
+        `Cererea dvs. de ${requestTypeLabels[selectedRequest.request_type].toLowerCase()} a fost ${approved ? 'aprobată' : 'respinsă'}.${approverNotes ? ` Note: ${approverNotes}` : ''}`,
+        approved ? 'success' : 'warning',
+        selectedRequest.id,
+        'hr_request'
+      );
+      
       toast({ 
         title: 'Succes', 
         description: `Cererea a fost ${approved ? 'aprobată' : 'respinsă'}.` 
@@ -440,7 +452,7 @@ const HumanResources = () => {
                 <Badge variant="secondary" className="ml-2">{myRequests.length}</Badge>
               )}
             </TabsTrigger>
-            {isAdmin && (
+            {canApproveHR && (
               <TabsTrigger value="approve">
                 Aprobări
                 {pendingRequests.length > 0 && (
@@ -755,15 +767,13 @@ const HumanResources = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
-                          {request.status === 'approved' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => downloadDocument(request)}
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => downloadDocument(request)}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -773,7 +783,7 @@ const HumanResources = () => {
             </Card>
           </TabsContent>
 
-          {isAdmin && (
+          {canApproveHR && (
             <TabsContent value="approve">
               <Card>
                 <CardHeader>
