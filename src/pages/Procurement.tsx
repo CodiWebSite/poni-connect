@@ -106,7 +106,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 
 const Procurement = () => {
   const { user } = useAuth();
-  const { role, isDepartmentHead, isDirector, isAdmin, isSuperAdmin } = useUserRole();
+  const { role, isProcurement, isAdmin, isSuperAdmin } = useUserRole();
   const { toast } = useToast();
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -135,7 +135,8 @@ const Procurement = () => {
   const [approvalNotes, setApprovalNotes] = useState('');
   const [processing, setProcessing] = useState(false);
 
-  const canApprove = isDepartmentHead || isDirector || isAdmin || isSuperAdmin;
+  // Only achizitii_contabilitate role can approve
+  const canApprove = isProcurement;
 
   useEffect(() => {
     if (user) {
@@ -170,20 +171,14 @@ const Procurement = () => {
       setRequests(userRequests.map(r => ({ ...r, items: r.items as unknown as ProcurementItem[] })) as ProcurementRequest[]);
     }
 
-    // Fetch pending approvals if user can approve
+    // Fetch pending approvals if user is in procurement department
     if (canApprove) {
-      let query = supabase
+      const { data: approvals } = await supabase
         .from('procurement_requests')
         .select('*')
-        .neq('user_id', user.id);
-
-      if (isDepartmentHead && !isDirector && !isAdmin && !isSuperAdmin) {
-        query = query.eq('status', 'pending_department_head');
-      } else if (isDirector || isAdmin || isSuperAdmin) {
-        query = query.in('status', ['pending_department_head', 'pending_director', 'pending_procurement', 'pending_cfp']);
-      }
-
-      const { data: approvals } = await query.order('created_at', { ascending: false });
+        .neq('user_id', user.id)
+        .in('status', ['pending_department_head', 'pending_director', 'pending_procurement', 'pending_cfp'])
+        .order('created_at', { ascending: false });
 
       if (approvals) {
         // Fetch requester info for each request
@@ -258,14 +253,21 @@ const Procurement = () => {
       status: (asDraft ? 'draft' : 'pending_department_head') as any
     };
 
-    const { error } = await supabase
+    const { data: insertedData, error } = await supabase
       .from('procurement_requests')
-      .insert([insertData]);
+      .insert([insertData])
+      .select()
+      .single();
 
     if (error) {
       console.error('Error creating request:', error);
       toast({ title: 'Eroare', description: 'Nu s-a putut crea referatul.', variant: 'destructive' });
     } else {
+      // Send notification to procurement users if submitted (not draft)
+      if (!asDraft) {
+        await sendProcurementNotification(insertedData.id, insertedData.request_number, formData.title);
+      }
+      
       toast({ 
         title: 'Succes', 
         description: asDraft ? 'Referatul a fost salvat ca ciornă.' : 'Referatul a fost trimis spre aprobare.' 
@@ -275,6 +277,27 @@ const Procurement = () => {
     }
 
     setSubmitting(false);
+  };
+
+  const sendProcurementNotification = async (requestId: string, requestNumber: string, title: string) => {
+    // Find all users with achizitii_contabilitate role
+    const { data: procurementUsers } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'achizitii_contabilitate');
+
+    if (procurementUsers && procurementUsers.length > 0) {
+      const notifications = procurementUsers.map(u => ({
+        user_id: u.user_id,
+        title: 'Referat de necesitate nou',
+        message: `Un nou referat "${title}" (${requestNumber}) așteaptă aprobarea dvs.`,
+        type: 'procurement',
+        related_type: 'procurement_request',
+        related_id: requestId
+      }));
+
+      await supabase.from('notifications').insert(notifications);
+    }
   };
 
   const resetForm = () => {
@@ -297,26 +320,14 @@ const Procurement = () => {
     setProcessing(true);
 
     let newStatus = viewingRequest.status;
-    const updateData: any = {};
+    const updateData: any = {
+      procurement_officer_id: user.id,
+      procurement_approved_at: new Date().toISOString(),
+      procurement_notes: approvalNotes || null
+    };
 
     if (approved) {
-      // Determine next status based on current status
-      switch (viewingRequest.status) {
-        case 'pending_department_head':
-          newStatus = 'pending_director';
-          updateData.department_head_id = user.id;
-          updateData.department_head_approved_at = new Date().toISOString();
-          updateData.department_head_notes = approvalNotes || null;
-          break;
-        case 'pending_director':
-          newStatus = 'approved';
-          updateData.director_id = user.id;
-          updateData.director_approved_at = new Date().toISOString();
-          updateData.director_notes = approvalNotes || null;
-          break;
-        default:
-          newStatus = 'approved';
-      }
+      newStatus = 'approved';
     } else {
       newStatus = 'rejected';
       updateData.rejected_by = user.id;
@@ -332,6 +343,18 @@ const Procurement = () => {
     if (error) {
       toast({ title: 'Eroare', description: 'Nu s-a putut procesa cererea.', variant: 'destructive' });
     } else {
+      // Send notification to the requester
+      await supabase.from('notifications').insert({
+        user_id: viewingRequest.user_id,
+        title: approved ? 'Referat aprobat' : 'Referat respins',
+        message: approved 
+          ? `Referatul "${viewingRequest.title}" (${viewingRequest.request_number}) a fost aprobat.`
+          : `Referatul "${viewingRequest.title}" (${viewingRequest.request_number}) a fost respins. Motiv: ${approvalNotes || 'Nespecificat'}`,
+        type: 'procurement',
+        related_type: 'procurement_request',
+        related_id: viewingRequest.id
+      });
+
       toast({ 
         title: approved ? 'Aprobat' : 'Respins', 
         description: approved ? 'Referatul a fost aprobat.' : 'Referatul a fost respins.' 
@@ -361,6 +384,8 @@ const Procurement = () => {
   };
 
   const submitDraft = async (id: string) => {
+    const request = requests.find(r => r.id === id);
+    
     const { error } = await supabase
       .from('procurement_requests')
       .update({ status: 'pending_department_head' })
@@ -369,6 +394,10 @@ const Procurement = () => {
     if (error) {
       toast({ title: 'Eroare', description: 'Nu s-a putut trimite referatul.', variant: 'destructive' });
     } else {
+      // Send notification to procurement users
+      if (request) {
+        await sendProcurementNotification(id, request.request_number, request.title);
+      }
       toast({ title: 'Trimis', description: 'Referatul a fost trimis spre aprobare.' });
       fetchData();
     }
