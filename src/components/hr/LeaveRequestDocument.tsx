@@ -1,5 +1,4 @@
 import { format } from 'date-fns';
-import { ro } from 'date-fns/locale';
 
 interface LeaveRequestDocumentProps {
   employeeName: string;
@@ -44,43 +43,47 @@ export function LeaveRequestDocument({
   const formattedStartDate = startDate ? format(new Date(startDate), 'dd.MM.yyyy') : '____________';
 
   return (
-    <div className="bg-white p-6 rounded-lg border shadow-sm text-black font-serif text-sm leading-relaxed">
+    <div className="bg-white p-8 rounded-lg border shadow-sm text-black print:shadow-none print:border-none" style={{ fontFamily: 'Times New Roman, serif' }}>
       {/* Header */}
       <div className="text-center mb-6">
-        <img 
-          src="/logo-academia.png" 
-          alt="Academia Română" 
-          className="h-16 mx-auto mb-2"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-        <p className="text-xs font-bold">ACADEMIA ROMÂNĂ</p>
-        <p className="text-sm font-bold mt-1">INSTITUTUL DE CHIMIE MACROMOLECULARĂ "PETRU PONI"</p>
-        <p className="text-xs text-gray-600">Aleea Grigore Ghica Voda, nr. 41A, 700487 IAȘI, ROMANIA</p>
+        <div className="flex justify-center mb-3">
+          <img 
+            src="/logo-academia.png" 
+            alt="Academia Română" 
+            className="h-20 object-contain"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+        <p className="text-sm font-bold tracking-wide">ACADEMIA ROMÂNĂ</p>
+        <p className="text-base font-bold mt-1">INSTITUTUL DE CHIMIE MACROMOLECULARĂ "PETRU PONI"</p>
+        <p className="text-xs text-gray-600 mt-1">Aleea Grigore Ghica Voda, nr. 41A, 700487 IAȘI, ROMANIA</p>
       </div>
 
-      {/* Anexa */}
-      <div className="text-right text-xs mb-4">
-        <p className="font-semibold">Anexa 11.2.-P.O. ICMPP-SRUS</p>
+      {/* Anexa - right aligned */}
+      <div className="text-right text-xs mb-6">
+        <p className="italic">Anexa 11.2.-P.O. ICMPP-SRUS</p>
       </div>
 
-      {/* Approval Section */}
-      <div className="flex justify-between mb-8">
+      {/* Approval Section - two columns */}
+      <div className="flex justify-between mb-8 px-4">
         <div className="text-center">
-          <p className="font-semibold mb-2">Se aprobă,</p>
-          <p className="text-xs text-gray-600">Aprobat, DIRECTOR</p>
-          <div className="w-32 h-16 border-b border-dashed border-gray-400 mt-2 flex items-end justify-center">
-            {directorApproved && <span className="text-green-600 text-xs mb-1">✓ Aprobat</span>}
+          <p className="text-sm mb-1">Se aprobă,</p>
+          <p className="text-xs text-gray-600 mb-2">Aprobat, DIRECTOR</p>
+          <div className="w-36 h-20 border-b-2 border-gray-400 flex items-end justify-center pb-1">
+            {directorApproved && (
+              <span className="text-green-700 text-sm font-semibold">✓ APROBAT</span>
+            )}
           </div>
         </div>
         <div className="text-center">
-          <p className="font-semibold mb-2">Șef compartiment</p>
-          <div className="w-40 h-20 border rounded flex items-center justify-center overflow-hidden">
+          <p className="text-sm mb-3">Șef compartiment</p>
+          <div className="w-44 h-24 border-2 border-gray-300 rounded flex items-center justify-center overflow-hidden bg-gray-50">
             {departmentHeadSignature ? (
               <img src={departmentHeadSignature} alt="Semnătură șef" className="max-w-full max-h-full object-contain" />
             ) : (
-              <span className="text-gray-400 text-xs">Nesemnat</span>
+              <span className="text-gray-400 text-xs italic">Așteaptă semnătură</span>
             )}
           </div>
           {departmentHeadSignedAt && (
@@ -92,73 +95,61 @@ export function LeaveRequestDocument({
       </div>
 
       {/* Title */}
-      <h1 className="text-center text-lg font-bold mb-6">Cerere concediu odihnă</h1>
+      <h1 className="text-center text-xl font-bold mb-8 underline">Cerere concediu odihnă</h1>
 
       {/* Body */}
-      <div className="space-y-4">
-        <p>Doamnă/Domnule Director,</p>
+      <div className="space-y-6 text-sm leading-7 px-4">
+        <p className="text-base">Doamnă/Domnule Director,</p>
         
-        <p className="text-justify">
-          Subsemnatul/a, <strong className="underline">{employeeName || '________________________'}</strong> în{' '}
-          <strong className="underline">{position || '________________________'}</strong> cadrul{' '}
-          <strong className="underline">{department || '________________________'}</strong> vă rog să-mi aprobaţi 
-          efectuarea unui număr de <strong className="underline">{numberOfDays || '______'}</strong> zile de concediu 
-          de odihnă aferente anului <strong className="underline">{year || '______'}</strong> începând cu data de{' '}
-          <strong className="underline">{formattedStartDate}</strong>.
+        <p className="text-justify indent-8">
+          Subsemnatul/a, <span className="font-semibold border-b border-black px-1">{employeeName || '________________________'}</span> în <span className="font-semibold border-b border-black px-1">{position || '________________________'}</span> cadrul <span className="font-semibold border-b border-black px-1">{department || '________________________'}</span> vă rog să-mi aprobaţi efectuarea unui număr de <span className="font-semibold border-b border-black px-1">{numberOfDays || '______'}</span> zile de concediu de odihnă aferente anului <span className="font-semibold border-b border-black px-1">{year || '______'}</span> începând cu data de <span className="font-semibold border-b border-black px-1">{formattedStartDate}</span>.
         </p>
 
         {(replacementName || replacementPosition) && (
-          <p className="text-justify">
-            În această perioadă voi fi înlocuit/ă de dl./d-na{' '}
-            <strong className="underline">{replacementName || '________________________'}</strong>{' '}
-            <strong className="underline">{replacementPosition || '________________________'}</strong>.
+          <p className="text-justify indent-8">
+            În această perioadă voi fi înlocuit/ă de dl./d-na <span className="font-semibold border-b border-black px-1">{replacementName || '________________________'}</span> <span className="font-semibold border-b border-black px-1">{replacementPosition || '________________________'}</span>.
           </p>
         )}
 
-        <p>Cu mulţumiri,</p>
+        <p className="mt-6">Cu mulţumiri,</p>
       </div>
 
       {/* Employee Signature */}
-      <div className="mt-8 flex justify-between items-end">
+      <div className="mt-8 flex justify-between items-end px-4">
         <div>
-          <p className="font-semibold">{employeeName || '________________________'}</p>
+          <p className="text-sm font-semibold border-b border-black px-1 inline-block">{employeeName || '________________________'}</p>
         </div>
         <div className="text-center">
-          <div className="w-40 h-20 border rounded flex items-center justify-center overflow-hidden mb-1">
+          <div className="w-44 h-24 border-2 border-gray-300 rounded flex items-center justify-center overflow-hidden bg-gray-50 mb-1">
             {employeeSignature ? (
               <img src={employeeSignature} alt="Semnătură angajat" className="max-w-full max-h-full object-contain" />
             ) : (
-              <span className="text-gray-400 text-xs">Semnătura angajat</span>
+              <span className="text-gray-400 text-xs italic">Semnătura angajat</span>
             )}
           </div>
           <p className="text-xs">
-            ({employeeSignedAt ? format(new Date(employeeSignedAt), 'dd.MM.yyyy') : currentDate})
+            ({employeeSignedAt ? format(new Date(employeeSignedAt), 'dd.MM.yyyy') : currentDate}) (semnătura)
           </p>
         </div>
       </div>
 
       {/* HR Section */}
-      <div className="mt-10 pt-6 border-t border-dashed">
-        <h2 className="font-bold mb-4">Propunem să aprobaţi,</h2>
+      <div className="mt-12 pt-6 border-t-2 border-dashed border-gray-400 px-4">
+        <h2 className="font-bold text-base mb-4">Propunem să aprobaţi,</h2>
         
-        <p className="text-justify mb-4">
-          La această dată dl./d-na <strong className="underline">{employeeName || '________________________'}</strong> are 
-          dreptul la <strong className="underline">{remainingDays ?? '______'}</strong> zile concediu de odihnă, 
-          din care <strong className="underline">{remainingDaysCurrentYear ?? '______'}</strong> aferente 
-          anului <strong className="underline">{year || '______'}</strong> şi{' '}
-          <strong className="underline">{remainingDaysPreviousYear ?? '______'}</strong> aferente 
-          anului <strong className="underline">{parseInt(year || new Date().getFullYear().toString()) - 1}</strong>.
+        <p className="text-justify text-sm leading-7">
+          La această dată dl./d-na <span className="font-semibold border-b border-black px-1">{employeeName || '________________________'}</span> are dreptul la <span className="font-semibold border-b border-black px-1">{remainingDays ?? '______'}</span> zile concediu de odihnă, din care <span className="font-semibold border-b border-black px-1">{remainingDaysCurrentYear ?? '______'}</span> aferente anului <span className="font-semibold border-b border-black px-1">{year || '______'}</span> şi <span className="font-semibold border-b border-black px-1">{remainingDaysPreviousYear ?? '______'}</span> aferente anului <span className="font-semibold border-b border-black px-1">{parseInt(year || new Date().getFullYear().toString()) - 1}</span>.
         </p>
 
-        <div className="flex justify-between items-end mt-6">
+        <div className="flex justify-between items-end mt-8">
           <div>
-            <p className="text-xs text-gray-600">___________________</p>
-            <p className="text-xs">(numele salariatului de la SRUS)</p>
-            <p className="mt-1 font-semibold">{hrOfficerName || ''}</p>
+            <p className="text-xs text-gray-600 mb-1">___________________</p>
+            <p className="text-xs italic">(numele salariatului de la SRUS)</p>
+            {hrOfficerName && <p className="mt-1 font-semibold text-sm">{hrOfficerName}</p>}
           </div>
           <div className="text-center">
-            <p className="text-xs text-gray-600">_______________</p>
-            <p className="text-xs">(semnătura)</p>
+            <p className="text-xs text-gray-600 mb-1">_______________</p>
+            <p className="text-xs italic">(semnătura)</p>
           </div>
         </div>
       </div>

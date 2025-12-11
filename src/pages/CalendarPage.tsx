@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { Plus, Clock, MapPin, Calendar as CalendarIcon } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
@@ -28,6 +29,7 @@ const CalendarPage = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
+  const { canManageContent } = useUserRole();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -90,15 +92,16 @@ const CalendarPage = () => {
 
   return (
     <MainLayout title="Calendar" description="Evenimente și programări">
-      <div className="flex justify-end mb-6">
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button variant="hero">
-              <Plus className="w-4 h-4 mr-2" />
-              Eveniment nou
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+      {canManageContent && (
+        <div className="flex justify-end mb-6">
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="hero">
+                <Plus className="w-4 h-4 mr-2" />
+                Eveniment nou
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>Adaugă eveniment</DialogTitle>
             </DialogHeader>
@@ -161,6 +164,7 @@ const CalendarPage = () => {
           </DialogContent>
         </Dialog>
       </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">

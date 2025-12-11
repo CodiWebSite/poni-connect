@@ -1,8 +1,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface HeaderProps {
   title: string;
@@ -35,10 +35,7 @@ const Header = ({ title, description }: HeaderProps) => {
             />
           </div>
 
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
-          </Button>
+          <NotificationBell />
 
           <div className="flex items-center gap-3 pl-4 border-l border-border">
             <Avatar className="w-9 h-9 border-2 border-primary/20">
