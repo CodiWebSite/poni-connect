@@ -1,8 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { GlobalSearch } from '@/components/layout/GlobalSearch';
 
 interface HeaderProps {
   title: string;
@@ -27,13 +26,7 @@ const Header = ({ title, description }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Caută..."
-              className="pl-10 w-64 bg-secondary/50"
-            />
-          </div>
+          <GlobalSearch />
 
           <NotificationBell />
 

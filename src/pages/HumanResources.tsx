@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from '@/components/hr/SignaturePad';
 import { LeaveRequestDocument } from '@/components/hr/LeaveRequestDocument';
+import { generateLeaveRequestDocx, generateGenericDocx } from '@/utils/generateDocx';
 import { 
   FileText, 
   Send, 
@@ -401,22 +402,34 @@ const HumanResources = () => {
     setProcessingApproval(false);
   };
 
-  const downloadDocument = (request: HRRequest) => {
-    // For leave requests, we'd generate a proper PDF here
-    // For now, generate a text representation
-    const content = request.request_type === 'concediu' 
-      ? `CERERE CONCEDIU ODIHNĂ\n\nAngajat: ${request.details.employeeName}\nDepartament: ${request.details.department}\nFuncție: ${request.details.position}\nPerioada: ${request.details.startDate} - ${request.details.endDate}\nNumăr zile: ${request.details.numberOfDays}\nStatus: ${request.status === 'approved' ? 'APROBAT' : request.status}`
-      : request.generated_content || '';
-    
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${requestTypeLabels[request.request_type]}_${format(new Date(), 'yyyy-MM-dd')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const downloadDocument = async (request: HRRequest) => {
+    try {
+      if (request.request_type === 'concediu') {
+        await generateLeaveRequestDocx({
+          employeeName: request.details.employeeName,
+          department: request.details.department,
+          position: request.details.position,
+          numberOfDays: request.details.numberOfDays || 0,
+          year: request.details.year || new Date().getFullYear().toString(),
+          startDate: request.details.startDate || '',
+          endDate: request.details.endDate || '',
+          replacementName: request.details.replacementName,
+          replacementPosition: request.details.replacementPosition,
+          employeeSignature: request.employee_signature || undefined,
+          departmentHeadSignature: request.department_head_signature || undefined,
+          status: request.status
+        });
+      } else {
+        await generateGenericDocx(
+          request.generated_content || '',
+          requestTypeLabels[request.request_type],
+          request.details.employeeName
+        );
+      }
+    } catch (error) {
+      console.error('Error generating DOCX:', error);
+      toast({ title: 'Eroare', description: 'Nu s-a putut genera documentul.', variant: 'destructive' });
+    }
   };
 
   const resetForm = () => {
