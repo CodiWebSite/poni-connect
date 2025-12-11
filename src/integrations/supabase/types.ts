@@ -464,6 +464,7 @@ export type Database = {
         | "secretariat"
         | "director"
         | "hr"
+        | "achizitii_contabilitate"
       hr_request_status: "pending" | "approved" | "rejected"
       hr_request_type: "concediu" | "adeverinta" | "delegatie" | "demisie"
       procurement_category:
@@ -618,6 +619,7 @@ export const Constants = {
         "secretariat",
         "director",
         "hr",
+        "achizitii_contabilitate",
       ],
       hr_request_status: ["pending", "approved", "rejected"],
       hr_request_type: ["concediu", "adeverinta", "delegatie", "demisie"],
