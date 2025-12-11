@@ -29,7 +29,8 @@ import {
   MapPin,
   Briefcase,
   PenTool,
-  Eye
+  Eye,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -533,6 +534,25 @@ const HumanResources = () => {
     setGeneratedContent('');
   };
 
+  const deleteRequest = async (requestId: string) => {
+    const { error } = await supabase
+      .from('hr_requests')
+      .delete()
+      .eq('id', requestId);
+
+    if (error) {
+      console.error('Error deleting request:', error);
+      toast({ title: 'Eroare', description: 'Nu s-a putut șterge cererea.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Succes', description: 'Cererea a fost ștearsă.' });
+      fetchRequests();
+    }
+  };
+
+  const canDeleteRequest = (request: HRRequest) => {
+    return request.status === 'pending' && !request.department_head_signature;
+  };
+
   const myRequests = requests.filter(r => r.user_id === user?.id);
   
   // Can see approval tab if user has approval role OR is designated department head
@@ -926,6 +946,16 @@ const HumanResources = () => {
                           >
                             <Download className="w-4 h-4" />
                           </Button>
+                          {canDeleteRequest(request) && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={() => deleteRequest(request.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
