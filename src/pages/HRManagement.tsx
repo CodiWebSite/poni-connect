@@ -29,11 +29,13 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Download
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { Navigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 
 interface Profile {
   user_id: string;
@@ -371,6 +373,35 @@ const HRManagement = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const exportLeaveReport = () => {
+    const data = employees.map(e => ({
+      'Nume Complet': e.full_name,
+      'Departament': e.department || '-',
+      'Funcție': e.position || '-',
+      'Data Angajării': e.record?.hire_date ? format(new Date(e.record.hire_date), 'dd.MM.yyyy') : '-',
+      'Tip Contract': e.record?.contract_type || '-',
+      'Total Zile Concediu': e.record?.total_leave_days ?? 21,
+      'Zile Utilizate': e.record?.used_leave_days ?? 0,
+      'Zile Rămase': e.record?.remaining_leave_days ?? (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0),
+      'Cereri Concediu': e.requests?.filter(r => r.request_type === 'concediu').length || 0,
+      'Cereri Aprobate': e.requests?.filter(r => r.request_type === 'concediu' && r.status === 'approved').length || 0,
+      'Cereri Respinse': e.requests?.filter(r => r.request_type === 'concediu' && r.status === 'rejected').length || 0,
+      'Cereri În Așteptare': e.requests?.filter(r => r.request_type === 'concediu' && r.status === 'pending').length || 0
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Raport Concedii');
+    
+    // Auto-width columns
+    const colWidths = Object.keys(data[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
+    ws['!cols'] = colWidths;
+
+    XLSX.writeFile(wb, `Raport_Concedii_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    
+    toast({ title: 'Export realizat', description: 'Raportul a fost descărcat cu succes.' });
+  };
+
   const filteredEmployees = employees.filter(e =>
     e.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     e.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -386,7 +417,7 @@ const HRManagement = () => {
     <MainLayout title="Gestiune HR" description="Administrare date angajați - Confidențial">
       <div className="space-y-6">
         {/* Header with actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
           <div className="relative flex-1 max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -396,10 +427,16 @@ const HRManagement = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button onClick={() => setShowNewEmployee(true)}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Angajat Nou
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={exportLeaveReport} disabled={employees.length === 0}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Export Concedii
+            </Button>
+            <Button onClick={() => setShowNewEmployee(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Angajat Nou
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
