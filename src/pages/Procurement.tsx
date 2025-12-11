@@ -546,15 +546,15 @@ const Procurement = () => {
                             Vezi
                           </Button>
                           {request.status === 'draft' && (
-                            <>
-                              <Button variant="outline" size="sm" onClick={() => submitDraft(request.id)}>
-                                <Send className="w-4 h-4 mr-1" />
-                                Trimite
-                              </Button>
-                              <Button variant="destructive" size="sm" onClick={() => deleteRequest(request.id)}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </>
+                            <Button variant="outline" size="sm" onClick={() => submitDraft(request.id)}>
+                              <Send className="w-4 h-4 mr-1" />
+                              Trimite
+                            </Button>
+                          )}
+                          {request.status !== 'approved' && request.status !== 'rejected' && (
+                            <Button variant="destructive" size="sm" onClick={() => deleteRequest(request.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           )}
                         </div>
                       </div>
