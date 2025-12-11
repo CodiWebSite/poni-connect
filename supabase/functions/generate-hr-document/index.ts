@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,16 +16,42 @@ interface HRRequestBody {
     employeeName: string;
     department: string;
     position: string;
+    numberOfDays?: number;
+    year?: string;
+    replacementName?: string;
+    replacementPosition?: string;
   };
 }
 
+// For concediu, we use the template-based document, not AI generation
+const generateLeaveRequestData = (details: HRRequestBody['details']) => {
+  const startDate = details.startDate ? new Date(details.startDate) : null;
+  const endDate = details.endDate ? new Date(details.endDate) : null;
+  
+  let numberOfDays = details.numberOfDays || 0;
+  if (startDate && endDate && !numberOfDays) {
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    numberOfDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  }
+
+  return {
+    type: 'concediu',
+    templateData: {
+      employeeName: details.employeeName,
+      position: details.position,
+      department: details.department,
+      numberOfDays,
+      year: details.year || new Date().getFullYear().toString(),
+      startDate: details.startDate,
+      endDate: details.endDate,
+      replacementName: details.replacementName || '',
+      replacementPosition: details.replacementPosition || ''
+    }
+  };
+};
+
 const getSystemPrompt = (requestType: string) => {
   const prompts: Record<string, string> = {
-    concediu: `Ești un expert în resurse umane pentru Institutul de Chimie Macromoleculară "Petru Poni" Iași. 
-Generează o cerere de concediu profesională în limba română, formatată corespunzător pentru un document oficial.
-Include: antet instituție, data, către (Conducerea institutului), corpul cererii cu detalii despre perioada solicitată și motivul, 
-formula de încheiere, semnătură și dată. Folosește un ton formal și profesionist.`,
-    
     adeverinta: `Ești un expert în resurse umane pentru Institutul de Chimie Macromoleculară "Petru Poni" Iași.
 Generează o adeverință profesională în limba română, formatată corespunzător pentru un document oficial.
 Include: antet instituție cu date de contact, număr de înregistrare, titlu "ADEVERINȚĂ", 
@@ -52,16 +77,6 @@ const getUserPrompt = (requestType: string, details: HRRequestBody['details']) =
   const { employeeName, department, position, startDate, endDate, reason, purpose, destination } = details;
   
   switch (requestType) {
-    case 'concediu':
-      return `Generează o cerere de concediu pentru:
-- Angajat: ${employeeName}
-- Departament: ${department}
-- Funcție: ${position}
-- Perioada: ${startDate} - ${endDate}
-- Motiv: ${reason || 'concediu de odihnă'}
-
-Generează documentul complet, gata de semnat.`;
-
     case 'adeverinta':
       return `Generează o adeverință pentru:
 - Angajat: ${employeeName}
@@ -102,14 +117,24 @@ serve(async (req) => {
   }
 
   try {
+    const { requestType, details }: HRRequestBody = await req.json();
+    
+    console.log("Generating HR document:", requestType);
+
+    // For leave requests, return structured data for template rendering
+    if (requestType === 'concediu') {
+      const result = generateLeaveRequestData(details);
+      return new Response(
+        JSON.stringify(result),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // For other document types, use AI generation
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
-
-    const { requestType, details }: HRRequestBody = await req.json();
-    
-    console.log("Generating HR document:", requestType, details);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -156,7 +181,7 @@ serve(async (req) => {
     console.log("Document generated successfully");
 
     return new Response(
-      JSON.stringify({ content: generatedContent }),
+      JSON.stringify({ type: requestType, content: generatedContent }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

@@ -7,12 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { SignaturePad } from '@/components/hr/SignaturePad';
+import { LeaveRequestDocument } from '@/components/hr/LeaveRequestDocument';
 import { 
   FileText, 
   Send, 
@@ -21,10 +23,11 @@ import {
   XCircle, 
   Download,
   Loader2,
-  Sparkles,
   Calendar,
   MapPin,
-  Briefcase
+  Briefcase,
+  PenTool,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -32,24 +35,35 @@ import { ro } from 'date-fns/locale';
 type RequestType = 'concediu' | 'adeverinta' | 'delegatie' | 'demisie';
 type RequestStatus = 'pending' | 'approved' | 'rejected';
 
+interface HRRequestDetails {
+  startDate?: string;
+  endDate?: string;
+  reason?: string;
+  purpose?: string;
+  destination?: string;
+  employeeName: string;
+  department: string;
+  position: string;
+  numberOfDays?: number;
+  year?: string;
+  replacementName?: string;
+  replacementPosition?: string;
+}
+
 interface HRRequest {
   id: string;
   user_id: string;
   request_type: RequestType;
   status: RequestStatus;
-  details: {
-    startDate?: string;
-    endDate?: string;
-    reason?: string;
-    purpose?: string;
-    destination?: string;
-    employeeName: string;
-    department: string;
-    position: string;
-  };
+  details: HRRequestDetails;
   generated_content: string | null;
   approver_id: string | null;
   approver_notes: string | null;
+  employee_signature: string | null;
+  employee_signed_at: string | null;
+  department_head_signature: string | null;
+  department_head_signed_at: string | null;
+  department_head_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -88,20 +102,44 @@ const HumanResources = () => {
   const [requests, setRequests] = useState<HRRequest[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
+  // Form state for leave request
   const [requestType, setRequestType] = useState<RequestType>('concediu');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [numberOfDays, setNumberOfDays] = useState<number>(0);
+  const [year, setYear] = useState(new Date().getFullYear().toString());
+  const [replacementName, setReplacementName] = useState('');
+  const [replacementPosition, setReplacementPosition] = useState('');
+  const [employeeSignature, setEmployeeSignature] = useState<string | null>(null);
+  
+  // Other document types
   const [reason, setReason] = useState('');
   const [purpose, setPurpose] = useState('');
   const [destination, setDestination] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
+  const [generating, setGenerating] = useState(false);
   
+  // Approval dialog
   const [selectedRequest, setSelectedRequest] = useState<HRRequest | null>(null);
   const [approverNotes, setApproverNotes] = useState('');
   const [processingApproval, setProcessingApproval] = useState(false);
+  const [departmentHeadSignature, setDepartmentHeadSignature] = useState<string | null>(null);
+  
+  // View dialog
+  const [viewRequest, setViewRequest] = useState<HRRequest | null>(null);
+
+  // Calculate days when dates change
+  useEffect(() => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      setNumberOfDays(diffDays);
+    }
+  }, [startDate, endDate]);
 
   useEffect(() => {
     if (user) {
@@ -148,14 +186,20 @@ const HumanResources = () => {
     if (error) {
       console.error('Error fetching requests:', error);
       toast({ title: 'Eroare', description: 'Nu s-au putut încărca cererile.', variant: 'destructive' });
-    } else {
-      setRequests((data as HRRequest[]) || []);
+    } else if (data) {
+      const mappedRequests: HRRequest[] = data.map(item => ({
+        ...item,
+        details: item.details as unknown as HRRequestDetails,
+        request_type: item.request_type as RequestType,
+        status: item.status as RequestStatus
+      }));
+      setRequests(mappedRequests);
     }
     
     setLoading(false);
   };
 
-  const generateDocument = async () => {
+  const generateOtherDocument = async () => {
     if (!profile) {
       toast({ title: 'Eroare', description: 'Profilul nu este complet.', variant: 'destructive' });
       return;
@@ -196,7 +240,50 @@ const HumanResources = () => {
     setGenerating(false);
   };
 
-  const submitRequest = async () => {
+  const submitLeaveRequest = async () => {
+    if (!user || !profile || !employeeSignature) {
+      toast({ title: 'Eroare', description: 'Vă rugăm să semnați documentul înainte de trimitere.', variant: 'destructive' });
+      return;
+    }
+
+    if (!startDate || !numberOfDays) {
+      toast({ title: 'Eroare', description: 'Completați toate câmpurile obligatorii.', variant: 'destructive' });
+      return;
+    }
+
+    setSubmitting(true);
+    
+    const { error } = await supabase.from('hr_requests').insert({
+      user_id: user.id,
+      request_type: 'concediu',
+      details: {
+        employeeName: profile.full_name,
+        department: profile.department || 'Nespecificat',
+        position: profile.position || 'Nespecificat',
+        startDate,
+        endDate,
+        numberOfDays,
+        year,
+        replacementName,
+        replacementPosition
+      },
+      employee_signature: employeeSignature,
+      employee_signed_at: new Date().toISOString()
+    });
+
+    if (error) {
+      console.error('Error submitting request:', error);
+      toast({ title: 'Eroare', description: 'Nu s-a putut trimite cererea.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Succes', description: 'Cererea a fost trimisă pentru aprobare!' });
+      resetForm();
+      fetchRequests();
+    }
+    
+    setSubmitting(false);
+  };
+
+  const submitOtherRequest = async () => {
     if (!user || !profile || !generatedContent) return;
 
     setSubmitting(true);
@@ -229,8 +316,45 @@ const HumanResources = () => {
     setSubmitting(false);
   };
 
+  const handleDepartmentHeadSign = async () => {
+    if (!selectedRequest || !user || !departmentHeadSignature) return;
+
+    setProcessingApproval(true);
+    
+    const { error } = await supabase
+      .from('hr_requests')
+      .update({
+        department_head_signature: departmentHeadSignature,
+        department_head_signed_at: new Date().toISOString(),
+        department_head_id: user.id
+      })
+      .eq('id', selectedRequest.id);
+
+    if (error) {
+      console.error('Error signing:', error);
+      toast({ title: 'Eroare', description: 'Nu s-a putut semna documentul.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Succes', description: 'Documentul a fost semnat.' });
+      setSelectedRequest({
+        ...selectedRequest,
+        department_head_signature: departmentHeadSignature,
+        department_head_signed_at: new Date().toISOString(),
+        department_head_id: user.id
+      });
+      fetchRequests();
+    }
+    
+    setProcessingApproval(false);
+  };
+
   const handleApproval = async (approved: boolean) => {
     if (!selectedRequest || !user) return;
+
+    // Must sign before approving
+    if (!selectedRequest.department_head_signature && !departmentHeadSignature) {
+      toast({ title: 'Eroare', description: 'Trebuie să semnați documentul înainte de aprobare.', variant: 'destructive' });
+      return;
+    }
 
     setProcessingApproval(true);
     
@@ -239,7 +363,12 @@ const HumanResources = () => {
       .update({
         status: approved ? 'approved' : 'rejected',
         approver_id: user.id,
-        approver_notes: approverNotes
+        approver_notes: approverNotes,
+        ...(departmentHeadSignature && !selectedRequest.department_head_signature ? {
+          department_head_signature: departmentHeadSignature,
+          department_head_signed_at: new Date().toISOString(),
+          department_head_id: user.id
+        } : {})
       })
       .eq('id', selectedRequest.id);
 
@@ -253,18 +382,25 @@ const HumanResources = () => {
       });
       setSelectedRequest(null);
       setApproverNotes('');
+      setDepartmentHeadSignature(null);
       fetchRequests();
     }
     
     setProcessingApproval(false);
   };
 
-  const downloadDocument = (content: string, type: RequestType) => {
+  const downloadDocument = (request: HRRequest) => {
+    // For leave requests, we'd generate a proper PDF here
+    // For now, generate a text representation
+    const content = request.request_type === 'concediu' 
+      ? `CERERE CONCEDIU ODIHNĂ\n\nAngajat: ${request.details.employeeName}\nDepartament: ${request.details.department}\nFuncție: ${request.details.position}\nPerioada: ${request.details.startDate} - ${request.details.endDate}\nNumăr zile: ${request.details.numberOfDays}\nStatus: ${request.status === 'approved' ? 'APROBAT' : request.status}`
+      : request.generated_content || '';
+    
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${requestTypeLabels[type]}_${format(new Date(), 'yyyy-MM-dd')}.txt`;
+    a.download = `${requestTypeLabels[request.request_type]}_${format(new Date(), 'yyyy-MM-dd')}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -274,6 +410,11 @@ const HumanResources = () => {
   const resetForm = () => {
     setStartDate('');
     setEndDate('');
+    setNumberOfDays(0);
+    setYear(new Date().getFullYear().toString());
+    setReplacementName('');
+    setReplacementPosition('');
+    setEmployeeSignature(null);
     setReason('');
     setPurpose('');
     setDestination('');
@@ -283,10 +424,13 @@ const HumanResources = () => {
   const myRequests = requests.filter(r => r.user_id === user?.id);
   const pendingRequests = requests.filter(r => r.status === 'pending');
 
-  return (
-    <MainLayout title="Resurse Umane" description="Generează și gestionează documente HR cu ajutorul AI">
-      <div className="space-y-6">
+  const canApprove = (request: HRRequest) => {
+    return request.department_head_signature !== null;
+  };
 
+  return (
+    <MainLayout title="Resurse Umane" description="Generează și gestionează documente HR">
+      <div className="space-y-6">
         <Tabs defaultValue="create" className="space-y-6">
           <TabsList>
             <TabsTrigger value="create">Creează Document</TabsTrigger>
@@ -308,20 +452,21 @@ const HumanResources = () => {
 
           <TabsContent value="create" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Form Card */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    Generator Document AI
+                    <FileText className="w-5 h-5 text-primary" />
+                    Cerere Document
                   </CardTitle>
                   <CardDescription>
-                    Selectați tipul de document și completați detaliile necesare
+                    Selectați tipul de document și completați detaliile
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Tip Document</Label>
-                    <Select value={requestType} onValueChange={(v) => setRequestType(v as RequestType)}>
+                    <Select value={requestType} onValueChange={(v) => { setRequestType(v as RequestType); resetForm(); }}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -338,89 +483,157 @@ const HumanResources = () => {
                     </Select>
                   </div>
 
-                  {(requestType === 'concediu' || requestType === 'delegatie') && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Data Început</Label>
-                        <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Data Sfârșit</Label>
-                        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                      </div>
-                    </div>
-                  )}
-
-                  {requestType === 'delegatie' && (
-                    <div className="space-y-2">
-                      <Label>Destinație</Label>
-                      <Input 
-                        placeholder="Ex: București, Conferința Națională de Chimie" 
-                        value={destination} 
-                        onChange={(e) => setDestination(e.target.value)} 
-                      />
-                    </div>
-                  )}
-
-                  {(requestType === 'concediu' || requestType === 'demisie') && (
-                    <div className="space-y-2">
-                      <Label>Motiv (opțional)</Label>
-                      <Textarea 
-                        placeholder="Descrieți motivul cererii..." 
-                        value={reason} 
-                        onChange={(e) => setReason(e.target.value)} 
-                      />
-                    </div>
-                  )}
-
-                  {(requestType === 'adeverinta' || requestType === 'delegatie') && (
-                    <div className="space-y-2">
-                      <Label>Scopul Documentului</Label>
-                      <Textarea 
-                        placeholder={requestType === 'adeverinta' ? 'Ex: pentru înscriere la doctorat' : 'Ex: participare la conferință'} 
-                        value={purpose} 
-                        onChange={(e) => setPurpose(e.target.value)} 
-                      />
-                    </div>
-                  )}
-
-                  <Button 
-                    onClick={generateDocument} 
-                    disabled={generating || !profile}
-                    className="w-full"
-                  >
-                    {generating ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Se generează...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        Generează cu AI
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Previzualizare Document</CardTitle>
-                  <CardDescription>
-                    Verificați documentul generat înainte de a-l trimite pentru aprobare
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {generatedContent ? (
+                  {requestType === 'concediu' && (
                     <>
-                      <div className="bg-muted/50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                        <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">
-                          {generatedContent}
-                        </pre>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Data Început *</Label>
+                          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Data Sfârșit *</Label>
+                          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button onClick={submitRequest} disabled={submitting} className="flex-1">
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Număr Zile</Label>
+                          <Input 
+                            type="number" 
+                            value={numberOfDays} 
+                            onChange={(e) => setNumberOfDays(parseInt(e.target.value) || 0)} 
+                            readOnly 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>An Concediu</Label>
+                          <Input type="text" value={year} onChange={(e) => setYear(e.target.value)} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Înlocuitor (opțional)</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input 
+                            placeholder="Nume înlocuitor" 
+                            value={replacementName} 
+                            onChange={(e) => setReplacementName(e.target.value)} 
+                          />
+                          <Input 
+                            placeholder="Funcția" 
+                            value={replacementPosition} 
+                            onChange={(e) => setReplacementPosition(e.target.value)} 
+                          />
+                        </div>
+                      </div>
+
+                      <SignaturePad 
+                        label="Semnătura Angajat *"
+                        onSave={setEmployeeSignature}
+                        existingSignature={employeeSignature}
+                      />
+
+                      <Button 
+                        onClick={submitLeaveRequest} 
+                        disabled={submitting || !employeeSignature || !startDate}
+                        className="w-full"
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Se trimite...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4 mr-2" />
+                            Trimite Cererea
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
+
+                  {requestType !== 'concediu' && (
+                    <>
+                      {requestType === 'delegatie' && (
+                        <>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Data Început</Label>
+                              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Data Sfârșit</Label>
+                              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Destinație</Label>
+                            <Input 
+                              placeholder="Ex: București, Conferința Națională de Chimie" 
+                              value={destination} 
+                              onChange={(e) => setDestination(e.target.value)} 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Scopul</Label>
+                            <Textarea 
+                              placeholder="Scopul delegației..." 
+                              value={purpose} 
+                              onChange={(e) => setPurpose(e.target.value)} 
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {requestType === 'adeverinta' && (
+                        <div className="space-y-2">
+                          <Label>Scopul Adeverinței</Label>
+                          <Textarea 
+                            placeholder="Ex: pentru înscriere la doctorat" 
+                            value={purpose} 
+                            onChange={(e) => setPurpose(e.target.value)} 
+                          />
+                        </div>
+                      )}
+
+                      {requestType === 'demisie' && (
+                        <div className="space-y-2">
+                          <Label>Motiv (opțional)</Label>
+                          <Textarea 
+                            placeholder="Descrieți motivul cererii..." 
+                            value={reason} 
+                            onChange={(e) => setReason(e.target.value)} 
+                          />
+                        </div>
+                      )}
+
+                      <Button 
+                        onClick={generateOtherDocument} 
+                        disabled={generating || !profile}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        {generating ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Se generează...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="w-4 h-4 mr-2" />
+                            Generează Document
+                          </>
+                        )}
+                      </Button>
+
+                      {generatedContent && (
+                        <Button 
+                          onClick={submitOtherRequest} 
+                          disabled={submitting}
+                          className="w-full"
+                        >
                           {submitting ? (
                             <>
                               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -433,18 +646,48 @@ const HumanResources = () => {
                             </>
                           )}
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => downloadDocument(generatedContent, requestType)}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      )}
                     </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Preview Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Previzualizare Document</CardTitle>
+                  <CardDescription>
+                    {requestType === 'concediu' 
+                      ? 'Documentul va fi generat conform modelului oficial'
+                      : 'Verificați documentul generat înainte de trimitere'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {requestType === 'concediu' ? (
+                    <div className="max-h-[600px] overflow-y-auto">
+                      <LeaveRequestDocument 
+                        employeeName={profile?.full_name || ''}
+                        position={profile?.position || ''}
+                        department={profile?.department || ''}
+                        numberOfDays={numberOfDays}
+                        year={year}
+                        startDate={startDate}
+                        replacementName={replacementName}
+                        replacementPosition={replacementPosition}
+                        employeeSignature={employeeSignature}
+                        employeeSignedAt={employeeSignature ? new Date().toISOString() : null}
+                      />
+                    </div>
+                  ) : generatedContent ? (
+                    <div className="bg-muted/50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">
+                        {generatedContent}
+                      </pre>
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                       <FileText className="w-12 h-12 mb-4 opacity-50" />
-                      <p>Generați un document pentru a-l previzualiza</p>
+                      <p>Completați formularul pentru a vedea previzualizarea</p>
                     </div>
                   )}
                 </CardContent>
@@ -484,6 +727,20 @@ const HumanResources = () => {
                             <p className="text-sm text-muted-foreground">
                               {format(new Date(request.created_at), 'dd MMMM yyyy, HH:mm', { locale: ro })}
                             </p>
+                            <div className="flex gap-2 mt-1">
+                              {request.employee_signature && (
+                                <Badge variant="outline" className="text-xs">
+                                  <PenTool className="w-3 h-3 mr-1" />
+                                  Semnat
+                                </Badge>
+                              )}
+                              {request.department_head_signature && (
+                                <Badge variant="outline" className="text-xs text-green-600">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Șef Dep.
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -491,11 +748,18 @@ const HumanResources = () => {
                             {statusConfig[request.status].icon}
                             <span className="ml-1">{statusConfig[request.status].label}</span>
                           </Badge>
-                          {request.status === 'approved' && request.generated_content && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setViewRequest(request)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {request.status === 'approved' && (
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => downloadDocument(request.generated_content!, request.request_type)}
+                              onClick={() => downloadDocument(request)}
                             >
                               <Download className="w-4 h-4" />
                             </Button>
@@ -514,7 +778,7 @@ const HumanResources = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Cereri în Așteptare</CardTitle>
-                  <CardDescription>Aprobați sau respingeți cererile angajaților</CardDescription>
+                  <CardDescription>Semnați și aprobați/respingeți cererile angajaților</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {loading ? (
@@ -532,7 +796,10 @@ const HumanResources = () => {
                         <div 
                           key={request.id} 
                           className="flex items-center justify-between p-4 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
-                          onClick={() => setSelectedRequest(request)}
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setDepartmentHeadSignature(request.department_head_signature);
+                          }}
                         >
                           <div className="flex items-center gap-4">
                             <div className="p-2 bg-primary/10 rounded-lg">
@@ -548,10 +815,19 @@ const HumanResources = () => {
                               </p>
                             </div>
                           </div>
-                          <Badge variant="secondary">
-                            <Clock className="w-4 h-4 mr-1" />
-                            În așteptare
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            {request.department_head_signature ? (
+                              <Badge variant="default" className="bg-green-600">
+                                <PenTool className="w-4 h-4 mr-1" />
+                                Semnat - Așteaptă aprobare
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary">
+                                <PenTool className="w-4 h-4 mr-1" />
+                                Necesită semnătură
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -563,8 +839,46 @@ const HumanResources = () => {
         </Tabs>
       </div>
 
-      <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      {/* View Request Dialog */}
+      <Dialog open={!!viewRequest} onOpenChange={() => setViewRequest(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {viewRequest && requestTypeLabels[viewRequest.request_type]}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {viewRequest && viewRequest.request_type === 'concediu' && (
+            <LeaveRequestDocument 
+              employeeName={viewRequest.details.employeeName}
+              position={viewRequest.details.position}
+              department={viewRequest.details.department}
+              numberOfDays={viewRequest.details.numberOfDays || 0}
+              year={viewRequest.details.year || ''}
+              startDate={viewRequest.details.startDate || ''}
+              replacementName={viewRequest.details.replacementName}
+              replacementPosition={viewRequest.details.replacementPosition}
+              employeeSignature={viewRequest.employee_signature}
+              employeeSignedAt={viewRequest.employee_signed_at}
+              departmentHeadSignature={viewRequest.department_head_signature}
+              departmentHeadSignedAt={viewRequest.department_head_signed_at}
+              directorApproved={viewRequest.status === 'approved'}
+            />
+          )}
+          
+          {viewRequest && viewRequest.request_type !== 'concediu' && (
+            <div className="bg-muted/50 rounded-lg p-4">
+              <pre className="whitespace-pre-wrap font-sans text-sm">
+                {viewRequest.generated_content}
+              </pre>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Approval Dialog */}
+      <Dialog open={!!selectedRequest} onOpenChange={() => { setSelectedRequest(null); setDepartmentHeadSignature(null); }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedRequest && requestTypeLabels[selectedRequest.request_type]}
@@ -576,38 +890,85 @@ const HumanResources = () => {
           
           {selectedRequest && (
             <div className="space-y-4">
-              <div className="bg-muted/50 rounded-lg p-4">
-                <pre className="whitespace-pre-wrap font-sans text-sm">
-                  {selectedRequest.generated_content}
-                </pre>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Note (opțional)</Label>
-                <Textarea 
-                  placeholder="Adăugați note sau comentarii..." 
-                  value={approverNotes}
-                  onChange={(e) => setApproverNotes(e.target.value)}
+              {selectedRequest.request_type === 'concediu' ? (
+                <LeaveRequestDocument 
+                  employeeName={selectedRequest.details.employeeName}
+                  position={selectedRequest.details.position}
+                  department={selectedRequest.details.department}
+                  numberOfDays={selectedRequest.details.numberOfDays || 0}
+                  year={selectedRequest.details.year || ''}
+                  startDate={selectedRequest.details.startDate || ''}
+                  replacementName={selectedRequest.details.replacementName}
+                  replacementPosition={selectedRequest.details.replacementPosition}
+                  employeeSignature={selectedRequest.employee_signature}
+                  employeeSignedAt={selectedRequest.employee_signed_at}
+                  departmentHeadSignature={departmentHeadSignature || selectedRequest.department_head_signature}
+                  departmentHeadSignedAt={selectedRequest.department_head_signed_at}
                 />
-              </div>
+              ) : (
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <pre className="whitespace-pre-wrap font-sans text-sm">
+                    {selectedRequest.generated_content}
+                  </pre>
+                </div>
+              )}
+
+              {/* Signature section for department head */}
+              {!selectedRequest.department_head_signature && (
+                <div className="border-t pt-4">
+                  <SignaturePad 
+                    label="Semnătura Șef Compartiment *"
+                    onSave={(sig) => {
+                      setDepartmentHeadSignature(sig);
+                    }}
+                    existingSignature={departmentHeadSignature}
+                  />
+                  
+                  {departmentHeadSignature && (
+                    <Button 
+                      onClick={handleDepartmentHeadSign}
+                      disabled={processingApproval}
+                      className="w-full mt-2"
+                      variant="outline"
+                    >
+                      {processingApproval ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <PenTool className="w-4 h-4 mr-2" />}
+                      Salvează Semnătura
+                    </Button>
+                  )}
+                </div>
+              )}
               
-              <div className="flex gap-2 justify-end">
-                <Button 
-                  variant="destructive" 
-                  onClick={() => handleApproval(false)}
-                  disabled={processingApproval}
-                >
-                  {processingApproval ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
-                  Respinge
-                </Button>
-                <Button 
-                  onClick={() => handleApproval(true)}
-                  disabled={processingApproval}
-                >
-                  {processingApproval ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                  Aprobă
-                </Button>
-              </div>
+              {/* Approval section - only visible after signing */}
+              {(selectedRequest.department_head_signature || departmentHeadSignature) && (
+                <div className="border-t pt-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label>Note (opțional)</Label>
+                    <Textarea 
+                      placeholder="Adăugați note sau comentarii..." 
+                      value={approverNotes}
+                      onChange={(e) => setApproverNotes(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2 justify-end">
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleApproval(false)}
+                      disabled={processingApproval}
+                    >
+                      {processingApproval ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+                      Respinge
+                    </Button>
+                    <Button 
+                      onClick={() => handleApproval(true)}
+                      disabled={processingApproval}
+                    >
+                      {processingApproval ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                      Aprobă
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
