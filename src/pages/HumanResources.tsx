@@ -459,19 +459,21 @@ const HumanResources = () => {
     <MainLayout title="Resurse Umane" description="Generează și gestionează documente HR">
       <div className="space-y-6">
         <Tabs defaultValue="create" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="create">Creează Document</TabsTrigger>
-            <TabsTrigger value="my-requests">
+          <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="create" className="flex-1 min-w-[120px] text-xs sm:text-sm">
+              Creează
+            </TabsTrigger>
+            <TabsTrigger value="my-requests" className="flex-1 min-w-[120px] text-xs sm:text-sm">
               Cererile Mele
               {myRequests.length > 0 && (
-                <Badge variant="secondary" className="ml-2">{myRequests.length}</Badge>
+                <Badge variant="secondary" className="ml-1 sm:ml-2 text-xs">{myRequests.length}</Badge>
               )}
             </TabsTrigger>
             {canApproveHR && (
-              <TabsTrigger value="approve">
+              <TabsTrigger value="approve" className="flex-1 min-w-[100px] text-xs sm:text-sm">
                 Aprobări
                 {pendingRequests.length > 0 && (
-                  <Badge variant="destructive" className="ml-2">{pendingRequests.length}</Badge>
+                  <Badge variant="destructive" className="ml-1 sm:ml-2 text-xs">{pendingRequests.length}</Badge>
                 )}
               </TabsTrigger>
             )}
@@ -512,7 +514,7 @@ const HumanResources = () => {
 
                   {requestType === 'concediu' && (
                     <>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Data Început *</Label>
                           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -523,7 +525,7 @@ const HumanResources = () => {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Număr Zile</Label>
                           <Input 
@@ -541,7 +543,7 @@ const HumanResources = () => {
 
                       <div className="space-y-2">
                         <Label>Înlocuitor (opțional)</Label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <Input 
                             placeholder="Nume înlocuitor" 
                             value={replacementName} 

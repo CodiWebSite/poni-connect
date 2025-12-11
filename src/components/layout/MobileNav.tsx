@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -14,23 +15,26 @@ import {
   FlaskConical,
   Menu,
   UserCog,
+  Shield,
 } from 'lucide-react';
 import { useState } from 'react';
-
-const menuItems = [
-  { icon: Home, label: 'Dashboard', path: '/' },
-  { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
-  { icon: Users, label: 'Angajați', path: '/employees' },
-  { icon: FileText, label: 'Documente', path: '/documents' },
-  { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
-  { icon: Calendar, label: 'Calendar', path: '/calendar' },
-  { icon: Settings, label: 'Setări', path: '/settings' },
-];
 
 const MobileNav = () => {
   const location = useLocation();
   const { signOut } = useAuth();
+  const { role } = useUserRole();
   const [isOpen, setIsOpen] = useState(false);
+
+  const menuItems = [
+    { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
+    { icon: Users, label: 'Angajați', path: '/employees' },
+    { icon: FileText, label: 'Documente', path: '/documents' },
+    { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
+    { icon: Calendar, label: 'Calendar', path: '/calendar' },
+    { icon: Settings, label: 'Setări', path: '/settings' },
+    ...(role === 'super_admin' ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
+  ];
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -54,7 +58,7 @@ const MobileNav = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)]">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -77,7 +81,7 @@ const MobileNav = () => {
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="p-3 border-t border-sidebar-border absolute bottom-0 left-0 right-0 bg-sidebar">
           <Button
             variant="ghost"
             size="sm"
