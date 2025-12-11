@@ -230,10 +230,13 @@ const Admin = () => {
     u.position?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const departmentHeadUsers = users.filter(u => u.role === 'department_head');
-  
   // Get unique departments from profiles
   const uniqueDepartments = [...new Set(users.map(u => u.department).filter(Boolean))] as string[];
+
+  // Filter users by selected department for the head selection
+  const usersInSelectedDepartment = newDepartment 
+    ? users.filter(u => u.department?.toLowerCase() === newDepartment.toLowerCase())
+    : [];
 
   const getHeadName = (headUserId: string) => {
     const user = users.find(u => u.user_id === headUserId);
@@ -367,7 +370,13 @@ const Admin = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Departament</label>
-                      <Select value={newDepartment} onValueChange={setNewDepartment}>
+                      <Select 
+                        value={newDepartment} 
+                        onValueChange={(val) => {
+                          setNewDepartment(val);
+                          setNewHeadUserId(''); // Reset head selection when department changes
+                        }}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Selectează departament" />
                         </SelectTrigger>
@@ -380,31 +389,41 @@ const Admin = () => {
                       <Input 
                         placeholder="Sau introdu manual..."
                         value={newDepartment}
-                        onChange={(e) => setNewDepartment(e.target.value)}
+                        onChange={(e) => {
+                          setNewDepartment(e.target.value);
+                          setNewHeadUserId('');
+                        }}
                       />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Șef Compartiment</label>
-                      <Select value={newHeadUserId} onValueChange={setNewHeadUserId}>
+                      <Select 
+                        value={newHeadUserId} 
+                        onValueChange={setNewHeadUserId}
+                        disabled={!newDepartment}
+                      >
                         <SelectTrigger>
-                          <SelectValue placeholder="Selectează șef" />
+                          <SelectValue placeholder={newDepartment ? "Selectează șef" : "Selectează departament întâi"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {departmentHeadUsers.length === 0 ? (
+                          {usersInSelectedDepartment.length === 0 ? (
                             <SelectItem value="none" disabled>
-                              Nu există utilizatori cu rol "Șef Compartiment"
+                              {newDepartment ? "Nu există angajați în acest departament" : "Selectează un departament"}
                             </SelectItem>
                           ) : (
-                            departmentHeadUsers.map(u => (
+                            usersInSelectedDepartment.map(u => (
                               <SelectItem key={u.user_id} value={u.user_id}>
-                                {u.full_name} ({u.department || 'Fără dept.'})
+                                {u.full_name} - {u.position || 'Fără funcție'}
                               </SelectItem>
                             ))
                           )}
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        Doar utilizatorii cu rol "Șef Compartiment" sunt afișați
+                        {newDepartment 
+                          ? `${usersInSelectedDepartment.length} angajați în ${newDepartment}`
+                          : "Selectează un departament pentru a vedea angajații"
+                        }
                       </p>
                     </div>
                     <div className="flex items-end">
@@ -433,32 +452,42 @@ const Admin = () => {
                       <p>Nu există configurări. Adaugă un departament mai sus.</p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      {departmentHeads.map(dh => (
-                        <div 
-                          key={dh.id}
-                          className="flex items-center justify-between p-4 border rounded-lg bg-background"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="p-2 rounded-lg bg-primary/10">
-                              <Building className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                              <p className="font-medium">{dh.department}</p>
-                              <p className="text-sm text-muted-foreground">
-                                Șef: {getHeadName(dh.head_user_id)}
-                              </p>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => deleteDepartmentHead(dh.id)}
+                    <div className="grid gap-3">
+                      {departmentHeads.map(dh => {
+                        const headUser = users.find(u => u.user_id === dh.head_user_id);
+                        return (
+                          <div 
+                            key={dh.id}
+                            className="flex items-center justify-between p-4 border rounded-lg bg-background"
                           >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      ))}
+                            <div className="flex items-center gap-4">
+                              <div className="p-2 rounded-lg bg-primary/10">
+                                <Building className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-medium">{dh.department}</p>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                  <p className="text-sm text-muted-foreground">
+                                    Șef: <span className="font-medium text-foreground">{getHeadName(dh.head_user_id)}</span>
+                                  </p>
+                                  {headUser?.position && (
+                                    <span className="text-xs text-muted-foreground">
+                                      • {headUser.position}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => deleteDepartmentHead(dh.id)}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
