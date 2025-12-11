@@ -480,6 +480,13 @@ const HumanResources = () => {
   const downloadDocument = async (request: HRRequest) => {
     try {
       if (request.request_type === 'concediu') {
+        // Fetch employee record for leave balance
+        const { data: empRecord } = await supabase
+          .from('employee_records')
+          .select('total_leave_days, remaining_leave_days, used_leave_days')
+          .eq('user_id', request.user_id)
+          .maybeSingle();
+        
         await generateLeaveRequestDocx({
           employeeName: request.details.employeeName,
           department: request.details.department,
@@ -494,7 +501,10 @@ const HumanResources = () => {
           employeeSignedAt: request.employee_signed_at || undefined,
           departmentHeadSignature: request.department_head_signature || undefined,
           departmentHeadSignedAt: request.department_head_signed_at || undefined,
-          status: request.status
+          status: request.status,
+          totalLeaveDays: empRecord?.total_leave_days,
+          remainingLeaveDays: empRecord?.remaining_leave_days ?? (empRecord ? empRecord.total_leave_days - empRecord.used_leave_days : undefined),
+          previousYearRemainingDays: 0 // Assuming no carry-over tracking yet
         });
       } else {
         await generateGenericDocx(
