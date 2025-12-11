@@ -47,6 +47,30 @@ export type Database = {
         }
         Relationships: []
       }
+      department_heads: {
+        Row: {
+          created_at: string
+          department: string
+          head_user_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department: string
+          head_user_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string
+          head_user_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           category: string | null

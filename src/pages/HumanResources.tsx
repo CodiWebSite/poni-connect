@@ -284,6 +284,20 @@ const HumanResources = () => {
 
     setSubmitting(true);
     
+    // Find the department head for the user's department
+    let assignedDepartmentHeadId: string | null = null;
+    if (profile.department) {
+      const { data: deptHead } = await supabase
+        .from('department_heads')
+        .select('head_user_id')
+        .eq('department', profile.department)
+        .maybeSingle();
+      
+      if (deptHead) {
+        assignedDepartmentHeadId = deptHead.head_user_id;
+      }
+    }
+    
     const { error } = await supabase.from('hr_requests').insert({
       user_id: user.id,
       request_type: 'concediu',
@@ -299,7 +313,8 @@ const HumanResources = () => {
         replacementPosition
       },
       employee_signature: employeeSignature,
-      employee_signed_at: new Date().toISOString()
+      employee_signed_at: new Date().toISOString(),
+      department_head_id: assignedDepartmentHeadId
     });
 
     if (error) {
@@ -495,7 +510,22 @@ const HumanResources = () => {
   };
 
   const myRequests = requests.filter(r => r.user_id === user?.id);
-  const pendingRequests = requests.filter(r => r.status === 'pending');
+  
+  // Filter pending requests: show only requests assigned to the current user (as department head)
+  // or show all if user has admin/director role
+  const pendingRequests = requests.filter(r => {
+    if (r.status !== 'pending') return false;
+    // If user is admin, super_admin, hr, or director, show all pending requests
+    if (canApproveHR) {
+      // For department heads, only show requests assigned to them
+      if (r.department_head_id) {
+        return r.department_head_id === user?.id || canApproveHR;
+      }
+      // If no department head assigned, show to all approvers
+      return true;
+    }
+    return false;
+  });
 
   const canApprove = (request: HRRequest) => {
     return request.department_head_signature !== null;
