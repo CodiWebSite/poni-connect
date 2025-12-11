@@ -107,6 +107,7 @@ const HumanResources = () => {
   const [employeeRecord, setEmployeeRecord] = useState<{ remaining_leave_days: number; total_leave_days: number; used_leave_days: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isDesignatedDepartmentHead, setIsDesignatedDepartmentHead] = useState(false);
   
   // Form state for leave request
   const [requestType, setRequestType] = useState<RequestType>('concediu');
@@ -150,6 +151,7 @@ const HumanResources = () => {
       fetchProfile();
       fetchRequests();
       fetchEmployeeRecord();
+      checkIfDesignatedDepartmentHead();
       
       const channel = supabase
         .channel('hr-requests-changes')
@@ -165,6 +167,18 @@ const HumanResources = () => {
       };
     }
   }, [user, canApproveHR]);
+
+  const checkIfDesignatedDepartmentHead = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('department_heads')
+      .select('id')
+      .eq('head_user_id', user.id)
+      .maybeSingle();
+    
+    setIsDesignatedDepartmentHead(!!data);
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -511,19 +525,24 @@ const HumanResources = () => {
 
   const myRequests = requests.filter(r => r.user_id === user?.id);
   
+  // Can see approval tab if user has approval role OR is designated department head
+  const canSeeApprovalTab = canApproveHR || isDesignatedDepartmentHead;
+  
   // Filter pending requests: show only requests assigned to the current user (as department head)
   // or show all if user has admin/director role
   const pendingRequests = requests.filter(r => {
     if (r.status !== 'pending') return false;
-    // If user is admin, super_admin, hr, or director, show all pending requests
-    if (canApproveHR) {
-      // For department heads, only show requests assigned to them
-      if (r.department_head_id) {
-        return r.department_head_id === user?.id || canApproveHR;
-      }
-      // If no department head assigned, show to all approvers
+    
+    // If user is designated department head, show requests assigned to them
+    if (isDesignatedDepartmentHead && r.department_head_id === user?.id) {
       return true;
     }
+    
+    // If user has admin/super_admin/hr/director role, show all pending requests
+    if (canApproveHR) {
+      return true;
+    }
+    
     return false;
   });
 
@@ -545,7 +564,7 @@ const HumanResources = () => {
                 <Badge variant="secondary" className="ml-1 sm:ml-2 text-xs">{myRequests.length}</Badge>
               )}
             </TabsTrigger>
-            {canApproveHR && (
+            {canSeeApprovalTab && (
               <TabsTrigger value="approve" className="flex-1 min-w-[100px] text-xs sm:text-sm">
                 Aprobări
                 {pendingRequests.length > 0 && (
@@ -906,7 +925,7 @@ const HumanResources = () => {
             </Card>
           </TabsContent>
 
-          {canApproveHR && (
+          {canSeeApprovalTab && (
             <TabsContent value="approve">
               <Card>
                 <CardHeader>
