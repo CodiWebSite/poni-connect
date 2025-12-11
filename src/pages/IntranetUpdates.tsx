@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Shield, Users, FileText, Bell, Calendar, Settings, UserCog } from 'lucide-react';
+import { ArrowLeft, Sparkles, Shield, Users, FileText, Bell, Calendar, Settings, UserCog, Cake } from 'lucide-react';
 
 interface Update {
   date: string;
@@ -16,6 +16,19 @@ interface Update {
 }
 
 const updates: Update[] = [
+  {
+    date: '11 Decembrie 2024',
+    version: '1.7.0',
+    title: 'Widget Zile de Naștere',
+    type: 'feature',
+    description: 'Am adăugat o funcționalitate pentru a vedea zilele de naștere ale colegilor.',
+    details: [
+      'Widget pe Dashboard cu zilele de naștere de azi și din următoarele 2 săptămâni',
+      'Fiecare angajat își poate seta data nașterii din Profilul Meu',
+      'Design festiv pentru ziua de naștere curentă',
+      'HR poate completa datele angajaților din Gestiune HR'
+    ]
+  },
   {
     date: '11 Decembrie 2024',
     version: '1.6.0',
