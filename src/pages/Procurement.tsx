@@ -831,57 +831,76 @@ const Procurement = () => {
               </div>
               
               <div className="space-y-3">
-                {items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-2 p-3 border rounded-lg">
-                    <div className="col-span-12 md:col-span-4">
-                      <Input
-                        placeholder="Denumire articol"
-                        value={item.name}
-                        onChange={(e) => updateItem(index, 'name', e.target.value)}
-                      />
+                {items.map((item, index) => {
+                  const priceWithVAT = item.estimatedPrice * 1.19;
+                  return (
+                    <div key={index} className="grid grid-cols-12 gap-2 p-3 border rounded-lg">
+                      <div className="col-span-12 md:col-span-3">
+                        <Label className="text-xs text-muted-foreground">Denumire</Label>
+                        <Input
+                          placeholder="Denumire articol"
+                          value={item.name}
+                          onChange={(e) => updateItem(index, 'name', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-4 md:col-span-1">
+                        <Label className="text-xs text-muted-foreground">Cant.</Label>
+                        <Input
+                          type="number"
+                          placeholder="1"
+                          value={item.quantity}
+                          onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="col-span-4 md:col-span-1">
+                        <Label className="text-xs text-muted-foreground">U.M.</Label>
+                        <Input
+                          placeholder="buc"
+                          value={item.unit}
+                          onChange={(e) => updateItem(index, 'unit', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-4 md:col-span-3">
+                        <Label className="text-xs text-muted-foreground">Preț fără TVA</Label>
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          value={item.estimatedPrice}
+                          onChange={(e) => updateItem(index, 'estimatedPrice', parseFloat(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="col-span-8 md:col-span-3">
+                        <Label className="text-xs text-muted-foreground">Preț cu TVA (19%)</Label>
+                        <Input
+                          type="text"
+                          value={priceWithVAT.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          disabled
+                          className="bg-muted"
+                        />
+                      </div>
+                      <div className="col-span-4 md:col-span-1 flex items-end justify-end">
+                        {items.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeItem(index)}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="col-span-4 md:col-span-2">
-                      <Input
-                        type="number"
-                        placeholder="Cant."
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
-                      />
-                    </div>
-                    <div className="col-span-4 md:col-span-2">
-                      <Input
-                        placeholder="U.M."
-                        value={item.unit}
-                        onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-span-4 md:col-span-3">
-                      <Input
-                        type="number"
-                        placeholder="Preț unitar"
-                        value={item.estimatedPrice}
-                        onChange={(e) => updateItem(index, 'estimatedPrice', parseFloat(e.target.value) || 0)}
-                      />
-                    </div>
-                    <div className="col-span-12 md:col-span-1 flex items-center justify-end">
-                      {items.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeItem(index)}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              <div className="flex justify-end p-3 bg-muted rounded-lg">
+              <div className="flex flex-col items-end gap-1 p-3 bg-muted rounded-lg">
+                <span className="text-sm text-muted-foreground">
+                  Total fără TVA: {items.reduce((sum, i) => sum + i.quantity * i.estimatedPrice, 0).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RON
+                </span>
                 <span className="font-medium">
-                  Total estimat: {items.reduce((sum, i) => sum + i.quantity * i.estimatedPrice, 0).toLocaleString()} RON
+                  Total cu TVA: {(items.reduce((sum, i) => sum + i.quantity * i.estimatedPrice, 0) * 1.19).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RON
                 </span>
               </div>
             </div>

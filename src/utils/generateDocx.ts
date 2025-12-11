@@ -519,35 +519,40 @@ export const generateProcurementDocx = async (data: ProcurementRequestData) => {
   const totalCuTVA = totalFaraTVA * 1.19;
 
   // Create items table rows
-  const itemRows = data.items.map((item, index) => 
-    new TableRow({
+  const itemRows = data.items.map((item, index) => {
+    const priceWithVAT = item.estimatedPrice * 1.19;
+    return new TableRow({
       children: [
         new TableCell({
           children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString(), size: 20, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })],
-          width: { size: 8, type: WidthType.PERCENTAGE }
+          width: { size: 6, type: WidthType.PERCENTAGE }
         }),
         new TableCell({
           children: [
             new Paragraph({ children: [new TextRun({ text: item.name, size: 20, font: 'Times New Roman' })] }),
             ...(item.specifications ? [new Paragraph({ children: [new TextRun({ text: item.specifications, size: 16, font: 'Times New Roman', italics: true })] })] : [])
           ],
-          width: { size: 42, type: WidthType.PERCENTAGE }
+          width: { size: 34, type: WidthType.PERCENTAGE }
         }),
         new TableCell({
           children: [new Paragraph({ children: [new TextRun({ text: item.unit, size: 20, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })],
-          width: { size: 10, type: WidthType.PERCENTAGE }
+          width: { size: 8, type: WidthType.PERCENTAGE }
         }),
         new TableCell({
           children: [new Paragraph({ children: [new TextRun({ text: item.quantity.toString(), size: 20, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })],
-          width: { size: 10, type: WidthType.PERCENTAGE }
+          width: { size: 8, type: WidthType.PERCENTAGE }
         }),
         new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ text: item.estimatedPrice.toLocaleString('ro-RO'), size: 20, font: 'Times New Roman' })], alignment: AlignmentType.RIGHT })],
-          width: { size: 30, type: WidthType.PERCENTAGE }
+          children: [new Paragraph({ children: [new TextRun({ text: item.estimatedPrice.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), size: 20, font: 'Times New Roman' })], alignment: AlignmentType.RIGHT })],
+          width: { size: 22, type: WidthType.PERCENTAGE }
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: priceWithVAT.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), size: 20, font: 'Times New Roman' })], alignment: AlignmentType.RIGHT })],
+          width: { size: 22, type: WidthType.PERCENTAGE }
         })
       ]
-    })
-  );
+    });
+  });
 
   const doc = new Document({
     sections: [{
@@ -671,21 +676,23 @@ export const generateProcurementDocx = async (data: ProcurementRequestData) => {
           rows: [
             new TableRow({
               children: [
-                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Nr. crt.', size: 20, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 8, type: WidthType.PERCENTAGE } }),
-                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Denumire și caracteristici tehnice', size: 20, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 42, type: WidthType.PERCENTAGE } }),
-                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'U/M', size: 20, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 10, type: WidthType.PERCENTAGE } }),
-                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Cant.', size: 20, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 10, type: WidthType.PERCENTAGE } }),
-                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Preț unitar fără TVA (lei)', size: 20, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 30, type: WidthType.PERCENTAGE } })
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Nr. crt.', size: 18, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 6, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Denumire și caracteristici tehnice', size: 18, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 34, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'U/M', size: 18, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 8, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Cant.', size: 18, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 8, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Preț unitar fără TVA (lei)', size: 18, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 22, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Preț unitar cu TVA (lei)', size: 18, font: 'Times New Roman', bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'E0E0E0' }, width: { size: 22, type: WidthType.PERCENTAGE } })
               ]
             }),
             // Column number row
             new TableRow({
               children: [
-                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(1)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 8, type: WidthType.PERCENTAGE } }),
-                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(2)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 42, type: WidthType.PERCENTAGE } }),
-                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(3)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 10, type: WidthType.PERCENTAGE } }),
-                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(4)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 10, type: WidthType.PERCENTAGE } }),
-                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(6)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 30, type: WidthType.PERCENTAGE } })
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(1)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 6, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(2)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 34, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(3)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 8, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(4)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 8, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(5)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 22, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '(6)', size: 16, font: 'Times New Roman' })], alignment: AlignmentType.CENTER })], width: { size: 22, type: WidthType.PERCENTAGE } })
               ]
             }),
             ...itemRows
@@ -694,9 +701,14 @@ export const generateProcurementDocx = async (data: ProcurementRequestData) => {
 
         new Paragraph({ text: '', spacing: { after: 200 } }),
 
-        // Total cu TVA
+        // Totals - both without and with TVA
         new Paragraph({
-          children: [new TextRun({ text: `TOTAL cu TVA: ${totalCuTVA.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lei`, size: 22, font: 'Times New Roman', bold: true })],
+          children: [new TextRun({ text: `TOTAL fără TVA: ${totalFaraTVA.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lei`, size: 22, font: 'Times New Roman', bold: true })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { after: 100 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `TOTAL cu TVA (19%): ${totalCuTVA.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lei`, size: 22, font: 'Times New Roman', bold: true })],
           alignment: AlignmentType.RIGHT,
           spacing: { after: 200 }
         }),
