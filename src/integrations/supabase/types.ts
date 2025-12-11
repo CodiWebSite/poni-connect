@@ -115,7 +115,12 @@ export type Database = {
           approver_id: string | null
           approver_notes: string | null
           created_at: string
+          department_head_id: string | null
+          department_head_signature: string | null
+          department_head_signed_at: string | null
           details: Json
+          employee_signature: string | null
+          employee_signed_at: string | null
           generated_content: string | null
           id: string
           request_type: Database["public"]["Enums"]["hr_request_type"]
@@ -127,7 +132,12 @@ export type Database = {
           approver_id?: string | null
           approver_notes?: string | null
           created_at?: string
+          department_head_id?: string | null
+          department_head_signature?: string | null
+          department_head_signed_at?: string | null
           details?: Json
+          employee_signature?: string | null
+          employee_signed_at?: string | null
           generated_content?: string | null
           id?: string
           request_type: Database["public"]["Enums"]["hr_request_type"]
@@ -139,7 +149,12 @@ export type Database = {
           approver_id?: string | null
           approver_notes?: string | null
           created_at?: string
+          department_head_id?: string | null
+          department_head_signature?: string | null
+          department_head_signed_at?: string | null
           details?: Json
+          employee_signature?: string | null
+          employee_signed_at?: string | null
           generated_content?: string | null
           id?: string
           request_type?: Database["public"]["Enums"]["hr_request_type"]
@@ -208,7 +223,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      department_requests: {
+        Row: {
+          approver_id: string | null
+          approver_notes: string | null
+          created_at: string | null
+          department_head_id: string | null
+          department_head_signature: string | null
+          department_head_signed_at: string | null
+          details: Json | null
+          employee_signature: string | null
+          employee_signed_at: string | null
+          generated_content: string | null
+          id: string | null
+          request_type: Database["public"]["Enums"]["hr_request_type"] | null
+          requester_department: string | null
+          requester_name: string | null
+          requester_position: string | null
+          status: Database["public"]["Enums"]["hr_request_status"] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_role: {
