@@ -2,3 +2,6 @@ project_id = "erghywhqrxmwqptusbxd"
 
 [functions.generate-hr-document]
 verify_jwt = true
+
+[functions.verify-turnstile]
+verify_jwt = false
