@@ -83,6 +83,26 @@ const BirthdayWidget = () => {
     return format(new Date(new Date().getFullYear(), date.getMonth(), date.getDate()), 'd MMMM', { locale: ro });
   };
 
+  const calculateAge = (birthDateStr: string, isToday: boolean = false) => {
+    const birthDate = parseISO(birthDateStr);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    
+    // If birthday hasn't happened yet this year, subtract 1
+    const thisYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+    if (thisYearBirthday > today) {
+      age--;
+    }
+    
+    // If it's today, they're turning this age
+    if (isToday) {
+      return age;
+    }
+    
+    // For upcoming birthdays, show the age they will turn
+    return age + 1;
+  };
+
   if (loading) {
     return (
       <Card>
@@ -133,9 +153,9 @@ const BirthdayWidget = () => {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{person.full_name}</p>
-                    {person.department && (
-                      <p className="text-xs text-muted-foreground truncate">{person.department}</p>
-                    )}
+                    <p className="text-xs text-muted-foreground truncate">
+                      {person.department || 'Nespecificat'} • împlinește {calculateAge(person.birth_date, true)} ani
+                    </p>
                   </div>
                   <Gift className="w-5 h-5 text-pink-500 animate-bounce" />
                 </div>
@@ -163,6 +183,9 @@ const BirthdayWidget = () => {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{person.full_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {person.department || 'Nespecificat'} • {calculateAge(person.birth_date)} ani
+                    </p>
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {formatBirthday(person.birth_date)}
