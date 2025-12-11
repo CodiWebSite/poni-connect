@@ -19,7 +19,14 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Parola trebuie să aibă cel puțin 6 caractere'),
 });
 
-const signupSchema = loginSchema.extend({
+const signupSchema = z.object({
+  email: z.string()
+    .email('Adresă de email invalidă')
+    .refine((email) => email.endsWith('@icmpp.ro'), {
+      message: 'Doar adresele de email @icmpp.ro sunt permise pentru înregistrare',
+    }),
+  password: z.string().min(6, 'Parola trebuie să aibă cel puțin 6 caractere'),
+}).extend({
   fullName: z.string().min(2, 'Numele trebuie să aibă cel puțin 2 caractere').max(100, 'Numele este prea lung'),
 });
 
