@@ -148,6 +148,7 @@ const MyProfile = () => {
     admin: 'Administrator',
     super_admin: 'Super Administrator',
     department_head: 'Șef Compartiment',
+    hr: 'HR (SRUS)',
     secretariat: 'Secretariat',
     director: 'Director'
   };

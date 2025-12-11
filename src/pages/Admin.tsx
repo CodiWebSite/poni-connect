@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Search, Shield, Users, Loader2 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
-type AppRole = 'admin' | 'user' | 'super_admin' | 'department_head' | 'secretariat' | 'director';
+type AppRole = 'admin' | 'user' | 'super_admin' | 'department_head' | 'secretariat' | 'director' | 'hr';
 
 interface UserWithRole {
   user_id: string;
@@ -29,6 +29,7 @@ const roleLabels: Record<AppRole, string> = {
   admin: 'Administrator',
   director: 'Director',
   department_head: 'Șef Compartiment',
+  hr: 'HR (SRUS)',
   secretariat: 'Secretariat',
   user: 'Angajat'
 };
@@ -38,6 +39,7 @@ const roleBadgeColors: Record<AppRole, string> = {
   admin: 'bg-primary text-primary-foreground',
   director: 'bg-accent text-accent-foreground',
   department_head: 'bg-info text-info-foreground',
+  hr: 'bg-purple-500 text-white',
   secretariat: 'bg-success text-success-foreground',
   user: 'bg-muted text-muted-foreground'
 };

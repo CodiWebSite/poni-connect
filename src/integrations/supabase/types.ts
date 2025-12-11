@@ -332,6 +332,7 @@ export type Database = {
     }
     Functions: {
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -352,6 +353,7 @@ export type Database = {
         | "department_head"
         | "secretariat"
         | "director"
+        | "hr"
       hr_request_status: "pending" | "approved" | "rejected"
       hr_request_type: "concediu" | "adeverinta" | "delegatie" | "demisie"
     }
@@ -488,6 +490,7 @@ export const Constants = {
         "department_head",
         "secretariat",
         "director",
+        "hr",
       ],
       hr_request_status: ["pending", "approved", "rejected"],
       hr_request_type: ["concediu", "adeverinta", "delegatie", "demisie"],

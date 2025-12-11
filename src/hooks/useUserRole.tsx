@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-export type AppRole = 'admin' | 'user' | 'super_admin' | 'department_head' | 'secretariat' | 'director';
+export type AppRole = 'admin' | 'user' | 'super_admin' | 'department_head' | 'secretariat' | 'director' | 'hr';
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -39,12 +39,16 @@ export function useUserRole() {
   const isDepartmentHead = role === 'department_head';
   const isDirector = role === 'director';
   const isSecretariat = role === 'secretariat';
+  const isHR = role === 'hr';
   
   // Can manage content (announcements, documents, events)
   const canManageContent = ['admin', 'super_admin', 'department_head', 'director', 'secretariat'].includes(role || '');
   
   // Can approve HR requests
   const canApproveHR = ['admin', 'super_admin', 'department_head', 'director'].includes(role || '');
+  
+  // Can manage employee records and documents (HR department)
+  const canManageHR = ['admin', 'super_admin', 'hr', 'director'].includes(role || '');
 
   return { 
     role, 
@@ -53,8 +57,10 @@ export function useUserRole() {
     isDepartmentHead,
     isDirector,
     isSecretariat,
+    isHR,
     canManageContent,
     canApproveHR,
+    canManageHR,
     loading 
   };
 }
