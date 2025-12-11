@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { FlaskConical, Lock, Mail, User } from 'lucide-react';
 import { z } from 'zod';
+import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
+import { supabase } from '@/integrations/supabase/client';
+
+const TURNSTILE_SITE_KEY = '0x4AAAAAACGCLULQZJnOlaaQ';
 
 const loginSchema = z.object({
   email: z.string().email('Adresă de email invalidă'),
@@ -23,6 +27,10 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', fullName: '' });
+  const [loginToken, setLoginToken] = useState<string | null>(null);
+  const [signupToken, setSignupToken] = useState<string | null>(null);
+  const loginTurnstileRef = useRef<TurnstileInstance>(null);
+  const signupTurnstileRef = useRef<TurnstileInstance>(null);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
 
@@ -31,6 +39,24 @@ const Auth = () => {
       navigate('/');
     }
   }, [user, navigate]);
+
+  const verifyTurnstile = async (token: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-turnstile', {
+        body: { token },
+      });
+      
+      if (error) {
+        console.error('Turnstile verification error:', error);
+        return false;
+      }
+      
+      return data?.success === true;
+    } catch (err) {
+      console.error('Failed to verify turnstile:', err);
+      return false;
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +72,21 @@ const Auth = () => {
       }
     }
 
+    if (!loginToken) {
+      toast.error('Te rugăm să completezi verificarea CAPTCHA');
+      setIsLoading(false);
+      return;
+    }
+
+    const isValid = await verifyTurnstile(loginToken);
+    if (!isValid) {
+      toast.error('Verificarea CAPTCHA a eșuat. Te rugăm să încerci din nou.');
+      loginTurnstileRef.current?.reset();
+      setLoginToken(null);
+      setIsLoading(false);
+      return;
+    }
+
     const { error } = await signIn(loginData.email, loginData.password);
     
     if (error) {
@@ -54,6 +95,8 @@ const Auth = () => {
       } else {
         toast.error('Eroare la autentificare. Încercați din nou.');
       }
+      loginTurnstileRef.current?.reset();
+      setLoginToken(null);
     } else {
       toast.success('Autentificare reușită!');
       navigate('/');
@@ -76,6 +119,21 @@ const Auth = () => {
       }
     }
 
+    if (!signupToken) {
+      toast.error('Te rugăm să completezi verificarea CAPTCHA');
+      setIsLoading(false);
+      return;
+    }
+
+    const isValid = await verifyTurnstile(signupToken);
+    if (!isValid) {
+      toast.error('Verificarea CAPTCHA a eșuat. Te rugăm să încerci din nou.');
+      signupTurnstileRef.current?.reset();
+      setSignupToken(null);
+      setIsLoading(false);
+      return;
+    }
+
     const { error } = await signUp(signupData.email, signupData.password, signupData.fullName);
     
     if (error) {
@@ -84,6 +142,8 @@ const Auth = () => {
       } else {
         toast.error('Eroare la înregistrare. Încercați din nou.');
       }
+      signupTurnstileRef.current?.reset();
+      setSignupToken(null);
     } else {
       toast.success('Cont creat cu succes!');
       navigate('/');
@@ -152,6 +212,22 @@ const Auth = () => {
                     />
                   </div>
                 </div>
+
+                <div className="flex justify-center">
+                  <Turnstile
+                    ref={loginTurnstileRef}
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => setLoginToken(token)}
+                    onError={() => {
+                      setLoginToken(null);
+                      toast.error('Eroare la încărcarea CAPTCHA');
+                    }}
+                    onExpire={() => setLoginToken(null)}
+                    options={{
+                      theme: 'auto',
+                    }}
+                  />
+                </div>
                 
                 <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
                   {isLoading ? 'Se procesează...' : 'Autentificare'}
@@ -207,6 +283,22 @@ const Auth = () => {
                       required
                     />
                   </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <Turnstile
+                    ref={signupTurnstileRef}
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => setSignupToken(token)}
+                    onError={() => {
+                      setSignupToken(null);
+                      toast.error('Eroare la încărcarea CAPTCHA');
+                    }}
+                    onExpire={() => setSignupToken(null)}
+                    options={{
+                      theme: 'auto',
+                    }}
+                  />
                 </div>
                 
                 <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
