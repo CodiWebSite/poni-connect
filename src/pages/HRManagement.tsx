@@ -108,6 +108,9 @@ const HRManagement = () => {
   // Edit dialog state
   const [editingEmployee, setEditingEmployee] = useState<EmployeeWithData | null>(null);
   const [editForm, setEditForm] = useState({
+    department: '',
+    position: '',
+    phone: '',
     hire_date: '',
     contract_type: 'nedeterminat',
     total_leave_days: 21,
@@ -195,6 +198,9 @@ const HRManagement = () => {
   const openEditDialog = (employee: EmployeeWithData) => {
     setEditingEmployee(employee);
     setEditForm({
+      department: employee.department || '',
+      position: employee.position || '',
+      phone: employee.phone || '',
       hire_date: employee.record?.hire_date || '',
       contract_type: employee.record?.contract_type || 'nedeterminat',
       total_leave_days: employee.record?.total_leave_days || 21,
@@ -207,8 +213,24 @@ const HRManagement = () => {
     
     setSaving(true);
     
+    // Update profile data (department, position, phone)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        department: editForm.department || null,
+        position: editForm.position || null,
+        phone: editForm.phone || null
+      })
+      .eq('user_id', editingEmployee.user_id);
+
+    if (profileError) {
+      toast({ title: 'Eroare', description: 'Nu s-au putut salva datele profilului.', variant: 'destructive' });
+      setSaving(false);
+      return;
+    }
+    
     if (editingEmployee.record) {
-      // Update existing record
+      // Update existing employee record
       const { error } = await supabase
         .from('employee_records')
         .update({
@@ -220,13 +242,13 @@ const HRManagement = () => {
         .eq('id', editingEmployee.record.id);
 
       if (error) {
-        toast({ title: 'Eroare', description: 'Nu s-au putut salva modificările.', variant: 'destructive' });
+        toast({ title: 'Eroare', description: 'Nu s-au putut salva datele de angajare.', variant: 'destructive' });
       } else {
         toast({ title: 'Succes', description: 'Datele angajatului au fost actualizate.' });
         fetchEmployees();
       }
     } else {
-      // Create new record
+      // Create new employee record
       const { error } = await supabase
         .from('employee_records')
         .insert({
@@ -238,7 +260,7 @@ const HRManagement = () => {
         });
 
       if (error) {
-        toast({ title: 'Eroare', description: 'Nu s-au putut crea datele angajatului.', variant: 'destructive' });
+        toast({ title: 'Eroare', description: 'Nu s-au putut crea datele de angajare.', variant: 'destructive' });
       } else {
         toast({ title: 'Succes', description: 'Datele angajatului au fost create.' });
         fetchEmployees();
@@ -645,58 +667,91 @@ const HRManagement = () => {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Data Angajării</Label>
-              <Input
-                type="date"
-                value={editForm.hire_date}
-                onChange={(e) => setEditForm({ ...editForm, hire_date: e.target.value })}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Tip Contract</Label>
-              <Select
-                value={editForm.contract_type}
-                onValueChange={(v) => setEditForm({ ...editForm, contract_type: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nedeterminat">Perioadă Nedeterminată</SelectItem>
-                  <SelectItem value="determinat">Perioadă Determinată</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+            {/* Profile Information */}
+            <div className="space-y-3 pb-3 border-b border-border">
+              <p className="text-sm font-medium text-muted-foreground">Informații Profil</p>
               <div className="space-y-2">
-                <Label>Total Zile Concediu</Label>
+                <Label>Departament / Compartiment</Label>
                 <Input
-                  type="number"
-                  value={editForm.total_leave_days}
-                  onChange={(e) => setEditForm({ ...editForm, total_leave_days: parseInt(e.target.value) || 0 })}
+                  placeholder="ex: Laborator Polimeri"
+                  value={editForm.department}
+                  onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Zile Utilizate</Label>
+                <Label>Funcție</Label>
                 <Input
-                  type="number"
-                  value={editForm.used_leave_days}
-                  onChange={(e) => setEditForm({ ...editForm, used_leave_days: parseInt(e.target.value) || 0 })}
+                  placeholder="ex: Cercetător Științific"
+                  value={editForm.position}
+                  onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefon</Label>
+                <Input
+                  placeholder="ex: 0232-123456"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                 />
               </div>
             </div>
-            
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm">
-                <span className="text-muted-foreground">Zile disponibile: </span>
-                <span className="font-bold text-primary">
-                  {editForm.total_leave_days - editForm.used_leave_days}
-                </span>
-              </p>
+
+            {/* Employment Information */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-muted-foreground">Informații Angajare</p>
+              <div className="space-y-2">
+                <Label>Data Angajării</Label>
+                <Input
+                  type="date"
+                  value={editForm.hire_date}
+                  onChange={(e) => setEditForm({ ...editForm, hire_date: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Tip Contract</Label>
+                <Select
+                  value={editForm.contract_type}
+                  onValueChange={(v) => setEditForm({ ...editForm, contract_type: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nedeterminat">Perioadă Nedeterminată</SelectItem>
+                    <SelectItem value="determinat">Perioadă Determinată</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Total Zile Concediu</Label>
+                  <Input
+                    type="number"
+                    value={editForm.total_leave_days}
+                    onChange={(e) => setEditForm({ ...editForm, total_leave_days: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Zile Utilizate</Label>
+                  <Input
+                    type="number"
+                    value={editForm.used_leave_days}
+                    onChange={(e) => setEditForm({ ...editForm, used_leave_days: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+              
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Zile disponibile: </span>
+                  <span className="font-bold text-primary">
+                    {editForm.total_leave_days - editForm.used_leave_days}
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
           
