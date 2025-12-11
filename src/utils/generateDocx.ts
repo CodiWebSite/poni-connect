@@ -17,6 +17,10 @@ interface LeaveRequestData {
   departmentHeadSignature?: string;
   departmentHeadSignedAt?: string;
   status: string;
+  // Leave balance info
+  totalLeaveDays?: number;
+  remainingLeaveDays?: number;
+  previousYearRemainingDays?: number;
 }
 
 const formatDate = (dateStr: string) => {
@@ -321,19 +325,19 @@ export const generateLeaveRequestDocx = async (data: LeaveRequestData) => {
           spacing: { after: 200 }
         }),
 
-        // HR paragraph
+        // HR paragraph with leave balance
         new Paragraph({
           children: [
             new TextRun({ text: '        La această dată dl./d-na ', size: 22, font: 'Times New Roman' }),
             new TextRun({ text: data.employeeName || '________________________', size: 22, font: 'Times New Roman', bold: true }),
             new TextRun({ text: ' are dreptul la ', size: 22, font: 'Times New Roman' }),
-            new TextRun({ text: '______', size: 22, font: 'Times New Roman', bold: true }),
+            new TextRun({ text: data.totalLeaveDays?.toString() || '______', size: 22, font: 'Times New Roman', bold: true }),
             new TextRun({ text: ' zile concediu de odihnă, din care ', size: 22, font: 'Times New Roman' }),
-            new TextRun({ text: '______', size: 22, font: 'Times New Roman', bold: true }),
+            new TextRun({ text: data.remainingLeaveDays?.toString() || '______', size: 22, font: 'Times New Roman', bold: true }),
             new TextRun({ text: ' aferente anului ', size: 22, font: 'Times New Roman' }),
             new TextRun({ text: data.year || '______', size: 22, font: 'Times New Roman', bold: true }),
             new TextRun({ text: ' şi ', size: 22, font: 'Times New Roman' }),
-            new TextRun({ text: '______', size: 22, font: 'Times New Roman', bold: true }),
+            new TextRun({ text: data.previousYearRemainingDays?.toString() || '0', size: 22, font: 'Times New Roman', bold: true }),
             new TextRun({ text: ' aferente anului ', size: 22, font: 'Times New Roman' }),
             new TextRun({ text: previousYear, size: 22, font: 'Times New Roman', bold: true }),
             new TextRun({ text: '.', size: 22, font: 'Times New Roman' })
