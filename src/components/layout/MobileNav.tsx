@@ -17,13 +17,14 @@ import {
   UserCog,
   Shield,
   UserCircle,
+  ClipboardList,
 } from 'lucide-react';
 import { useState } from 'react';
 
 const MobileNav = () => {
   const location = useLocation();
   const { signOut } = useAuth();
-  const { role } = useUserRole();
+  const { role, canManageHR } = useUserRole();
   const [isOpen, setIsOpen] = useState(false);
 
   const menuItems = [
@@ -34,6 +35,7 @@ const MobileNav = () => {
     { icon: FileText, label: 'Documente', path: '/documents' },
     { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
+    ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(role === 'super_admin' ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];

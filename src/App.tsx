@@ -13,6 +13,7 @@ import CalendarPage from "./pages/CalendarPage";
 import Settings from "./pages/Settings";
 import HumanResources from "./pages/HumanResources";
 import MyProfile from "./pages/MyProfile";
+import HRManagement from "./pages/HRManagement";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/hr" element={<HumanResources />} />
             <Route path="/my-profile" element={<MyProfile />} />
+            <Route path="/hr-management" element={<HRManagement />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
