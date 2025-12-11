@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, Globe, Mail, Phone } from 'lucide-react';
+import { ExternalLink, FileText, Globe, Mail } from 'lucide-react';
 
 const links = [
   { 
@@ -10,20 +10,14 @@ const links = [
   { 
     icon: Mail, 
     label: 'Webmail', 
-    url: '#',
+    url: 'https://mail.icmpp.ro',
     color: 'bg-accent/10 text-accent'
   },
   { 
     icon: FileText, 
-    label: 'Regulamente', 
+    label: 'Actualizări Intranet-Noutăți', 
     url: '#',
     color: 'bg-info/10 text-info'
-  },
-  { 
-    icon: Phone, 
-    label: 'Contacte utile', 
-    url: '#',
-    color: 'bg-success/10 text-success'
   },
 ];
 
