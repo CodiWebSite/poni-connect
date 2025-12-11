@@ -30,7 +30,8 @@ import {
   CheckCircle,
   XCircle,
   Download,
-  FileSpreadsheet
+  FileSpreadsheet,
+  FilePlus2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -133,6 +134,17 @@ const HRManagement = () => {
   
   // New employee dialog - now for selecting incomplete employees
   const [showNewEmployee, setShowNewEmployee] = useState(false);
+  
+  // Manual leave registration dialog
+  const [showManualLeave, setShowManualLeave] = useState(false);
+  const [manualLeaveForm, setManualLeaveForm] = useState({
+    employee_id: '',
+    start_date: '',
+    end_date: '',
+    notes: ''
+  });
+  const [manualLeaveFile, setManualLeaveFile] = useState<File | null>(null);
+  const [submittingManualLeave, setSubmittingManualLeave] = useState(false);
   const [selectedNewEmployee, setSelectedNewEmployee] = useState<string>('');
 
   useEffect(() => {
@@ -352,10 +364,120 @@ const HRManagement = () => {
     const employee = employees.find(e => e.user_id === userId);
     if (employee) {
       setShowNewEmployee(false);
-      setSelectedNewEmployee('');
       openEditDialog(employee);
     }
   };
+
+  // Calculate working days between two dates (excluding weekends)
+  const calculateWorkingDays = (startDate: string, endDate: string): number => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    let count = 0;
+    const current = new Date(start);
+    
+    while (current <= end) {
+      const dayOfWeek = current.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return count;
+  };
+
+  const submitManualLeave = async () => {
+    if (!manualLeaveForm.employee_id || !manualLeaveForm.start_date || !manualLeaveForm.end_date) {
+      toast({ title: 'Eroare', description: 'Completați toate câmpurile obligatorii.', variant: 'destructive' });
+      return;
+    }
+
+    const employee = employees.find(e => e.user_id === manualLeaveForm.employee_id);
+    if (!employee?.record) {
+      toast({ title: 'Eroare', description: 'Angajatul nu are date de angajare configurate.', variant: 'destructive' });
+      return;
+    }
+
+    const numberOfDays = calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date);
+    
+    if (numberOfDays > employee.record.remaining_leave_days) {
+      toast({ 
+        title: 'Eroare', 
+        description: `Angajatul are doar ${employee.record.remaining_leave_days} zile disponibile.`, 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    setSubmittingManualLeave(true);
+
+    try {
+      let fileUrl: string | null = null;
+
+      // Upload scanned document if provided
+      if (manualLeaveFile) {
+        const fileExt = manualLeaveFile.name.split('.').pop();
+        const fileName = `${manualLeaveForm.employee_id}/manual-leave-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('employee-documents')
+          .upload(fileName, manualLeaveFile);
+
+        if (uploadError) throw uploadError;
+        fileUrl = fileName;
+
+        // Create document record for the scanned leave request
+        await supabase.from('employee_documents').insert({
+          user_id: manualLeaveForm.employee_id,
+          document_type: 'cerere_concediu_scanata',
+          name: `Cerere concediu ${format(new Date(manualLeaveForm.start_date), 'dd.MM.yyyy')} - ${format(new Date(manualLeaveForm.end_date), 'dd.MM.yyyy')}`,
+          description: manualLeaveForm.notes || 'Cerere de concediu scanată - înregistrare manuală',
+          file_url: fileName,
+          uploaded_by: user?.id
+        });
+      }
+
+      // Create HR request record as approved
+      await supabase.from('hr_requests').insert({
+        user_id: manualLeaveForm.employee_id,
+        request_type: 'concediu',
+        status: 'approved',
+        approver_id: user?.id,
+        details: {
+          startDate: manualLeaveForm.start_date,
+          endDate: manualLeaveForm.end_date,
+          numberOfDays,
+          manualEntry: true,
+          scannedDocumentUrl: fileUrl,
+          notes: manualLeaveForm.notes
+        }
+      });
+
+      // Update employee leave balance
+      const newUsedDays = employee.record.used_leave_days + numberOfDays;
+      await supabase
+        .from('employee_records')
+        .update({ used_leave_days: newUsedDays })
+        .eq('id', employee.record.id);
+
+      toast({ 
+        title: 'Succes', 
+        description: `Cererea de concediu a fost înregistrată. ${numberOfDays} zile deduse din sold.` 
+      });
+
+      // Reset form and refresh
+      setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '' });
+      setManualLeaveFile(null);
+      setShowManualLeave(false);
+      fetchEmployees();
+    } catch (error) {
+      console.error('Manual leave error:', error);
+      toast({ title: 'Eroare', description: 'Nu s-a putut înregistra cererea.', variant: 'destructive' });
+    }
+
+    setSubmittingManualLeave(false);
+  };
+
+  const selectedManualEmployee = employees.find(e => e.user_id === manualLeaveForm.employee_id);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -415,10 +537,14 @@ const HRManagement = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={exportLeaveReport} disabled={employees.length === 0}>
               <FileSpreadsheet className="w-4 h-4 mr-2" />
               Export Concedii
+            </Button>
+            <Button variant="outline" onClick={() => setShowManualLeave(true)}>
+              <FilePlus2 className="w-4 h-4 mr-2" />
+              Concediu Manual
             </Button>
             <Button onClick={() => setShowNewEmployee(true)}>
               <UserPlus className="w-4 h-4 mr-2" />
@@ -928,6 +1054,129 @@ const HRManagement = () => {
             >
               <Edit className="w-4 h-4 mr-2" />
               Completează Date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Leave Registration Dialog */}
+      <Dialog open={showManualLeave} onOpenChange={(open) => {
+        setShowManualLeave(open);
+        if (!open) {
+          setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '' });
+          setManualLeaveFile(null);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FilePlus2 className="w-5 h-5" />
+              Înregistrare Manuală Concediu
+            </DialogTitle>
+            <DialogDescription>
+              Adăugați o cerere de concediu pe hârtie pentru un angajat
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Angajat *</Label>
+              <Select
+                value={manualLeaveForm.employee_id}
+                onValueChange={(v) => setManualLeaveForm({ ...manualLeaveForm, employee_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selectați angajatul..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.filter(e => e.record).map((emp) => (
+                    <SelectItem key={emp.user_id} value={emp.user_id}>
+                      <div className="flex items-center gap-2">
+                        <span>{emp.full_name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {emp.record?.remaining_leave_days} zile disp.
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedManualEmployee && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Sold concediu: </span>
+                  <span className="font-bold text-primary">
+                    {selectedManualEmployee.record?.remaining_leave_days} zile disponibile
+                  </span>
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data Început *</Label>
+                <Input
+                  type="date"
+                  value={manualLeaveForm.start_date}
+                  onChange={(e) => setManualLeaveForm({ ...manualLeaveForm, start_date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Data Sfârșit *</Label>
+                <Input
+                  type="date"
+                  value={manualLeaveForm.end_date}
+                  onChange={(e) => setManualLeaveForm({ ...manualLeaveForm, end_date: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {manualLeaveForm.start_date && manualLeaveForm.end_date && (
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <p className="text-sm font-medium">
+                  Număr zile lucrătoare: {calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date)}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Observații</Label>
+              <Input
+                placeholder="ex: Cerere originală depusă la secretariat"
+                value={manualLeaveForm.notes}
+                onChange={(e) => setManualLeaveForm({ ...manualLeaveForm, notes: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cerere Scanată (opțional)</Label>
+              <Input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setManualLeaveFile(e.target.files?.[0] || null)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Încărcați cererea de concediu scanată (PDF sau imagine)
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowManualLeave(false)}>
+              Anulează
+            </Button>
+            <Button 
+              onClick={submitManualLeave} 
+              disabled={submittingManualLeave || !manualLeaveForm.employee_id || !manualLeaveForm.start_date || !manualLeaveForm.end_date}
+            >
+              {submittingManualLeave ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle className="w-4 h-4 mr-2" />
+              )}
+              Înregistrează
             </Button>
           </DialogFooter>
         </DialogContent>
