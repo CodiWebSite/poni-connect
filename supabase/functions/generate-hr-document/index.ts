@@ -5,26 +5,131 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Valid request types
+const VALID_REQUEST_TYPES = ['concediu', 'adeverinta', 'delegatie', 'demisie'] as const;
+type RequestType = typeof VALID_REQUEST_TYPES[number];
+
+interface HRRequestDetails {
+  startDate?: string;
+  endDate?: string;
+  reason?: string;
+  purpose?: string;
+  destination?: string;
+  employeeName: string;
+  department: string;
+  position: string;
+  numberOfDays?: number;
+  year?: string;
+  replacementName?: string;
+  replacementPosition?: string;
+}
+
 interface HRRequestBody {
-  requestType: 'concediu' | 'adeverinta' | 'delegatie' | 'demisie';
-  details: {
-    startDate?: string;
-    endDate?: string;
-    reason?: string;
-    purpose?: string;
-    destination?: string;
-    employeeName: string;
-    department: string;
-    position: string;
-    numberOfDays?: number;
-    year?: string;
-    replacementName?: string;
-    replacementPosition?: string;
+  requestType: RequestType;
+  details: HRRequestDetails;
+}
+
+// Input validation function
+function validateInput(body: unknown): { valid: true; data: HRRequestBody } | { valid: false; error: string } {
+  if (!body || typeof body !== 'object') {
+    return { valid: false, error: 'Request body must be a valid JSON object' };
+  }
+
+  const { requestType, details } = body as Record<string, unknown>;
+
+  // Validate requestType
+  if (!requestType || typeof requestType !== 'string') {
+    return { valid: false, error: 'requestType is required and must be a string' };
+  }
+
+  if (!VALID_REQUEST_TYPES.includes(requestType as RequestType)) {
+    return { valid: false, error: `Invalid requestType. Must be one of: ${VALID_REQUEST_TYPES.join(', ')}` };
+  }
+
+  // Validate details object
+  if (!details || typeof details !== 'object') {
+    return { valid: false, error: 'details is required and must be an object' };
+  }
+
+  const d = details as Record<string, unknown>;
+
+  // Required fields
+  if (!d.employeeName || typeof d.employeeName !== 'string' || d.employeeName.trim().length === 0) {
+    return { valid: false, error: 'details.employeeName is required and must be a non-empty string' };
+  }
+
+  if (!d.department || typeof d.department !== 'string' || d.department.trim().length === 0) {
+    return { valid: false, error: 'details.department is required and must be a non-empty string' };
+  }
+
+  if (!d.position || typeof d.position !== 'string' || d.position.trim().length === 0) {
+    return { valid: false, error: 'details.position is required and must be a non-empty string' };
+  }
+
+  // String length limits to prevent abuse
+  const MAX_STRING_LENGTH = 500;
+  const stringFields = ['employeeName', 'department', 'position', 'reason', 'purpose', 'destination', 'year', 'replacementName', 'replacementPosition'];
+  
+  for (const field of stringFields) {
+    const value = d[field];
+    if (value !== undefined && value !== null) {
+      if (typeof value !== 'string') {
+        return { valid: false, error: `details.${field} must be a string` };
+      }
+      if (value.length > MAX_STRING_LENGTH) {
+        return { valid: false, error: `details.${field} exceeds maximum length of ${MAX_STRING_LENGTH} characters` };
+      }
+    }
+  }
+
+  // Validate date format (YYYY-MM-DD) if provided
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (d.startDate !== undefined && d.startDate !== null) {
+    if (typeof d.startDate !== 'string' || !dateRegex.test(d.startDate)) {
+      return { valid: false, error: 'details.startDate must be in YYYY-MM-DD format' };
+    }
+  }
+
+  if (d.endDate !== undefined && d.endDate !== null) {
+    if (typeof d.endDate !== 'string' || !dateRegex.test(d.endDate)) {
+      return { valid: false, error: 'details.endDate must be in YYYY-MM-DD format' };
+    }
+  }
+
+  // Validate numberOfDays if provided
+  if (d.numberOfDays !== undefined && d.numberOfDays !== null) {
+    if (typeof d.numberOfDays !== 'number' || d.numberOfDays < 1 || d.numberOfDays > 365) {
+      return { valid: false, error: 'details.numberOfDays must be a number between 1 and 365' };
+    }
+  }
+
+  // Sanitize string inputs
+  const sanitizedDetails: HRRequestDetails = {
+    employeeName: String(d.employeeName).trim().slice(0, MAX_STRING_LENGTH),
+    department: String(d.department).trim().slice(0, MAX_STRING_LENGTH),
+    position: String(d.position).trim().slice(0, MAX_STRING_LENGTH),
+    startDate: d.startDate ? String(d.startDate).trim() : undefined,
+    endDate: d.endDate ? String(d.endDate).trim() : undefined,
+    reason: d.reason ? String(d.reason).trim().slice(0, MAX_STRING_LENGTH) : undefined,
+    purpose: d.purpose ? String(d.purpose).trim().slice(0, MAX_STRING_LENGTH) : undefined,
+    destination: d.destination ? String(d.destination).trim().slice(0, MAX_STRING_LENGTH) : undefined,
+    numberOfDays: d.numberOfDays as number | undefined,
+    year: d.year ? String(d.year).trim().slice(0, 4) : undefined,
+    replacementName: d.replacementName ? String(d.replacementName).trim().slice(0, MAX_STRING_LENGTH) : undefined,
+    replacementPosition: d.replacementPosition ? String(d.replacementPosition).trim().slice(0, MAX_STRING_LENGTH) : undefined,
+  };
+
+  return {
+    valid: true,
+    data: {
+      requestType: requestType as RequestType,
+      details: sanitizedDetails,
+    },
   };
 }
 
 // For concediu, we use the template-based document, not AI generation
-const generateLeaveRequestData = (details: HRRequestBody['details']) => {
+const generateLeaveRequestData = (details: HRRequestDetails) => {
   const startDate = details.startDate ? new Date(details.startDate) : null;
   const endDate = details.endDate ? new Date(details.endDate) : null;
   
@@ -73,7 +178,7 @@ perioadei de preaviz conform legislației muncii, formula de încheiere politico
   return prompts[requestType] || prompts.adeverinta;
 };
 
-const getUserPrompt = (requestType: string, details: HRRequestBody['details']) => {
+const getUserPrompt = (requestType: string, details: HRRequestDetails) => {
   const { employeeName, department, position, startDate, endDate, reason, purpose, destination } = details;
   
   switch (requestType) {
@@ -117,9 +222,30 @@ serve(async (req) => {
   }
 
   try {
-    const { requestType, details }: HRRequestBody = await req.json();
+    // Parse and validate input
+    let rawBody: unknown;
+    try {
+      rawBody = await req.json();
+    } catch {
+      console.error("Invalid JSON in request body");
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const validation = validateInput(rawBody);
+    if (!validation.valid) {
+      console.error("Validation error:", validation.error);
+      return new Response(
+        JSON.stringify({ error: validation.error }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { requestType, details } = validation.data;
     
-    console.log("Generating HR document:", requestType);
+    console.log("Generating HR document:", requestType, "for:", details.employeeName);
 
     // For leave requests, return structured data for template rendering
     if (requestType === 'concediu') {
@@ -178,7 +304,7 @@ serve(async (req) => {
       throw new Error("No content generated");
     }
 
-    console.log("Document generated successfully");
+    console.log("Document generated successfully for:", details.employeeName);
 
     return new Response(
       JSON.stringify({ type: requestType, content: generatedContent }),
