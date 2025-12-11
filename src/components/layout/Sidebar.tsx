@@ -11,7 +11,6 @@ import {
   Calendar,
   Settings,
   LogOut,
-  FlaskConical,
   ChevronLeft,
   ChevronRight,
   UserCog,
@@ -50,9 +49,11 @@ const Sidebar = () => {
       {/* Header */}
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-sidebar-primary to-accent rounded-xl flex items-center justify-center flex-shrink-0">
-            <FlaskConical className="w-5 h-5 text-sidebar-primary-foreground" />
-          </div>
+          <img 
+            src="/logo-icmpp.png" 
+            alt="ICMPP Logo" 
+            className="w-10 h-10 object-contain flex-shrink-0"
+          />
           {!isCollapsed && (
             <div className="overflow-hidden">
               <h1 className="font-display font-bold text-lg leading-tight">ICMPP</h1>
