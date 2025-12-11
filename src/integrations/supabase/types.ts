@@ -110,6 +110,45 @@ export type Database = {
         }
         Relationships: []
       }
+      hr_requests: {
+        Row: {
+          approver_id: string | null
+          approver_notes: string | null
+          created_at: string
+          details: Json
+          generated_content: string | null
+          id: string
+          request_type: Database["public"]["Enums"]["hr_request_type"]
+          status: Database["public"]["Enums"]["hr_request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approver_id?: string | null
+          approver_notes?: string | null
+          created_at?: string
+          details?: Json
+          generated_content?: string | null
+          id?: string
+          request_type: Database["public"]["Enums"]["hr_request_type"]
+          status?: Database["public"]["Enums"]["hr_request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approver_id?: string | null
+          approver_notes?: string | null
+          created_at?: string
+          details?: Json
+          generated_content?: string | null
+          id?: string
+          request_type?: Database["public"]["Enums"]["hr_request_type"]
+          status?: Database["public"]["Enums"]["hr_request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -186,6 +225,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      hr_request_status: "pending" | "approved" | "rejected"
+      hr_request_type: "concediu" | "adeverinta" | "delegatie" | "demisie"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -314,6 +355,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      hr_request_status: ["pending", "approved", "rejected"],
+      hr_request_type: ["concediu", "adeverinta", "delegatie", "demisie"],
     },
   },
 } as const

@@ -13,6 +13,7 @@ import {
   LogOut,
   FlaskConical,
   Menu,
+  UserCog,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -21,6 +22,7 @@ const menuItems = [
   { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
   { icon: Users, label: 'Angajați', path: '/employees' },
   { icon: FileText, label: 'Documente', path: '/documents' },
+  { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
   { icon: Calendar, label: 'Calendar', path: '/calendar' },
   { icon: Settings, label: 'Setări', path: '/settings' },
 ];
