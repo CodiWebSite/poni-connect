@@ -18,8 +18,12 @@ import {
   Building,
   Phone,
   Clock,
-  Loader2
+  Loader2,
+  Cake,
+  Save
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -29,6 +33,7 @@ interface Profile {
   position: string | null;
   phone: string | null;
   avatar_url: string | null;
+  birth_date: string | null;
 }
 
 interface EmployeeRecord {
@@ -68,6 +73,8 @@ const MyProfile = () => {
   const [employeeRecord, setEmployeeRecord] = useState<EmployeeRecord | null>(null);
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [birthDate, setBirthDate] = useState('');
+  const [savingBirthDate, setSavingBirthDate] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -83,12 +90,13 @@ const MyProfile = () => {
     // Fetch profile
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('full_name, department, position, phone, avatar_url')
+      .select('full_name, department, position, phone, avatar_url, birth_date')
       .eq('user_id', user.id)
       .single();
     
     if (profileData) {
       setProfile(profileData);
+      setBirthDate(profileData.birth_date || '');
     }
 
     // Fetch employee record
@@ -141,6 +149,25 @@ const MyProfile = () => {
       console.error('Download error:', error);
       toast({ title: 'Eroare', description: 'Nu s-a putut descărca fișierul.', variant: 'destructive' });
     }
+  };
+
+  const saveBirthDate = async () => {
+    if (!user) return;
+    
+    setSavingBirthDate(true);
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ birth_date: birthDate || null })
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast({ title: 'Eroare', description: 'Nu s-a putut salva data nașterii.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Salvat', description: 'Data nașterii a fost actualizată.' });
+    }
+    
+    setSavingBirthDate(false);
   };
 
   const roleLabels: Record<string, string> = {
@@ -209,6 +236,36 @@ const MyProfile = () => {
                     <span className="font-medium">{profile.phone}</span>
                   </div>
                 )}
+              </div>
+
+              {/* Birthday Section */}
+              <div className="pt-4 border-t space-y-3">
+                <Label className="flex items-center gap-2 text-sm">
+                  <Cake className="w-4 h-4 text-pink-500" />
+                  Data Nașterii
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={saveBirthDate}
+                    disabled={savingBirthDate}
+                  >
+                    {savingBirthDate ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Setează-ți ziua de naștere pentru a apărea pe dashboard
+                </p>
               </div>
             </CardContent>
           </Card>
