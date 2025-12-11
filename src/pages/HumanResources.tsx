@@ -407,6 +407,24 @@ const HumanResources = () => {
       console.error('Error processing approval:', error);
       toast({ title: 'Eroare', description: 'Nu s-a putut procesa cererea.', variant: 'destructive' });
     } else {
+      // If approved and it's a leave request, update the employee's leave balance
+      if (approved && selectedRequest.request_type === 'concediu' && selectedRequest.details.numberOfDays) {
+        const { data: currentRecord } = await supabase
+          .from('employee_records')
+          .select('used_leave_days')
+          .eq('user_id', selectedRequest.user_id)
+          .maybeSingle();
+
+        if (currentRecord) {
+          await supabase
+            .from('employee_records')
+            .update({
+              used_leave_days: currentRecord.used_leave_days + selectedRequest.details.numberOfDays
+            })
+            .eq('user_id', selectedRequest.user_id);
+        }
+      }
+
       // Send notification to the employee
       await createNotification(
         selectedRequest.user_id,
