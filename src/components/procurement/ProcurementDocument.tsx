@@ -152,7 +152,8 @@ export function ProcurementDocument({
                 <th className="border border-gray-400 p-2 text-left">Denumire și caracteristici tehnice</th>
                 <th className="border border-gray-400 p-2 text-center">U/M</th>
                 <th className="border border-gray-400 p-2 text-center">Cant.</th>
-                <th className="border border-gray-400 p-2 text-right">Preț unitar fără TVA (lei)</th>
+              <th className="border border-gray-400 p-2 text-right">Preț unitar fără TVA (lei)</th>
+                <th className="border border-gray-400 p-2 text-right">Preț unitar cu TVA (lei)</th>
               </tr>
             </thead>
             <tbody>
@@ -161,29 +162,35 @@ export function ProcurementDocument({
                 <td className="border border-gray-400 p-1 text-center text-[10px]">(2)</td>
                 <td className="border border-gray-400 p-1 text-center text-[10px]">(3)</td>
                 <td className="border border-gray-400 p-1 text-center text-[10px]">(4)</td>
+                <td className="border border-gray-400 p-1 text-center text-[10px]">(5)</td>
                 <td className="border border-gray-400 p-1 text-center text-[10px]">(6)</td>
               </tr>
-              {items.map((item, index) => (
-                <tr key={index}>
-                  <td className="border border-gray-400 p-2 text-center">{index + 1}</td>
-                  <td className="border border-gray-400 p-2">
-                    {item.name}
-                    {item.specifications && (
-                      <span className="text-gray-600 text-[10px] block">{item.specifications}</span>
-                    )}
-                  </td>
-                  <td className="border border-gray-400 p-2 text-center">{item.unit}</td>
-                  <td className="border border-gray-400 p-2 text-center">{item.quantity}</td>
-                  <td className="border border-gray-400 p-2 text-right">{item.estimatedPrice.toLocaleString('ro-RO')}</td>
-                </tr>
-              ))}
+              {items.map((item, index) => {
+                const priceWithVAT = item.estimatedPrice * 1.19;
+                return (
+                  <tr key={index}>
+                    <td className="border border-gray-400 p-2 text-center">{index + 1}</td>
+                    <td className="border border-gray-400 p-2">
+                      {item.name}
+                      {item.specifications && (
+                        <span className="text-gray-600 text-[10px] block">{item.specifications}</span>
+                      )}
+                    </td>
+                    <td className="border border-gray-400 p-2 text-center">{item.unit}</td>
+                    <td className="border border-gray-400 p-2 text-center">{item.quantity}</td>
+                    <td className="border border-gray-400 p-2 text-right">{item.estimatedPrice.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="border border-gray-400 p-2 text-right">{priceWithVAT.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
-        {/* Total cu TVA */}
-        <div className="text-right font-bold text-sm sm:text-base">
-          <p>TOTAL cu TVA: {totalCuTVA.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lei</p>
+        {/* Totals */}
+        <div className="text-right font-bold text-sm sm:text-base space-y-1">
+          <p>TOTAL fără TVA: {totalFaraTVA.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lei</p>
+          <p>TOTAL cu TVA (19%): {totalCuTVA.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lei</p>
         </div>
 
         {/* Financing Source */}
