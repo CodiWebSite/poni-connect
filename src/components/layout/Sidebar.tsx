@@ -16,6 +16,7 @@ import {
   ChevronRight,
   UserCog,
   Shield,
+  UserCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,6 +28,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: Users, label: 'Angajați', path: '/employees' },
     { icon: FileText, label: 'Documente', path: '/documents' },

@@ -104,6 +104,7 @@ const HumanResources = () => {
   
   const [requests, setRequests] = useState<HRRequest[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [employeeRecord, setEmployeeRecord] = useState<{ remaining_leave_days: number; total_leave_days: number; used_leave_days: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   
@@ -148,6 +149,7 @@ const HumanResources = () => {
     if (user) {
       fetchProfile();
       fetchRequests();
+      fetchEmployeeRecord();
       
       const channel = supabase
         .channel('hr-requests-changes')
@@ -175,6 +177,20 @@ const HumanResources = () => {
     
     if (data) {
       setProfile(data);
+    }
+  };
+
+  const fetchEmployeeRecord = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('employee_records')
+      .select('remaining_leave_days, total_leave_days, used_leave_days')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (data) {
+      setEmployeeRecord(data);
     }
   };
 
@@ -252,6 +268,18 @@ const HumanResources = () => {
     if (!startDate || !numberOfDays) {
       toast({ title: 'Eroare', description: 'Completați toate câmpurile obligatorii.', variant: 'destructive' });
       return;
+    }
+
+    // Check leave balance
+    if (employeeRecord) {
+      if (employeeRecord.remaining_leave_days < numberOfDays) {
+        toast({ 
+          title: 'Zile insuficiente', 
+          description: `Nu aveți suficiente zile de concediu disponibile. Aveți ${employeeRecord.remaining_leave_days} zile, dar ați solicitat ${numberOfDays} zile.`, 
+          variant: 'destructive' 
+        });
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -514,6 +542,36 @@ const HumanResources = () => {
 
                   {requestType === 'concediu' && (
                     <>
+                      {/* Leave Balance Info */}
+                      {employeeRecord ? (
+                        <div className={`p-4 rounded-lg border ${employeeRecord.remaining_leave_days < numberOfDays && numberOfDays > 0 ? 'bg-destructive/10 border-destructive' : 'bg-green-500/10 border-green-500/30'}`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-5 h-5 text-green-600" />
+                              <span className="font-medium">Sold zile concediu:</span>
+                            </div>
+                            <div className="text-right">
+                              <span className={`text-xl font-bold ${employeeRecord.remaining_leave_days < numberOfDays && numberOfDays > 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                {employeeRecord.remaining_leave_days}
+                              </span>
+                              <span className="text-muted-foreground text-sm"> / {employeeRecord.total_leave_days} zile</span>
+                            </div>
+                          </div>
+                          {numberOfDays > 0 && employeeRecord.remaining_leave_days < numberOfDays && (
+                            <p className="text-destructive text-sm mt-2">
+                              ⚠️ Nu aveți suficiente zile disponibile pentru această cerere!
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-lg border bg-amber-500/10 border-amber-500/30">
+                          <p className="text-amber-700 text-sm flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            Datele despre concediu nu sunt configurate. Contactați HR.
+                          </p>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Data Început *</Label>

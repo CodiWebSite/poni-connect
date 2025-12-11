@@ -77,6 +77,75 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_type: string
+          file_url: string | null
+          id: string
+          name: string
+          uploaded_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_type: string
+          file_url?: string | null
+          id?: string
+          name: string
+          uploaded_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_type?: string
+          file_url?: string | null
+          id?: string
+          name?: string
+          uploaded_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      employee_records: {
+        Row: {
+          contract_type: string | null
+          created_at: string
+          hire_date: string | null
+          id: string
+          remaining_leave_days: number | null
+          total_leave_days: number
+          updated_at: string
+          used_leave_days: number
+          user_id: string
+        }
+        Insert: {
+          contract_type?: string | null
+          created_at?: string
+          hire_date?: string | null
+          id?: string
+          remaining_leave_days?: number | null
+          total_leave_days?: number
+          updated_at?: string
+          used_leave_days?: number
+          user_id: string
+        }
+        Update: {
+          contract_type?: string | null
+          created_at?: string
+          hire_date?: string | null
+          id?: string
+          remaining_leave_days?: number | null
+          total_leave_days?: number
+          updated_at?: string
+          used_leave_days?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string
