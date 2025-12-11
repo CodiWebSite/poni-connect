@@ -131,20 +131,9 @@ const HRManagement = () => {
   // View requests dialog
   const [viewingRequests, setViewingRequests] = useState<EmployeeWithData | null>(null);
   
-  // New employee dialog
+  // New employee dialog - now for selecting incomplete employees
   const [showNewEmployee, setShowNewEmployee] = useState(false);
-  const [newEmployeeForm, setNewEmployeeForm] = useState({
-    email: '',
-    password: '',
-    full_name: '',
-    department: '',
-    position: '',
-    phone: '',
-    hire_date: '',
-    contract_type: 'nedeterminat',
-    total_leave_days: 21
-  });
-  const [creatingEmployee, setCreatingEmployee] = useState(false);
+  const [selectedNewEmployee, setSelectedNewEmployee] = useState<string>('');
 
   useEffect(() => {
     if (canManageHR) {
@@ -354,41 +343,18 @@ const HRManagement = () => {
     }
   };
 
-  const createNewEmployee = async () => {
-    if (!newEmployeeForm.email || !newEmployeeForm.password || !newEmployeeForm.full_name) {
-      toast({ title: 'Eroare', description: 'Completați toate câmpurile obligatorii.', variant: 'destructive' });
-      return;
-    }
+  // Get incomplete employees (missing department, position, or no employee_record)
+  const incompleteEmployees = employees.filter(e => 
+    !e.department || !e.position || !e.record
+  );
 
-    setCreatingEmployee(true);
-
-    try {
-      // Note: Creating users requires admin privileges or service role
-      // For now, we'll just show a message that the user needs to be created through auth
-      toast({ 
-        title: 'Informație', 
-        description: 'Pentru a crea un cont nou, utilizatorul trebuie să se înregistreze prin pagina de autentificare. După înregistrare, puteți configura datele angajatului aici.',
-        variant: 'default'
-      });
-      
+  const selectEmployeeToComplete = (userId: string) => {
+    const employee = employees.find(e => e.user_id === userId);
+    if (employee) {
       setShowNewEmployee(false);
-      setNewEmployeeForm({
-        email: '',
-        password: '',
-        full_name: '',
-        department: '',
-        position: '',
-        phone: '',
-        hire_date: '',
-        contract_type: 'nedeterminat',
-        total_leave_days: 21
-      });
-    } catch (error) {
-      console.error('Error:', error);
-      toast({ title: 'Eroare', description: 'Nu s-a putut crea angajatul.', variant: 'destructive' });
+      setSelectedNewEmployee('');
+      openEditDialog(employee);
     }
-
-    setCreatingEmployee(false);
   };
 
   const getInitials = (name: string) => {
@@ -884,32 +850,84 @@ const HRManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* New Employee Dialog */}
-      <Dialog open={showNewEmployee} onOpenChange={setShowNewEmployee}>
+      {/* New Employee Dialog - Select from incomplete profiles */}
+      <Dialog open={showNewEmployee} onOpenChange={(open) => {
+        setShowNewEmployee(open);
+        if (!open) setSelectedNewEmployee('');
+      }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Adaugă Angajat Nou</DialogTitle>
+            <DialogTitle>Completare Date Angajat</DialogTitle>
             <DialogDescription>
-              Notă: Angajatul trebuie să se înregistreze prin pagina de autentificare. După înregistrare, puteți configura datele aici.
+              Selectați un angajat înregistrat pentru a-i completa datele (departament, funcție, etc.)
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            {incompleteEmployees.length > 0 ? (
+              <>
+                <div className="space-y-2">
+                  <Label>Selectați Angajatul</Label>
+                  <Select
+                    value={selectedNewEmployee}
+                    onValueChange={setSelectedNewEmployee}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Alegeți un angajat..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {incompleteEmployees.map((emp) => (
+                        <SelectItem key={emp.user_id} value={emp.user_id}>
+                          <div className="flex items-center gap-2">
+                            <span>{emp.full_name}</span>
+                            {!emp.record && (
+                              <Badge variant="outline" className="text-xs">Fără date angajare</Badge>
+                            )}
+                            {(!emp.department || !emp.position) && (
+                              <Badge variant="outline" className="text-xs">Profil incomplet</Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <Users className="w-4 h-4 inline mr-1" />
+                    {incompleteEmployees.length} angajați cu date incomplete
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                <p className="font-medium">Toți angajații au datele complete!</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Nu există angajați care necesită completarea datelor.
+                </p>
+              </div>
+            )}
+            
             <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-              <p className="text-sm text-amber-700">
-                Pentru a adăuga un angajat nou în sistem:
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                <strong>Notă:</strong> Angajații noi trebuie să se înregistreze prin pagina de autentificare (/auth). 
+                După înregistrare, vor apărea automat în această listă.
               </p>
-              <ol className="text-sm text-amber-700 list-decimal list-inside mt-2 space-y-1">
-                <li>Angajatul se înregistrează la /auth cu email și parolă</li>
-                <li>După înregistrare, reveniți aici pentru a-i configura datele</li>
-                <li>Setați rolul din pagina de Administrare (dacă sunteți super_admin)</li>
-              </ol>
             </div>
           </div>
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewEmployee(false)}>
-              Am înțeles
+              Anulează
+            </Button>
+            <Button 
+              onClick={() => selectEmployeeToComplete(selectedNewEmployee)}
+              disabled={!selectedNewEmployee}
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Completează Date
             </Button>
           </DialogFooter>
         </DialogContent>
