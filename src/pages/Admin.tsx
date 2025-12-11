@@ -173,24 +173,26 @@ const Admin = () => {
                 {filteredUsers.map((u) => (
                   <div
                     key={u.user_id}
-                    className="flex items-center gap-4 p-4 bg-secondary/30 rounded-lg border border-border"
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 bg-secondary/30 rounded-lg border border-border"
                   >
-                    <Avatar className="w-10 h-10">
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {getInitials(u.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-foreground truncate">{u.full_name}</p>
-                        <Badge className={roleBadgeColors[u.role]} variant="secondary">
-                          {roleLabels[u.role]}
-                        </Badge>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Avatar className="w-10 h-10 flex-shrink-0">
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {getInitials(u.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium text-foreground truncate">{u.full_name}</p>
+                          <Badge className={`${roleBadgeColors[u.role]} text-xs`} variant="secondary">
+                            {roleLabels[u.role]}
+                          </Badge>
+                        </div>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                          {u.position || 'Fără funcție'} • {u.department || 'Fără departament'}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {u.position || 'Fără funcție'} • {u.department || 'Fără departament'}
-                      </p>
                     </div>
                     
                     <Select
@@ -198,7 +200,7 @@ const Admin = () => {
                       onValueChange={(value) => updateUserRole(u.user_id, u.role_id, value as AppRole)}
                       disabled={updating === u.user_id}
                     >
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className="w-full sm:w-48">
                         {updating === u.user_id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Search, FileText, Megaphone, Users, Calendar, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +34,7 @@ export const GlobalSearch = () => {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -136,6 +139,7 @@ export const GlobalSearch = () => {
     navigate(result.url);
     setQuery('');
     setShowResults(false);
+    setMobileOpen(false);
   };
 
   const clearSearch = () => {
@@ -144,70 +148,108 @@ export const GlobalSearch = () => {
     setShowResults(false);
   };
 
-  return (
-    <div ref={wrapperRef} className="relative hidden md:block">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-      <Input
-        placeholder="Caută anunțuri, documente, angajați..."
-        className="pl-10 pr-8 w-72 bg-secondary/50"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => setShowResults(true)}
-      />
-      {query && (
-        <button
-          onClick={clearSearch}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      )}
-
-      {showResults && query.length >= 2 && (
-        <div className="absolute top-full mt-2 w-96 bg-card border border-border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
-          {loading ? (
-            <div className="p-4 text-center text-muted-foreground">
-              Căutare...
-            </div>
-          ) : results.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
-              Nu s-au găsit rezultate pentru "{query}"
-            </div>
-          ) : (
-            <div className="py-2">
-              {results.map((result) => {
-                const Icon = typeIcons[result.type];
-                return (
-                  <button
-                    key={`${result.type}-${result.id}`}
-                    onClick={() => handleResultClick(result)}
-                    className="w-full px-4 py-3 flex items-start gap-3 hover:bg-secondary/50 transition-colors text-left"
-                  >
-                    <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                      result.type === 'announcement' && "bg-primary/10 text-primary",
-                      result.type === 'document' && "bg-accent/10 text-accent",
-                      result.type === 'employee' && "bg-info/10 text-info",
-                      result.type === 'event' && "bg-success/10 text-success"
-                    )}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate">{result.title}</p>
-                      {result.description && (
-                        <p className="text-sm text-muted-foreground truncate">{result.description}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground/70 mt-1">
-                        {typeLabels[result.type]}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+  const SearchResultsList = () => (
+    <>
+      {loading ? (
+        <div className="p-4 text-center text-muted-foreground">
+          Căutare...
         </div>
-      )}
-    </div>
+      ) : results.length === 0 && query.length >= 2 ? (
+        <div className="p-4 text-center text-muted-foreground">
+          Nu s-au găsit rezultate pentru "{query}"
+        </div>
+      ) : results.length > 0 ? (
+        <div className="py-2">
+          {results.map((result) => {
+            const Icon = typeIcons[result.type];
+            return (
+              <button
+                key={`${result.type}-${result.id}`}
+                onClick={() => handleResultClick(result)}
+                className="w-full px-4 py-3 flex items-start gap-3 hover:bg-secondary/50 transition-colors text-left"
+              >
+                <div className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                  result.type === 'announcement' && "bg-primary/10 text-primary",
+                  result.type === 'document' && "bg-accent/10 text-accent",
+                  result.type === 'employee' && "bg-info/10 text-info",
+                  result.type === 'event' && "bg-success/10 text-success"
+                )}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground truncate">{result.title}</p>
+                  {result.description && (
+                    <p className="text-sm text-muted-foreground truncate">{result.description}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    {typeLabels[result.type]}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Search */}
+      <div ref={wrapperRef} className="relative hidden md:block">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Caută anunțuri, documente, angajați..."
+          className="pl-10 pr-8 w-72 bg-secondary/50"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setShowResults(true)}
+        />
+        {query && (
+          <button
+            onClick={clearSearch}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+
+        {showResults && query.length >= 2 && (
+          <div className="absolute top-full mt-2 w-96 bg-card border border-border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+            <SearchResultsList />
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Search Button + Dialog */}
+      <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
+        <DialogTrigger asChild>
+          <Button variant="ghost" size="icon" className="md:hidden">
+            <Search className="w-5 h-5" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Căutare</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Caută..."
+                className="pl-10"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="max-h-72 overflow-y-auto">
+              <SearchResultsList />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
