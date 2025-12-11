@@ -188,13 +188,13 @@ const Procurement = () => {
       setRequests(userRequests.map(r => ({ ...r, items: r.items as unknown as ProcurementItem[] })) as ProcurementRequest[]);
     }
 
-    // Fetch pending approvals if user is in procurement department
+    // Fetch all requests for approval (pending, approved, rejected)
     if (canApprove) {
       const { data: approvals } = await supabase
         .from('procurement_requests')
         .select('*')
         .neq('user_id', user.id)
-        .in('status', ['pending_department_head', 'pending_director', 'pending_procurement', 'pending_cfp'])
+        .in('status', ['pending_department_head', 'pending_director', 'pending_procurement', 'pending_cfp', 'approved', 'rejected'])
         .order('created_at', { ascending: false });
 
       if (approvals) {
