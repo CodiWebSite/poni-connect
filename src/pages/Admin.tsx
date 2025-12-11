@@ -196,7 +196,7 @@ const Admin = () => {
                     <Select
                       value={u.role}
                       onValueChange={(value) => updateUserRole(u.user_id, u.role_id, value as AppRole)}
-                      disabled={updating === u.user_id || u.user_id === user?.id}
+                      disabled={updating === u.user_id}
                     >
                       <SelectTrigger className="w-48">
                         {updating === u.user_id ? (

@@ -412,11 +412,13 @@ const HumanResources = () => {
           numberOfDays: request.details.numberOfDays || 0,
           year: request.details.year || new Date().getFullYear().toString(),
           startDate: request.details.startDate || '',
-          endDate: request.details.endDate || '',
+          endDate: request.details.endDate,
           replacementName: request.details.replacementName,
           replacementPosition: request.details.replacementPosition,
           employeeSignature: request.employee_signature || undefined,
+          employeeSignedAt: request.employee_signed_at || undefined,
           departmentHeadSignature: request.department_head_signature || undefined,
+          departmentHeadSignedAt: request.department_head_signed_at || undefined,
           status: request.status
         });
       } else {
