@@ -13,6 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { ProcurementDocument } from '@/components/procurement/ProcurementDocument';
+import { SignaturePad } from '@/components/hr/SignaturePad';
+import { generateProcurementDocx } from '@/utils/generateDocx';
 import { 
   ShoppingCart, 
   Plus, 
@@ -29,7 +32,9 @@ import {
   Building,
   Calendar,
   DollarSign,
-  User
+  User,
+  Download,
+  PenTool
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -66,10 +71,19 @@ interface ProcurementRequest {
   director_approved_at: string | null;
   director_notes: string | null;
   rejection_reason: string | null;
+  employee_signature: string | null;
+  employee_signed_at: string | null;
+  approver_signature: string | null;
+  approver_signed_at: string | null;
+  procurement_officer_id: string | null;
   requester?: {
     full_name: string;
     department: string | null;
+    position?: string | null;
   };
+  approver?: {
+    full_name: string;
+  } | null;
 }
 
 interface Profile {
@@ -134,6 +148,9 @@ const Procurement = () => {
   const [viewingRequest, setViewingRequest] = useState<ProcurementRequest | null>(null);
   const [approvalNotes, setApprovalNotes] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [showDocumentView, setShowDocumentView] = useState(false);
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [signingAs, setSigningAs] = useState<'employee' | 'approver'>('employee');
 
   // Only achizitii_contabilitate role can approve
   const canApprove = isProcurement;
@@ -181,18 +198,30 @@ const Procurement = () => {
         .order('created_at', { ascending: false });
 
       if (approvals) {
-        // Fetch requester info for each request
+        // Fetch requester and approver info for each request
         const requestsWithRequester = await Promise.all(
           approvals.map(async (req) => {
             const { data: requesterProfile } = await supabase
               .from('profiles')
-              .select('full_name, department')
+              .select('full_name, department, position')
               .eq('user_id', req.user_id)
               .single();
+            
+            let approver = null;
+            if (req.procurement_officer_id) {
+              const { data: approverProfile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('user_id', req.procurement_officer_id)
+                .single();
+              approver = approverProfile;
+            }
+            
             return { 
               ...req, 
               items: req.items as unknown as ProcurementItem[],
-              requester: requesterProfile 
+              requester: requesterProfile,
+              approver
             } as ProcurementRequest;
           })
         );
@@ -401,6 +430,77 @@ const Procurement = () => {
       toast({ title: 'Trimis', description: 'Referatul a fost trimis spre aprobare.' });
       fetchData();
     }
+  };
+
+  const handleSignature = async (signatureData: string) => {
+    if (!viewingRequest || !user) return;
+
+    setProcessing(true);
+    const updateData: any = {};
+
+    if (signingAs === 'employee') {
+      updateData.employee_signature = signatureData;
+      updateData.employee_signed_at = new Date().toISOString();
+    } else {
+      updateData.approver_signature = signatureData;
+      updateData.approver_signed_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
+      .from('procurement_requests')
+      .update(updateData)
+      .eq('id', viewingRequest.id);
+
+    if (error) {
+      toast({ title: 'Eroare', description: 'Nu s-a putut salva semnătura.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Succes', description: 'Semnătura a fost salvată.' });
+      setViewingRequest({ ...viewingRequest, ...updateData });
+      setShowSignaturePad(false);
+      fetchData();
+    }
+
+    setProcessing(false);
+  };
+
+  const handleDownloadDocx = async () => {
+    if (!viewingRequest || !profile) return;
+
+    // Get approver name if available
+    let approverName = viewingRequest.approver?.full_name;
+    if (!approverName && viewingRequest.procurement_officer_id) {
+      const { data: approverProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', viewingRequest.procurement_officer_id)
+        .single();
+      approverName = approverProfile?.full_name;
+    }
+
+    await generateProcurementDocx({
+      requestNumber: viewingRequest.request_number,
+      requesterName: viewingRequest.requester?.full_name || profile.full_name,
+      department: viewingRequest.department,
+      position: viewingRequest.requester?.position || profile.position || undefined,
+      title: viewingRequest.title,
+      description: viewingRequest.description,
+      justification: viewingRequest.justification,
+      category: viewingRequest.category,
+      urgency: viewingRequest.urgency,
+      items: viewingRequest.items,
+      estimatedValue: viewingRequest.estimated_value,
+      currency: viewingRequest.currency,
+      budgetSource: viewingRequest.budget_source || undefined,
+      createdAt: viewingRequest.created_at,
+      employeeSignature: viewingRequest.employee_signature || undefined,
+      employeeSignedAt: viewingRequest.employee_signed_at || undefined,
+      approverSignature: viewingRequest.approver_signature || undefined,
+      approverSignedAt: viewingRequest.approver_signed_at || undefined,
+      approverName: approverName || undefined,
+      status: viewingRequest.status
+    });
+
+    toast({ title: 'Descărcat', description: 'Documentul DOCX a fost generat.' });
   };
 
   if (loading) {
@@ -804,94 +904,115 @@ const Procurement = () => {
       </Dialog>
 
       {/* View/Approve Request Dialog */}
-      <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setApprovalNotes(''); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setApprovalNotes(''); setShowDocumentView(false); setShowSignaturePad(false); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <span className="font-mono text-sm">{viewingRequest?.request_number}</span>
-              {viewingRequest && (
-                <Badge variant={statusConfig[viewingRequest.status]?.variant}>
-                  {statusConfig[viewingRequest.status]?.label}
-                </Badge>
-              )}
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm">{viewingRequest?.request_number}</span>
+                {viewingRequest && (
+                  <Badge variant={statusConfig[viewingRequest.status]?.variant}>
+                    {statusConfig[viewingRequest.status]?.label}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowDocumentView(!showDocumentView)}>
+                  <FileText className="w-4 h-4 mr-1" />
+                  {showDocumentView ? 'Vedere simplă' : 'Document formal'}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
+                  <Download className="w-4 h-4 mr-1" />
+                  Descarcă DOCX
+                </Button>
+              </div>
             </DialogTitle>
           </DialogHeader>
 
           {viewingRequest && (
             <div className="space-y-4 py-4">
-              <div>
-                <h3 className="font-semibold text-lg">{viewingRequest.title}</h3>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Badge variant="outline">{categoryLabels[viewingRequest.category]}</Badge>
-                  <Badge className={urgencyLabels[viewingRequest.urgency]?.color}>
-                    {urgencyLabels[viewingRequest.urgency]?.label}
-                  </Badge>
-                </div>
-              </div>
+              {showDocumentView ? (
+                <ProcurementDocument
+                  requestNumber={viewingRequest.request_number}
+                  requesterName={viewingRequest.requester?.full_name || profile?.full_name || ''}
+                  department={viewingRequest.department}
+                  position={viewingRequest.requester?.position || profile?.position || undefined}
+                  title={viewingRequest.title}
+                  description={viewingRequest.description}
+                  justification={viewingRequest.justification}
+                  category={viewingRequest.category}
+                  urgency={viewingRequest.urgency}
+                  items={viewingRequest.items}
+                  estimatedValue={viewingRequest.estimated_value}
+                  currency={viewingRequest.currency}
+                  budgetSource={viewingRequest.budget_source || undefined}
+                  createdAt={viewingRequest.created_at}
+                  employeeSignature={viewingRequest.employee_signature}
+                  employeeSignedAt={viewingRequest.employee_signed_at}
+                  approverSignature={viewingRequest.approver_signature}
+                  approverSignedAt={viewingRequest.approver_signed_at}
+                  approverName={viewingRequest.approver?.full_name}
+                  status={viewingRequest.status}
+                />
+              ) : (
+                <>
+                  <div>
+                    <h3 className="font-semibold text-lg">{viewingRequest.title}</h3>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge variant="outline">{categoryLabels[viewingRequest.category]}</Badge>
+                      <Badge className={urgencyLabels[viewingRequest.urgency]?.color}>
+                        {urgencyLabels[viewingRequest.urgency]?.label}
+                      </Badge>
+                    </div>
+                  </div>
 
-              {viewingRequest.requester && (
-                <div className="flex items-center gap-4 text-sm p-3 bg-muted rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span>{viewingRequest.requester.full_name}</span>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Descriere</Label>
+                    <p className="text-sm">{viewingRequest.description}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4" />
-                    <span>{viewingRequest.department}</span>
+
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Justificare</Label>
+                    <p className="text-sm">{viewingRequest.justification}</p>
                   </div>
+
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="font-medium">Total estimat: {viewingRequest.estimated_value.toLocaleString()} {viewingRequest.currency}</p>
+                  </div>
+                </>
+              )}
+
+              {/* Signature section */}
+              {showSignaturePad ? (
+                <div className="space-y-3 pt-4 border-t">
+                  <div className="flex justify-between items-center">
+                    <Label>Semnătură {signingAs === 'employee' ? 'Solicitant' : 'Aprobare'}</Label>
+                    <Button variant="ghost" size="sm" onClick={() => setShowSignaturePad(false)}>Anulează</Button>
+                  </div>
+                  <SignaturePad onSave={handleSignature} />
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2 pt-4 border-t">
+                  {/* Employee can sign their own request */}
+                  {viewingRequest.user_id === user?.id && !viewingRequest.employee_signature && (
+                    <Button variant="outline" onClick={() => { setSigningAs('employee'); setShowSignaturePad(true); }}>
+                      <PenTool className="w-4 h-4 mr-2" />
+                      Semnează ca solicitant
+                    </Button>
+                  )}
+                  
+                  {/* Approver can sign when approving */}
+                  {canApprove && viewingRequest.status.startsWith('pending') && viewingRequest.user_id !== user?.id && !viewingRequest.approver_signature && (
+                    <Button variant="outline" onClick={() => { setSigningAs('approver'); setShowSignaturePad(true); }}>
+                      <PenTool className="w-4 h-4 mr-2" />
+                      Semnează pentru aprobare
+                    </Button>
+                  )}
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Descriere</Label>
-                <p className="text-sm">{viewingRequest.description}</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Justificare</Label>
-                <p className="text-sm">{viewingRequest.justification}</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Articole</Label>
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="text-left p-2">Denumire</th>
-                        <th className="text-center p-2">Cant.</th>
-                        <th className="text-center p-2">U.M.</th>
-                        <th className="text-right p-2">Preț</th>
-                        <th className="text-right p-2">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(viewingRequest.items as ProcurementItem[]).map((item, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="p-2">{item.name}</td>
-                          <td className="p-2 text-center">{item.quantity}</td>
-                          <td className="p-2 text-center">{item.unit}</td>
-                          <td className="p-2 text-right">{item.estimatedPrice.toLocaleString()}</td>
-                          <td className="p-2 text-right font-medium">
-                            {(item.quantity * item.estimatedPrice).toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-muted">
-                      <tr>
-                        <td colSpan={4} className="p-2 text-right font-medium">Total:</td>
-                        <td className="p-2 text-right font-bold">
-                          {viewingRequest.estimated_value.toLocaleString()} {viewingRequest.currency}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-
               {/* Approval section */}
-              {canApprove && viewingRequest.status.startsWith('pending') && viewingRequest.user_id !== user?.id && (
+              {canApprove && viewingRequest.status.startsWith('pending') && viewingRequest.user_id !== user?.id && !showSignaturePad && (
                 <div className="space-y-3 pt-4 border-t">
                   <Label>Note / Comentarii</Label>
                   <Textarea
@@ -901,20 +1022,11 @@ const Procurement = () => {
                     rows={2}
                   />
                   <div className="flex gap-2">
-                    <Button 
-                      variant="destructive" 
-                      onClick={() => handleApproval(false)}
-                      disabled={processing}
-                      className="flex-1"
-                    >
+                    <Button variant="destructive" onClick={() => handleApproval(false)} disabled={processing} className="flex-1">
                       {processing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
                       Respinge
                     </Button>
-                    <Button 
-                      onClick={() => handleApproval(true)}
-                      disabled={processing}
-                      className="flex-1"
-                    >
+                    <Button onClick={() => handleApproval(true)} disabled={processing} className="flex-1">
                       {processing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                       Aprobă
                     </Button>
