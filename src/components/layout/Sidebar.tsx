@@ -19,6 +19,8 @@ import {
   ClipboardList,
   ShoppingCart,
   Lightbulb,
+  BookOpen,
+  Bot,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -36,6 +38,8 @@ const Sidebar = () => {
     { icon: FileText, label: 'Documente', path: '/documents' },
     { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
     { icon: ShoppingCart, label: 'Achiziții Publice', path: '/procurement' },
+    { icon: BookOpen, label: 'Knowledge Base', path: '/knowledge-base' },
+    { icon: Bot, label: 'Asistent AI', path: '/ai-assistant' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
     { icon: Lightbulb, label: 'Sugestii', path: '/suggestions' },
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
