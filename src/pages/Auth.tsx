@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '@/integrations/supabase/client';
 
-const TURNSTILE_SITE_KEY = '0x4AAAAAACGCLULQZJnOlaaQ';
+const TURNSTILE_SITE_KEY = '0x4AAAAAACGNQ32sLxuYBXgD';
 
 const loginSchema = z.object({
   email: z.string().email('Adresă de email invalidă'),
