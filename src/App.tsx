@@ -17,6 +17,7 @@ import HRManagement from "./pages/HRManagement";
 import Procurement from "./pages/Procurement";
 import Admin from "./pages/Admin";
 import IntranetUpdates from "./pages/IntranetUpdates";
+import Suggestions from "./pages/Suggestions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/intranet-updates" element={<IntranetUpdates />} />
+            <Route path="/suggestions" element={<Suggestions />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

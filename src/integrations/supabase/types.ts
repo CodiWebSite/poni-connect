@@ -446,6 +446,48 @@ export type Database = {
         }
         Relationships: []
       }
+      suggestions: {
+        Row: {
+          admin_response: string | null
+          category: string
+          created_at: string
+          description: string
+          id: string
+          responded_at: string | null
+          responded_by: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          category?: string
+          created_at?: string
+          description: string
+          id?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

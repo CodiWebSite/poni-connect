@@ -18,6 +18,7 @@ import {
   UserCircle,
   ClipboardList,
   ShoppingCart,
+  Lightbulb,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -36,6 +37,7 @@ const Sidebar = () => {
     { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
     { icon: ShoppingCart, label: 'Achiziții Publice', path: '/procurement' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
+    { icon: Lightbulb, label: 'Sugestii', path: '/suggestions' },
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(role === 'super_admin' ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
