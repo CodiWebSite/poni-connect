@@ -93,12 +93,12 @@ export const GlobalSearch = () => {
         })));
       }
 
-      // Search employees
+      // Search employees - use employee_directory view (excludes sensitive phone data)
       const { data: employees } = await supabase
-        .from('profiles')
+        .from('employee_directory')
         .select('id, full_name, department, position')
         .or(`full_name.ilike.%${query}%,department.ilike.%${query}%,position.ilike.%${query}%`)
-        .limit(3);
+        .limit(3) as { data: Array<{ id: string; full_name: string; department: string | null; position: string | null }> | null };
 
       if (employees) {
         searchResults.push(...employees.map(e => ({
