@@ -3,20 +3,20 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Mail, Phone, Building2, Users } from 'lucide-react';
+import { Search, Building2, Users } from 'lucide-react';
 
-interface Profile {
+// Interface for employee directory view (excludes phone for privacy)
+interface EmployeeDirectoryProfile {
   id: string;
   full_name: string;
   department: string | null;
   position: string | null;
-  phone: string | null;
   avatar_url: string | null;
   user_id: string;
 }
 
 const Employees = () => {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<EmployeeDirectoryProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -25,10 +25,12 @@ const Employees = () => {
   }, []);
 
   const fetchProfiles = async () => {
+    // Use employee_directory view which excludes sensitive phone data
+    // Phone numbers are only visible to HR or the user themselves via their profile
     const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('full_name');
+      .from('employee_directory')
+      .select('id, user_id, full_name, department, position, avatar_url')
+      .order('full_name') as { data: EmployeeDirectoryProfile[] | null };
 
     if (data) {
       setProfiles(data);
@@ -114,12 +116,6 @@ const Employees = () => {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Building2 className="w-4 h-4" />
                     <span className="truncate">{profile.department}</span>
-                  </div>
-                )}
-                {profile.phone && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="w-4 h-4" />
-                    <span>{profile.phone}</span>
                   </div>
                 )}
               </div>

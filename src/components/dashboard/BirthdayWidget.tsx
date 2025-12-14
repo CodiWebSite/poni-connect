@@ -23,10 +23,12 @@ const BirthdayWidget = () => {
   }, []);
 
   const fetchBirthdays = async () => {
+    // Use employee_directory view which excludes sensitive data (phone)
+    // Cast to 'any' since the view is not in generated types
     const { data: profiles, error } = await supabase
-      .from('profiles')
+      .from('employee_directory')
       .select('user_id, full_name, birth_date, department')
-      .not('birth_date', 'is', null);
+      .not('birth_date', 'is', null) as { data: ProfileWithBirthday[] | null; error: any };
 
     if (error) {
       console.error('Error fetching birthdays:', error);
