@@ -18,6 +18,19 @@ interface Update {
 const updates: Update[] = [
   {
     date: '14 Decembrie 2024',
+    version: '1.8.1',
+    title: 'Îmbunătățiri de Securitate',
+    type: 'security',
+    description: 'Am implementat măsuri suplimentare de protecție a datelor personale.',
+    details: [
+      'Numerele de telefon sunt acum vizibile doar pentru utilizator și HR',
+      'Directorul de angajați folosește acum o vizualizare securizată',
+      'Autentificare obligatorie pentru funcțiile AI Assistant și generare documente HR',
+      'Politici RLS îmbunătățite pentru notificări'
+    ]
+  },
+  {
+    date: '14 Decembrie 2024',
     version: '1.8.0',
     title: 'Knowledge Base și Asistent AI',
     type: 'feature',
