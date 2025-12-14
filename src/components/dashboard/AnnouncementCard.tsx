@@ -38,8 +38,8 @@ const AnnouncementCard = ({ title, content, priority, isPinned, createdAt, autho
               {config.label}
             </Badge>
           </div>
-          <h3 className="font-semibold text-foreground mb-2 line-clamp-1">{title}</h3>
-          <p className="text-sm text-muted-foreground line-clamp-2">{content}</p>
+          <h3 className="font-semibold text-foreground mb-2">{title}</h3>
+          <p className="text-sm text-muted-foreground whitespace-pre-line">{content}</p>
         </div>
       </div>
       <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">

@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Shield, Users, FileText, Bell, Calendar, Settings, UserCog, Cake } from 'lucide-react';
+import { ArrowLeft, Sparkles, Shield, Users, FileText, Bell, Calendar, Settings, UserCog, Cake, BookOpen, Bot } from 'lucide-react';
 
 interface Update {
   date: string;
@@ -16,6 +16,20 @@ interface Update {
 }
 
 const updates: Update[] = [
+  {
+    date: '14 Decembrie 2024',
+    version: '1.8.0',
+    title: 'Knowledge Base și Asistent AI',
+    type: 'feature',
+    description: 'Am lansat două funcționalități noi pentru accesul rapid la informații și asistență.',
+    details: [
+      'Knowledge Base cu articole despre proceduri HR și funcționalități intranet',
+      'Asistent AI care răspunde la întrebări folosind informațiile din Knowledge Base',
+      'Căutare și filtrare articole după categorie',
+      'Administrare articole pentru rolurile Admin și HR',
+      'Integrare AI securizată cu autentificare obligatorie'
+    ]
+  },
   {
     date: '11 Decembrie 2024',
     version: '1.7.0',
