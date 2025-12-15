@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from '@/components/hr/SignaturePad';
 import { LeaveRequestDocument } from '@/components/hr/LeaveRequestDocument';
 import { generateLeaveRequestDocx, generateGenericDocx } from '@/utils/generateDocx';
+import QESSigningButton from '@/components/signature/QESSigningButton';
 import { 
   FileText, 
   Send, 
@@ -718,6 +719,19 @@ const HumanResources = () => {
                         existingSignature={employeeSignature}
                       />
 
+                      {/* QES Signing Option */}
+                      {user && profile && employeeSignature && (
+                        <QESSigningButton
+                          documentId={`leave-request-${user.id}-${Date.now()}`}
+                          documentType="hr_request"
+                          documentContent=""
+                          signerEmail={user.email || ''}
+                          signerName={profile.full_name}
+                          reason={`Cerere concediu ${numberOfDays} zile - ${startDate}`}
+                          disabled={!startDate || !numberOfDays}
+                        />
+                      )}
+
                       <Button 
                         onClick={submitLeaveRequest} 
                         disabled={submitting || !employeeSignature || !startDate}
@@ -768,6 +782,19 @@ const HumanResources = () => {
                               onChange={(e) => setPurpose(e.target.value)} 
                             />
                           </div>
+
+                          {/* QES Signing for Delegation */}
+                          {user && profile && (
+                            <QESSigningButton
+                              documentId={`delegation-${user.id}-${Date.now()}`}
+                              documentType="hr_request"
+                              documentContent=""
+                              signerEmail={user.email || ''}
+                              signerName={profile.full_name}
+                              reason={`Delegație ${destination} - ${startDate}`}
+                              disabled={!startDate || !destination}
+                            />
+                          )}
                         </>
                       )}
 
