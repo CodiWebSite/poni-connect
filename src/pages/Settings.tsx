@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { User, Building2, Phone, Save } from 'lucide-react';
+import AdvancedSignatureInfo from '@/components/signature/AdvancedSignatureInfo';
 
 interface Profile {
   full_name: string;
@@ -88,7 +89,7 @@ const Settings = () => {
 
   return (
     <MainLayout title="Setări" description="Gestionează-ți profilul și preferințele">
-      <div className="max-w-2xl">
+      <div className="max-w-4xl space-y-6">
         <div className="bg-card rounded-xl border border-border">
           <div className="p-6 border-b border-border">
             <h2 className="text-lg font-semibold">Profilul meu</h2>
@@ -169,6 +170,9 @@ const Settings = () => {
             </Button>
           </form>
         </div>
+
+        {/* Advanced Signature Section */}
+        <AdvancedSignatureInfo />
       </div>
     </MainLayout>
   );
