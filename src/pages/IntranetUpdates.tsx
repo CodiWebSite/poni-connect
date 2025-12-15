@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Shield, Users, FileText, Bell, Calendar, Settings, UserCog, Cake, BookOpen, Bot } from 'lucide-react';
+import { ArrowLeft, Sparkles, Shield, Users, FileText, Bell, Calendar, Settings, UserCog, Cake, BookOpen, Bot, Cloud, History, ShieldCheck } from 'lucide-react';
 
 interface Update {
   date: string;
@@ -16,6 +16,20 @@ interface Update {
 }
 
 const updates: Update[] = [
+  {
+    date: '15 Decembrie 2024',
+    version: '1.9.0',
+    title: 'Widget Meteo, Istoric Activitate și Semnătură Avansată',
+    type: 'feature',
+    description: 'Am adăugat funcționalități noi pe dashboard și pregătirea pentru semnătură electronică calificată.',
+    details: [
+      'Widget meteo pentru Iași cu temperatură, umiditate și vânt în timp real',
+      'Istoric activitate personală - vizualizare rapidă a cererilor HR, achiziții și documente',
+      'Secțiune informativă despre semnătura electronică calificată (QES)',
+      'Lista furnizorilor acreditați pentru certificate digitale în România',
+      'Pregătirea infrastructurii pentru integrare cu servicii de semnătură avansată'
+    ]
+  },
   {
     date: '14 Decembrie 2024',
     version: '1.8.1',

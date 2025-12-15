@@ -5,6 +5,8 @@ import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import QuickLinks from '@/components/dashboard/QuickLinks';
 import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
 import BirthdayWidget from '@/components/dashboard/BirthdayWidget';
+import WeatherWidget from '@/components/dashboard/WeatherWidget';
+import ActivityHistory from '@/components/dashboard/ActivityHistory';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Megaphone, FileText, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -152,6 +154,8 @@ const Dashboard = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          <WeatherWidget />
+          <ActivityHistory />
           <BirthdayWidget />
           <QuickLinks />
           <UpcomingEvents events={events} />
