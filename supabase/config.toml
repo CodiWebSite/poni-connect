@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.ai-assistant]
 verify_jwt = true
+
+[functions.qes-sign]
+verify_jwt = true
+
+[functions.qes-callback]
+verify_jwt = false
