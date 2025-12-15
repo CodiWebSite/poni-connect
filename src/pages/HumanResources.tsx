@@ -18,6 +18,10 @@ import { SignaturePad } from '@/components/hr/SignaturePad';
 import { LeaveRequestDocument } from '@/components/hr/LeaveRequestDocument';
 import { generateLeaveRequestDocx, generateGenericDocx } from '@/utils/generateDocx';
 import QESSigningButton from '@/components/signature/QESSigningButton';
+import LeaveCalendar from '@/components/hr/LeaveCalendar';
+import RequestWorkflowStatus from '@/components/hr/RequestWorkflowStatus';
+import HRRequestFilters, { FilterState } from '@/components/hr/HRRequestFilters';
+import HRExportButton from '@/components/hr/HRExportButton';
 import { 
   FileText, 
   Send, 
@@ -136,6 +140,16 @@ const HumanResources = () => {
   
   // View dialog
   const [viewRequest, setViewRequest] = useState<HRRequest | null>(null);
+
+  // Filters state
+  const [filters, setFilters] = useState<FilterState>({
+    search: '',
+    status: 'all',
+    type: 'all',
+    department: 'all',
+    dateFrom: '',
+    dateTo: ''
+  });
 
   // Calculate days when dates change
   useEffect(() => {
@@ -577,6 +591,51 @@ const HumanResources = () => {
     return false;
   });
 
+  // Get unique departments for filters
+  const departments = [...new Set(requests.map(r => r.details.department).filter(Boolean))];
+
+  // Apply filters to my requests
+  const filteredMyRequests = myRequests.filter(r => {
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      if (!r.details.employeeName?.toLowerCase().includes(searchLower) &&
+          !r.details.department?.toLowerCase().includes(searchLower)) {
+        return false;
+      }
+    }
+    if (filters.status !== 'all' && r.status !== filters.status) return false;
+    if (filters.type !== 'all' && r.request_type !== filters.type) return false;
+    if (filters.department !== 'all' && r.details.department !== filters.department) return false;
+    if (filters.dateFrom && new Date(r.created_at) < new Date(filters.dateFrom)) return false;
+    if (filters.dateTo && new Date(r.created_at) > new Date(filters.dateTo)) return false;
+    return true;
+  });
+
+  // Prepare leave calendar data
+  const leaveCalendarData = requests
+    .filter(r => r.request_type === 'concediu')
+    .map(r => ({
+      id: r.id,
+      user_id: r.user_id,
+      employee_name: r.details.employeeName || '',
+      department: r.details.department || '',
+      start_date: r.details.startDate || '',
+      end_date: r.details.endDate || r.details.startDate || '',
+      status: r.status as 'pending' | 'approved' | 'rejected',
+      number_of_days: r.details.numberOfDays || 0
+    }));
+
+  // Employees for export
+  const employeesForExport = [...new Set(requests.map(r => r.user_id))].map(userId => {
+    const req = requests.find(r => r.user_id === userId);
+    return {
+      user_id: userId,
+      full_name: req?.details.employeeName || '',
+      department: req?.details.department || null,
+      position: req?.details.position || null
+    };
+  });
+
   const canApprove = (request: HRRequest) => {
     return request.department_head_signature !== null;
   };
@@ -584,24 +643,36 @@ const HumanResources = () => {
   return (
     <MainLayout title="Resurse Umane" description="Generează și gestionează documente HR">
       <div className="space-y-6">
+        {/* Export Button for approvers */}
+        {canSeeApprovalTab && (
+          <div className="flex justify-end">
+            <HRExportButton requests={requests} employees={employeesForExport} />
+          </div>
+        )}
+
         <Tabs defaultValue="create" className="space-y-6">
           <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1">
-            <TabsTrigger value="create" className="flex-1 min-w-[120px] text-xs sm:text-sm">
+            <TabsTrigger value="create" className="flex-1 min-w-[100px] text-xs sm:text-sm">
               Creează
             </TabsTrigger>
-            <TabsTrigger value="my-requests" className="flex-1 min-w-[120px] text-xs sm:text-sm">
+            <TabsTrigger value="my-requests" className="flex-1 min-w-[100px] text-xs sm:text-sm">
               Cererile Mele
               {myRequests.length > 0 && (
                 <Badge variant="secondary" className="ml-1 sm:ml-2 text-xs">{myRequests.length}</Badge>
               )}
             </TabsTrigger>
             {canSeeApprovalTab && (
-              <TabsTrigger value="approve" className="flex-1 min-w-[100px] text-xs sm:text-sm">
-                Aprobări
-                {pendingRequests.length > 0 && (
-                  <Badge variant="destructive" className="ml-1 sm:ml-2 text-xs">{pendingRequests.length}</Badge>
-                )}
-              </TabsTrigger>
+              <>
+                <TabsTrigger value="calendar" className="flex-1 min-w-[100px] text-xs sm:text-sm">
+                  Calendar
+                </TabsTrigger>
+                <TabsTrigger value="approve" className="flex-1 min-w-[100px] text-xs sm:text-sm">
+                  Aprobări
+                  {pendingRequests.length > 0 && (
+                    <Badge variant="destructive" className="ml-1 sm:ml-2 text-xs">{pendingRequests.length}</Badge>
+                  )}
+                </TabsTrigger>
+              </>
             )}
           </TabsList>
 
@@ -912,77 +983,84 @@ const HumanResources = () => {
                 <CardTitle>Cererile Mele</CardTitle>
                 <CardDescription>Istoricul cererilor trimise și statusul acestora</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Filters */}
+                <HRRequestFilters
+                  onFiltersChange={setFilters}
+                  departments={departments}
+                  totalCount={myRequests.length}
+                  filteredCount={filteredMyRequests.length}
+                />
+
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
-                ) : myRequests.length === 0 ? (
+                ) : filteredMyRequests.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Nu aveți cereri trimise</p>
+                    <p>{myRequests.length === 0 ? 'Nu aveți cereri trimise' : 'Nicio cerere nu corespunde filtrelor'}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {myRequests.map((request) => (
+                    {filteredMyRequests.map((request) => (
                       <div 
                         key={request.id} 
-                        className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                        className="p-4 bg-muted/50 rounded-lg space-y-3"
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            {requestTypeIcons[request.request_type]}
-                          </div>
-                          <div>
-                            <p className="font-medium">{requestTypeLabels[request.request_type]}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {format(new Date(request.created_at), 'dd MMMM yyyy, HH:mm', { locale: ro })}
-                            </p>
-                            <div className="flex gap-2 mt-1">
-                              {request.employee_signature && (
-                                <Badge variant="outline" className="text-xs">
-                                  <PenTool className="w-3 h-3 mr-1" />
-                                  Semnat
-                                </Badge>
-                              )}
-                              {request.department_head_signature && (
-                                <Badge variant="outline" className="text-xs text-green-600">
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  Șef Dep.
-                                </Badge>
-                              )}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-4">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                              {requestTypeIcons[request.request_type]}
+                            </div>
+                            <div>
+                              <p className="font-medium">{requestTypeLabels[request.request_type]}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {format(new Date(request.created_at), 'dd MMMM yyyy, HH:mm', { locale: ro })}
+                              </p>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={statusConfig[request.status].variant}>
-                            {statusConfig[request.status].icon}
-                            <span className="ml-1">{statusConfig[request.status].label}</span>
-                          </Badge>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setViewRequest(request)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => downloadDocument(request)}
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                          {canDeleteRequest(request) && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant={statusConfig[request.status].variant}>
+                              {statusConfig[request.status].icon}
+                              <span className="ml-1">{statusConfig[request.status].label}</span>
+                            </Badge>
                             <Button 
                               variant="outline" 
                               size="sm"
-                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                              onClick={() => deleteRequest(request.id)}
+                              onClick={() => setViewRequest(request)}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Eye className="w-4 h-4" />
                             </Button>
-                          )}
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => downloadDocument(request)}
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                            {canDeleteRequest(request) && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                onClick={() => deleteRequest(request.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Workflow Status */}
+                        <div className="pt-2 border-t">
+                          <RequestWorkflowStatus
+                            employeeSigned={!!request.employee_signature}
+                            employeeSignedAt={request.employee_signed_at}
+                            departmentHeadSigned={!!request.department_head_signature}
+                            departmentHeadSignedAt={request.department_head_signed_at}
+                            status={request.status}
+                          />
                         </div>
                       </div>
                     ))}
@@ -991,6 +1069,16 @@ const HumanResources = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Calendar Tab */}
+          {canSeeApprovalTab && (
+            <TabsContent value="calendar">
+              <LeaveCalendar 
+                requests={leaveCalendarData} 
+                departments={departments}
+              />
+            </TabsContent>
+          )}
 
           {canSeeApprovalTab && (
             <TabsContent value="approve">
