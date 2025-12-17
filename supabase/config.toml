@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.hr-reminders]
 verify_jwt = false
+
+[functions.generate-reges-xml]
+verify_jwt = true
