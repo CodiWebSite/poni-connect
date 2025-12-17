@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { RegesExport } from '@/components/hr/RegesExport';
 import { 
   Users, 
   UserPlus, 
@@ -31,7 +32,8 @@ import {
   XCircle,
   Download,
   FileSpreadsheet,
-  FilePlus2
+  FilePlus2,
+  FileCode
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -523,12 +525,54 @@ const HRManagement = () => {
     return <Navigate to="/" replace />;
   }
 
+  // Prepare leave requests data for REGES export
+  const approvedLeaveRequests = employees.flatMap(emp => 
+    (emp.requests || [])
+      .filter(r => r.request_type === 'concediu' && r.status === 'approved')
+      .map(r => ({
+        id: r.id,
+        user_id: r.user_id,
+        employeeName: emp.full_name,
+        startDate: r.details?.startDate || '',
+        endDate: r.details?.endDate || '',
+        status: r.status
+      }))
+  );
+
   return (
     <MainLayout title="Gestiune HR" description="Administrare date angajați - Confidențial">
-      <div className="space-y-6">
-        {/* Header with actions */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <div className="relative flex-1 max-w-md w-full">
+      <Tabs defaultValue="employees" className="space-y-6">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+          <TabsList>
+            <TabsTrigger value="employees" className="gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Angajați</span>
+            </TabsTrigger>
+            <TabsTrigger value="reges" className="gap-2">
+              <FileCode className="h-4 w-4" />
+              <span className="hidden sm:inline">Export REGES</span>
+            </TabsTrigger>
+          </TabsList>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={exportLeaveReport} disabled={employees.length === 0}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Export Concedii</span>
+            </Button>
+            <Button variant="outline" onClick={() => setShowManualLeave(true)}>
+              <FilePlus2 className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Concediu Manual</span>
+            </Button>
+            <Button onClick={() => setShowNewEmployee(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Angajat Nou</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Employees Tab */}
+        <TabsContent value="employees" className="space-y-6">
+          {/* Search */}
+          <div className="relative max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Caută angajați..."
@@ -537,77 +581,60 @@ const HRManagement = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={exportLeaveReport} disabled={employees.length === 0}>
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
-              Export Concedii
-            </Button>
-            <Button variant="outline" onClick={() => setShowManualLeave(true)}>
-              <FilePlus2 className="w-4 h-4 mr-2" />
-              Concediu Manual
-            </Button>
-            <Button onClick={() => setShowNewEmployee(true)}>
-              <UserPlus className="w-4 h-4 mr-2" />
-              Angajat Nou
-            </Button>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Users className="w-8 h-8 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{employees.length}</p>
+                    <p className="text-xs text-muted-foreground">Total Angajați</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-8 h-8 text-blue-500" />
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {employees.reduce((acc, e) => acc + (e.documents?.length || 0), 0)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Documente</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-8 h-8 text-green-500" />
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {employees.filter(e => e.record).length}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Cu Date Complete</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-8 h-8 text-amber-500" />
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {employees.reduce((acc, e) => acc + (e.requests?.filter(r => r.status === 'pending').length || 0), 0)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Cereri Pending</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Users className="w-8 h-8 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold">{employees.length}</p>
-                  <p className="text-xs text-muted-foreground">Total Angajați</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <FileText className="w-8 h-8 text-blue-500" />
-                <div>
-                  <p className="text-2xl font-bold">
-                    {employees.reduce((acc, e) => acc + (e.documents?.length || 0), 0)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Documente</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-8 h-8 text-green-500" />
-                <div>
-                  <p className="text-2xl font-bold">
-                    {employees.filter(e => e.record).length}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Cu Date Complete</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Clock className="w-8 h-8 text-amber-500" />
-                <div>
-                  <p className="text-2xl font-bold">
-                    {employees.reduce((acc, e) => acc + (e.requests?.filter(r => r.status === 'pending').length || 0), 0)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Cereri Pending</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Employees List */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -747,7 +774,25 @@ const HRManagement = () => {
             )}
           </CardContent>
         </Card>
-      </div>
+        </TabsContent>
+
+        {/* REGES Export Tab */}
+        <TabsContent value="reges">
+          <RegesExport 
+            employees={employees.map(e => ({
+              user_id: e.user_id,
+              full_name: e.full_name,
+              department: e.department,
+              position: e.position,
+              record: e.record ? {
+                hire_date: e.record.hire_date,
+                contract_type: e.record.contract_type
+              } : undefined
+            }))}
+            leaveRequests={approvedLeaveRequests}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Employee Dialog */}
       <Dialog open={!!editingEmployee} onOpenChange={() => setEditingEmployee(null)}>
