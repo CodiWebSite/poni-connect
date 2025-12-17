@@ -53,6 +53,9 @@ export function useUserRole() {
   
   // Can manage procurement requests
   const canManageProcurement = ['admin', 'super_admin', 'director', 'achizitii_contabilitate'].includes(role || '');
+  
+  // Can manage secretariat functions
+  const canManageSecretariat = ['admin', 'super_admin', 'secretariat', 'director'].includes(role || '');
 
   return { 
     role, 
@@ -67,6 +70,7 @@ export function useUserRole() {
     canApproveHR,
     canManageHR,
     canManageProcurement,
+    canManageSecretariat,
     loading 
   };
 }

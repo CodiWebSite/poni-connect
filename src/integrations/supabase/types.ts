@@ -47,6 +47,60 @@ export type Database = {
         }
         Relationships: []
       }
+      audiences: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_minutes: number | null
+          host_id: string
+          id: string
+          notes: string | null
+          requester_email: string | null
+          requester_name: string
+          requester_organization: string | null
+          requester_phone: string | null
+          scheduled_date: string
+          status: Database["public"]["Enums"]["audience_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          host_id: string
+          id?: string
+          notes?: string | null
+          requester_email?: string | null
+          requester_name: string
+          requester_organization?: string | null
+          requester_phone?: string | null
+          scheduled_date: string
+          status?: Database["public"]["Enums"]["audience_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          host_id?: string
+          id?: string
+          notes?: string | null
+          requester_email?: string | null
+          requester_name?: string
+          requester_organization?: string | null
+          requester_phone?: string | null
+          scheduled_date?: string
+          status?: Database["public"]["Enums"]["audience_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       department_heads: {
         Row: {
           created_at: string
@@ -67,6 +121,60 @@ export type Database = {
           department?: string
           head_user_id?: string
           id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      document_registry: {
+        Row: {
+          category: string | null
+          created_at: string
+          direction: Database["public"]["Enums"]["document_direction"]
+          document_date: string
+          file_url: string | null
+          id: string
+          notes: string | null
+          recipient: string | null
+          registered_by: string | null
+          registration_number: string
+          resolved_at: string | null
+          resolved_by: string | null
+          sender: string | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          direction: Database["public"]["Enums"]["document_direction"]
+          document_date?: string
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          recipient?: string | null
+          registered_by?: string | null
+          registration_number: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sender?: string | null
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          direction?: Database["public"]["Enums"]["document_direction"]
+          document_date?: string
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          recipient?: string | null
+          registered_by?: string | null
+          registration_number?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sender?: string | null
+          subject?: string
           updated_at?: string
         }
         Relationships: []
@@ -548,6 +656,66 @@ export type Database = {
         }
         Relationships: []
       }
+      visitors: {
+        Row: {
+          badge_number: string | null
+          check_in_time: string | null
+          check_out_time: string | null
+          created_at: string
+          expected_date: string
+          full_name: string
+          host_department: string | null
+          host_name: string
+          id: string
+          id_document_number: string | null
+          id_document_type: string | null
+          notes: string | null
+          organization: string | null
+          purpose: string
+          registered_by: string | null
+          status: Database["public"]["Enums"]["visitor_status"]
+          updated_at: string
+        }
+        Insert: {
+          badge_number?: string | null
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          expected_date: string
+          full_name: string
+          host_department?: string | null
+          host_name: string
+          id?: string
+          id_document_number?: string | null
+          id_document_type?: string | null
+          notes?: string | null
+          organization?: string | null
+          purpose: string
+          registered_by?: string | null
+          status?: Database["public"]["Enums"]["visitor_status"]
+          updated_at?: string
+        }
+        Update: {
+          badge_number?: string | null
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          expected_date?: string
+          full_name?: string
+          host_department?: string | null
+          host_name?: string
+          id?: string
+          id_document_number?: string | null
+          id_document_type?: string | null
+          notes?: string | null
+          organization?: string | null
+          purpose?: string
+          registered_by?: string | null
+          status?: Database["public"]["Enums"]["visitor_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       employee_directory: {
@@ -591,11 +759,13 @@ export type Database = {
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
       can_manage_procurement: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_secretariat: { Args: { _user_id: string }; Returns: boolean }
       can_view_sensitive_profile_data: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
       }
       generate_procurement_request_number: { Args: never; Returns: string }
+      generate_registration_number: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -618,6 +788,8 @@ export type Database = {
         | "director"
         | "hr"
         | "achizitii_contabilitate"
+      audience_status: "pending" | "confirmed" | "completed" | "cancelled"
+      document_direction: "incoming" | "outgoing"
       hr_request_status: "pending" | "approved" | "rejected"
       hr_request_type: "concediu" | "adeverinta" | "delegatie" | "demisie"
       procurement_category:
@@ -637,6 +809,7 @@ export type Database = {
         | "approved"
         | "rejected"
       procurement_urgency: "normal" | "urgent" | "foarte_urgent"
+      visitor_status: "expected" | "checked_in" | "checked_out" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -774,6 +947,8 @@ export const Constants = {
         "hr",
         "achizitii_contabilitate",
       ],
+      audience_status: ["pending", "confirmed", "completed", "cancelled"],
+      document_direction: ["incoming", "outgoing"],
       hr_request_status: ["pending", "approved", "rejected"],
       hr_request_type: ["concediu", "adeverinta", "delegatie", "demisie"],
       procurement_category: [
@@ -795,6 +970,7 @@ export const Constants = {
         "rejected",
       ],
       procurement_urgency: ["normal", "urgent", "foarte_urgent"],
+      visitor_status: ["expected", "checked_in", "checked_out", "cancelled"],
     },
   },
 } as const

@@ -27,7 +27,7 @@ import { useState } from 'react';
 const Sidebar = () => {
   const location = useLocation();
   const { signOut } = useAuth();
-  const { role, canManageHR } = useUserRole();
+  const { role, canManageHR, canManageSecretariat } = useUserRole();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
@@ -38,11 +38,13 @@ const Sidebar = () => {
     { icon: FileText, label: 'Documente', path: '/documents' },
     { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
     { icon: ShoppingCart, label: 'Achiziții Publice', path: '/procurement' },
+    ...(canManageSecretariat ? [{ icon: FileText, label: 'Secretariat', path: '/secretariat' }] : []),
     { icon: BookOpen, label: 'Knowledge Base', path: '/knowledge-base' },
     { icon: Bot, label: 'Asistent AI', path: '/ai-assistant' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
     { icon: Lightbulb, label: 'Sugestii', path: '/suggestions' },
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
+    ...(canManageSecretariat ? [{ icon: ClipboardList, label: 'Gestiune Secretariat', path: '/secretariat-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(role === 'super_admin' ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
