@@ -3,12 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Archive, Search, Filter, FileDown, FileUp, Calendar } from 'lucide-react';
+import { Archive, Search, Filter, FileDown, FileUp, Calendar, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface ArchivedDocument {
   id: string;
@@ -19,6 +21,7 @@ interface ArchivedDocument {
   recipient: string | null;
   subject: string;
   category: string | null;
+  file_url: string | null;
   resolved_at: string | null;
   created_at: string;
 }
@@ -71,6 +74,28 @@ const DigitalArchive = () => {
 
     return matchesSearch && matchesCategory && matchesDirection;
   });
+
+  const downloadFile = async (fileUrl: string, registrationNumber: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('secretariat-documents')
+        .download(fileUrl);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${registrationNumber}_${fileUrl.split('/').pop()}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Eroare la descărcare');
+    }
+  };
 
   const stats = {
     total: documents?.length || 0,
@@ -188,13 +213,14 @@ const DigitalArchive = () => {
                     <TableHead>Expeditor/Destinatar</TableHead>
                     <TableHead>Subiect</TableHead>
                     <TableHead>Categorie</TableHead>
+                    <TableHead>Fișier</TableHead>
                     <TableHead>Rezolvat</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredDocuments?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         Nu s-au găsit documente în arhivă pentru criteriile selectate
                       </TableCell>
                     </TableRow>
@@ -226,6 +252,20 @@ const DigitalArchive = () => {
                           {doc.category ? (
                             <Badge variant="outline">{doc.category}</Badge>
                           ) : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {doc.file_url ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="gap-1 text-primary"
+                              onClick={() => downloadFile(doc.file_url!, doc.registration_number)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {doc.resolved_at && format(new Date(doc.resolved_at), 'dd.MM.yyyy', { locale: ro })}
