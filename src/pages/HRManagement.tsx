@@ -34,7 +34,8 @@ import {
   Download,
   FileSpreadsheet,
   FilePlus2,
-  FileCode
+  FileCode,
+  RefreshCw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -149,6 +150,7 @@ const HRManagement = () => {
   const [manualLeaveFile, setManualLeaveFile] = useState<File | null>(null);
   const [submittingManualLeave, setSubmittingManualLeave] = useState(false);
   const [selectedNewEmployee, setSelectedNewEmployee] = useState<string>('');
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     if (canManageHR) {
@@ -515,6 +517,30 @@ const HRManagement = () => {
     toast({ title: 'Export realizat', description: 'Raportul a fost descărcat cu succes.' });
   };
 
+  const syncEmployees = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-employees');
+      
+      if (error) throw error;
+      
+      if (data.success) {
+        toast({ 
+          title: 'Sincronizare reușită', 
+          description: `${data.synced_count} angajați sincronizați.` 
+        });
+        fetchEmployees();
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: unknown) {
+      console.error('Sync error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
+      toast({ title: 'Eroare la sincronizare', description: errorMessage, variant: 'destructive' });
+    }
+    setSyncing(false);
+  };
+
   const filteredEmployees = employees.filter(e =>
     e.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     e.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -559,6 +585,10 @@ const HRManagement = () => {
             </TabsTrigger>
           </TabsList>
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={syncEmployees} disabled={syncing}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{syncing ? 'Sincronizare...' : 'Sincronizează'}</span>
+            </Button>
             <Button variant="outline" onClick={exportLeaveReport} disabled={employees.length === 0}>
               <FileSpreadsheet className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Export Concedii</span>

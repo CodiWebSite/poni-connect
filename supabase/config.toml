@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.import-employees]
 verify_jwt = true
+
+[functions.sync-employees]
+verify_jwt = true
