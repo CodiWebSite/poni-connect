@@ -242,6 +242,78 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_personal_data: {
+        Row: {
+          address_apartment: string | null
+          address_block: string | null
+          address_city: string | null
+          address_county: string | null
+          address_floor: string | null
+          address_number: string | null
+          address_street: string | null
+          ci_issued_by: string | null
+          ci_issued_date: string | null
+          ci_number: string | null
+          ci_series: string | null
+          cnp: string
+          created_at: string
+          email: string
+          employee_record_id: string | null
+          employment_date: string
+          first_name: string
+          id: string
+          last_name: string
+          original_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_apartment?: string | null
+          address_block?: string | null
+          address_city?: string | null
+          address_county?: string | null
+          address_floor?: string | null
+          address_number?: string | null
+          address_street?: string | null
+          ci_issued_by?: string | null
+          ci_issued_date?: string | null
+          ci_number?: string | null
+          ci_series?: string | null
+          cnp: string
+          created_at?: string
+          email: string
+          employee_record_id?: string | null
+          employment_date: string
+          first_name: string
+          id?: string
+          last_name: string
+          original_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_apartment?: string | null
+          address_block?: string | null
+          address_city?: string | null
+          address_county?: string | null
+          address_floor?: string | null
+          address_number?: string | null
+          address_street?: string | null
+          ci_issued_by?: string | null
+          ci_issued_date?: string | null
+          ci_number?: string | null
+          ci_series?: string | null
+          cnp?: string
+          created_at?: string
+          email?: string
+          employee_record_id?: string | null
+          employment_date?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          original_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employee_records: {
         Row: {
           contract_type: string | null

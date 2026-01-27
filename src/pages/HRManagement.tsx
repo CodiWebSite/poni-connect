@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { RegesExport } from '@/components/hr/RegesExport';
+import { EmployeeImport } from '@/components/hr/EmployeeImport';
 import { 
   Users, 
   UserPlus, 
@@ -548,6 +549,10 @@ const HRManagement = () => {
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Angajați</span>
             </TabsTrigger>
+            <TabsTrigger value="import" className="gap-2">
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline">Import</span>
+            </TabsTrigger>
             <TabsTrigger value="reges" className="gap-2">
               <FileCode className="h-4 w-4" />
               <span className="hidden sm:inline">Export REGES</span>
@@ -774,6 +779,11 @@ const HRManagement = () => {
             )}
           </CardContent>
         </Card>
+        </TabsContent>
+
+        {/* Import Tab */}
+        <TabsContent value="import">
+          <EmployeeImport />
         </TabsContent>
 
         {/* REGES Export Tab */}
