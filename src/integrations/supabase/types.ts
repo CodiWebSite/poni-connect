@@ -849,6 +849,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      sync_existing_employees: {
+        Args: never
+        Returns: {
+          emails_matched: string[]
+          synced_count: number
+        }[]
+      }
     }
     Enums: {
       app_role:
