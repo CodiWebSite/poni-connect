@@ -20,7 +20,10 @@ import {
   Clock,
   Loader2,
   Cake,
-  Save
+  Save,
+  MapPin,
+  CreditCard,
+  Hash
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,6 +57,24 @@ interface EmployeeDocument {
   created_at: string;
 }
 
+interface PersonalData {
+  first_name: string;
+  last_name: string;
+  cnp: string;
+  ci_series: string | null;
+  ci_number: string | null;
+  ci_issued_by: string | null;
+  ci_issued_date: string | null;
+  address_street: string | null;
+  address_number: string | null;
+  address_block: string | null;
+  address_floor: string | null;
+  address_apartment: string | null;
+  address_city: string | null;
+  address_county: string | null;
+  employment_date: string;
+}
+
 const documentTypeLabels: Record<string, string> = {
   cv: 'CV',
   contract: 'Contract de Muncă',
@@ -71,6 +92,7 @@ const MyProfile = () => {
   
   const [profile, setProfile] = useState<Profile | null>(null);
   const [employeeRecord, setEmployeeRecord] = useState<EmployeeRecord | null>(null);
+  const [personalData, setPersonalData] = useState<PersonalData | null>(null);
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [birthDate, setBirthDate] = useState('');
@@ -119,6 +141,19 @@ const MyProfile = () => {
     
     if (docsData) {
       setDocuments(docsData);
+    }
+
+    // Fetch personal data linked to employee record
+    if (recordData) {
+      const { data: personalDataResult } = await supabase
+        .from('employee_personal_data')
+        .select('*')
+        .eq('employee_record_id', recordData.id)
+        .maybeSingle();
+      
+      if (personalDataResult) {
+        setPersonalData(personalDataResult);
+      }
     }
 
     setLoading(false);
@@ -331,6 +366,78 @@ const MyProfile = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Personal Data Section - CNP, CI, Address */}
+        {personalData && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-primary" />
+                Date de Identificare
+              </CardTitle>
+              <CardDescription>
+                Informații confidențiale din dosarul de personal
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* CNP */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Hash className="w-4 h-4" />
+                    CNP
+                  </div>
+                  <p className="font-mono font-medium text-lg">{personalData.cnp}</p>
+                </div>
+
+                {/* Carte de Identitate */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CreditCard className="w-4 h-4" />
+                    Carte de Identitate
+                  </div>
+                  <p className="font-medium">
+                    {personalData.ci_series && personalData.ci_number 
+                      ? `${personalData.ci_series} ${personalData.ci_number}`
+                      : 'Nespecificat'}
+                  </p>
+                  {personalData.ci_issued_by && (
+                    <p className="text-sm text-muted-foreground">
+                      Eliberat de: {personalData.ci_issued_by}
+                    </p>
+                  )}
+                  {personalData.ci_issued_date && (
+                    <p className="text-sm text-muted-foreground">
+                      La data: {format(new Date(personalData.ci_issued_date), 'dd.MM.yyyy')}
+                    </p>
+                  )}
+                </div>
+
+                {/* Address */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    Adresă de Domiciliu
+                  </div>
+                  <p className="font-medium">
+                    {[
+                      personalData.address_street,
+                      personalData.address_number && `Nr. ${personalData.address_number}`,
+                      personalData.address_block && `Bl. ${personalData.address_block}`,
+                      personalData.address_floor && `Et. ${personalData.address_floor}`,
+                      personalData.address_apartment && `Ap. ${personalData.address_apartment}`
+                    ].filter(Boolean).join(', ') || 'Nespecificată'}
+                  </p>
+                  {(personalData.address_city || personalData.address_county) && (
+                    <p className="text-sm text-muted-foreground">
+                      {[personalData.address_city, personalData.address_county].filter(Boolean).join(', ')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Documents Section */}
         <Card>
