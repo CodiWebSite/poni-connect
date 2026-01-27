@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { RegesExport } from '@/components/hr/RegesExport';
 import { EmployeeImport } from '@/components/hr/EmployeeImport';
+import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
 import { 
   Users, 
   UserPlus, 
@@ -35,7 +36,8 @@ import {
   FileSpreadsheet,
   FilePlus2,
   FileCode,
-  RefreshCw
+  RefreshCw,
+  CreditCard
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -151,6 +153,7 @@ const HRManagement = () => {
   const [submittingManualLeave, setSubmittingManualLeave] = useState(false);
   const [selectedNewEmployee, setSelectedNewEmployee] = useState<string>('');
   const [syncing, setSyncing] = useState(false);
+  const [editingPersonalData, setEditingPersonalData] = useState<EmployeeWithData | null>(null);
 
   useEffect(() => {
     if (canManageHR) {
@@ -764,6 +767,16 @@ const HRManagement = () => {
                           <Eye className="w-4 h-4 mr-1" />
                           Cereri ({employee.requests?.length || 0})
                         </Button>
+                        {employee.record && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingPersonalData(employee)}
+                          >
+                            <CreditCard className="w-4 h-4 mr-1" />
+                            Date Personale
+                          </Button>
+                        )}
                       </div>
                     </div>
 
@@ -1266,6 +1279,15 @@ const HRManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Personal Data Editor Dialog */}
+      <PersonalDataEditor
+        employeeRecordId={editingPersonalData?.record?.id || null}
+        employeeName={editingPersonalData?.full_name || ''}
+        open={!!editingPersonalData}
+        onOpenChange={(open) => !open && setEditingPersonalData(null)}
+        onSaved={fetchEmployees}
+      />
     </MainLayout>
   );
 };
