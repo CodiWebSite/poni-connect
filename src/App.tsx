@@ -40,6 +40,7 @@ const App = () => (
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/hr" element={<HumanResources />} />
             <Route path="/my-profile" element={<MyProfile />} />
+            <Route path="/hr-management" element={<HRManagement />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/intranet-updates" element={<IntranetUpdates />} />
