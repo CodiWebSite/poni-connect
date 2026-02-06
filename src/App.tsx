@@ -20,6 +20,7 @@ import IntranetUpdates from "./pages/IntranetUpdates";
 import Suggestions from "./pages/Suggestions";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import AIAssistant from "./pages/AIAssistant";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/employees" element={<Employees />} />
             <Route path="/documents" element={<Documents />} />
