@@ -23,7 +23,8 @@ import {
   Save,
   MapPin,
   CreditCard,
-  Hash
+  Hash,
+  History
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,6 +76,13 @@ interface PersonalData {
   employment_date: string;
 }
 
+interface LeaveHistoryItem {
+  id: string;
+  status: string;
+  details: any;
+  created_at: string;
+}
+
 const documentTypeLabels: Record<string, string> = {
   cv: 'CV',
   contract: 'Contract de Muncă',
@@ -83,6 +91,12 @@ const documentTypeLabels: Record<string, string> = {
   diploma: 'Diplomă',
   adeverinta: 'Adeverință',
   altele: 'Altele'
+};
+
+const leaveStatusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
+  approved: { label: 'Aprobat', variant: 'default' },
+  pending: { label: 'În așteptare', variant: 'secondary' },
+  rejected: { label: 'Respins', variant: 'destructive' },
 };
 
 const MyProfile = () => {
@@ -94,6 +108,7 @@ const MyProfile = () => {
   const [employeeRecord, setEmployeeRecord] = useState<EmployeeRecord | null>(null);
   const [personalData, setPersonalData] = useState<PersonalData | null>(null);
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
+  const [leaveHistory, setLeaveHistory] = useState<LeaveHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [birthDate, setBirthDate] = useState('');
   const [savingBirthDate, setSavingBirthDate] = useState(false);
@@ -141,6 +156,18 @@ const MyProfile = () => {
     
     if (docsData) {
       setDocuments(docsData);
+    }
+
+    // Fetch leave history
+    const { data: leaveData } = await supabase
+      .from('hr_requests')
+      .select('id, status, details, created_at')
+      .eq('user_id', user.id)
+      .eq('request_type', 'concediu')
+      .order('created_at', { ascending: false });
+    
+    if (leaveData) {
+      setLeaveHistory(leaveData);
     }
 
     // Fetch personal data linked to employee record
@@ -337,6 +364,75 @@ const MyProfile = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Leave History */}
+        {leaveHistory.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="w-5 h-5 text-primary" />
+                Istoricul Concediilor
+              </CardTitle>
+              <CardDescription>
+                Toate concediile înregistrate în sistem
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {leaveHistory.map((leave) => {
+                  const details = leave.details || {};
+                  const status = leaveStatusConfig[leave.status] || leaveStatusConfig.pending;
+                  const startDate = details.startDate ? new Date(details.startDate) : null;
+                  const endDate = details.endDate ? new Date(details.endDate) : null;
+                  
+                  return (
+                    <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm">
+                            {startDate && endDate
+                              ? `${format(startDate, 'dd MMMM', { locale: ro })} — ${format(endDate, 'dd MMMM yyyy', { locale: ro })}`
+                              : 'Perioadă nespecificată'}
+                          </p>
+                          <Badge variant={status.variant}>{status.label}</Badge>
+                          {details.manualEntry && (
+                            <Badge variant="outline" className="text-xs">Înregistrare manuală HR</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          {details.numberOfDays && (
+                            <span className="font-medium">{details.numberOfDays} zile lucrătoare</span>
+                          )}
+                          <span>Înregistrat: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
+                        </div>
+                        {details.notes && (
+                          <p className="text-xs text-muted-foreground italic">{details.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {leaveHistory.length === 0 && employeeRecord && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="w-5 h-5 text-primary" />
+                Istoricul Concediilor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-6 text-muted-foreground">
+                <History className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nu aveți concedii înregistrate în sistem.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Personal Data Section - CNP, CI, Address */}
         {personalData && (

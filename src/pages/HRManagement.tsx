@@ -751,6 +751,19 @@ const HRManagement = () => {
                           <Edit className="w-4 h-4 mr-1" />
                           Editează
                         </Button>
+                        {employee.record && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setManualLeaveForm({ ...manualLeaveForm, employee_id: employee.user_id });
+                              setShowManualLeave(true);
+                            }}
+                          >
+                            <Calendar className="w-4 h-4 mr-1" />
+                            Concediu
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
@@ -1187,10 +1200,33 @@ const HRManagement = () => {
                   <SelectValue placeholder="Selectați angajatul..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <div className="p-2 pb-1">
+                    <Input
+                      placeholder="Caută angajat..."
+                      className="h-8 text-sm"
+                      onChange={(e) => {
+                        const search = e.target.value.toLowerCase();
+                        const items = document.querySelectorAll('[data-manual-leave-item]');
+                        items.forEach((item) => {
+                          const name = item.getAttribute('data-manual-leave-item') || '';
+                          (item as HTMLElement).style.display = name.includes(search) ? '' : 'none';
+                        });
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
                   {employees.filter(e => e.record).map((emp) => (
-                    <SelectItem key={emp.user_id} value={emp.user_id}>
+                    <SelectItem 
+                      key={emp.user_id} 
+                      value={emp.user_id}
+                      data-manual-leave-item={emp.full_name.toLowerCase()}
+                    >
                       <div className="flex items-center gap-2">
                         <span>{emp.full_name}</span>
+                        {emp.department && (
+                          <span className="text-xs text-muted-foreground">({emp.department})</span>
+                        )}
                         <Badge variant="outline" className="text-xs">
                           {emp.record?.remaining_leave_days} zile disp.
                         </Badge>
@@ -1202,12 +1238,17 @@ const HRManagement = () => {
             </div>
 
             {selectedManualEmployee && (
-              <div className="p-3 bg-muted rounded-lg">
+              <div className="p-3 bg-muted rounded-lg space-y-1">
+                <p className="text-sm font-medium">{selectedManualEmployee.full_name}</p>
+                {selectedManualEmployee.department && (
+                  <p className="text-xs text-muted-foreground">{selectedManualEmployee.department}</p>
+                )}
                 <p className="text-sm">
                   <span className="text-muted-foreground">Sold concediu: </span>
                   <span className="font-bold text-primary">
                     {selectedManualEmployee.record?.remaining_leave_days} zile disponibile
                   </span>
+                  <span className="text-muted-foreground"> din {selectedManualEmployee.record?.total_leave_days}</span>
                 </p>
               </div>
             )}
@@ -1231,13 +1272,30 @@ const HRManagement = () => {
               </div>
             </div>
 
-            {manualLeaveForm.start_date && manualLeaveForm.end_date && (
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <p className="text-sm font-medium">
-                  Număr zile lucrătoare: {calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date)}
-                </p>
-              </div>
-            )}
+            {manualLeaveForm.start_date && manualLeaveForm.end_date && (() => {
+              const workingDays = calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date);
+              const remaining = selectedManualEmployee?.record?.remaining_leave_days ?? 0;
+              const afterBalance = remaining - workingDays;
+              const exceeds = afterBalance < 0;
+              
+              return (
+                <div className={`p-3 rounded-lg space-y-1 ${exceeds ? 'bg-destructive/10 border border-destructive/30' : 'bg-primary/10'}`}>
+                  <p className="text-sm font-medium">
+                    Zile lucrătoare: <span className="font-bold">{workingDays}</span>
+                  </p>
+                  {selectedManualEmployee?.record && (
+                    <p className="text-sm">
+                      Sold după înregistrare: <span className={`font-bold ${exceeds ? 'text-destructive' : 'text-primary'}`}>{afterBalance} zile</span>
+                    </p>
+                  )}
+                  {exceeds && (
+                    <p className="text-xs text-destructive font-medium">
+                      ⚠️ Zilele solicitate depășesc soldul disponibil!
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="space-y-2">
               <Label>Observații</Label>
