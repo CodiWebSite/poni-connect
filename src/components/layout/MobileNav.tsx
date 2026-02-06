@@ -35,7 +35,7 @@ const MobileNav = () => {
     ...(!isEmployee ? [{ icon: Megaphone, label: 'Anunțuri', path: '/announcements' }] : []),
     ...(!isEmployee ? [{ icon: Users, label: 'Angajați', path: '/employees' }] : []),
     ...(!isEmployee ? [{ icon: FileText, label: 'Documente', path: '/documents' }] : []),
-    ...(!isEmployee ? [{ icon: UserCog, label: 'Resurse Umane', path: '/hr' }] : []),
+    
     ...(!isEmployee ? [{ icon: Calendar, label: 'Calendar', path: '/calendar' }] : []),
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },

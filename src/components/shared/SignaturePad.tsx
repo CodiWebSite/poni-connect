@@ -21,19 +21,16 @@ export function SignaturePad({ onSave, existingSignature, disabled = false, labe
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * 2;
     canvas.height = rect.height * 2;
     ctx.scale(2, 2);
     
-    // Set drawing style
     ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Load existing signature if present
     if (existingSignature) {
       const img = new Image();
       img.onload = () => {
@@ -65,11 +62,7 @@ export function SignaturePad({ onSave, existingSignature, disabled = false, labe
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (disabled) return;
-    
-    // Prevent page scrolling on touch devices
-    if ('touches' in e) {
-      e.preventDefault();
-    }
+    if ('touches' in e) e.preventDefault();
     
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -83,11 +76,7 @@ export function SignaturePad({ onSave, existingSignature, disabled = false, labe
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing || disabled) return;
-    
-    // Prevent page scrolling on touch devices
-    if ('touches' in e) {
-      e.preventDefault();
-    }
+    if ('touches' in e) e.preventDefault();
     
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');

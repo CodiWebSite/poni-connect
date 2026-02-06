@@ -36,7 +36,7 @@ const Sidebar = () => {
     ...(!isEmployee ? [{ icon: Megaphone, label: 'Anunțuri', path: '/announcements' }] : []),
     ...(!isEmployee ? [{ icon: Users, label: 'Angajați', path: '/employees' }] : []),
     ...(!isEmployee ? [{ icon: FileText, label: 'Documente', path: '/documents' }] : []),
-    ...(!isEmployee ? [{ icon: UserCog, label: 'Resurse Umane', path: '/hr' }] : []),
+    
     ...(!isEmployee ? [{ icon: BookOpen, label: 'Knowledge Base', path: '/knowledge-base' }] : []),
     ...(!isEmployee ? [{ icon: Calendar, label: 'Calendar', path: '/calendar' }] : []),
     ...(!isEmployee ? [{ icon: Lightbulb, label: 'Sugestii', path: '/suggestions' }] : []),
