@@ -14,12 +14,10 @@ import Settings from "./pages/Settings";
 import HumanResources from "./pages/HumanResources";
 import MyProfile from "./pages/MyProfile";
 import HRManagement from "./pages/HRManagement";
-import Procurement from "./pages/Procurement";
 import Admin from "./pages/Admin";
 import IntranetUpdates from "./pages/IntranetUpdates";
 import Suggestions from "./pages/Suggestions";
 import KnowledgeBase from "./pages/KnowledgeBase";
-import AIAssistant from "./pages/AIAssistant";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -42,14 +40,11 @@ const App = () => (
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/hr" element={<HumanResources />} />
             <Route path="/my-profile" element={<MyProfile />} />
-            <Route path="/hr-management" element={<HRManagement />} />
-            <Route path="/procurement" element={<Procurement />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/intranet-updates" element={<IntranetUpdates />} />
             <Route path="/suggestions" element={<Suggestions />} />
             <Route path="/knowledge-base" element={<KnowledgeBase />} />
-            <Route path="/ai-assistant" element={<AIAssistant />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
