@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Shield, Users, Loader2, Building, Trash2, Plus } from 'lucide-react';
+import { Search, Shield, Users, Loader2, Building, Trash2, Plus, AlertTriangle, UserX } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type AppRole = 'admin' | 'user' | 'super_admin' | 'department_head' | 'secretariat' | 'director' | 'hr' | 'achizitii_contabilitate';
 
@@ -63,6 +64,8 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [updating, setUpdating] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserWithRole | null>(null);
   
   // Department Heads state
   const [departmentHeads, setDepartmentHeads] = useState<DepartmentHead[]>([]);
@@ -220,6 +223,32 @@ const Admin = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    setDeleting(userId);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({ title: 'Succes', description: 'Contul a fost șters din sistem.' });
+        setUsers(prev => prev.filter(u => u.user_id !== userId));
+      } else {
+        toast({ title: 'Eroare', description: data?.error || 'Nu s-a putut șterge contul.', variant: 'destructive' });
+      }
+    } catch (error: unknown) {
+      console.error('Error deleting user:', error);
+      const msg = error instanceof Error ? error.message : 'Eroare necunoscută';
+      toast({ title: 'Eroare', description: msg, variant: 'destructive' });
+    }
+    
+    setDeleting(null);
+    setDeleteConfirmUser(null);
+  };
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
@@ -321,26 +350,39 @@ const Admin = () => {
                           </div>
                         </div>
                         
-                        <Select
-                          value={u.role}
-                          onValueChange={(value) => updateUserRole(u.user_id, u.role_id, value as AppRole)}
-                          disabled={updating === u.user_id}
-                        >
-                          <SelectTrigger className="w-full sm:w-48">
-                            {updating === u.user_id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <SelectValue />
-                            )}
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(roleLabels).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={u.role}
+                            onValueChange={(value) => updateUserRole(u.user_id, u.role_id, value as AppRole)}
+                            disabled={updating === u.user_id}
+                          >
+                            <SelectTrigger className="w-full sm:w-48">
+                              {updating === u.user_id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <SelectValue />
+                              )}
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(roleLabels).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setDeleteConfirmUser(u)}
+                            disabled={u.user_id === user?.id}
+                            title={u.user_id === user?.id ? 'Nu îți poți șterge propriul cont' : 'Șterge cont'}
+                          >
+                            <UserX className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -496,6 +538,60 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Delete user confirmation dialog */}
+      <Dialog open={!!deleteConfirmUser} onOpenChange={() => setDeleteConfirmUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Confirmare ștergere cont
+            </DialogTitle>
+            <DialogDescription className="space-y-2 pt-2">
+              <p>
+                Ești sigur că vrei să ștergi contul utilizatorului{' '}
+                <strong>{deleteConfirmUser?.full_name}</strong>?
+              </p>
+              <p className="text-destructive font-medium">
+                Această acțiune este ireversibilă! Se vor șterge:
+              </p>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                <li>Contul de autentificare</li>
+                <li>Profilul și rolurile</li>
+                <li>Cererile HR și documentele angajatului</li>
+                <li>Cererile de achiziții</li>
+                <li>Sugestiile trimise</li>
+                <li>Notificările</li>
+              </ul>
+              <p className="text-sm text-muted-foreground mt-2">
+                Datele personale importate (CNP, CI, adresă) nu vor fi șterse.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmUser(null)}>
+              Anulează
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirmUser && handleDeleteUser(deleteConfirmUser.user_id)}
+              disabled={deleting === deleteConfirmUser?.user_id}
+            >
+              {deleting === deleteConfirmUser?.user_id ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Se șterge...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Șterge definitiv
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
