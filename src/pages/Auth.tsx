@@ -168,8 +168,12 @@ const Auth = () => {
       
       <Card className="w-full max-w-md relative glass animate-scale-in">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg">
-            <FlaskConical className="w-8 h-8 text-primary-foreground" />
+          <div className="mx-auto">
+            <img 
+              src="/logo-icmpp.png" 
+              alt="ICMPP Logo" 
+              className="w-20 h-20 object-contain mx-auto"
+            />
           </div>
           <div>
             <CardTitle className="text-2xl font-display">ICMPP Intranet</CardTitle>

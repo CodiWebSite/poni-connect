@@ -273,35 +273,6 @@ const MyProfile = () => {
                 )}
               </div>
 
-              {/* Birthday Section */}
-              <div className="pt-4 border-t space-y-3">
-                <Label className="flex items-center gap-2 text-sm">
-                  <Cake className="w-4 h-4 text-pink-500" />
-                  Data Nașterii
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="date"
-                    value={birthDate}
-                    onChange={(e) => setBirthDate(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button 
-                    size="sm" 
-                    onClick={saveBirthDate}
-                    disabled={savingBirthDate}
-                  >
-                    {savingBirthDate ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Setează-ți ziua de naștere pentru a apărea pe dashboard
-                </p>
-              </div>
             </CardContent>
           </Card>
 
