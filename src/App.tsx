@@ -17,7 +17,7 @@ import HRManagement from "./pages/HRManagement";
 import Admin from "./pages/Admin";
 import IntranetUpdates from "./pages/IntranetUpdates";
 import Suggestions from "./pages/Suggestions";
-import KnowledgeBase from "./pages/KnowledgeBase";
+
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -45,7 +45,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/intranet-updates" element={<IntranetUpdates />} />
             <Route path="/suggestions" element={<Suggestions />} />
-            <Route path="/knowledge-base" element={<KnowledgeBase />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

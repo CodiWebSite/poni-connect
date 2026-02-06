@@ -101,30 +101,6 @@ export type Database = {
         }
         Relationships: []
       }
-      department_heads: {
-        Row: {
-          created_at: string
-          department: string
-          head_user_id: string
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          department: string
-          head_user_id: string
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          department?: string
-          head_user_id?: string
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       document_registry: {
         Row: {
           category: string | null
@@ -434,45 +410,6 @@ export type Database = {
           status?: Database["public"]["Enums"]["hr_request_status"]
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      knowledge_base: {
-        Row: {
-          author_id: string | null
-          category: string
-          content: string
-          created_at: string
-          id: string
-          is_published: boolean
-          tags: string[] | null
-          title: string
-          updated_at: string
-          view_count: number
-        }
-        Insert: {
-          author_id?: string | null
-          category?: string
-          content: string
-          created_at?: string
-          id?: string
-          is_published?: boolean
-          tags?: string[] | null
-          title: string
-          updated_at?: string
-          view_count?: number
-        }
-        Update: {
-          author_id?: string | null
-          category?: string
-          content?: string
-          created_at?: string
-          id?: string
-          is_published?: boolean
-          tags?: string[] | null
-          title?: string
-          updated_at?: string
-          view_count?: number
         }
         Relationships: []
       }

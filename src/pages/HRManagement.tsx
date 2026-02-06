@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { RegesExport } from '@/components/hr/RegesExport';
+
 import { EmployeeImport } from '@/components/hr/EmployeeImport';
 import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
 import { 
@@ -35,7 +35,7 @@ import {
   Download,
   FileSpreadsheet,
   FilePlus2,
-  FileCode,
+  
   RefreshCw,
   CreditCard
 } from 'lucide-react';
@@ -527,7 +527,7 @@ const HRManagement = () => {
     return <Navigate to="/" replace />;
   }
 
-  const approvedLeaveRequests: { id: string; user_id: string; employeeName: string; startDate: string; endDate: string; status: string }[] = [];
+  
 
   return (
     <MainLayout title="Gestiune HR" description="Administrare date angajați - Confidențial">
@@ -541,10 +541,6 @@ const HRManagement = () => {
             <TabsTrigger value="import" className="gap-2">
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">Import</span>
-            </TabsTrigger>
-            <TabsTrigger value="reges" className="gap-2">
-              <FileCode className="h-4 w-4" />
-              <span className="hidden sm:inline">Export REGES</span>
             </TabsTrigger>
           </TabsList>
           <div className="flex flex-wrap gap-2">
@@ -794,22 +790,6 @@ const HRManagement = () => {
           <EmployeeImport />
         </TabsContent>
 
-        {/* REGES Export Tab */}
-        <TabsContent value="reges">
-          <RegesExport 
-            employees={employees.map(e => ({
-              user_id: e.user_id,
-              full_name: e.full_name,
-              department: e.department,
-              position: e.position,
-              record: e.record ? {
-                hire_date: e.record.hire_date,
-                contract_type: e.record.contract_type
-              } : undefined
-            }))}
-            leaveRequests={approvedLeaveRequests}
-          />
-        </TabsContent>
       </Tabs>
 
       {/* Edit Employee Dialog */}

@@ -18,7 +18,7 @@ import {
   UserCircle,
   ClipboardList,
   Lightbulb,
-  BookOpen,
+  
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -37,7 +37,7 @@ const Sidebar = () => {
     ...(!isEmployee ? [{ icon: Users, label: 'Angajați', path: '/employees' }] : []),
     ...(!isEmployee ? [{ icon: FileText, label: 'Documente', path: '/documents' }] : []),
     
-    ...(!isEmployee ? [{ icon: BookOpen, label: 'Knowledge Base', path: '/knowledge-base' }] : []),
+    
     ...(!isEmployee ? [{ icon: Calendar, label: 'Calendar', path: '/calendar' }] : []),
     ...(!isEmployee ? [{ icon: Lightbulb, label: 'Sugestii', path: '/suggestions' }] : []),
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
