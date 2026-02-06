@@ -17,10 +17,8 @@ import {
   Shield,
   UserCircle,
   ClipboardList,
-  ShoppingCart,
   Lightbulb,
   BookOpen,
-  Bot,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -39,9 +37,7 @@ const Sidebar = () => {
     ...(!isEmployee ? [{ icon: Users, label: 'Angajați', path: '/employees' }] : []),
     ...(!isEmployee ? [{ icon: FileText, label: 'Documente', path: '/documents' }] : []),
     ...(!isEmployee ? [{ icon: UserCog, label: 'Resurse Umane', path: '/hr' }] : []),
-    ...(!isEmployee ? [{ icon: ShoppingCart, label: 'Achiziții Publice', path: '/procurement' }] : []),
     ...(!isEmployee ? [{ icon: BookOpen, label: 'Knowledge Base', path: '/knowledge-base' }] : []),
-    ...(!isEmployee ? [{ icon: Bot, label: 'Asistent AI', path: '/ai-assistant' }] : []),
     ...(!isEmployee ? [{ icon: Calendar, label: 'Calendar', path: '/calendar' }] : []),
     ...(!isEmployee ? [{ icon: Lightbulb, label: 'Sugestii', path: '/suggestions' }] : []),
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
