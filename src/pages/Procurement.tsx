@@ -14,8 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ProcurementDocument } from '@/components/procurement/ProcurementDocument';
-import { SignaturePad } from '@/components/hr/SignaturePad';
-import { generateProcurementDocx } from '@/utils/generateDocx';
+import { SignaturePad } from '@/components/shared/SignaturePad';
+import { generateProcurementDocx } from '@/utils/generateProcurementDocx';
 import { 
   ShoppingCart, 
   Plus, 

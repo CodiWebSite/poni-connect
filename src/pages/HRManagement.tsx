@@ -72,19 +72,9 @@ interface EmployeeDocument {
   created_at: string;
 }
 
-interface HRRequest {
-  id: string;
-  user_id: string;
-  request_type: string;
-  status: string;
-  details: any;
-  created_at: string;
-}
-
 interface EmployeeWithData extends Profile {
   record?: EmployeeRecord;
   documents?: EmployeeDocument[];
-  requests?: HRRequest[];
 }
 
 const documentTypes = [
@@ -97,11 +87,6 @@ const documentTypes = [
   { value: 'altele', label: 'Altele' }
 ];
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive'; icon: React.ReactNode }> = {
-  pending: { label: 'În așteptare', variant: 'secondary', icon: <Clock className="w-3 h-3" /> },
-  approved: { label: 'Aprobat', variant: 'default', icon: <CheckCircle className="w-3 h-3" /> },
-  rejected: { label: 'Respins', variant: 'destructive', icon: <XCircle className="w-3 h-3" /> }
-};
 
 const HRManagement = () => {
   const { user } = useAuth();
@@ -135,8 +120,6 @@ const HRManagement = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   
-  // View requests dialog
-  const [viewingRequests, setViewingRequests] = useState<EmployeeWithData | null>(null);
   
   // New employee dialog - now for selecting incomplete employees
   const [showNewEmployee, setShowNewEmployee] = useState(false);
@@ -187,17 +170,10 @@ const HRManagement = () => {
       .from('employee_documents')
       .select('*');
 
-    // Fetch all HR requests
-    const { data: requests } = await supabase
-      .from('hr_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-
     const employeesWithData: EmployeeWithData[] = profiles?.map(profile => ({
       ...profile,
       record: records?.find(r => r.user_id === profile.user_id),
       documents: documents?.filter(d => d.user_id === profile.user_id) || [],
-      requests: requests?.filter(r => r.user_id === profile.user_id) || []
     })) || [];
 
     setEmployees(employeesWithData);
@@ -500,11 +476,7 @@ const HRManagement = () => {
       'Tip Contract': e.record?.contract_type || '-',
       'Total Zile Concediu': e.record?.total_leave_days ?? 21,
       'Zile Utilizate': e.record?.used_leave_days ?? 0,
-      'Zile Rămase': e.record?.remaining_leave_days ?? (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0),
-      'Cereri Concediu': e.requests?.filter(r => r.request_type === 'concediu').length || 0,
-      'Cereri Aprobate': e.requests?.filter(r => r.request_type === 'concediu' && r.status === 'approved').length || 0,
-      'Cereri Respinse': e.requests?.filter(r => r.request_type === 'concediu' && r.status === 'rejected').length || 0,
-      'Cereri În Așteptare': e.requests?.filter(r => r.request_type === 'concediu' && r.status === 'pending').length || 0
+      'Zile Rămase': e.record?.remaining_leave_days ?? (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0)
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -555,19 +527,7 @@ const HRManagement = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Prepare leave requests data for REGES export
-  const approvedLeaveRequests = employees.flatMap(emp => 
-    (emp.requests || [])
-      .filter(r => r.request_type === 'concediu' && r.status === 'approved')
-      .map(r => ({
-        id: r.id,
-        user_id: r.user_id,
-        employeeName: emp.full_name,
-        startDate: r.details?.startDate || '',
-        endDate: r.details?.endDate || '',
-        status: r.status
-      }))
-  );
+  const approvedLeaveRequests: { id: string; user_id: string; employeeName: string; startDate: string; endDate: string; status: string }[] = [];
 
   return (
     <MainLayout title="Gestiune HR" description="Administrare date angajați - Confidențial">
@@ -665,9 +625,9 @@ const HRManagement = () => {
                   <Clock className="w-8 h-8 text-amber-500" />
                   <div>
                     <p className="text-2xl font-bold">
-                      {employees.reduce((acc, e) => acc + (e.requests?.filter(r => r.status === 'pending').length || 0), 0)}
+                      {employees.filter(e => !e.record || !e.department || !e.position).length}
                     </p>
-                    <p className="text-xs text-muted-foreground">Cereri Pending</p>
+                    <p className="text-xs text-muted-foreground">Date Incomplete</p>
                   </div>
                 </div>
               </CardContent>
@@ -771,14 +731,6 @@ const HRManagement = () => {
                         >
                           <Upload className="w-4 h-4 mr-1" />
                           Încarcă Doc.
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setViewingRequests(employee)}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          Cereri ({employee.requests?.length || 0})
                         </Button>
                         {employee.record && (
                           <Button
@@ -1039,53 +991,6 @@ const HRManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* View Requests Dialog */}
-      <Dialog open={!!viewingRequests} onOpenChange={() => setViewingRequests(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Istoric Cereri HR</DialogTitle>
-            <DialogDescription>
-              {viewingRequests?.full_name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {viewingRequests?.requests && viewingRequests.requests.length > 0 ? (
-            <div className="space-y-3">
-              {viewingRequests.requests.map((request) => (
-                <div key={request.id} className="p-3 border rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium capitalize">{request.request_type}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(request.created_at), 'dd MMM yyyy HH:mm', { locale: ro })}
-                      </p>
-                    </div>
-                    <Badge variant={statusConfig[request.status]?.variant || 'secondary'}>
-                      {statusConfig[request.status]?.icon}
-                      <span className="ml-1">{statusConfig[request.status]?.label || request.status}</span>
-                    </Badge>
-                  </div>
-                  {request.details && (
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      {request.details.startDate && (
-                        <p>Perioadă: {request.details.startDate} - {request.details.endDate}</p>
-                      )}
-                      {request.details.numberOfDays && (
-                        <p>Număr zile: {request.details.numberOfDays}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Nu există cereri HR pentru acest angajat.</p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* New Employee Dialog - Select from incomplete profiles */}
       <Dialog open={showNewEmployee} onOpenChange={(open) => {
