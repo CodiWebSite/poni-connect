@@ -4,10 +4,11 @@ import StatCard from '@/components/dashboard/StatCard';
 import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import QuickLinks from '@/components/dashboard/QuickLinks';
 import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
-import BirthdayWidget from '@/components/dashboard/BirthdayWidget';
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
 import ActivityHistory from '@/components/dashboard/ActivityHistory';
+import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Users, Megaphone, FileText, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -30,6 +31,7 @@ interface CalendarEvent {
 }
 
 const Dashboard = () => {
+  const { role, loading: roleLoading } = useUserRole();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [stats, setStats] = useState({
@@ -88,6 +90,15 @@ const Dashboard = () => {
       events: eventsCount.count || 0,
     });
   };
+
+  // Show simplified dashboard for regular employees
+  if (role === 'user') {
+    return (
+      <MainLayout title="Dashboard" description="Bine ați venit în intranetul ICMPP">
+        <EmployeeDashboard />
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Dashboard" description="Bine ați venit în intranetul ICMPP">
@@ -156,7 +167,6 @@ const Dashboard = () => {
         <div className="space-y-6">
           <WeatherWidget />
           <ActivityHistory />
-          <BirthdayWidget />
           <QuickLinks />
           <UpcomingEvents events={events} />
         </div>
