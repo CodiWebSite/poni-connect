@@ -20,8 +20,6 @@ import IntranetUpdates from "./pages/IntranetUpdates";
 import Suggestions from "./pages/Suggestions";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import AIAssistant from "./pages/AIAssistant";
-import Secretariat from "./pages/Secretariat";
-import SecretariatManagement from "./pages/SecretariatManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,8 +48,6 @@ const App = () => (
             <Route path="/suggestions" element={<Suggestions />} />
             <Route path="/knowledge-base" element={<KnowledgeBase />} />
             <Route path="/ai-assistant" element={<AIAssistant />} />
-            <Route path="/secretariat" element={<Secretariat />} />
-            <Route path="/secretariat-management" element={<SecretariatManagement />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

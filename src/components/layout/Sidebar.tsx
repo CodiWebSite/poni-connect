@@ -27,24 +27,24 @@ import { useState } from 'react';
 const Sidebar = () => {
   const location = useLocation();
   const { signOut } = useAuth();
-  const { role, canManageHR, canManageSecretariat } = useUserRole();
+  const { role, canManageHR } = useUserRole();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const isEmployee = role === 'user';
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
-    { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
-    { icon: Users, label: 'Angajați', path: '/employees' },
-    { icon: FileText, label: 'Documente', path: '/documents' },
-    { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
-    { icon: ShoppingCart, label: 'Achiziții Publice', path: '/procurement' },
-    ...(canManageSecretariat ? [{ icon: FileText, label: 'Secretariat', path: '/secretariat' }] : []),
-    { icon: BookOpen, label: 'Knowledge Base', path: '/knowledge-base' },
-    { icon: Bot, label: 'Asistent AI', path: '/ai-assistant' },
-    { icon: Calendar, label: 'Calendar', path: '/calendar' },
-    { icon: Lightbulb, label: 'Sugestii', path: '/suggestions' },
+    ...(!isEmployee ? [{ icon: Megaphone, label: 'Anunțuri', path: '/announcements' }] : []),
+    ...(!isEmployee ? [{ icon: Users, label: 'Angajați', path: '/employees' }] : []),
+    ...(!isEmployee ? [{ icon: FileText, label: 'Documente', path: '/documents' }] : []),
+    ...(!isEmployee ? [{ icon: UserCog, label: 'Resurse Umane', path: '/hr' }] : []),
+    ...(!isEmployee ? [{ icon: ShoppingCart, label: 'Achiziții Publice', path: '/procurement' }] : []),
+    ...(!isEmployee ? [{ icon: BookOpen, label: 'Knowledge Base', path: '/knowledge-base' }] : []),
+    ...(!isEmployee ? [{ icon: Bot, label: 'Asistent AI', path: '/ai-assistant' }] : []),
+    ...(!isEmployee ? [{ icon: Calendar, label: 'Calendar', path: '/calendar' }] : []),
+    ...(!isEmployee ? [{ icon: Lightbulb, label: 'Sugestii', path: '/suggestions' }] : []),
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
-    ...(canManageSecretariat ? [{ icon: ClipboardList, label: 'Gestiune Secretariat', path: '/secretariat-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(role === 'super_admin' ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];

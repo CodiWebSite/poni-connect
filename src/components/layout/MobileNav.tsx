@@ -28,15 +28,17 @@ const MobileNav = () => {
   const { role, canManageHR } = useUserRole();
   const [isOpen, setIsOpen] = useState(false);
 
+  const isEmployee = role === 'user';
+
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
-    { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
-    { icon: Users, label: 'Angajați', path: '/employees' },
-    { icon: FileText, label: 'Documente', path: '/documents' },
-    { icon: UserCog, label: 'Resurse Umane', path: '/hr' },
-    { icon: ShoppingCart, label: 'Achiziții Publice', path: '/procurement' },
-    { icon: Calendar, label: 'Calendar', path: '/calendar' },
+    ...(!isEmployee ? [{ icon: Megaphone, label: 'Anunțuri', path: '/announcements' }] : []),
+    ...(!isEmployee ? [{ icon: Users, label: 'Angajați', path: '/employees' }] : []),
+    ...(!isEmployee ? [{ icon: FileText, label: 'Documente', path: '/documents' }] : []),
+    ...(!isEmployee ? [{ icon: UserCog, label: 'Resurse Umane', path: '/hr' }] : []),
+    ...(!isEmployee ? [{ icon: ShoppingCart, label: 'Achiziții Publice', path: '/procurement' }] : []),
+    ...(!isEmployee ? [{ icon: Calendar, label: 'Calendar', path: '/calendar' }] : []),
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(role === 'super_admin' ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
