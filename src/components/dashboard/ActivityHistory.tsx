@@ -199,7 +199,7 @@ const ActivityHistory = () => {
   const getActivityLink = (activity: ActivityItem) => {
     switch (activity.type) {
       case 'hr_request':
-        return '/hr';
+        return '/my-profile';
       case 'procurement':
         return '/procurement';
       case 'document':
