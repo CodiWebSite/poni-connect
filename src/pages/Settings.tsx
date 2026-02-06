@@ -8,7 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { User, Building2, Phone, Save } from 'lucide-react';
-import AdvancedSignatureInfo from '@/components/signature/AdvancedSignatureInfo';
 
 interface Profile {
   full_name: string;
@@ -171,8 +170,6 @@ const Settings = () => {
           </form>
         </div>
 
-        {/* Advanced Signature Section */}
-        <AdvancedSignatureInfo />
       </div>
     </MainLayout>
   );
