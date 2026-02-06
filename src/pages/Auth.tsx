@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { FlaskConical, Lock, Mail, User } from 'lucide-react';
+import { Lock, Mail, User, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,12 +30,51 @@ const signupSchema = z.object({
   fullName: z.string().min(2, 'Numele trebuie să aibă cel puțin 2 caractere').max(100, 'Numele este prea lung'),
 });
 
+const PasswordInput = ({
+  id,
+  value,
+  onChange,
+  placeholder = '••••••••',
+}: {
+  id: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <div className="relative">
+      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <Input
+        id={id}
+        type={showPassword ? 'text' : 'password'}
+        placeholder={placeholder}
+        className="pl-10 pr-10"
+        value={value}
+        onChange={onChange}
+        required
+      />
+      <button
+        type="button"
+        onClick={() => setShowPassword(!showPassword)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+        tabIndex={-1}
+      >
+        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+};
+
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', fullName: '' });
   const [loginToken, setLoginToken] = useState<string | null>(null);
   const [signupToken, setSignupToken] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
   const loginTurnstileRef = useRef<TurnstileInstance>(null);
   const signupTurnstileRef = useRef<TurnstileInstance>(null);
   const { signIn, signUp, user } = useAuth();
@@ -159,6 +198,29 @@ const Auth = () => {
     setIsLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    if (!forgotEmail) {
+      toast.error('Te rugăm să introduci adresa de email');
+      setIsLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+
+    if (error) {
+      toast.error('Eroare la trimiterea emailului. Încercați din nou.');
+    } else {
+      toast.success('Email de resetare trimis! Verifică-ți căsuța de email.');
+    }
+
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="absolute inset-0 overflow-hidden">
@@ -184,140 +246,178 @@ const Auth = () => {
         </CardHeader>
         
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Autentificare</TabsTrigger>
-              <TabsTrigger value="signup">Înregistrare</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
+          {showForgotPassword ? (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(false)}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Înapoi la autentificare
+              </button>
+
+              <div>
+                <h3 className="text-lg font-semibold">Resetare parolă</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Introdu adresa de email și îți vom trimite un link de resetare.
+                </p>
+              </div>
+
+              <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="forgot-email">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="login-email"
+                      id="forgot-email"
                       type="email"
                       placeholder="email@icmpp.ro"
                       className="pl-10"
-                      value={loginData.email}
-                      onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
                       required
                     />
                   </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Parolă</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
+
+                <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
+                  {isLoading ? 'Se trimite...' : 'Trimite link de resetare'}
+                </Button>
+              </form>
+            </div>
+          ) : (
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="login">Autentificare</TabsTrigger>
+                <TabsTrigger value="signup">Înregistrare</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="email@icmpp.ro"
+                        className="pl-10"
+                        value={loginData.email}
+                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Parolă</Label>
+                    <PasswordInput
                       id="login-password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-10"
                       value={loginData.password}
                       onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                      required
                     />
                   </div>
-                </div>
 
-                <div className="flex justify-center">
-                  <Turnstile
-                    ref={loginTurnstileRef}
-                    siteKey={TURNSTILE_SITE_KEY}
-                    onSuccess={(token) => setLoginToken(token)}
-                    onError={() => {
-                      setLoginToken(null);
-                      toast.error('Eroare la încărcarea CAPTCHA');
-                    }}
-                    onExpire={() => setLoginToken(null)}
-                    options={{
-                      theme: 'auto',
-                    }}
-                  />
-                </div>
-                
-                <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
-                  {isLoading ? 'Se procesează...' : 'Autentificare'}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nume complet</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Ion Popescu"
-                      className="pl-10"
-                      value={signupData.fullName}
-                      onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
-                      required
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Ai uitat parola?
+                    </button>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <Turnstile
+                      ref={loginTurnstileRef}
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onSuccess={(token) => setLoginToken(token)}
+                      onError={() => {
+                        setLoginToken(null);
+                        toast.error('Eroare la încărcarea CAPTCHA');
+                      }}
+                      onExpire={() => setLoginToken(null)}
+                      options={{
+                        theme: 'auto',
+                      }}
                     />
                   </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="email@icmpp.ro"
-                      className="pl-10"
-                      value={signupData.email}
-                      onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                      required
-                    />
+                  
+                  <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
+                    {isLoading ? 'Se procesează...' : 'Autentificare'}
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="signup">
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">Nume complet</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signup-name"
+                        type="text"
+                        placeholder="Ion Popescu"
+                        className="pl-10"
+                        value={signupData.fullName}
+                        onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Parolă</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="email@icmpp.ro"
+                        className="pl-10"
+                        value={signupData.email}
+                        onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Parolă</Label>
+                    <PasswordInput
                       id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-10"
                       value={signupData.password}
                       onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                      required
                     />
                   </div>
-                </div>
 
-                <div className="flex justify-center">
-                  <Turnstile
-                    ref={signupTurnstileRef}
-                    siteKey={TURNSTILE_SITE_KEY}
-                    onSuccess={(token) => setSignupToken(token)}
-                    onError={() => {
-                      setSignupToken(null);
-                      toast.error('Eroare la încărcarea CAPTCHA');
-                    }}
-                    onExpire={() => setSignupToken(null)}
-                    options={{
-                      theme: 'auto',
-                    }}
-                  />
-                </div>
-                
-                <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
-                  {isLoading ? 'Se procesează...' : 'Creare cont'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+                  <div className="flex justify-center">
+                    <Turnstile
+                      ref={signupTurnstileRef}
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onSuccess={(token) => setSignupToken(token)}
+                      onError={() => {
+                        setSignupToken(null);
+                        toast.error('Eroare la încărcarea CAPTCHA');
+                      }}
+                      onExpire={() => setSignupToken(null)}
+                      options={{
+                        theme: 'auto',
+                      }}
+                    />
+                  </div>
+                  
+                  <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
+                    {isLoading ? 'Se procesează...' : 'Creare cont'}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
     </div>
