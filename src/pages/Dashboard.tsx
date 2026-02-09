@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import MainLayout from '@/components/layout/MainLayout';
 import StatCard from '@/components/dashboard/StatCard';
 import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
+import PersonalCalendarWidget from '@/components/dashboard/PersonalCalendarWidget';
 import QuickLinks from '@/components/dashboard/QuickLinks';
 import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
@@ -215,6 +216,7 @@ const Dashboard = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          <PersonalCalendarWidget />
           <WeatherWidget />
           <ActivityHistory />
           <QuickLinks />
