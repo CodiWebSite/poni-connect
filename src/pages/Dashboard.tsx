@@ -176,11 +176,6 @@ const Dashboard = () => {
           iconClassName="bg-success"
         />
       </div>
-
-      {/* Activation Chart - only for admin roles */}
-      {role && <ActivationChart />}
-
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Announcements */}
         <div className="lg:col-span-2 space-y-4">
@@ -216,6 +211,7 @@ const Dashboard = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          <ActivationChart />
           <PersonalCalendarWidget />
           <WeatherWidget />
           <ActivityHistory />
