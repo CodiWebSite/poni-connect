@@ -305,6 +305,8 @@ export type Database = {
           ci_issued_by: string | null
           ci_issued_date: string | null
           ci_number: string | null
+          ci_scan_uploaded_at: string | null
+          ci_scan_url: string | null
           ci_series: string | null
           cnp: string
           contract_type: string | null
@@ -333,6 +335,8 @@ export type Database = {
           ci_issued_by?: string | null
           ci_issued_date?: string | null
           ci_number?: string | null
+          ci_scan_uploaded_at?: string | null
+          ci_scan_url?: string | null
           ci_series?: string | null
           cnp: string
           contract_type?: string | null
@@ -361,6 +365,8 @@ export type Database = {
           ci_issued_by?: string | null
           ci_issued_date?: string | null
           ci_number?: string | null
+          ci_scan_uploaded_at?: string | null
+          ci_scan_url?: string | null
           ci_series?: string | null
           cnp?: string
           contract_type?: string | null

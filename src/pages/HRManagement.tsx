@@ -88,6 +88,7 @@ interface EmployeeWithData {
   documents?: EmployeeDocument[];
   hasAccount: boolean;
   user_id?: string;
+  updated_at?: string;
 }
 
 const documentTypes = [
@@ -188,7 +189,7 @@ const HRManagement = () => {
         email: pd.email,
         first_name: pd.first_name,
         last_name: pd.last_name,
-        full_name: `${pd.first_name} ${pd.last_name}`,
+        full_name: `${pd.last_name} ${pd.first_name}`,
         cnp: pd.cnp,
         department: pd.department,
         position: pd.position,
@@ -201,6 +202,7 @@ const HRManagement = () => {
         documents: record ? documents?.filter(d => d.user_id === record.user_id) : [],
         hasAccount: !!pd.employee_record_id && !!record,
         user_id: record?.user_id,
+        updated_at: pd.updated_at,
       };
     }) || [];
 
@@ -263,6 +265,17 @@ const HRManagement = () => {
           position: editForm.position || null,
         })
         .eq('user_id', editingEmployee.user_id);
+    }
+
+    // Log audit event
+    if (user) {
+      await supabase.rpc('log_audit_event', {
+        _user_id: user.id,
+        _action: 'employee_edit',
+        _entity_type: 'employee_personal_data',
+        _entity_id: editingEmployee.id,
+        _details: { employee_name: editingEmployee.full_name }
+      });
     }
 
     toast({ title: 'Succes', description: 'Datele angajatului au fost actualizate.' });
@@ -751,6 +764,12 @@ const HRManagement = () => {
                                 <Badge variant="secondary" className="text-xs">
                                   <FileText className="w-3 h-3 mr-1" />
                                   {employee.documents.length} doc.
+                                </Badge>
+                              )}
+                              {employee.updated_at && (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Actualizat: {format(new Date(employee.updated_at), 'dd.MM.yyyy HH:mm', { locale: ro })}
                                 </Badge>
                               )}
                             </div>
