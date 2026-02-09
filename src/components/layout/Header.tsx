@@ -3,6 +3,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { GlobalSearch } from '@/components/layout/GlobalSearch';
 import MobileNav from '@/components/layout/MobileNav';
+import { Button } from '@/components/ui/button';
+import { Sun, Moon } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 interface HeaderProps {
   title: string;
@@ -11,10 +14,13 @@ interface HeaderProps {
 
 const Header = ({ title, description }: HeaderProps) => {
   const { user } = useAuth();
-  
+  const { theme, setTheme } = useTheme();
+
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
   };
+
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   return (
     <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border px-4 md:px-6 py-3 md:py-4">
@@ -33,6 +39,10 @@ const Header = ({ title, description }: HeaderProps) => {
 
         <div className="flex items-center gap-2 md:gap-4">
           <GlobalSearch />
+
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8 md:h-9 md:w-9">
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
 
           <NotificationBell />
 
