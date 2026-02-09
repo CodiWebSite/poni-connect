@@ -26,14 +26,25 @@ function removeDiacritics(str: string): string {
 }
 
 /**
- * Normalize a name for comparison: lowercase, no diacritics, no extra spaces, no hyphens
+ * Normalize a name for comparison: lowercase, no diacritics, no extra spaces, 
+ * split hyphens into separate words, remove punctuation
  */
 function normalizeName(name: string): string {
   return removeDiacritics(name)
     .toLowerCase()
-    .replace(/[-]/g, ' ')
+    .replace(/[-–—]/g, ' ')  // hyphens to spaces
+    .replace(/[.,;:'"()]/g, '') // remove punctuation
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Get all meaningful name tokens (split by space, min 2 chars)
+ */
+function getNameTokens(name: string): string[] {
+  return normalizeName(name)
+    .split(' ')
+    .filter(t => t.length >= 2);
 }
 
 /**
@@ -305,41 +316,81 @@ export function parseEmailCsv(content: string): EmailEntry[] {
  * Match employees with emails by fuzzy name comparison
  */
 export function matchEmails(employees: ParsedEmployee[], emailEntries: EmailEntry[]): ParsedEmployee[] {
+  console.log(`Matching ${employees.length} employees with ${emailEntries.length} email entries`);
+  
   const normalizedEmails = emailEntries.map(e => ({
     ...e,
     normalizedName: normalizeName(e.name),
-    nameParts: normalizeName(e.name).split(' '),
+    tokens: getNameTokens(e.name),
   }));
   
-  return employees.map(emp => {
+  let matchedCount = 0;
+  let unmatchedNames: string[] = [];
+  
+  const result = employees.map(emp => {
     const empNormalized = normalizeName(emp.fullName);
-    const empParts = empNormalized.split(' ');
+    const empTokens = getNameTokens(emp.fullName);
     
-    // Try exact match first
+    // 1. Exact normalized match
     let match = normalizedEmails.find(e => e.normalizedName === empNormalized);
     
-    // Try matching with parts in different order
+    // 2. All tokens match (handles different order: "POPESCU ION" vs "ION POPESCU")
     if (!match) {
       match = normalizedEmails.find(e => {
-        if (e.nameParts.length !== empParts.length) return false;
-        const sorted1 = [...e.nameParts].sort();
-        const sorted2 = [...empParts].sort();
-        return sorted1.every((part, i) => part === sorted2[i]);
+        if (e.tokens.length !== empTokens.length) return false;
+        const sorted1 = [...e.tokens].sort();
+        const sorted2 = [...empTokens].sort();
+        return sorted1.every((t, i) => t === sorted2[i]);
       });
     }
     
-    // Try partial match (at least first and last name match)
-    if (!match && empParts.length >= 2) {
+    // 3. Containment match: all tokens from the shorter name exist in the longer name
+    if (!match) {
       match = normalizedEmails.find(e => {
-        return e.nameParts.some(p => empParts.includes(p)) &&
-               e.nameParts.filter(p => empParts.includes(p)).length >= 2;
+        const shorter = e.tokens.length <= empTokens.length ? e.tokens : empTokens;
+        const longer = e.tokens.length <= empTokens.length ? empTokens : e.tokens;
+        return shorter.every(t => longer.includes(t));
+      });
+    }
+    
+    // 4. High overlap: at least 2 tokens match AND that's >= 60% of the shorter name's tokens
+    if (!match && empTokens.length >= 2) {
+      match = normalizedEmails.find(e => {
+        if (e.tokens.length < 2) return false;
+        const commonTokens = empTokens.filter(t => e.tokens.includes(t));
+        const minLen = Math.min(empTokens.length, e.tokens.length);
+        return commonTokens.length >= 2 && commonTokens.length >= minLen * 0.6;
+      });
+    }
+    
+    // 5. Substring match: one name contains the other
+    if (!match) {
+      match = normalizedEmails.find(e => {
+        return e.normalizedName.includes(empNormalized) || empNormalized.includes(e.normalizedName);
       });
     }
     
     if (match) {
+      matchedCount++;
       return { ...emp, email: match.email, emailMatched: true };
     }
     
+    unmatchedNames.push(emp.fullName);
     return emp;
   });
+  
+  console.log(`Matched: ${matchedCount}/${employees.length}`);
+  if (unmatchedNames.length > 0 && unmatchedNames.length <= 20) {
+    console.log('Unmatched names:', unmatchedNames);
+  } else if (unmatchedNames.length > 20) {
+    console.log(`${unmatchedNames.length} unmatched. First 10:`, unmatchedNames.slice(0, 10));
+  }
+  
+  // Also log first 5 email entries for debugging format
+  if (unmatchedNames.length > 0) {
+    console.log('Sample email entries:', normalizedEmails.slice(0, 5).map(e => `"${e.normalizedName}" -> ${e.email}`));
+    console.log('Sample employee names:', employees.slice(0, 5).map(e => `"${normalizeName(e.fullName)}"`));
+  }
+  
+  return result;
 }
