@@ -6,6 +6,7 @@ import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import QuickLinks from '@/components/dashboard/QuickLinks';
 import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
+import { Progress } from '@/components/ui/progress';
 import ActivityHistory from '@/components/dashboard/ActivityHistory';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,10 +115,10 @@ const Dashboard = () => {
           icon={Users}
           iconClassName="bg-primary"
         />
-        <Card className="p-4 flex items-center gap-3">
+        <Card className="p-4 flex flex-col gap-3">
           <div className="flex gap-4 w-full">
             <div className="flex items-center gap-2 flex-1">
-              <UserCheck className="w-5 h-5 text-green-600" />
+              <UserCheck className="w-5 h-5 text-primary" />
               <div>
                 <p className="text-lg font-bold">{stats.employeesWithAccount}</p>
                 <p className="text-xs text-muted-foreground">Cu cont</p>
@@ -130,6 +131,15 @@ const Dashboard = () => {
                 <p className="text-xs text-muted-foreground">Fără cont</p>
               </div>
             </div>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Activare conturi</span>
+              <span className="font-medium text-foreground">
+                {stats.employees > 0 ? Math.round((stats.employeesWithAccount / stats.employees) * 100) : 0}%
+              </span>
+            </div>
+            <Progress value={stats.employees > 0 ? (stats.employeesWithAccount / stats.employees) * 100 : 0} className="h-2" />
           </div>
         </Card>
         <StatCard
