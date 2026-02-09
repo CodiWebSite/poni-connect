@@ -150,7 +150,7 @@ const HRManagement = () => {
   // Manual leave registration dialog
   const [showManualLeave, setShowManualLeave] = useState(false);
   const [manualLeaveForm, setManualLeaveForm] = useState({
-    employee_id: '',
+    employee_id: '', // can be user_id or epd_id prefixed with 'epd:'
     start_date: '',
     end_date: '',
     notes: ''
@@ -551,18 +551,24 @@ const HRManagement = () => {
       return;
     }
 
-    const employee = employees.find(e => e.user_id === manualLeaveForm.employee_id);
-    if (!employee?.record) {
-      toast({ title: 'Eroare', description: 'Angajatul nu are date de angajare configurate.', variant: 'destructive' });
+    const isEpdOnly = manualLeaveForm.employee_id.startsWith('epd:');
+    const epdId = isEpdOnly ? manualLeaveForm.employee_id.replace('epd:', '') : null;
+    const employee = isEpdOnly
+      ? employees.find(e => e.id === epdId)
+      : employees.find(e => e.user_id === manualLeaveForm.employee_id);
+
+    if (!employee) {
+      toast({ title: 'Eroare', description: 'Angajatul nu a fost găsit.', variant: 'destructive' });
       return;
     }
 
     const numberOfDays = calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date);
+    const remainingDays = employee.total_leave_days - employee.used_leave_days;
     
-    if (numberOfDays > employee.record.remaining_leave_days) {
+    if (numberOfDays > remainingDays) {
       toast({ 
         title: 'Eroare', 
-        description: `Angajatul are doar ${employee.record.remaining_leave_days} zile disponibile.`, 
+        description: `Angajatul are doar ${remainingDays} zile disponibile.`, 
         variant: 'destructive' 
       });
       return;
@@ -594,10 +600,14 @@ const HRManagement = () => {
         });
       }
 
+      // Use the employee's user_id if they have an account, otherwise use the HR user's id
+      const requestUserId = employee.user_id || user?.id;
+      if (!requestUserId) throw new Error('No user ID available');
+
       await supabase.from('hr_requests').insert({
-        user_id: employee.user_id!,
-        request_type: 'concediu',
-        status: 'approved',
+        user_id: requestUserId,
+        request_type: 'concediu' as const,
+        status: 'approved' as const,
         approver_id: user?.id,
         details: {
           startDate: manualLeaveForm.start_date,
@@ -605,21 +615,26 @@ const HRManagement = () => {
           numberOfDays,
           manualEntry: true,
           scannedDocumentUrl: fileUrl,
-          notes: manualLeaveForm.notes
+          notes: manualLeaveForm.notes,
+          // Store epd_id for employees without accounts
+          ...(isEpdOnly ? { epd_id: epdId, employee_name: employee.full_name } : {}),
         }
       });
 
-      // Update employee leave balance in employee_records
-      const newUsedDays = employee.record.used_leave_days + numberOfDays;
-      await supabase
-        .from('employee_records')
-        .update({ used_leave_days: newUsedDays })
-        .eq('id', employee.record.id);
+      // Update leave balance
+      if (employee.record) {
+        const newUsedDays = employee.record.used_leave_days + numberOfDays;
+        await supabase
+          .from('employee_records')
+          .update({ used_leave_days: newUsedDays })
+          .eq('id', employee.record.id);
+      }
 
-      // Also update employee_personal_data
+      // Always update employee_personal_data
+      const newEpdUsedDays = employee.used_leave_days + numberOfDays;
       await supabase
         .from('employee_personal_data')
-        .update({ used_leave_days: newUsedDays })
+        .update({ used_leave_days: newEpdUsedDays })
         .eq('id', employee.id);
 
       toast({ 
@@ -639,7 +654,9 @@ const HRManagement = () => {
     setSubmittingManualLeave(false);
   };
 
-  const selectedManualEmployee = employees.find(e => e.user_id === manualLeaveForm.employee_id);
+  const selectedManualEmployee = manualLeaveForm.employee_id.startsWith('epd:')
+    ? employees.find(e => e.id === manualLeaveForm.employee_id.replace('epd:', ''))
+    : employees.find(e => e.user_id === manualLeaveForm.employee_id);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -943,29 +960,26 @@ const HRManagement = () => {
                             <Edit className="w-4 h-4 mr-1" />
                             Editează
                           </Button>
-                          {employee.hasAccount && employee.record && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setManualLeaveForm({ ...manualLeaveForm, employee_id: employee.user_id! });
-                                  setShowManualLeave(true);
-                                }}
-                              >
-                                <Calendar className="w-4 h-4 mr-1" />
-                                Concediu
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setLeaveHistoryEmployee(employee)}
-                              >
-                                <History className="w-4 h-4 mr-1" />
-                                Istoric
-                              </Button>
-                            </>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const empId = employee.hasAccount ? employee.user_id! : `epd:${employee.id}`;
+                              setManualLeaveForm({ ...manualLeaveForm, employee_id: empId });
+                              setShowManualLeave(true);
+                            }}
+                          >
+                            <Calendar className="w-4 h-4 mr-1" />
+                            Concediu
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setLeaveHistoryEmployee(employee)}
+                          >
+                            <History className="w-4 h-4 mr-1" />
+                            Istoric
+                          </Button>
                           {employee.hasAccount && employee.user_id && (
                             <Button
                               variant="outline"
@@ -1407,7 +1421,7 @@ const HRManagement = () => {
               Înregistrare Manuală Concediu
             </DialogTitle>
             <DialogDescription>
-              Adăugați o cerere de concediu pe hârtie pentru un angajat cu cont activ
+              Adăugați o cerere de concediu pe hârtie pentru un angajat
             </DialogDescription>
           </DialogHeader>
           
@@ -1438,23 +1452,30 @@ const HRManagement = () => {
                       onKeyDown={(e) => e.stopPropagation()}
                     />
                   </div>
-                  {employees.filter(e => e.hasAccount && e.record).map((emp) => (
-                    <SelectItem 
-                      key={emp.user_id!} 
-                      value={emp.user_id!}
-                      data-manual-leave-item={emp.full_name.toLowerCase()}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>{emp.full_name}</span>
-                        {emp.department && (
-                          <span className="text-xs text-muted-foreground">({emp.department})</span>
-                        )}
-                        <Badge variant="outline" className="text-xs">
-                          {emp.record?.remaining_leave_days} zile disp.
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {employees.map((emp) => {
+                    const empValue = emp.hasAccount ? emp.user_id! : `epd:${emp.id}`;
+                    const remaining = emp.total_leave_days - emp.used_leave_days;
+                    return (
+                      <SelectItem 
+                        key={empValue} 
+                        value={empValue}
+                        data-manual-leave-item={emp.full_name.toLowerCase()}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{emp.full_name}</span>
+                          {emp.department && (
+                            <span className="text-xs text-muted-foreground">({emp.department})</span>
+                          )}
+                          <Badge variant="outline" className="text-xs">
+                            {remaining} zile disp.
+                          </Badge>
+                          {!emp.hasAccount && (
+                            <Badge variant="secondary" className="text-[10px]">Fără cont</Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -1468,9 +1489,9 @@ const HRManagement = () => {
                 <p className="text-sm">
                   <span className="text-muted-foreground">Sold concediu: </span>
                   <span className="font-bold text-primary">
-                    {selectedManualEmployee.record?.remaining_leave_days} zile disponibile
+                    {selectedManualEmployee.total_leave_days - selectedManualEmployee.used_leave_days} zile disponibile
                   </span>
-                  <span className="text-muted-foreground"> din {selectedManualEmployee.record?.total_leave_days}</span>
+                  <span className="text-muted-foreground"> din {selectedManualEmployee.total_leave_days}</span>
                 </p>
               </div>
             )}
@@ -1496,7 +1517,9 @@ const HRManagement = () => {
 
             {manualLeaveForm.start_date && manualLeaveForm.end_date && (() => {
               const workingDays = calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date);
-              const remaining = selectedManualEmployee?.record?.remaining_leave_days ?? 0;
+              const remaining = selectedManualEmployee
+                ? selectedManualEmployee.total_leave_days - selectedManualEmployee.used_leave_days
+                : 0;
               const afterBalance = remaining - workingDays;
               const exceeds = afterBalance < 0;
               
@@ -1505,7 +1528,7 @@ const HRManagement = () => {
                   <p className="text-sm font-medium">
                     Zile lucrătoare: <span className="font-bold">{workingDays}</span>
                   </p>
-                  {selectedManualEmployee?.record && (
+                  {selectedManualEmployee && (
                     <p className="text-sm">
                       Sold după înregistrare: <span className={`font-bold ${exceeds ? 'text-destructive' : 'text-primary'}`}>{afterBalance} zile</span>
                     </p>
@@ -1575,7 +1598,8 @@ const HRManagement = () => {
         open={!!leaveHistoryEmployee}
         onOpenChange={(open) => !open && setLeaveHistoryEmployee(null)}
         employeeName={leaveHistoryEmployee?.full_name || ''}
-        userId={leaveHistoryEmployee?.user_id || ''}
+        userId={leaveHistoryEmployee?.user_id}
+        epdId={leaveHistoryEmployee?.id}
         employeeRecordId={leaveHistoryEmployee?.employee_record_id || null}
         onChanged={fetchEmployees}
       />

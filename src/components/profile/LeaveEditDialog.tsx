@@ -18,6 +18,7 @@ interface LeaveEditDialogProps {
     created_at: string;
   } | null;
   employeeRecordId: string | null;
+  epdId?: string;
   onSaved: () => void;
 }
 
@@ -34,7 +35,7 @@ const calculateWorkingDays = (startDate: string, endDate: string): number => {
   return count;
 };
 
-export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, onSaved }: LeaveEditDialogProps) => {
+export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, epdId, onSaved }: LeaveEditDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -82,23 +83,40 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, o
       if (error) throw error;
 
       // Adjust leave balance if days changed
-      if (daysDiff !== 0 && employeeRecordId) {
-        const { data: record } = await supabase
-          .from('employee_records')
-          .select('id, used_leave_days')
-          .eq('id', employeeRecordId)
-          .single();
+      if (daysDiff !== 0) {
+        // Update employee_records if available
+        if (employeeRecordId) {
+          const { data: record } = await supabase
+            .from('employee_records')
+            .select('id, used_leave_days')
+            .eq('id', employeeRecordId)
+            .single();
 
-        if (record) {
-          const newUsedDays = Math.max(0, record.used_leave_days + daysDiff);
-          await supabase.from('employee_records').update({ used_leave_days: newUsedDays }).eq('id', record.id);
+          if (record) {
+            const newUsedDays = Math.max(0, record.used_leave_days + daysDiff);
+            await supabase.from('employee_records').update({ used_leave_days: newUsedDays }).eq('id', record.id);
 
+            const { data: epd } = await supabase
+              .from('employee_personal_data')
+              .select('id')
+              .eq('employee_record_id', record.id)
+              .maybeSingle();
+            if (epd) {
+              await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
+            }
+          }
+        }
+
+        // Update EPD directly for employees without accounts
+        const leaveEpdId = leave.details?.epd_id || epdId;
+        if (leaveEpdId && !employeeRecordId) {
           const { data: epd } = await supabase
             .from('employee_personal_data')
-            .select('id')
-            .eq('employee_record_id', record.id)
+            .select('id, used_leave_days')
+            .eq('id', leaveEpdId)
             .maybeSingle();
           if (epd) {
+            const newUsedDays = Math.max(0, (epd.used_leave_days || 0) + daysDiff);
             await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
           }
         }
