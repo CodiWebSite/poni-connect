@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
-import { User, Building2, Phone, Save } from 'lucide-react';
+import { User, Building2, Phone, Save, Sun, Moon, Monitor } from 'lucide-react';
 
 interface Profile {
   full_name: string;
@@ -19,6 +20,7 @@ interface Profile {
 
 const Settings = () => {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<Profile>({
     full_name: '',
@@ -168,6 +170,33 @@ const Settings = () => {
               {isLoading ? 'Se salvează...' : 'Salvează modificările'}
             </Button>
           </form>
+        </div>
+
+        {/* Theme */}
+        <div className="bg-card rounded-xl border border-border">
+          <div className="p-6 border-b border-border">
+            <h2 className="text-lg font-semibold">Aspect</h2>
+            <p className="text-sm text-muted-foreground">Alege tema de culoare preferată</p>
+          </div>
+          <div className="p-6">
+            <div className="flex flex-wrap gap-3">
+              {[
+                { value: 'light', label: 'Luminos', icon: Sun },
+                { value: 'dark', label: 'Întunecat', icon: Moon },
+                { value: 'system', label: 'Sistem', icon: Monitor },
+              ].map(opt => (
+                <Button
+                  key={opt.value}
+                  variant={theme === opt.value ? 'default' : 'outline'}
+                  className="gap-2 flex-1 min-w-[100px]"
+                  onClick={() => setTheme(opt.value)}
+                >
+                  <opt.icon className="w-4 h-4" />
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
 
       </div>
