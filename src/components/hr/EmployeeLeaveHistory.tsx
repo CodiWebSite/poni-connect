@@ -14,7 +14,8 @@ interface EmployeeLeaveHistoryProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   employeeName: string;
-  userId: string;
+  userId?: string;
+  epdId?: string;
   employeeRecordId: string | null;
   onChanged: () => void;
 }
@@ -32,7 +33,7 @@ const leaveStatusConfig: Record<string, { label: string; variant: 'default' | 's
   rejected: { label: 'Respins', variant: 'destructive' },
 };
 
-export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId, employeeRecordId, onChanged }: EmployeeLeaveHistoryProps) => {
+export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId, epdId, employeeRecordId, onChanged }: EmployeeLeaveHistoryProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [leaves, setLeaves] = useState<LeaveHistoryItem[]>([]);
@@ -41,18 +42,42 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
   const [editingLeave, setEditingLeave] = useState<LeaveHistoryItem | null>(null);
 
   useEffect(() => {
-    if (open && userId) fetchLeaves();
-  }, [open, userId]);
+    if (open && (userId || epdId)) fetchLeaves();
+  }, [open, userId, epdId]);
 
   const fetchLeaves = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('hr_requests')
-      .select('id, status, details, created_at')
-      .eq('user_id', userId)
-      .eq('request_type', 'concediu')
-      .order('created_at', { ascending: false });
-    setLeaves(data || []);
+    let allLeaves: LeaveHistoryItem[] = [];
+
+    // Fetch leaves by user_id (for employees with accounts)
+    if (userId) {
+      const { data } = await supabase
+        .from('hr_requests')
+        .select('id, status, details, created_at')
+        .eq('user_id', userId)
+        .eq('request_type', 'concediu')
+        .order('created_at', { ascending: false });
+      if (data) allLeaves = [...allLeaves, ...data];
+    }
+
+    // Also fetch leaves stored with epd_id in details (for employees without accounts)
+    if (epdId) {
+      const { data } = await supabase
+        .from('hr_requests')
+        .select('id, status, details, created_at')
+        .eq('request_type', 'concediu')
+        .contains('details', { epd_id: epdId })
+        .order('created_at', { ascending: false });
+      if (data) {
+        // Merge without duplicates
+        const existingIds = new Set(allLeaves.map(l => l.id));
+        allLeaves = [...allLeaves, ...data.filter(l => !existingIds.has(l.id))];
+      }
+    }
+
+    // Sort by created_at descending
+    allLeaves.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setLeaves(allLeaves);
     setLoading(false);
   };
 
@@ -61,10 +86,12 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
     setDeletingId(leave.id);
     try {
       const numberOfDays = leave.details?.numberOfDays || 0;
+      const leaveEpdId = leave.details?.epd_id || epdId;
 
       const { error } = await supabase.from('hr_requests').delete().eq('id', leave.id);
       if (error) throw error;
 
+      // Revert balance in employee_records if applicable
       if (numberOfDays > 0 && employeeRecordId) {
         const { data: record } = await supabase
           .from('employee_records')
@@ -75,15 +102,30 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
         if (record) {
           const newUsedDays = Math.max(0, record.used_leave_days - numberOfDays);
           await supabase.from('employee_records').update({ used_leave_days: newUsedDays }).eq('id', record.id);
+        }
+      }
 
-          const { data: epd } = await supabase
-            .from('employee_personal_data')
-            .select('id')
-            .eq('employee_record_id', record.id)
-            .maybeSingle();
-          if (epd) {
-            await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
-          }
+      // Always revert in employee_personal_data
+      if (numberOfDays > 0 && leaveEpdId) {
+        const { data: epd } = await supabase
+          .from('employee_personal_data')
+          .select('id, used_leave_days')
+          .eq('id', leaveEpdId)
+          .maybeSingle();
+        if (epd) {
+          const newUsedDays = Math.max(0, (epd.used_leave_days || 0) - numberOfDays);
+          await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
+        }
+      } else if (numberOfDays > 0 && employeeRecordId) {
+        // Fallback: find EPD by employee_record_id
+        const { data: epd } = await supabase
+          .from('employee_personal_data')
+          .select('id, used_leave_days')
+          .eq('employee_record_id', employeeRecordId)
+          .maybeSingle();
+        if (epd) {
+          const newUsedDays = Math.max(0, (epd.used_leave_days || 0) - numberOfDays);
+          await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
         }
       }
 
@@ -189,6 +231,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
         onOpenChange={(o) => { if (!o) setEditingLeave(null); }}
         leave={editingLeave}
         employeeRecordId={employeeRecordId}
+        epdId={epdId}
         onSaved={() => { fetchLeaves(); onChanged(); }}
       />
     </>
