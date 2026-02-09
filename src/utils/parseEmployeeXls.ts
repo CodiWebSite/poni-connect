@@ -1,0 +1,345 @@
+import * as XLSX from 'xlsx';
+
+export interface ParsedEmployee {
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  cnp: string;
+  position: string;
+  department: string;
+  totalLeaveDays: number;
+  usedLeaveDays: number;
+  email: string;
+  emailMatched: boolean;
+}
+
+interface EmailEntry {
+  name: string;
+  email: string;
+}
+
+/**
+ * Remove diacritics for fuzzy name matching
+ */
+function removeDiacritics(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Normalize a name for comparison: lowercase, no diacritics, no extra spaces, no hyphens
+ */
+function normalizeName(name: string): string {
+  return removeDiacritics(name)
+    .toLowerCase()
+    .replace(/[-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Find a header row in a sheet and return column indices
+ */
+function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Record<string, number> } | null {
+  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+  
+  for (let r = range.s.r; r <= Math.min(range.e.r, 15); r++) {
+    const columns: Record<string, number> = {};
+    let foundName = false;
+    let foundCNP = false;
+    
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = sheet[XLSX.utils.encode_cell({ r, c })];
+      if (!cell) continue;
+      const val = String(cell.v || '').trim().toLowerCase();
+      
+      if (val.includes('nume') && (val.includes('prenume') || val.includes('si'))) {
+        columns['name'] = c;
+        foundName = true;
+      } else if (val === 'cnp' || val.includes('c.n.p')) {
+        columns['cnp'] = c;
+        foundCNP = true;
+      } else if (val.includes('functia') || val === 'funcția' || val === 'functie') {
+        columns['function'] = c;
+      } else if (val.includes('grad') || val.includes('treapta')) {
+        columns['grade'] = c;
+      } else if (val.includes('nr. zile co cuvenite') || val.includes('zile co cuvenite') || val.includes('nr.zile co cuvenite')) {
+        columns['totalLeave'] = c;
+      }
+    }
+    
+    // After finding totalLeave, find all "Nr. zile CO" columns that come after it
+    if (foundName && foundCNP && columns['totalLeave'] !== undefined) {
+      const usedLeaveCols: number[] = [];
+      for (let c = columns['totalLeave'] + 1; c <= range.e.c; c++) {
+        const cell = sheet[XLSX.utils.encode_cell({ r, c })];
+        if (!cell) continue;
+        const val = String(cell.v || '').trim().toLowerCase();
+        if (val.includes('nr. zile') || val.includes('nr.zile') || val === 'nr. zile co' || val.includes('zile co')) {
+          // Check it's not the "cuvenite" one
+          if (!val.includes('cuvenite')) {
+            usedLeaveCols.push(c);
+          }
+        }
+      }
+      columns['usedLeaveCols'] = -1; // marker
+      return { headerRow: r, columns: { ...columns, _usedLeaveCols: JSON.stringify(usedLeaveCols) } as unknown as Record<string, number> };
+    }
+    
+    if (foundName && foundCNP) {
+      return { headerRow: r, columns };
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Extract department name from sheet content or sheet name
+ */
+function extractDepartment(sheet: XLSX.WorkSheet, sheetName: string): string {
+  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+  
+  // Search first 10 rows for department info
+  for (let r = range.s.r; r <= Math.min(range.e.r, 10); r++) {
+    for (let c = range.s.c; c <= Math.min(range.e.c, 10); c++) {
+      const cell = sheet[XLSX.utils.encode_cell({ r, c })];
+      if (!cell) continue;
+      const val = String(cell.v || '').trim();
+      
+      // Look for patterns like "Laborator X - ..." or "SRUS" etc.
+      if (val.match(/^Laborator/i) || val.match(/^Lab\s*\d/i)) {
+        return val;
+      }
+      if (val.match(/^SRUS/i) || val.match(/^Serviciul/i) || val.match(/^Compartiment/i) || val.match(/^Audit/i)) {
+        return val;
+      }
+    }
+  }
+  
+  // Fall back to sheet name
+  return sheetName;
+}
+
+/**
+ * Split a full name into first name and last name
+ * Romanian convention: typically "LASTNAME FIRSTNAME" in uppercase
+ */
+function splitName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length <= 1) {
+    return { firstName: parts[0] || '', lastName: '' };
+  }
+  
+  // Convention: first part is last name, rest is first name
+  // But handle compound last names (e.g., "AL-MATARNEH MARIA-CRISTINA")
+  const lastName = parts[0];
+  const firstName = parts.slice(1).join(' ');
+  
+  return { firstName, lastName };
+}
+
+/**
+ * Parse all sheets from an XLS workbook
+ */
+export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[] {
+  const employees: ParsedEmployee[] = [];
+  
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet || !sheet['!ref']) continue;
+    
+    const department = extractDepartment(sheet, sheetName);
+    const headerInfo = findHeaderRow(sheet);
+    
+    if (!headerInfo) continue;
+    
+    const { headerRow, columns } = headerInfo;
+    const range = XLSX.utils.decode_range(sheet['!ref']);
+    
+    // Parse used leave columns
+    const usedLeaveColsRaw = (columns as Record<string, unknown>)['_usedLeaveCols'];
+    const usedLeaveCols: number[] = usedLeaveColsRaw ? JSON.parse(String(usedLeaveColsRaw)) : [];
+    
+    // Read data rows after header
+    for (let r = headerRow + 1; r <= range.e.r; r++) {
+      const nameCell = sheet[XLSX.utils.encode_cell({ r, c: columns['name'] })];
+      const cnpCell = sheet[XLSX.utils.encode_cell({ r, c: columns['cnp'] })];
+      
+      if (!nameCell || !cnpCell) continue;
+      
+      const fullName = String(nameCell.v || '').trim();
+      const cnp = String(cnpCell.v || '').trim();
+      
+      // Skip empty rows, headers, or non-data rows
+      if (!fullName || !cnp || cnp.length < 13 || !/^\d{13}$/.test(cnp)) continue;
+      
+      // Skip if it looks like a header repeat
+      if (fullName.toLowerCase().includes('nume') && fullName.toLowerCase().includes('prenume')) continue;
+      
+      const { firstName, lastName } = splitName(fullName);
+      
+      // Get position (function + grade)
+      let position = '';
+      if (columns['function'] !== undefined) {
+        const funcCell = sheet[XLSX.utils.encode_cell({ r, c: columns['function'] })];
+        if (funcCell) position = String(funcCell.v || '').trim();
+      }
+      if (columns['grade'] !== undefined) {
+        const gradeCell = sheet[XLSX.utils.encode_cell({ r, c: columns['grade'] })];
+        if (gradeCell) {
+          const grade = String(gradeCell.v || '').trim();
+          if (grade) position = position ? `${position} ${grade}` : grade;
+        }
+      }
+      
+      // Get total leave days
+      let totalLeaveDays = 21;
+      if (columns['totalLeave'] !== undefined) {
+        const totalCell = sheet[XLSX.utils.encode_cell({ r, c: columns['totalLeave'] })];
+        if (totalCell && typeof totalCell.v === 'number') {
+          totalLeaveDays = totalCell.v;
+        } else if (totalCell) {
+          const parsed = parseInt(String(totalCell.v), 10);
+          if (!isNaN(parsed)) totalLeaveDays = parsed;
+        }
+      }
+      
+      // Calculate used leave days by summing all "Nr. zile CO" columns after the cuvenite column
+      let usedLeaveDays = 0;
+      for (const col of usedLeaveCols) {
+        const cell = sheet[XLSX.utils.encode_cell({ r, c: col })];
+        if (cell) {
+          if (typeof cell.v === 'number') {
+            usedLeaveDays += cell.v;
+          } else {
+            const parsed = parseInt(String(cell.v), 10);
+            if (!isNaN(parsed)) usedLeaveDays += parsed;
+          }
+        }
+      }
+      
+      employees.push({
+        firstName,
+        lastName,
+        fullName,
+        cnp,
+        position,
+        department,
+        totalLeaveDays,
+        usedLeaveDays,
+        email: '',
+        emailMatched: false,
+      });
+    }
+  }
+  
+  return employees;
+}
+
+/**
+ * Parse email file (CSV or XLS) and return name-email pairs
+ */
+export function parseEmailFile(workbook: XLSX.WorkBook): EmailEntry[] {
+  const entries: EmailEntry[] = [];
+  
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet || !sheet['!ref']) continue;
+    
+    const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { header: 1 });
+    
+    for (const row of data) {
+      const values = Object.values(row);
+      if (values.length < 2) continue;
+      
+      // Find the email column (contains @)
+      let email = '';
+      let name = '';
+      
+      for (const val of values) {
+        const str = String(val || '').trim();
+        if (str.includes('@') && !email) {
+          email = str.toLowerCase();
+        } else if (str && !name && str.length > 2 && !str.includes('@')) {
+          name = str;
+        }
+      }
+      
+      if (email && name) {
+        entries.push({ name, email });
+      }
+    }
+  }
+  
+  return entries;
+}
+
+/**
+ * Parse a CSV string with ; separator for email matching
+ */
+export function parseEmailCsv(content: string): EmailEntry[] {
+  const entries: EmailEntry[] = [];
+  const lines = content.trim().split('\n');
+  
+  for (const line of lines) {
+    const parts = line.split(';').map(p => p.trim());
+    if (parts.length < 2) continue;
+    
+    // Find name and email
+    let email = '';
+    let name = '';
+    for (const part of parts) {
+      if (part.includes('@')) email = part.toLowerCase();
+      else if (part.length > 2 && !name) name = part;
+    }
+    
+    if (email && name) {
+      entries.push({ name, email });
+    }
+  }
+  
+  return entries;
+}
+
+/**
+ * Match employees with emails by fuzzy name comparison
+ */
+export function matchEmails(employees: ParsedEmployee[], emailEntries: EmailEntry[]): ParsedEmployee[] {
+  const normalizedEmails = emailEntries.map(e => ({
+    ...e,
+    normalizedName: normalizeName(e.name),
+    nameParts: normalizeName(e.name).split(' '),
+  }));
+  
+  return employees.map(emp => {
+    const empNormalized = normalizeName(emp.fullName);
+    const empParts = empNormalized.split(' ');
+    
+    // Try exact match first
+    let match = normalizedEmails.find(e => e.normalizedName === empNormalized);
+    
+    // Try matching with parts in different order
+    if (!match) {
+      match = normalizedEmails.find(e => {
+        if (e.nameParts.length !== empParts.length) return false;
+        const sorted1 = [...e.nameParts].sort();
+        const sorted2 = [...empParts].sort();
+        return sorted1.every((part, i) => part === sorted2[i]);
+      });
+    }
+    
+    // Try partial match (at least first and last name match)
+    if (!match && empParts.length >= 2) {
+      match = normalizedEmails.find(e => {
+        return e.nameParts.some(p => empParts.includes(p)) &&
+               e.nameParts.filter(p => empParts.includes(p)).length >= 2;
+      });
+    }
+    
+    if (match) {
+      return { ...emp, email: match.email, emailMatched: true };
+    }
+    
+    return emp;
+  });
+}

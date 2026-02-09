@@ -60,16 +60,18 @@ Deno.serve(async (req) => {
       // Check if already linked
       if (empData.employee_record_id) continue;
 
-      // Update profile with employee data
+      // Update profile with employee data including department and position
       await supabaseAdmin
         .from('profiles')
         .update({
           full_name: `${empData.first_name} ${empData.last_name}`.trim(),
+          department: empData.department || null,
+          position: empData.position || null,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', authUser.id);
 
-      // Create or get employee_record
+      // Create or get employee_record with leave data
       let recordId: string | null = null;
       
       const { data: existingRecord } = await supabaseAdmin
@@ -80,11 +82,13 @@ Deno.serve(async (req) => {
 
       if (existingRecord) {
         recordId = existingRecord.id;
-        // Update hire date if not set
         await supabaseAdmin
           .from('employee_records')
           .update({ 
             hire_date: empData.employment_date,
+            contract_type: empData.contract_type || 'nedeterminat',
+            total_leave_days: empData.total_leave_days ?? 21,
+            used_leave_days: empData.used_leave_days ?? 0,
             updated_at: new Date().toISOString()
           })
           .eq('id', recordId);
@@ -94,7 +98,9 @@ Deno.serve(async (req) => {
           .insert({
             user_id: authUser.id,
             hire_date: empData.employment_date,
-            contract_type: 'nedeterminat'
+            contract_type: empData.contract_type || 'nedeterminat',
+            total_leave_days: empData.total_leave_days ?? 21,
+            used_leave_days: empData.used_leave_days ?? 0,
           })
           .select('id')
           .single();
