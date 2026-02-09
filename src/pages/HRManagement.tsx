@@ -48,8 +48,9 @@ import {
   RotateCcw,
   History
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isWeekend, eachDayOfInterval, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { isPublicHoliday, getPublicHolidayName } from '@/utils/romanianHolidays';
 import { Navigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
@@ -167,10 +168,13 @@ const HRManagement = () => {
   const [loadingArchived, setLoadingArchived] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [leaveHistoryEmployee, setLeaveHistoryEmployee] = useState<EmployeeWithData | null>(null);
+  const [customHolidayDates, setCustomHolidayDates] = useState<string[]>([]);
+  const [customHolidayNames, setCustomHolidayNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (canManageHR) {
       fetchEmployees();
+      fetchCustomHolidays();
       fetchArchivedEmployees();
     }
   }, [canManageHR]);
@@ -557,7 +561,17 @@ const HRManagement = () => {
     }
   };
 
-  // Calculate working days between two dates (excluding weekends)
+  const fetchCustomHolidays = async () => {
+    const { data } = await supabase.from('custom_holidays').select('holiday_date, name').order('holiday_date');
+    if (data) {
+      setCustomHolidayDates(data.map(h => h.holiday_date));
+      const names: Record<string, string> = {};
+      data.forEach(h => { names[h.holiday_date] = h.name; });
+      setCustomHolidayNames(names);
+    }
+  };
+
+  // Calculate working days between two dates (excluding weekends, public holidays, custom holidays)
   const calculateWorkingDays = (startDate: string, endDate: string): number => {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -566,12 +580,41 @@ const HRManagement = () => {
     
     while (current <= end) {
       const dayOfWeek = current.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      const dateStr = format(current, 'yyyy-MM-dd');
+      const isWeekendDay = dayOfWeek === 0 || dayOfWeek === 6;
+      const isHoliday = isPublicHoliday(current);
+      const isCustomHoliday = customHolidayDates.includes(dateStr);
+      
+      if (!isWeekendDay && !isHoliday && !isCustomHoliday) {
         count++;
       }
       current.setDate(current.getDate() + 1);
     }
     return count;
+  };
+
+  // Get non-working days in a period for display
+  const getNonWorkingDays = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const nonWorking: { date: string; reason: string }[] = [];
+    const current = new Date(start);
+    
+    while (current <= end) {
+      const dayOfWeek = current.getDay();
+      const dateStr = format(current, 'yyyy-MM-dd');
+      const formattedDate = format(current, 'dd.MM.yyyy');
+      
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        nonWorking.push({ date: formattedDate, reason: dayOfWeek === 0 ? 'Duminică' : 'Sâmbătă' });
+      } else if (isPublicHoliday(current)) {
+        nonWorking.push({ date: formattedDate, reason: getPublicHolidayName(current) || 'Sărbătoare legală' });
+      } else if (customHolidayDates.includes(dateStr)) {
+        nonWorking.push({ date: formattedDate, reason: customHolidayNames[dateStr] || 'Zi liberă instituție' });
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return nonWorking;
   };
 
   const submitManualLeave = async () => {
@@ -1598,6 +1641,47 @@ const HRManagement = () => {
               </div>
             </div>
 
+            {/* Non-working days warning */}
+            {manualLeaveForm.start_date && manualLeaveForm.end_date && (() => {
+              const nonWorking = getNonWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date);
+              const holidays = nonWorking.filter(d => d.reason !== 'Sâmbătă' && d.reason !== 'Duminică');
+              const weekendCount = nonWorking.filter(d => d.reason === 'Sâmbătă' || d.reason === 'Duminică').length;
+              
+              if (nonWorking.length === 0) return null;
+
+              const totalDays = Math.ceil((new Date(manualLeaveForm.end_date).getTime() - new Date(manualLeaveForm.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+              const allNonWorking = nonWorking.length === totalDays;
+              
+              return (
+                <div className={`p-3 rounded-lg space-y-2 ${allNonWorking ? 'bg-destructive/10 border border-destructive/30' : 'bg-amber-500/10 border border-amber-500/30'}`}>
+                  {allNonWorking && (
+                    <p className="text-sm font-medium text-destructive flex items-center gap-1.5">
+                      🚫 Perioada selectată nu conține zile lucrătoare!
+                    </p>
+                  )}
+                  {holidays.length > 0 && (
+                    <>
+                      <p className="text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                        📅 Zile libere în perioada selectată (excluse automat):
+                      </p>
+                      <div className="space-y-0.5">
+                        {holidays.map((d, i) => (
+                          <p key={i} className="text-xs text-amber-600 dark:text-amber-400">
+                            • <span className="font-medium">{d.date}</span> — {d.reason}
+                          </p>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {weekendCount > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      + {weekendCount} {weekendCount === 1 ? 'zi de weekend' : 'zile de weekend'} excluse
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Overlap warning */}
             {selectedManualEmployee && manualLeaveForm.start_date && manualLeaveForm.end_date && (() => {
               const sameDeptEmployees = employees.filter(e => 
@@ -1690,7 +1774,7 @@ const HRManagement = () => {
             </Button>
             <Button 
               onClick={submitManualLeave} 
-              disabled={submittingManualLeave || !manualLeaveForm.employee_id || !manualLeaveForm.start_date || !manualLeaveForm.end_date}
+              disabled={submittingManualLeave || !manualLeaveForm.employee_id || !manualLeaveForm.start_date || !manualLeaveForm.end_date || (manualLeaveForm.start_date && manualLeaveForm.end_date && calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date) <= 0)}
             >
               {submittingManualLeave ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
