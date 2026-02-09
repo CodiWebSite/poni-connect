@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 
 import { EmployeeImport } from '@/components/hr/EmployeeImport';
 import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
+import { CorrectionRequestsManager } from '@/components/hr/CorrectionRequestsManager';
 import { 
   Users, 
   UserPlus, 
@@ -35,9 +36,9 @@ import {
   Download,
   FileSpreadsheet,
   FilePlus2,
-  
   RefreshCw,
-  CreditCard
+  CreditCard,
+  MessageSquare
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -538,6 +539,10 @@ const HRManagement = () => {
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Angajați</span>
             </TabsTrigger>
+            <TabsTrigger value="corrections" className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Cereri Corecție</span>
+            </TabsTrigger>
             <TabsTrigger value="import" className="gap-2">
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">Import</span>
@@ -783,6 +788,24 @@ const HRManagement = () => {
             )}
           </CardContent>
         </Card>
+        </TabsContent>
+
+        {/* Corrections Tab */}
+        <TabsContent value="corrections">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-primary" />
+                Cereri de Corecție Date
+              </CardTitle>
+              <CardDescription>
+                Cereri trimise de angajați pentru corectarea datelor personale
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CorrectionRequestsManager />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Import Tab */}

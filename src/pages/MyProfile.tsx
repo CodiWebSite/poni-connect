@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestForm';
 import { 
   User, 
   FileText, 
@@ -24,7 +25,8 @@ import {
   Hash,
   History,
   Mail,
-  BadgeCheck
+  BadgeCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -121,6 +123,7 @@ const MyProfile = () => {
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCorrectionForm, setShowCorrectionForm] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -246,6 +249,18 @@ const MyProfile = () => {
               {profile?.phone && (
                 <InfoItem icon={Phone} label="Telefon" value={profile.phone} />
               )}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-muted-foreground hover:text-foreground gap-2"
+                onClick={() => setShowCorrectionForm(true)}
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Date incorecte? Solicitați o corecție
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -450,6 +465,17 @@ const MyProfile = () => {
           </CardContent>
         </Card>
       </div>
+
+      <CorrectionRequestForm 
+        open={showCorrectionForm} 
+        onOpenChange={setShowCorrectionForm}
+        currentData={{
+          full_name: profile?.full_name,
+          department: department || undefined,
+          position: position || undefined,
+          phone: profile?.phone || undefined,
+        }}
+      />
     </MainLayout>
   );
 };
