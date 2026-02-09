@@ -139,7 +139,20 @@ const Dashboard = () => {
                 {stats.employees > 0 ? Math.round((stats.employeesWithAccount / stats.employees) * 100) : 0}%
               </span>
             </div>
-            <Progress value={stats.employees > 0 ? (stats.employeesWithAccount / stats.employees) * 100 : 0} className="h-2" />
+            <Progress 
+              value={stats.employees > 0 ? (stats.employeesWithAccount / stats.employees) * 100 : 0} 
+              className={`h-2 ${
+                stats.employees > 0
+                  ? (stats.employeesWithAccount / stats.employees) * 100 >= 75
+                    ? '[&>div]:bg-green-500'
+                    : (stats.employeesWithAccount / stats.employees) * 100 >= 50
+                      ? '[&>div]:bg-yellow-500'
+                      : (stats.employeesWithAccount / stats.employees) * 100 >= 25
+                        ? '[&>div]:bg-orange-500'
+                        : '[&>div]:bg-red-500'
+                  : ''
+              }`}
+            />
           </div>
         </Card>
         <StatCard
