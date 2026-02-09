@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Calendar, Loader2, ArrowRight, Briefcase, Clock } from 'lucide-react';
 import WeatherWidget from './WeatherWidget';
+import PersonalCalendarWidget from './PersonalCalendarWidget';
 import ActivityHistory from './ActivityHistory';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -121,6 +122,7 @@ const EmployeeDashboard = () => {
 
         {/* Side widgets */}
         <div className="space-y-6">
+          <PersonalCalendarWidget />
           <WeatherWidget />
           <ActivityHistory />
         </div>
