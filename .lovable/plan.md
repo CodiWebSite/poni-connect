@@ -1,111 +1,36 @@
 
 
-# Plan: Export Rapoarte HR + Audit Log + Grafic Activare Conturi
+# Adaugare camp "Data expirare CI" in loc de calcul automat
 
-## 1. Export Rapoarte HR in Excel (imbunatatit)
+## Problema
+Calculul automat al expirarii CI pe baza CNP-ului si datei eliberarii nu este precis. Data reala de expirare este tiparita pe document si poate diferi de formula teoretica. Exemplu: Condrea Codrin-Ioan - calculul da 01.02.2034, dar data reala este 03.08.2031.
 
-Pagina HR Management are deja un export basic (`exportLeaveReport`). Vom adauga un component `HRExportButton` cu un dropdown care ofera mai multe rapoarte:
+## Solutia
+Inlocuirea logicii de calcul cu un camp dedicat `ci_expiry_date` in baza de date, completat manual de HR.
 
-- **Situatia concediilor** -- toti angajatii cu sold concediu (total/utilizate/ramase), departament, contract
-- **Angajati fara cont** -- lista doar a angajatilor care nu au cont activ (hasAccount === false), cu email, departament, pozitie
-- **Angajati cu cont** -- lista angajatilor cu cont activ
-- **Toate cererile HR** -- export al tuturor cererilor HR (concediu, delegatie, adeverinta, demisie) cu status
+## Pasi de implementare
 
-Se va folosi biblioteca `xlsx` deja instalata. Butonul va fi adaugat in header-ul tab-ului "Angajati" din `HRManagement.tsx`.
+### 1. Migrare baza de date
+- Adaugare coloana `ci_expiry_date` (tip `date`, nullable) in tabela `employee_personal_data`
 
-## 2. Audit Log Detaliat pentru Admin
+### 2. Actualizare formular HR (PersonalDataEditor.tsx)
+- Adaugare camp "Data expirare CI" langa campul "Data eliberarii CI"
+- Salvare in noua coloana la submit
 
-### Baza de date
-Se va crea un tabel nou `audit_logs` cu urmatoarele coloane:
-- `id` (uuid, PK)
-- `user_id` (uuid) -- cine a facut actiunea
-- `action` (text) -- tipul actiunii (ex: "role_change", "employee_edit", "leave_approve", "user_delete")
-- `entity_type` (text) -- tipul entitatii afectate (ex: "user_role", "employee_record", "hr_request")
-- `entity_id` (text) -- ID-ul entitatii
-- `details` (jsonb) -- detalii suplimentare (old_value, new_value, etc.)
-- `created_at` (timestamptz)
+### 3. Actualizare HRAlerts.tsx
+- Eliminarea functiei `getCIExpiryDate()` (calculul automat)
+- Citirea directa a valorii din `ci_expiry_date`
+- Alertele vor aparea doar pentru angajatii care au acest camp completat
 
-Politici RLS: doar admin/super_admin pot citi; inserarea se face prin functie SECURITY DEFINER.
+### 4. Actualizare profil angajat (MyProfile.tsx)
+- Afisarea datei de expirare CI in sectiunea de date de identitate
 
-### Functie DB
-O functie `log_audit_event(...)` SECURITY DEFINER care permite inserarea din orice context autentificat.
+### 5. Actualizare import angajati (daca exista coloana in fisierul CSV)
+- Verificare daca importul poate prelua si data de expirare
 
-### UI
-Un nou tab sau sectiune in pagina Admin (`/admin`) cu:
-- Tabel cu ultimele actiuni (paginat)
-- Filtre pe tip actiune, utilizator, data
-- Badge-uri colorate pe tipul actiunii
-
-### Logging
-Se vor adauga apeluri de logging in actiunile existente:
-- Schimbare rol utilizator (Admin.tsx)
-- Stergere cont (Admin.tsx)
-- Aprobare/respingere cereri HR
-- Editare date angajat (HRManagement.tsx)
-
-## 3. Grafic Evolutie Activare Conturi
-
-Pe Dashboard-ul admin, sub cardul de activare conturi, se va adauga un grafic cu `recharts` (deja instalat):
-
-- Tip: Area/Line chart
-- Axe: data pe X, numar conturi activate pe Y
-- Date: se va folosi `employee_records.created_at` ca proxy pentru data activarii contului
-- Se grupeaza pe luna/saptamana
-- Se va afisa si linia de total angajati pentru context
-
----
-
-## Detalii Tehnice
-
-### Fisiere noi:
-1. `src/components/hr/HRExportButton.tsx` -- componenta dropdown export (inlocuieste exportul simplu existent)
-2. `src/components/admin/AuditLog.tsx` -- componenta audit log
-3. `src/components/dashboard/ActivationChart.tsx` -- grafic evolutie activare
-
-### Fisiere modificate:
-1. `src/pages/HRManagement.tsx` -- inlocuire buton export simplu cu `HRExportButton`
-2. `src/pages/Admin.tsx` -- adaugare tab/sectiune Audit Log
-3. `src/pages/Dashboard.tsx` -- adaugare grafic activare sub cardul existent
-
-### Migrare SQL:
-```sql
-CREATE TABLE public.audit_logs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  action text NOT NULL,
-  entity_type text,
-  entity_id text,
-  details jsonb DEFAULT '{}'::jsonb,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
-ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
-
--- Doar admin/super_admin pot citi
-CREATE POLICY "Admins can view audit logs"
-  ON public.audit_logs FOR SELECT
-  USING (has_role(auth.uid(), 'admin'::app_role) 
-    OR has_role(auth.uid(), 'super_admin'::app_role));
-
--- Functie SECURITY DEFINER pentru inserare
-CREATE OR REPLACE FUNCTION public.log_audit_event(
-  _user_id uuid,
-  _action text,
-  _entity_type text DEFAULT NULL,
-  _entity_id text DEFAULT NULL,
-  _details jsonb DEFAULT '{}'::jsonb
-) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
-AS $$
-BEGIN
-  INSERT INTO public.audit_logs (user_id, action, entity_type, entity_id, details)
-  VALUES (_user_id, _action, _entity_type, _entity_id, _details);
-END;
-$$;
-```
-
-### Grafic activare -- logica:
-- Query `employee_records` grupat pe `DATE_TRUNC('month', created_at)`
-- Afisare cu `AreaChart` din recharts
-- Total cumulativ pe fiecare luna
+## Detalii tehnice
+- Coloana noua: `ALTER TABLE employee_personal_data ADD COLUMN ci_expiry_date date;`
+- Tipul `types.ts` se va regenera automat dupa migrare
+- Alertele vor folosi comparatie simpla: `differenceInDays(ci_expiry_date, now)` fata de pragul de 90 zile
+- Fisiere modificate: `HRAlerts.tsx`, `PersonalDataEditor.tsx`, `MyProfile.tsx`
 
