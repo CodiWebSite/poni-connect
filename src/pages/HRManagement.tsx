@@ -41,7 +41,9 @@ import {
   CreditCard,
   MessageSquare,
   UserCheck,
-  UserX
+  UserX,
+  Archive,
+  RotateCcw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -91,6 +93,11 @@ interface EmployeeWithData {
   updated_at?: string;
   last_updated_by?: string;
   last_updated_by_name?: string;
+  is_archived?: boolean;
+  archived_at?: string;
+  archived_by?: string;
+  archive_reason?: string;
+  archived_by_name?: string;
 }
 
 const documentTypes = [
@@ -151,10 +158,14 @@ const HRManagement = () => {
   const [selectedNewEmployee, setSelectedNewEmployee] = useState<string>('');
   const [syncing, setSyncing] = useState(false);
   const [editingPersonalData, setEditingPersonalData] = useState<EmployeeWithData | null>(null);
+  const [archivedEmployees, setArchivedEmployees] = useState<EmployeeWithData[]>([]);
+  const [loadingArchived, setLoadingArchived] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
 
   useEffect(() => {
     if (canManageHR) {
       fetchEmployees();
+      fetchArchivedEmployees();
     }
   }, [canManageHR]);
 
@@ -226,6 +237,88 @@ const HRManagement = () => {
 
     setEmployees(employeesWithData);
     setLoading(false);
+  };
+
+  const fetchArchivedEmployees = async () => {
+    setLoadingArchived(true);
+    const { data: archivedData } = await supabase
+      .from('employee_personal_data')
+      .select('*')
+      .eq('is_archived', true)
+      .order('archived_at', { ascending: false });
+
+    // Fetch archiver names
+    const archiverIds = [...new Set((archivedData || []).map((pd: any) => pd.archived_by).filter(Boolean))];
+    let archiverNames: Record<string, string> = {};
+    if (archiverIds.length > 0) {
+      const { data: archiverProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', archiverIds);
+      if (archiverProfiles) {
+        archiverProfiles.forEach(p => { archiverNames[p.user_id] = p.full_name; });
+      }
+    }
+
+    const mapped: EmployeeWithData[] = (archivedData || []).map((pd: any) => ({
+      id: pd.id,
+      email: pd.email,
+      first_name: pd.first_name,
+      last_name: pd.last_name,
+      full_name: `${pd.last_name} ${pd.first_name}`,
+      cnp: pd.cnp,
+      department: pd.department,
+      position: pd.position,
+      total_leave_days: pd.total_leave_days ?? 21,
+      used_leave_days: pd.used_leave_days ?? 0,
+      employment_date: pd.employment_date,
+      contract_type: pd.contract_type,
+      employee_record_id: pd.employee_record_id,
+      hasAccount: false,
+      is_archived: true,
+      archived_at: pd.archived_at,
+      archived_by: pd.archived_by,
+      archive_reason: pd.archive_reason,
+      archived_by_name: pd.archived_by ? archiverNames[pd.archived_by] : undefined,
+    }));
+
+    setArchivedEmployees(mapped);
+    setLoadingArchived(false);
+  };
+
+  const restoreEmployee = async (employee: EmployeeWithData) => {
+    if (!confirm(`Sigur doriți să restaurați angajatul ${employee.full_name}?`)) return;
+    setRestoringId(employee.id);
+    try {
+      const { error } = await supabase
+        .from('employee_personal_data')
+        .update({
+          is_archived: false,
+          archived_at: null,
+          archived_by: null,
+          archive_reason: null,
+        })
+        .eq('id', employee.id);
+
+      if (error) throw error;
+
+      if (user) {
+        await supabase.rpc('log_audit_event', {
+          _user_id: user.id,
+          _action: 'employee_restore',
+          _entity_type: 'employee_personal_data',
+          _entity_id: employee.id,
+          _details: { employee_name: employee.full_name }
+        });
+      }
+
+      toast({ title: 'Restaurat', description: `${employee.full_name} a fost restaurat în lista activă.` });
+      fetchEmployees();
+      fetchArchivedEmployees();
+    } catch (error) {
+      toast({ title: 'Eroare', description: 'Nu s-a putut restaura angajatul.', variant: 'destructive' });
+    }
+    setRestoringId(null);
   };
 
   const openEditDialog = (employee: EmployeeWithData) => {
@@ -390,6 +483,7 @@ const HRManagement = () => {
 
       toast({ title: 'Arhivat', description: `${employee.full_name} a fost arhivat. Datele rămân în baza de date.` });
       fetchEmployees();
+      fetchArchivedEmployees();
     } catch (error) {
       toast({ title: 'Eroare', description: 'Nu s-a putut arhiva angajatul.', variant: 'destructive' });
     }
@@ -624,6 +718,10 @@ const HRManagement = () => {
             <TabsTrigger value="corrections" className="gap-2">
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Cereri Corecție</span>
+            </TabsTrigger>
+            <TabsTrigger value="archived" className="gap-2">
+              <Archive className="h-4 w-4" />
+              <span className="hidden sm:inline">Arhivați ({archivedEmployees.length})</span>
             </TabsTrigger>
             <TabsTrigger value="import" className="gap-2">
               <Upload className="h-4 w-4" />
@@ -943,6 +1041,87 @@ const HRManagement = () => {
             </CardHeader>
             <CardContent>
               <CorrectionRequestsManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Archived Tab */}
+        <TabsContent value="archived" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Archive className="w-5 h-5 text-primary" />
+                Angajați Arhivați ({archivedEmployees.length})
+              </CardTitle>
+              <CardDescription>
+                Angajați eliminați din lista activă. Datele sunt păstrate în baza de date.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingArchived ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : archivedEmployees.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Archive className="w-12 h-12 mx-auto mb-4 opacity-40" />
+                  <p>Nu există angajați arhivați.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {archivedEmployees.map((employee) => (
+                    <div key={employee.id} className="p-4 bg-secondary/30 rounded-lg border border-border">
+                      <div className="flex flex-col sm:flex-row gap-4 items-start">
+                        <div className="flex items-start gap-3 flex-1">
+                          <Avatar className="w-12 h-12 flex-shrink-0">
+                            <AvatarFallback className="bg-muted text-muted-foreground">
+                              {getInitials(employee.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold">{employee.full_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {employee.position || 'Fără funcție'} • {employee.department || 'Fără departament'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{employee.email}</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {employee.archived_at && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Arhivat: {format(new Date(employee.archived_at), 'dd MMM yyyy HH:mm', { locale: ro })}
+                                </Badge>
+                              )}
+                              {employee.archived_by_name && (
+                                <Badge variant="outline" className="text-xs">
+                                  De: {employee.archived_by_name}
+                                </Badge>
+                              )}
+                              {employee.archive_reason && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Motiv: {employee.archive_reason}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => restoreEmployee(employee)}
+                          disabled={restoringId === employee.id}
+                        >
+                          {restoringId === employee.id ? (
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          ) : (
+                            <RotateCcw className="w-4 h-4 mr-1" />
+                          )}
+                          Restaurează
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
