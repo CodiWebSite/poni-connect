@@ -18,6 +18,7 @@ import { EmployeeImport } from '@/components/hr/EmployeeImport';
 import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
 import { CorrectionRequestsManager } from '@/components/hr/CorrectionRequestsManager';
 import HRExportButton from '@/components/hr/HRExportButton';
+import { EmployeeLeaveHistory } from '@/components/hr/EmployeeLeaveHistory';
 import { 
   Users, 
   UserPlus, 
@@ -43,7 +44,8 @@ import {
   UserCheck,
   UserX,
   Archive,
-  RotateCcw
+  RotateCcw,
+  History
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -161,6 +163,7 @@ const HRManagement = () => {
   const [archivedEmployees, setArchivedEmployees] = useState<EmployeeWithData[]>([]);
   const [loadingArchived, setLoadingArchived] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [leaveHistoryEmployee, setLeaveHistoryEmployee] = useState<EmployeeWithData | null>(null);
 
   useEffect(() => {
     if (canManageHR) {
@@ -941,17 +944,27 @@ const HRManagement = () => {
                             Editează
                           </Button>
                           {employee.hasAccount && employee.record && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setManualLeaveForm({ ...manualLeaveForm, employee_id: employee.user_id! });
-                                setShowManualLeave(true);
-                              }}
-                            >
-                              <Calendar className="w-4 h-4 mr-1" />
-                              Concediu
-                            </Button>
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setManualLeaveForm({ ...manualLeaveForm, employee_id: employee.user_id! });
+                                  setShowManualLeave(true);
+                                }}
+                              >
+                                <Calendar className="w-4 h-4 mr-1" />
+                                Concediu
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setLeaveHistoryEmployee(employee)}
+                              >
+                                <History className="w-4 h-4 mr-1" />
+                                Istoric
+                              </Button>
+                            </>
                           )}
                           {employee.hasAccount && employee.user_id && (
                             <Button
@@ -1555,6 +1568,16 @@ const HRManagement = () => {
         onOpenChange={(open) => !open && setEditingPersonalData(null)}
         onSaved={fetchEmployees}
         employeePersonalDataId={editingPersonalData?.id}
+      />
+
+      {/* Employee Leave History Dialog */}
+      <EmployeeLeaveHistory
+        open={!!leaveHistoryEmployee}
+        onOpenChange={(open) => !open && setLeaveHistoryEmployee(null)}
+        employeeName={leaveHistoryEmployee?.full_name || ''}
+        userId={leaveHistoryEmployee?.user_id || ''}
+        employeeRecordId={leaveHistoryEmployee?.employee_record_id || null}
+        onChanged={fetchEmployees}
       />
     </MainLayout>
   );

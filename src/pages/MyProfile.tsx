@@ -11,7 +11,6 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestForm';
-import { LeaveEditDialog } from '@/components/profile/LeaveEditDialog';
 import { 
   User, 
   FileText, 
@@ -29,8 +28,6 @@ import {
   Mail,
   BadgeCheck,
   AlertTriangle,
-  Trash2,
-  Pencil
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -128,8 +125,6 @@ const MyProfile = () => {
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
-  const [deletingLeave, setDeletingLeave] = useState<string | null>(null);
-  const [editingLeave, setEditingLeave] = useState<LeaveHistoryItem | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -188,69 +183,6 @@ const MyProfile = () => {
     }
   };
 
-  const deleteLeaveRequest = async (leave: LeaveHistoryItem) => {
-    if (!confirm('Sigur doriți să ștergeți acest concediu? Zilele vor fi readăugate în sold.')) return;
-    
-    setDeletingLeave(leave.id);
-    try {
-      const numberOfDays = leave.details?.numberOfDays || 0;
-      
-      // Delete the HR request
-      const { error: deleteError } = await supabase
-        .from('hr_requests')
-        .delete()
-        .eq('id', leave.id);
-      
-      if (deleteError) throw deleteError;
-
-      // Revert leave balance if days were deducted
-      if (numberOfDays > 0 && employeeRecord) {
-        const newUsedDays = Math.max(0, employeeRecord.used_leave_days - numberOfDays);
-        
-        await supabase
-          .from('employee_records')
-          .update({ used_leave_days: newUsedDays })
-          .eq('id', employeeRecord.id);
-
-        // Also update employee_personal_data
-        if (user) {
-          const { data: epd } = await supabase
-            .from('employee_personal_data')
-            .select('id')
-            .eq('employee_record_id', employeeRecord.id)
-            .maybeSingle();
-          
-          if (epd) {
-            await supabase
-              .from('employee_personal_data')
-              .update({ used_leave_days: newUsedDays })
-              .eq('id', epd.id);
-          }
-        }
-      }
-
-      // Log audit event
-      if (user) {
-        await supabase.rpc('log_audit_event', {
-          _user_id: user.id,
-          _action: 'leave_delete',
-          _entity_type: 'hr_request',
-          _entity_id: leave.id,
-          _details: { 
-            days_reverted: numberOfDays,
-            period: `${leave.details?.startDate || '?'} - ${leave.details?.endDate || '?'}`
-          }
-        });
-      }
-
-      toast({ title: 'Șters', description: `Concediul a fost șters. ${numberOfDays} zile au fost readăugate în sold.` });
-      fetchData();
-    } catch (error) {
-      console.error('Delete leave error:', error);
-      toast({ title: 'Eroare', description: 'Nu s-a putut șterge concediul.', variant: 'destructive' });
-    }
-    setDeletingLeave(null);
-  };
 
   const leaveProgress = employeeRecord 
     ? (employeeRecord.used_leave_days / employeeRecord.total_leave_days) * 100 
@@ -408,32 +340,6 @@ const MyProfile = () => {
                           <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>
                         )}
                       </div>
-                      {canManageHR && (
-                        <div className="flex gap-1 shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingLeave(leave)}
-                          >
-                            <Pencil className="w-4 h-4 mr-1" />
-                            Editează
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => deleteLeaveRequest(leave)}
-                            disabled={deletingLeave === leave.id}
-                          >
-                            {deletingLeave === leave.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4 mr-1" />
-                            )}
-                            Șterge
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -560,13 +466,6 @@ const MyProfile = () => {
         }}
       />
 
-      <LeaveEditDialog
-        open={!!editingLeave}
-        onOpenChange={(open) => !open && setEditingLeave(null)}
-        leave={editingLeave}
-        employeeRecordId={employeeRecord?.id || null}
-        onSaved={fetchData}
-      />
     </MainLayout>
   );
 };
