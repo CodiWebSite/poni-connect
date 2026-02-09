@@ -1,11 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, X, Star } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isSameMonth, addMonths, subMonths, isWithinInterval, parseISO, isSameDay } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 // Romanian public holidays for 2025-2030 (fixed + variable Orthodox Easter/Rusalii)
 const PUBLIC_HOLIDAYS: Record<number, string[]> = {
@@ -42,12 +50,18 @@ function isPublicHoliday(day: Date): boolean {
   return PUBLIC_HOLIDAYS[year]?.includes(dateStr) ?? false;
 }
 
-function getHolidayName(day: Date): string | null {
+function getPublicHolidayName(day: Date): string | null {
   const dateStr = format(day, 'yyyy-MM-dd');
   const year = day.getFullYear();
   if (!PUBLIC_HOLIDAYS[year]?.includes(dateStr)) return null;
   const mmdd = format(day, 'MM-dd');
   return HOLIDAY_NAMES[mmdd] || 'Sărbătoare legală';
+}
+
+interface CustomHoliday {
+  id: string;
+  holiday_date: string;
+  name: string;
 }
 
 interface LeaveEntry {
@@ -59,13 +73,74 @@ interface LeaveEntry {
 }
 
 const LeaveCalendar = () => {
+  const { user } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [leaves, setLeaves] = useState<LeaveEntry[]>([]);
+  const [customHolidays, setCustomHolidays] = useState<CustomHoliday[]>([]);
+  const [showAddHoliday, setShowAddHoliday] = useState(false);
+  const [newHolidayName, setNewHolidayName] = useState('');
+  const [newHolidayDate, setNewHolidayDate] = useState<Date>();
 
   useEffect(() => {
     fetchLeaves();
+    fetchCustomHolidays();
   }, [currentMonth]);
+
+  const fetchCustomHolidays = async () => {
+    const { data } = await supabase
+      .from('custom_holidays')
+      .select('id, holiday_date, name')
+      .order('holiday_date');
+    setCustomHolidays(data || []);
+  };
+
+  const addCustomHoliday = async () => {
+    if (!newHolidayDate || !newHolidayName.trim()) {
+      toast.error('Completați data și numele sărbătorii.');
+      return;
+    }
+    const dateStr = format(newHolidayDate, 'yyyy-MM-dd');
+    const { error } = await supabase.from('custom_holidays').insert({
+      holiday_date: dateStr,
+      name: newHolidayName.trim(),
+      created_by: user?.id,
+    });
+    if (error) {
+      if (error.code === '23505') toast.error('Există deja o sărbătoare la această dată.');
+      else toast.error('Eroare: ' + error.message);
+      return;
+    }
+    toast.success('Sărbătoare adăugată');
+    setNewHolidayName('');
+    setNewHolidayDate(undefined);
+    setShowAddHoliday(false);
+    fetchCustomHolidays();
+  };
+
+  const deleteCustomHoliday = async (id: string) => {
+    const { error } = await supabase.from('custom_holidays').delete().eq('id', id);
+    if (error) { toast.error('Eroare la ștergere'); return; }
+    toast.success('Sărbătoare ștearsă');
+    fetchCustomHolidays();
+  };
+
+  const isCustomHoliday = (day: Date): CustomHoliday | undefined => {
+    const dateStr = format(day, 'yyyy-MM-dd');
+    return customHolidays.find(h => h.holiday_date === dateStr);
+  };
+
+  const getHolidayInfo = (day: Date): { name: string; type: 'public' | 'custom' } | null => {
+    const publicName = getPublicHolidayName(day);
+    if (publicName) return { name: publicName, type: 'public' };
+    const custom = isCustomHoliday(day);
+    if (custom) return { name: custom.name, type: 'custom' };
+    return null;
+  };
+
+  const isDayOff = (day: Date): boolean => {
+    return isWeekend(day) || isPublicHoliday(day) || !!isCustomHoliday(day);
+  };
 
   const fetchLeaves = async () => {
     setLoading(true);
@@ -251,22 +326,23 @@ const LeaveCalendar = () => {
                 <div className="flex flex-1">
                   {days.map((day, i) => {
                     const weekend = isWeekend(day);
-                    const holiday = isPublicHoliday(day);
-                    const holidayName = getHolidayName(day);
-                    const dayOff = weekend || holiday;
+                    const holidayInfo = getHolidayInfo(day);
+                    const dayOff = isDayOff(day);
+                    const isCustom = holidayInfo?.type === 'custom';
+                    const isPublic = holidayInfo?.type === 'public';
                     return (
                       <div
                         key={i}
                         className={`flex-1 min-w-[28px] p-1 text-center border-r border-border last:border-r-0 ${
-                          holiday ? 'bg-destructive/10' : weekend ? 'bg-muted/50' : ''
+                          isCustom ? 'bg-amber-500/15' : isPublic ? 'bg-destructive/10' : weekend ? 'bg-muted/50' : ''
                         }`}
-                        title={holidayName || undefined}
+                        title={holidayInfo?.name || undefined}
                       >
-                        <span className={`text-[10px] font-medium ${holiday ? 'text-destructive' : weekend ? 'text-muted-foreground' : 'text-foreground'}`}>
+                        <span className={`text-[10px] font-medium ${isCustom ? 'text-amber-600 dark:text-amber-400' : isPublic ? 'text-destructive' : weekend ? 'text-muted-foreground' : 'text-foreground'}`}>
                           {format(day, 'EEE', { locale: ro }).charAt(0).toUpperCase()}
                         </span>
                         <br />
-                        <span className={`text-xs font-semibold ${holiday ? 'text-destructive' : weekend ? 'text-muted-foreground' : 'text-foreground'}`}>
+                        <span className={`text-xs font-semibold ${isCustom ? 'text-amber-600 dark:text-amber-400' : isPublic ? 'text-destructive' : weekend ? 'text-muted-foreground' : 'text-foreground'}`}>
                           {format(day, 'd')}
                         </span>
                       </div>
@@ -287,18 +363,21 @@ const LeaveCalendar = () => {
                   <div className="flex flex-1">
                     {days.map((day, dayIdx) => {
                       const weekend = isWeekend(day);
-                      const holiday = isPublicHoliday(day);
-                      const dayOff = weekend || holiday;
+                      const holidayInfo = getHolidayInfo(day);
+                      const dayOff = isDayOff(day);
                       const onLeave = isOnLeave(emp.entries, day);
                       const colorClass = colors[empIdx % colors.length];
+                      const isCustom = holidayInfo?.type === 'custom';
+                      const isPublic = holidayInfo?.type === 'public';
 
                       return (
                         <div
                           key={dayIdx}
                           className={`flex-1 min-w-[28px] h-[36px] border-r border-border last:border-r-0 ${
-                            holiday && !onLeave ? 'bg-destructive/8' : weekend ? 'bg-muted/30' : ''
-                          } ${onLeave && !dayOff ? colorClass + ' border-y' : ''}`}
-                          title={onLeave ? `${emp.name} - Concediu` : getHolidayName(day) || ''}
+                            onLeave && !dayOff ? colorClass + ' border-y' :
+                            isCustom ? 'bg-amber-500/8' : isPublic ? 'bg-destructive/8' : weekend ? 'bg-muted/30' : ''
+                          }`}
+                          title={onLeave ? `${emp.name} - Concediu` : holidayInfo?.name || ''}
                         />
                       );
                     })}
@@ -313,15 +392,17 @@ const LeaveCalendar = () => {
                 </div>
                 <div className="flex flex-1">
                   {days.map((day, dayIdx) => {
+                    const dayOff = isDayOff(day);
+                    const holidayInfo = getHolidayInfo(day);
+                    const isCustom = holidayInfo?.type === 'custom';
+                    const isPublic = holidayInfo?.type === 'public';
                     const weekend = isWeekend(day);
-                    const holiday = isPublicHoliday(day);
-                    const dayOff = weekend || holiday;
                     const count = employeeLeaves.filter(emp => isOnLeave(emp.entries, day)).length;
                     return (
                       <div
                         key={dayIdx}
                         className={`flex-1 min-w-[28px] h-[36px] border-r border-border last:border-r-0 flex items-center justify-center ${
-                          holiday ? 'bg-destructive/8' : weekend ? 'bg-muted/30' : ''
+                          isCustom ? 'bg-amber-500/8' : isPublic ? 'bg-destructive/8' : weekend ? 'bg-muted/30' : ''
                         }`}
                       >
                         {count > 0 && !dayOff && (
@@ -339,23 +420,103 @@ const LeaveCalendar = () => {
         )}
 
         {/* Legend */}
-        {employeeLeaves.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground border-t pt-3">
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-3 rounded-sm bg-chart-1/30 border border-chart-1/50" />
-              <span>Perioadă concediu</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-3 rounded-sm bg-destructive/10 border border-destructive/20" />
-              <span>Sărbătoare legală</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-3 rounded-sm bg-muted/50" />
-              <span>Weekend</span>
-            </div>
-            <span className="ml-auto">{employeeLeaves.length} angajați cu concedii în {format(currentMonth, 'MMMM yyyy', { locale: ro })}</span>
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground border-t pt-3">
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-3 rounded-sm bg-chart-1/30 border border-chart-1/50" />
+            <span>Concediu</span>
           </div>
-        )}
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-3 rounded-sm bg-destructive/10 border border-destructive/20" />
+            <span>Sărbătoare legală</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-3 rounded-sm bg-amber-500/15 border border-amber-500/30" />
+            <span>Zi liberă instituție</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-3 rounded-sm bg-muted/50" />
+            <span>Weekend</span>
+          </div>
+        </div>
+
+        {/* Custom Holidays Management */}
+        <div className="mt-4 border-t pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold flex items-center gap-1.5">
+              <Star className="w-4 h-4 text-amber-500" />
+              Zile Libere Instituție
+            </h4>
+            <Dialog open={showAddHoliday} onOpenChange={setShowAddHoliday}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <Plus className="w-3.5 h-3.5" />
+                  Adaugă
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Adaugă Zi Liberă</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Nume</Label>
+                    <Input
+                      value={newHolidayName}
+                      onChange={(e) => setNewHolidayName(e.target.value)}
+                      placeholder="Ex: Zi porți deschise"
+                      maxLength={100}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Data</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn("w-full justify-start text-left font-normal", !newHolidayDate && "text-muted-foreground")}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {newHolidayDate ? format(newHolidayDate, 'PPP', { locale: ro }) : 'Selectează data'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={newHolidayDate}
+                          onSelect={setNewHolidayDate}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowAddHoliday(false)}>Anulează</Button>
+                    <Button onClick={addCustomHoliday}>Adaugă</Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {customHolidays.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Nu există zile libere adăugate de instituție.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {customHolidays.map((h) => (
+                <Badge key={h.id} variant="outline" className="gap-1.5 text-xs bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300">
+                  {format(parseISO(h.holiday_date), 'dd MMM yyyy', { locale: ro })} — {h.name}
+                  <button
+                    onClick={() => deleteCustomHoliday(h.id)}
+                    className="ml-0.5 hover:text-destructive transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
