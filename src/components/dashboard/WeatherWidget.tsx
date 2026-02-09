@@ -17,30 +17,44 @@ const WeatherWidget = () => {
 
   useEffect(() => {
     fetchWeather();
-    // Refresh every second
-    const interval = setInterval(fetchWeather, 1000);
+    // Open-Meteo allows ~10k req/day; refresh every 10 minutes
+    const interval = setInterval(fetchWeather, 10 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const getConditionFromCode = (code: number): { text: string; iconCode: string } => {
+    if (code === 0) return { text: 'Cer senin', iconCode: '113' };
+    if (code <= 3) return { text: 'Parțial noros', iconCode: '116' };
+    if (code === 45 || code === 48) return { text: 'Ceață', iconCode: '122' };
+    if (code >= 51 && code <= 57) return { text: 'Burniță', iconCode: '176' };
+    if (code >= 61 && code <= 67) return { text: 'Ploaie', iconCode: '302' };
+    if (code >= 71 && code <= 77) return { text: 'Ninsoare', iconCode: '338' };
+    if (code >= 80 && code <= 82) return { text: 'Averse', iconCode: '356' };
+    if (code >= 85 && code <= 86) return { text: 'Averse de ninsoare', iconCode: '371' };
+    if (code >= 95 && code <= 99) return { text: 'Furtună', iconCode: '200' };
+    return { text: 'Variabil', iconCode: '116' };
+  };
 
   const fetchWeather = async () => {
     try {
       setLoading(true);
-      // Using wttr.in API - free, no API key required
-      const response = await fetch('https://wttr.in/Iasi,Romania?format=j1');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch weather');
-      }
+      // Open-Meteo API - free, no API key, generous rate limits
+      const response = await fetch(
+        'https://api.open-meteo.com/v1/forecast?latitude=47.1585&longitude=27.6014&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe%2FBucharest'
+      );
+
+      if (!response.ok) throw new Error('Failed to fetch weather');
 
       const data = await response.json();
-      const current = data.current_condition[0];
+      const current = data.current;
+      const condition = getConditionFromCode(current.weather_code);
 
       setWeather({
-        temperature: parseInt(current.temp_C),
-        condition: current.weatherDesc[0].value,
-        humidity: parseInt(current.humidity),
-        windSpeed: parseInt(current.windspeedKmph),
-        icon: current.weatherCode,
+        temperature: Math.round(current.temperature_2m),
+        condition: condition.text,
+        humidity: current.relative_humidity_2m,
+        windSpeed: Math.round(current.wind_speed_10m),
+        icon: condition.iconCode,
       });
       setError(null);
     } catch (err) {
