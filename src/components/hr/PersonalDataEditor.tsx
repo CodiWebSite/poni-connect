@@ -40,6 +40,7 @@ interface PersonalDataEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved?: () => void;
+  employeePersonalDataId?: string;
 }
 
 export const PersonalDataEditor = ({ 
@@ -47,7 +48,8 @@ export const PersonalDataEditor = ({
   employeeName, 
   open, 
   onOpenChange,
-  onSaved 
+  onSaved,
+  employeePersonalDataId
 }: PersonalDataEditorProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -78,20 +80,26 @@ export const PersonalDataEditor = ({
   });
 
   useEffect(() => {
-    if (open && employeeRecordId) {
+    if (open && (employeeRecordId || employeePersonalDataId)) {
       fetchPersonalData();
     }
-  }, [open, employeeRecordId]);
+  }, [open, employeeRecordId, employeePersonalDataId]);
 
   const fetchPersonalData = async () => {
-    if (!employeeRecordId) return;
-    
     setLoading(true);
-    const { data, error } = await supabase
-      .from('employee_personal_data')
-      .select('*')
-      .eq('employee_record_id', employeeRecordId)
-      .maybeSingle();
+    
+    let query = supabase.from('employee_personal_data').select('*');
+    
+    if (employeeRecordId) {
+      query = query.eq('employee_record_id', employeeRecordId);
+    } else if (employeePersonalDataId) {
+      query = query.eq('id', employeePersonalDataId);
+    } else {
+      setLoading(false);
+      return;
+    }
+    
+    const { data, error } = await query.maybeSingle();
 
     if (data) {
       setPersonalData(data);

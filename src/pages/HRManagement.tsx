@@ -38,20 +38,14 @@ import {
   FilePlus2,
   RefreshCw,
   CreditCard,
-  MessageSquare
+  MessageSquare,
+  UserCheck,
+  UserX
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { Navigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-
-interface Profile {
-  user_id: string;
-  full_name: string;
-  department: string | null;
-  position: string | null;
-  phone: string | null;
-}
 
 interface EmployeeRecord {
   id: string;
@@ -73,9 +67,26 @@ interface EmployeeDocument {
   created_at: string;
 }
 
-interface EmployeeWithData extends Profile {
+interface EmployeeWithData {
+  // From employee_personal_data
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  cnp: string;
+  department: string | null;
+  position: string | null;
+  total_leave_days: number;
+  used_leave_days: number;
+  employment_date: string;
+  contract_type: string | null;
+  employee_record_id: string | null;
+  // Linked data
   record?: EmployeeRecord;
   documents?: EmployeeDocument[];
+  hasAccount: boolean;
+  user_id?: string;
 }
 
 const documentTypes = [
@@ -87,7 +98,6 @@ const documentTypes = [
   { value: 'adeverinta', label: 'Adeverință' },
   { value: 'altele', label: 'Altele' }
 ];
-
 
 const HRManagement = () => {
   const { user } = useAuth();
@@ -103,7 +113,6 @@ const HRManagement = () => {
   const [editForm, setEditForm] = useState({
     department: '',
     position: '',
-    phone: '',
     hire_date: '',
     contract_type: 'nedeterminat',
     total_leave_days: 21,
@@ -121,8 +130,7 @@ const HRManagement = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   
-  
-  // New employee dialog - now for selecting incomplete employees
+  // New employee dialog
   const [showNewEmployee, setShowNewEmployee] = useState(false);
   
   // Manual leave registration dialog
@@ -148,20 +156,20 @@ const HRManagement = () => {
   const fetchEmployees = async () => {
     setLoading(true);
     
-    // Fetch all profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('user_id, full_name, department, position, phone')
-      .order('full_name');
+    // Fetch ALL employees from employee_personal_data (the master list)
+    const { data: personalData, error: pdError } = await supabase
+      .from('employee_personal_data')
+      .select('*')
+      .order('last_name');
     
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
+    if (pdError) {
+      console.error('Error fetching employee_personal_data:', pdError);
       toast({ title: 'Eroare', description: 'Nu s-au putut încărca angajații.', variant: 'destructive' });
       setLoading(false);
       return;
     }
 
-    // Fetch all employee records
+    // Fetch all employee records (for employees with accounts)
     const { data: records } = await supabase
       .from('employee_records')
       .select('*');
@@ -171,11 +179,28 @@ const HRManagement = () => {
       .from('employee_documents')
       .select('*');
 
-    const employeesWithData: EmployeeWithData[] = profiles?.map(profile => ({
-      ...profile,
-      record: records?.find(r => r.user_id === profile.user_id),
-      documents: documents?.filter(d => d.user_id === profile.user_id) || [],
-    })) || [];
+    const employeesWithData: EmployeeWithData[] = personalData?.map(pd => {
+      const record = records?.find(r => r.id === pd.employee_record_id);
+      return {
+        id: pd.id,
+        email: pd.email,
+        first_name: pd.first_name,
+        last_name: pd.last_name,
+        full_name: `${pd.first_name} ${pd.last_name}`,
+        cnp: pd.cnp,
+        department: pd.department,
+        position: pd.position,
+        total_leave_days: record?.total_leave_days ?? pd.total_leave_days ?? 21,
+        used_leave_days: record?.used_leave_days ?? pd.used_leave_days ?? 0,
+        employment_date: pd.employment_date,
+        contract_type: pd.contract_type,
+        employee_record_id: pd.employee_record_id,
+        record,
+        documents: record ? documents?.filter(d => d.user_id === record.user_id) : [],
+        hasAccount: !!pd.employee_record_id && !!record,
+        user_id: record?.user_id,
+      };
+    }) || [];
 
     setEmployees(employeesWithData);
     setLoading(false);
@@ -186,11 +211,10 @@ const HRManagement = () => {
     setEditForm({
       department: employee.department || '',
       position: employee.position || '',
-      phone: employee.phone || '',
-      hire_date: employee.record?.hire_date || '',
-      contract_type: employee.record?.contract_type || 'nedeterminat',
-      total_leave_days: employee.record?.total_leave_days || 21,
-      used_leave_days: employee.record?.used_leave_days || 0
+      hire_date: employee.record?.hire_date || employee.employment_date || '',
+      contract_type: employee.record?.contract_type || employee.contract_type || 'nedeterminat',
+      total_leave_days: employee.total_leave_days,
+      used_leave_days: employee.used_leave_days,
     });
   };
 
@@ -199,71 +223,58 @@ const HRManagement = () => {
     
     setSaving(true);
     
-    // Update profile data (department, position, phone)
-    const { error: profileError } = await supabase
-      .from('profiles')
+    // 1. Always update employee_personal_data (the master record)
+    const { error: epdError } = await supabase
+      .from('employee_personal_data')
       .update({
         department: editForm.department || null,
         position: editForm.position || null,
-        phone: editForm.phone || null
+        employment_date: editForm.hire_date || editingEmployee.employment_date,
+        contract_type: editForm.contract_type,
+        total_leave_days: editForm.total_leave_days,
+        used_leave_days: editForm.used_leave_days,
       })
-      .eq('user_id', editingEmployee.user_id);
+      .eq('id', editingEmployee.id);
 
-    if (profileError) {
-      toast({ title: 'Eroare', description: 'Nu s-au putut salva datele profilului.', variant: 'destructive' });
+    if (epdError) {
+      toast({ title: 'Eroare', description: 'Nu s-au putut salva datele.', variant: 'destructive' });
       setSaving(false);
       return;
     }
-    
-    if (editingEmployee.record) {
-      // Update existing employee record
-      const { error } = await supabase
+
+    // 2. If employee has an account, also sync to employee_records and profiles
+    if (editingEmployee.record && editingEmployee.user_id) {
+      await supabase
         .from('employee_records')
         .update({
           hire_date: editForm.hire_date || null,
           contract_type: editForm.contract_type,
           total_leave_days: editForm.total_leave_days,
-          used_leave_days: editForm.used_leave_days
+          used_leave_days: editForm.used_leave_days,
         })
         .eq('id', editingEmployee.record.id);
 
-      if (error) {
-        toast({ title: 'Eroare', description: 'Nu s-au putut salva datele de angajare.', variant: 'destructive' });
-      } else {
-        toast({ title: 'Succes', description: 'Datele angajatului au fost actualizate.' });
-        fetchEmployees();
-      }
-    } else {
-      // Create new employee record
-      const { error } = await supabase
-        .from('employee_records')
-        .insert({
-          user_id: editingEmployee.user_id,
-          hire_date: editForm.hire_date || null,
-          contract_type: editForm.contract_type,
-          total_leave_days: editForm.total_leave_days,
-          used_leave_days: editForm.used_leave_days
-        });
-
-      if (error) {
-        toast({ title: 'Eroare', description: 'Nu s-au putut crea datele de angajare.', variant: 'destructive' });
-      } else {
-        toast({ title: 'Succes', description: 'Datele angajatului au fost create.' });
-        fetchEmployees();
-      }
+      await supabase
+        .from('profiles')
+        .update({
+          department: editForm.department || null,
+          position: editForm.position || null,
+        })
+        .eq('user_id', editingEmployee.user_id);
     }
-    
+
+    toast({ title: 'Succes', description: 'Datele angajatului au fost actualizate.' });
+    fetchEmployees();
     setSaving(false);
     setEditingEmployee(null);
   };
 
   const uploadDocument = async () => {
-    if (!uploadingFor || !selectedFile) return;
+    if (!uploadingFor || !selectedFile || !uploadingFor.user_id) return;
     
     setUploading(true);
     
     try {
-      // Upload file to storage
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${uploadingFor.user_id}/${Date.now()}.${fileExt}`;
       
@@ -273,7 +284,6 @@ const HRManagement = () => {
 
       if (uploadError) throw uploadError;
 
-      // Create document record
       const { error: dbError } = await supabase
         .from('employee_documents')
         .insert({
@@ -340,13 +350,13 @@ const HRManagement = () => {
     }
   };
 
-  // Get incomplete employees (missing department, position, or no employee_record)
+  // Get incomplete employees (missing department or position in employee_personal_data)
   const incompleteEmployees = employees.filter(e => 
-    !e.department || !e.position || !e.record
+    !e.department || !e.position
   );
 
-  const selectEmployeeToComplete = (userId: string) => {
-    const employee = employees.find(e => e.user_id === userId);
+  const selectEmployeeToComplete = (epdId: string) => {
+    const employee = employees.find(e => e.id === epdId);
     if (employee) {
       setShowNewEmployee(false);
       openEditDialog(employee);
@@ -398,10 +408,9 @@ const HRManagement = () => {
     try {
       let fileUrl: string | null = null;
 
-      // Upload scanned document if provided
-      if (manualLeaveFile) {
+      if (manualLeaveFile && employee.user_id) {
         const fileExt = manualLeaveFile.name.split('.').pop();
-        const fileName = `${manualLeaveForm.employee_id}/manual-leave-${Date.now()}.${fileExt}`;
+        const fileName = `${employee.user_id}/manual-leave-${Date.now()}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('employee-documents')
@@ -410,9 +419,8 @@ const HRManagement = () => {
         if (uploadError) throw uploadError;
         fileUrl = fileName;
 
-        // Create document record for the scanned leave request
         await supabase.from('employee_documents').insert({
-          user_id: manualLeaveForm.employee_id,
+          user_id: employee.user_id,
           document_type: 'cerere_concediu_scanata',
           name: `Cerere concediu ${format(new Date(manualLeaveForm.start_date), 'dd.MM.yyyy')} - ${format(new Date(manualLeaveForm.end_date), 'dd.MM.yyyy')}`,
           description: manualLeaveForm.notes || 'Cerere de concediu scanată - înregistrare manuală',
@@ -421,9 +429,8 @@ const HRManagement = () => {
         });
       }
 
-      // Create HR request record as approved
       await supabase.from('hr_requests').insert({
-        user_id: manualLeaveForm.employee_id,
+        user_id: employee.user_id!,
         request_type: 'concediu',
         status: 'approved',
         approver_id: user?.id,
@@ -437,19 +444,24 @@ const HRManagement = () => {
         }
       });
 
-      // Update employee leave balance
+      // Update employee leave balance in employee_records
       const newUsedDays = employee.record.used_leave_days + numberOfDays;
       await supabase
         .from('employee_records')
         .update({ used_leave_days: newUsedDays })
         .eq('id', employee.record.id);
 
+      // Also update employee_personal_data
+      await supabase
+        .from('employee_personal_data')
+        .update({ used_leave_days: newUsedDays })
+        .eq('id', employee.id);
+
       toast({ 
         title: 'Succes', 
         description: `Cererea de concediu a fost înregistrată. ${numberOfDays} zile deduse din sold.` 
       });
 
-      // Reset form and refresh
       setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '' });
       setManualLeaveFile(null);
       setShowManualLeave(false);
@@ -470,21 +482,23 @@ const HRManagement = () => {
 
   const exportLeaveReport = () => {
     const data = employees.map(e => ({
-      'Nume Complet': e.full_name,
+      'Nume': e.last_name,
+      'Prenume': e.first_name,
+      'Email': e.email,
       'Departament': e.department || '-',
       'Funcție': e.position || '-',
-      'Data Angajării': e.record?.hire_date ? format(new Date(e.record.hire_date), 'dd.MM.yyyy') : '-',
-      'Tip Contract': e.record?.contract_type || '-',
-      'Total Zile Concediu': e.record?.total_leave_days ?? 21,
-      'Zile Utilizate': e.record?.used_leave_days ?? 0,
-      'Zile Rămase': e.record?.remaining_leave_days ?? (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0)
+      'Data Angajării': e.employment_date ? format(new Date(e.employment_date), 'dd.MM.yyyy') : '-',
+      'Tip Contract': e.contract_type || '-',
+      'Total Zile Concediu': e.total_leave_days,
+      'Zile Utilizate': e.used_leave_days,
+      'Zile Rămase': e.total_leave_days - e.used_leave_days,
+      'Cont Creat': e.hasAccount ? 'Da' : 'Nu',
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Raport Concedii');
     
-    // Auto-width columns
     const colWidths = Object.keys(data[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
     ws['!cols'] = colWidths;
 
@@ -519,6 +533,7 @@ const HRManagement = () => {
 
   const filteredEmployees = employees.filter(e =>
     e.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     e.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     e.position?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -528,7 +543,8 @@ const HRManagement = () => {
     return <Navigate to="/" replace />;
   }
 
-  
+  const employeesWithAccounts = employees.filter(e => e.hasAccount);
+  const remainingLeave = (emp: EmployeeWithData) => emp.total_leave_days - emp.used_leave_days;
 
   return (
     <MainLayout title="Gestiune HR" description="Administrare date angajați - Confidențial">
@@ -561,10 +577,12 @@ const HRManagement = () => {
               <FilePlus2 className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Concediu Manual</span>
             </Button>
-            <Button onClick={() => setShowNewEmployee(true)}>
-              <UserPlus className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Angajat Nou</span>
-            </Button>
+            {incompleteEmployees.length > 0 && (
+              <Button onClick={() => setShowNewEmployee(true)}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Completare Date</span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -574,7 +592,7 @@ const HRManagement = () => {
           <div className="relative max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Caută angajați..."
+              placeholder="Caută după nume, email, departament..."
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -597,6 +615,17 @@ const HRManagement = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
+                  <UserCheck className="w-8 h-8 text-green-500" />
+                  <div>
+                    <p className="text-2xl font-bold">{employeesWithAccounts.length}</p>
+                    <p className="text-xs text-muted-foreground">Cu Cont Activ</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
                   <FileText className="w-8 h-8 text-blue-500" />
                   <div>
                     <p className="text-2xl font-bold">
@@ -610,184 +639,183 @@ const HRManagement = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <Calendar className="w-8 h-8 text-green-500" />
-                  <div>
-                    <p className="text-2xl font-bold">
-                      {employees.filter(e => e.record).length}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Cu Date Complete</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
                   <Clock className="w-8 h-8 text-amber-500" />
                   <div>
-                    <p className="text-2xl font-bold">
-                      {employees.filter(e => !e.record || !e.department || !e.position).length}
-                    </p>
+                    <p className="text-2xl font-bold">{incompleteEmployees.length}</p>
                     <p className="text-xs text-muted-foreground">Date Incomplete</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              Lista Angajaților
-            </CardTitle>
-            <CardDescription>
-              Gestionează datele și documentele fiecărui angajat
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            ) : filteredEmployees.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Nu s-au găsit angajați</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredEmployees.map((employee) => (
-                  <div
-                    key={employee.user_id}
-                    className="p-4 bg-secondary/30 rounded-lg border border-border"
-                  >
-                    <div className="flex flex-col lg:flex-row gap-4">
-                      {/* Employee Info */}
-                      <div className="flex items-start gap-3 flex-1">
-                        <Avatar className="w-12 h-12 flex-shrink-0">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {getInitials(employee.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground">{employee.full_name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {employee.position || 'Fără funcție'} • {employee.department || 'Fără departament'}
-                          </p>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                Lista Angajaților ({filteredEmployees.length})
+              </CardTitle>
+              <CardDescription>
+                Toți angajații importați din fișierele XLS — gestionează datele și documentele
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : filteredEmployees.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Nu s-au găsit angajați</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredEmployees.map((employee) => (
+                    <div
+                      key={employee.id}
+                      className="p-4 bg-secondary/30 rounded-lg border border-border"
+                    >
+                      <div className="flex flex-col lg:flex-row gap-4">
+                        {/* Employee Info */}
+                        <div className="flex items-start gap-3 flex-1">
+                          <Avatar className="w-12 h-12 flex-shrink-0">
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {getInitials(employee.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
                           
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {employee.record ? (
-                              <>
-                                <Badge variant="outline" className="text-xs">
-                                  <Calendar className="w-3 h-3 mr-1" />
-                                  {employee.record.remaining_leave_days} zile disponibile
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-semibold text-foreground">{employee.full_name}</p>
+                              {employee.hasAccount ? (
+                                <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                                  <UserCheck className="w-3 h-3 mr-1" />
+                                  Cont activ
                                 </Badge>
-                                {employee.record.hire_date && (
-                                  <Badge variant="outline" className="text-xs">
-                                    Angajat: {format(new Date(employee.record.hire_date), 'dd MMM yyyy', { locale: ro })}
-                                  </Badge>
-                                )}
-                              </>
-                            ) : (
-                              <Badge variant="destructive" className="text-xs">
-                                Date lipsă
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">
+                                  <UserX className="w-3 h-3 mr-1" />
+                                  Fără cont
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {employee.position || 'Fără funcție'} • {employee.department || 'Fără departament'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{employee.email}</p>
+                            
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <Badge variant="outline" className="text-xs">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                {remainingLeave(employee)} zile disponibile
                               </Badge>
-                            )}
-                            <Badge variant="secondary" className="text-xs">
-                              <FileText className="w-3 h-3 mr-1" />
-                              {employee.documents?.length || 0} doc.
-                            </Badge>
+                              {employee.employment_date && (
+                                <Badge variant="outline" className="text-xs">
+                                  Angajat: {format(new Date(employee.employment_date), 'dd MMM yyyy', { locale: ro })}
+                                </Badge>
+                              )}
+                              {(!employee.department || !employee.position) && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Date incomplete
+                                </Badge>
+                              )}
+                              {employee.documents && employee.documents.length > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  {employee.documents.length} doc.
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Actions */}
-                      <div className="flex flex-wrap gap-2 lg:flex-shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditDialog(employee)}
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Editează
-                        </Button>
-                        {employee.record && (
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-2 lg:flex-shrink-0">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              setManualLeaveForm({ ...manualLeaveForm, employee_id: employee.user_id });
-                              setShowManualLeave(true);
-                            }}
+                            onClick={() => openEditDialog(employee)}
                           >
-                            <Calendar className="w-4 h-4 mr-1" />
-                            Concediu
+                            <Edit className="w-4 h-4 mr-1" />
+                            Editează
                           </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setUploadingFor(employee)}
-                        >
-                          <Upload className="w-4 h-4 mr-1" />
-                          Încarcă Doc.
-                        </Button>
-                        {employee.record && (
+                          {employee.hasAccount && employee.record && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setManualLeaveForm({ ...manualLeaveForm, employee_id: employee.user_id! });
+                                setShowManualLeave(true);
+                              }}
+                            >
+                              <Calendar className="w-4 h-4 mr-1" />
+                              Concediu
+                            </Button>
+                          )}
+                          {employee.hasAccount && employee.user_id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setUploadingFor(employee)}
+                            >
+                              <Upload className="w-4 h-4 mr-1" />
+                              Doc.
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setEditingPersonalData(employee)}
                           >
                             <CreditCard className="w-4 h-4 mr-1" />
-                            Date Personale
+                            Date CI
                           </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Documents Preview */}
-                    {employee.documents && employee.documents.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-border">
-                        <p className="text-sm font-medium mb-2">Documente:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {employee.documents.slice(0, 5).map((doc) => (
-                            <div
-                              key={doc.id}
-                              className="flex items-center gap-1 px-2 py-1 bg-background rounded text-xs border"
-                            >
-                              <FileText className="w-3 h-3" />
-                              <span className="max-w-[100px] truncate">{doc.name}</span>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="w-5 h-5"
-                                onClick={() => downloadDocument(doc)}
-                              >
-                                <Download className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="w-5 h-5 text-destructive"
-                                onClick={() => deleteDocument(doc)}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ))}
-                          {employee.documents.length > 5 && (
-                            <Badge variant="secondary">+{employee.documents.length - 5} mai multe</Badge>
-                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
+                      {/* Documents Preview */}
+                      {employee.documents && employee.documents.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <p className="text-sm font-medium mb-2">Documente:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {employee.documents.slice(0, 5).map((doc) => (
+                              <div
+                                key={doc.id}
+                                className="flex items-center gap-1 px-2 py-1 bg-background rounded text-xs border"
+                              >
+                                <FileText className="w-3 h-3" />
+                                <span className="max-w-[100px] truncate">{doc.name}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="w-5 h-5"
+                                  onClick={() => downloadDocument(doc)}
+                                >
+                                  <Download className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="w-5 h-5 text-destructive"
+                                  onClick={() => deleteDocument(doc)}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            ))}
+                            {employee.documents.length > 5 && (
+                              <Badge variant="secondary">+{employee.documents.length - 5} mai multe</Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Corrections Tab */}
@@ -799,7 +827,7 @@ const HRManagement = () => {
                 Cereri de Corecție Date
               </CardTitle>
               <CardDescription>
-                Cereri trimise de angajați pentru corectarea datelor personale
+                Gestionați cererile de corecție trimise de angajați
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -812,16 +840,18 @@ const HRManagement = () => {
         <TabsContent value="import">
           <EmployeeImport />
         </TabsContent>
-
       </Tabs>
 
       {/* Edit Employee Dialog */}
-      <Dialog open={!!editingEmployee} onOpenChange={() => setEditingEmployee(null)}>
+      <Dialog open={!!editingEmployee} onOpenChange={(open) => !open && setEditingEmployee(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editare Date Angajat</DialogTitle>
             <DialogDescription>
               {editingEmployee?.full_name}
+              {editingEmployee && !editingEmployee.hasAccount && (
+                <span className="text-amber-500 ml-2">(fără cont)</span>
+              )}
             </DialogDescription>
           </DialogHeader>
           
@@ -843,14 +873,6 @@ const HRManagement = () => {
                   placeholder="ex: Cercetător Științific"
                   value={editForm.position}
                   onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Telefon</Label>
-                <Input
-                  placeholder="ex: 0232-123456"
-                  value={editForm.phone}
-                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                 />
               </div>
             </div>
@@ -994,8 +1016,7 @@ const HRManagement = () => {
         </DialogContent>
       </Dialog>
 
-
-      {/* New Employee Dialog - Select from incomplete profiles */}
+      {/* Incomplete Employees Dialog */}
       <Dialog open={showNewEmployee} onOpenChange={(open) => {
         setShowNewEmployee(open);
         if (!open) setSelectedNewEmployee('');
@@ -1004,7 +1025,7 @@ const HRManagement = () => {
           <DialogHeader>
             <DialogTitle>Completare Date Angajat</DialogTitle>
             <DialogDescription>
-              Selectați un angajat înregistrat pentru a-i completa datele (departament, funcție, etc.)
+              Selectați un angajat cu date incomplete pentru a-i completa departamentul sau funcția
             </DialogDescription>
           </DialogHeader>
           
@@ -1022,14 +1043,14 @@ const HRManagement = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {incompleteEmployees.map((emp) => (
-                        <SelectItem key={emp.user_id} value={emp.user_id}>
+                        <SelectItem key={emp.id} value={emp.id}>
                           <div className="flex items-center gap-2">
                             <span>{emp.full_name}</span>
-                            {!emp.record && (
-                              <Badge variant="outline" className="text-xs">Fără date angajare</Badge>
+                            {!emp.department && (
+                              <Badge variant="outline" className="text-xs">Fără departament</Badge>
                             )}
-                            {(!emp.department || !emp.position) && (
-                              <Badge variant="outline" className="text-xs">Profil incomplet</Badge>
+                            {!emp.position && (
+                              <Badge variant="outline" className="text-xs">Fără funcție</Badge>
                             )}
                           </div>
                         </SelectItem>
@@ -1049,18 +1070,8 @@ const HRManagement = () => {
               <div className="text-center py-6">
                 <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
                 <p className="font-medium">Toți angajații au datele complete!</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Nu există angajați care necesită completarea datelor.
-                </p>
               </div>
             )}
-            
-            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                <strong>Notă:</strong> Angajații noi trebuie să se înregistreze prin pagina de autentificare (/auth). 
-                După înregistrare, vor apărea automat în această listă.
-              </p>
-            </div>
           </div>
           
           <DialogFooter>
@@ -1093,7 +1104,7 @@ const HRManagement = () => {
               Înregistrare Manuală Concediu
             </DialogTitle>
             <DialogDescription>
-              Adăugați o cerere de concediu pe hârtie pentru un angajat
+              Adăugați o cerere de concediu pe hârtie pentru un angajat cu cont activ
             </DialogDescription>
           </DialogHeader>
           
@@ -1124,10 +1135,10 @@ const HRManagement = () => {
                       onKeyDown={(e) => e.stopPropagation()}
                     />
                   </div>
-                  {employees.filter(e => e.record).map((emp) => (
+                  {employees.filter(e => e.hasAccount && e.record).map((emp) => (
                     <SelectItem 
-                      key={emp.user_id} 
-                      value={emp.user_id}
+                      key={emp.user_id!} 
+                      value={emp.user_id!}
                       data-manual-leave-item={emp.full_name.toLowerCase()}
                     >
                       <div className="flex items-center gap-2">
@@ -1248,11 +1259,12 @@ const HRManagement = () => {
 
       {/* Personal Data Editor Dialog */}
       <PersonalDataEditor
-        employeeRecordId={editingPersonalData?.record?.id || null}
+        employeeRecordId={editingPersonalData?.employee_record_id || null}
         employeeName={editingPersonalData?.full_name || ''}
         open={!!editingPersonalData}
         onOpenChange={(open) => !open && setEditingPersonalData(null)}
         onSaved={fetchEmployees}
+        employeePersonalDataId={editingPersonalData?.id}
       />
     </MainLayout>
   );
