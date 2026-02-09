@@ -1001,7 +1001,6 @@ const HRManagement = () => {
                             )}
                             </div>
                           </div>
-                        </div>
 
                         {/* Actions */}
                         <div className="flex flex-wrap gap-2 lg:flex-shrink-0">
