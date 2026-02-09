@@ -107,6 +107,7 @@ const HRManagement = () => {
   const [employees, setEmployees] = useState<EmployeeWithData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [accountFilter, setAccountFilter] = useState<'all' | 'with_account' | 'without_account'>('all');
   
   // Edit dialog state
   const [editingEmployee, setEditingEmployee] = useState<EmployeeWithData | null>(null);
@@ -531,12 +532,20 @@ const HRManagement = () => {
     setSyncing(false);
   };
 
-  const filteredEmployees = employees.filter(e =>
-    e.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.position?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredEmployees = employees.filter(e => {
+    const matchesSearch = e.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      e.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      e.position?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesFilter = accountFilter === 'all' 
+      ? true 
+      : accountFilter === 'with_account' 
+        ? e.hasAccount 
+        : !e.hasAccount;
+    
+    return matchesSearch && matchesFilter;
+  });
 
   // Redirect if not authorized
   if (!roleLoading && !canManageHR) {
@@ -588,15 +597,45 @@ const HRManagement = () => {
 
         {/* Employees Tab */}
         <TabsContent value="employees" className="space-y-6">
-          {/* Search */}
-          <div className="relative max-w-md w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Caută după nume, email, departament..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="relative max-w-md w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Caută după nume, email, departament..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-1 rounded-lg border border-border p-1 bg-muted/50">
+              <Button
+                variant={accountFilter === 'all' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setAccountFilter('all')}
+                className="text-xs h-8"
+              >
+                <Users className="w-3.5 h-3.5 mr-1" />
+                Toți ({employees.length})
+              </Button>
+              <Button
+                variant={accountFilter === 'with_account' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setAccountFilter('with_account')}
+                className="text-xs h-8"
+              >
+                <UserCheck className="w-3.5 h-3.5 mr-1" />
+                Cu cont ({employeesWithAccounts.length})
+              </Button>
+              <Button
+                variant={accountFilter === 'without_account' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setAccountFilter('without_account')}
+                className="text-xs h-8"
+              >
+                <UserX className="w-3.5 h-3.5 mr-1" />
+                Fără cont ({employees.length - employeesWithAccounts.length})
+              </Button>
+            </div>
           </div>
 
           {/* Stats Cards */}
