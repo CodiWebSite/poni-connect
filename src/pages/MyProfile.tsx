@@ -230,19 +230,6 @@ const MyProfile = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <InfoItem icon={Building} label="Departament" value={department || 'Nespecificat'} />
               <InfoItem icon={Briefcase} label="Funcție" value={position || 'Nespecificată'} />
-              <InfoItem 
-                icon={Clock} 
-                label="Data angajării" 
-                value={employeeRecord?.hire_date 
-                  ? format(new Date(employeeRecord.hire_date), 'dd MMM yyyy', { locale: ro }) 
-                  : 'Nespecificată'
-                } 
-              />
-              <InfoItem 
-                icon={FileText} 
-                label="Tip contract" 
-                value={employeeRecord?.contract_type === 'nedeterminat' ? 'Perioadă nedeterminată' : employeeRecord?.contract_type === 'determinat' ? 'Perioadă determinată' : employeeRecord?.contract_type || 'Nespecificat'} 
-              />
               {user?.email && (
                 <InfoItem icon={Mail} label="Email" value={user.email} />
               )}
