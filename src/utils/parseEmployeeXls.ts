@@ -86,11 +86,39 @@ function getMultiRowHeaderText(sheet: XLSX.WorkSheet, col: number, startRow: num
 }
 
 /**
- * Check if a header value represents a used leave days column
+ * Check if a header value represents a SUMMARY used leave days column
+ * e.g. "Total zile CO efectuat" - this is the grand total, not an individual month
  */
-function isUsedLeaveHeader(val: string): boolean {
+function isSummaryUsedLeaveHeader(val: string): boolean {
   if (val.includes('cuvenite')) return false;
-  if (val.includes('concediu platite')) return false; // "Zile concediu platite in avans"
+  // "Total zile CO efectuat" or "CO efectuat" as a summary column
+  if (val.includes('efectuat') && (val.includes('co') || val.includes('c.o') || val.includes('zile'))) return true;
+  // "Total zile CO" without "cuvenite" - likely a summary
+  if (val.includes('total') && (val.includes('zile co') || val.includes('zile c.o'))) return true;
+  return false;
+}
+
+/**
+ * Check if a header value represents a "remaining days" column
+ * e.g. "Diferenta ramasa"
+ */
+function isRemainingLeaveHeader(val: string): boolean {
+  if (val.includes('diferenta') && val.includes('ramasa')) return true;
+  if (val.includes('rest') && val.includes('co')) return true;
+  if (val === 'ramasa' || val === 'ramase') return true;
+  return false;
+}
+
+/**
+ * Check if a header value represents an individual monthly used leave column
+ * e.g. "Nr. zile CO" for a specific month - NOT a summary/total column
+ */
+function isIndividualUsedLeaveHeader(val: string): boolean {
+  if (val.includes('cuvenite')) return false;
+  if (val.includes('concediu platite')) return false;
+  if (val.includes('efectuat')) return false; // This is a summary column
+  if (val.includes('total') && !val.includes('nr')) return false; // "Total zile CO" is a summary
+  if (val.includes('diferenta') || val.includes('ramasa') || val.includes('rest')) return false;
   if ((val.includes('nr') && val.includes('zile') && (val.includes('co') || val.includes('c.o'))) ||
       (val.includes('zile co') || val.includes('zile c.o'))) {
     return true;
@@ -179,8 +207,14 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Rec
       }
       
       // After finding totalLeave, find used leave columns after it using multi-row combined headers
+      // We distinguish between:
+      //   1. Summary "CO efectuat" column (grand total of used leave)
+      //   2. "Diferenta ramasa" column (remaining days)
+      //   3. Individual monthly "Nr. zile CO" columns
       if (columns['totalLeave'] !== undefined) {
-        const usedLeaveCols: number[] = [];
+        const individualUsedLeaveCols: number[] = [];
+        let summaryUsedLeaveCol: number | undefined;
+        let remainingLeaveCol: number | undefined;
         const headerStartRow = Math.max(range.s.r, r - 3);
         const headerEndRow = Math.min(range.e.r, r + 3);
         
@@ -189,15 +223,35 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Rec
           const combinedRaw = getMultiRowHeaderText(sheet, c, headerStartRow, headerEndRow);
           const combinedVal = removeDiacritics(combinedRaw).toLowerCase();
           
-          // Check combined multi-row header text
-          if (isUsedLeaveHeader(combinedVal)) {
-            usedLeaveCols.push(c);
-            console.log(`  Found usedLeave column at [${c}]: combined="${combinedRaw}"`);
+          if (isRemainingLeaveHeader(combinedVal)) {
+            remainingLeaveCol = c;
+            console.log(`  Found remainingLeave column at [${c}]: combined="${combinedRaw}"`);
+          } else if (isSummaryUsedLeaveHeader(combinedVal)) {
+            summaryUsedLeaveCol = c;
+            console.log(`  Found SUMMARY usedLeave column at [${c}]: combined="${combinedRaw}"`);
+          } else if (isIndividualUsedLeaveHeader(combinedVal)) {
+            individualUsedLeaveCols.push(c);
+            console.log(`  Found individual usedLeave column at [${c}]: combined="${combinedRaw}"`);
           }
         }
-        console.log(`  Total usedLeave columns found: ${usedLeaveCols.length}`);
+        
+        // Strategy: prefer summary/remaining columns over summing individual months
+        // This prevents double-counting when both individual AND summary columns exist
+        const leaveStrategy = summaryUsedLeaveCol !== undefined ? 'summary' 
+          : remainingLeaveCol !== undefined ? 'remaining'
+          : individualUsedLeaveCols.length > 0 ? 'sum_individual'
+          : 'none';
+        
+        console.log(`  Leave strategy: ${leaveStrategy} (summary=${summaryUsedLeaveCol}, remaining=${remainingLeaveCol}, individual=${individualUsedLeaveCols.length} cols)`);
+        
         columns['usedLeaveCols'] = -1;
-        return { headerRow: r, columns: { ...columns, _usedLeaveCols: JSON.stringify(usedLeaveCols) } as unknown as Record<string, number> };
+        const leaveInfo = {
+          strategy: leaveStrategy,
+          summaryCol: summaryUsedLeaveCol,
+          remainingCol: remainingLeaveCol,
+          individualCols: individualUsedLeaveCols,
+        };
+        return { headerRow: r, columns: { ...columns, _leaveInfo: JSON.stringify(leaveInfo) } as unknown as Record<string, number> };
       }
       
       console.log(`  WARNING: No totalLeave column found even after searching nearby rows`);
@@ -288,9 +342,16 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
     const { headerRow, columns } = headerInfo;
     const range = XLSX.utils.decode_range(sheet['!ref']);
     
-    // Parse used leave columns
-    const usedLeaveColsRaw = (columns as Record<string, unknown>)['_usedLeaveCols'];
-    const usedLeaveCols: number[] = usedLeaveColsRaw ? JSON.parse(String(usedLeaveColsRaw)) : [];
+    // Parse leave info (new strategy-based approach)
+    const leaveInfoRaw = (columns as Record<string, unknown>)['_leaveInfo'];
+    const leaveInfo: { 
+      strategy: string; 
+      summaryCol?: number; 
+      remainingCol?: number; 
+      individualCols: number[];
+    } = leaveInfoRaw 
+      ? JSON.parse(String(leaveInfoRaw)) 
+      : { strategy: 'none', individualCols: [] };
     
     let sheetEmployeeCount = 0;
     
@@ -347,22 +408,33 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
         console.log(`  Employee "${fullName}": NO totalLeave column detected, defaulting to ${totalLeaveDays}`);
       }
       
-      // Calculate used leave days by summing all "Nr. zile CO" columns after the cuvenite column
+      // Calculate used leave days using the best available strategy
       let usedLeaveDays = 0;
-      for (const col of usedLeaveCols) {
-        const cell = sheet[XLSX.utils.encode_cell({ r, c: col })];
-        if (cell) {
-          if (typeof cell.v === 'number') {
-            usedLeaveDays += cell.v;
-          } else {
-            const parsed = parseInt(String(cell.v), 10);
-            if (!isNaN(parsed)) usedLeaveDays += parsed;
-          }
+      
+      const readCellNumber = (row: number, col: number): number => {
+        const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
+        if (!cell) return 0;
+        if (typeof cell.v === 'number') return cell.v;
+        const parsed = parseInt(String(cell.v), 10);
+        return isNaN(parsed) ? 0 : parsed;
+      };
+      
+      if (leaveInfo.strategy === 'summary' && leaveInfo.summaryCol !== undefined) {
+        // Best: use the summary "CO efectuat" column directly
+        usedLeaveDays = readCellNumber(r, leaveInfo.summaryCol);
+      } else if (leaveInfo.strategy === 'remaining' && leaveInfo.remainingCol !== undefined) {
+        // Second best: compute from "Diferenta ramasa" column
+        const remaining = readCellNumber(r, leaveInfo.remainingCol);
+        usedLeaveDays = Math.max(0, totalLeaveDays - remaining);
+      } else if (leaveInfo.strategy === 'sum_individual') {
+        // Fallback: sum individual monthly CO columns (no summary available)
+        for (const col of leaveInfo.individualCols) {
+          usedLeaveDays += readCellNumber(r, col);
         }
       }
       
       if (sheetEmployeeCount < 3) {
-        console.log(`    usedLeaveDays=${usedLeaveDays} (from ${usedLeaveCols.length} columns)`);
+        console.log(`    usedLeaveDays=${usedLeaveDays} (strategy=${leaveInfo.strategy})`);
       }
       
       sheetEmployeeCount++;
