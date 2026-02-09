@@ -80,6 +80,7 @@ export const PersonalDataEditor = ({
     ci_number: '',
     ci_issued_by: '',
     ci_issued_date: '',
+    ci_expiry_date: '',
     address_street: '',
     address_number: '',
     address_block: '',
@@ -128,6 +129,7 @@ export const PersonalDataEditor = ({
         ci_number: data.ci_number || '',
         ci_issued_by: data.ci_issued_by || '',
         ci_issued_date: data.ci_issued_date || '',
+        ci_expiry_date: (data as any).ci_expiry_date || '',
         address_street: data.address_street || '',
         address_number: data.address_number || '',
         address_block: data.address_block || '',
@@ -257,6 +259,7 @@ export const PersonalDataEditor = ({
         ci_number: form.ci_number || null,
         ci_issued_by: form.ci_issued_by || null,
         ci_issued_date: form.ci_issued_date || null,
+        ci_expiry_date: form.ci_expiry_date || null,
         address_street: form.address_street || null,
         address_number: form.address_number || null,
         address_block: form.address_block || null,
@@ -474,6 +477,16 @@ export const PersonalDataEditor = ({
                     type="date"
                     value={form.ci_issued_date} 
                     onChange={(e) => updateForm('ci_issued_date', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Data Expirare CI</Label>
+                  <Input 
+                    type="date"
+                    value={form.ci_expiry_date} 
+                    onChange={(e) => updateForm('ci_expiry_date', e.target.value)}
                   />
                 </div>
               </div>

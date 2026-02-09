@@ -1,0 +1,1 @@
+ALTER TABLE employee_personal_data ADD COLUMN ci_expiry_date date;

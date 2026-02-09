@@ -21,6 +21,7 @@ interface EmployeePayload {
   ci_number?: string | null;
   ci_issued_by?: string | null;
   ci_issued_date?: string | null;
+  ci_expiry_date?: string | null;
   // Address fields
   address_street?: string | null;
   address_number?: string | null;
@@ -136,6 +137,7 @@ Deno.serve(async (req) => {
       ci_number: record.ci_number || null,
       ci_issued_by: record.ci_issued_by || null,
       ci_issued_date: record.ci_issued_date || null,
+      ci_expiry_date: record.ci_expiry_date || null,
       // Address fields
       address_street: record.address_street || null,
       address_number: record.address_number || null,
@@ -211,6 +213,7 @@ Deno.serve(async (req) => {
                 ci_number: record.ci_number,
                 ci_issued_by: record.ci_issued_by,
                 ci_issued_date: record.ci_issued_date,
+                ci_expiry_date: record.ci_expiry_date,
                 address_street: record.address_street,
                 address_number: record.address_number,
                 address_block: record.address_block,
@@ -252,6 +255,7 @@ Deno.serve(async (req) => {
                 ci_number: record.ci_number,
                 ci_issued_by: record.ci_issued_by,
                 ci_issued_date: record.ci_issued_date,
+                ci_expiry_date: record.ci_expiry_date,
                 address_street: record.address_street,
                 address_number: record.address_number,
                 address_block: record.address_block,

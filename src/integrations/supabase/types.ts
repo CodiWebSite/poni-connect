@@ -329,6 +329,7 @@ export type Database = {
           archive_reason: string | null
           archived_at: string | null
           archived_by: string | null
+          ci_expiry_date: string | null
           ci_issued_by: string | null
           ci_issued_date: string | null
           ci_number: string | null
@@ -364,6 +365,7 @@ export type Database = {
           archive_reason?: string | null
           archived_at?: string | null
           archived_by?: string | null
+          ci_expiry_date?: string | null
           ci_issued_by?: string | null
           ci_issued_date?: string | null
           ci_number?: string | null
@@ -399,6 +401,7 @@ export type Database = {
           archive_reason?: string | null
           archived_at?: string | null
           archived_by?: string | null
+          ci_expiry_date?: string | null
           ci_issued_by?: string | null
           ci_issued_date?: string | null
           ci_number?: string | null
