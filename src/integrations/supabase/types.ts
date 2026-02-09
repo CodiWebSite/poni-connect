@@ -302,6 +302,9 @@ export type Database = {
           address_floor: string | null
           address_number: string | null
           address_street: string | null
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           ci_issued_by: string | null
           ci_issued_date: string | null
           ci_number: string | null
@@ -317,6 +320,7 @@ export type Database = {
           employment_date: string
           first_name: string
           id: string
+          is_archived: boolean
           last_name: string
           last_updated_by: string | null
           original_id: string | null
@@ -333,6 +337,9 @@ export type Database = {
           address_floor?: string | null
           address_number?: string | null
           address_street?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           ci_issued_by?: string | null
           ci_issued_date?: string | null
           ci_number?: string | null
@@ -348,6 +355,7 @@ export type Database = {
           employment_date: string
           first_name: string
           id?: string
+          is_archived?: boolean
           last_name: string
           last_updated_by?: string | null
           original_id?: string | null
@@ -364,6 +372,9 @@ export type Database = {
           address_floor?: string | null
           address_number?: string | null
           address_street?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           ci_issued_by?: string | null
           ci_issued_date?: string | null
           ci_number?: string | null
@@ -379,6 +390,7 @@ export type Database = {
           employment_date?: string
           first_name?: string
           id?: string
+          is_archived?: boolean
           last_name?: string
           last_updated_by?: string | null
           original_id?: string | null

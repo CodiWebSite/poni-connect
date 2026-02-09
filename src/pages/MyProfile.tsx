@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestForm';
 import { 
@@ -26,7 +27,8 @@ import {
   History,
   Mail,
   BadgeCheck,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -114,7 +116,7 @@ const roleLabels: Record<string, string> = {
 
 const MyProfile = () => {
   const { user } = useAuth();
-  const { role } = useUserRole();
+  const { role, canApproveHR, canManageHR } = useUserRole();
   const { toast } = useToast();
   
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -124,6 +126,7 @@ const MyProfile = () => {
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
+  const [deletingLeave, setDeletingLeave] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -180,6 +183,70 @@ const MyProfile = () => {
       console.error('Download error:', error);
       toast({ title: 'Eroare', description: 'Nu s-a putut descărca fișierul.', variant: 'destructive' });
     }
+  };
+
+  const deleteLeaveRequest = async (leave: LeaveHistoryItem) => {
+    if (!confirm('Sigur doriți să ștergeți acest concediu? Zilele vor fi readăugate în sold.')) return;
+    
+    setDeletingLeave(leave.id);
+    try {
+      const numberOfDays = leave.details?.numberOfDays || 0;
+      
+      // Delete the HR request
+      const { error: deleteError } = await supabase
+        .from('hr_requests')
+        .delete()
+        .eq('id', leave.id);
+      
+      if (deleteError) throw deleteError;
+
+      // Revert leave balance if days were deducted
+      if (numberOfDays > 0 && employeeRecord) {
+        const newUsedDays = Math.max(0, employeeRecord.used_leave_days - numberOfDays);
+        
+        await supabase
+          .from('employee_records')
+          .update({ used_leave_days: newUsedDays })
+          .eq('id', employeeRecord.id);
+
+        // Also update employee_personal_data
+        if (user) {
+          const { data: epd } = await supabase
+            .from('employee_personal_data')
+            .select('id')
+            .eq('employee_record_id', employeeRecord.id)
+            .maybeSingle();
+          
+          if (epd) {
+            await supabase
+              .from('employee_personal_data')
+              .update({ used_leave_days: newUsedDays })
+              .eq('id', epd.id);
+          }
+        }
+      }
+
+      // Log audit event
+      if (user) {
+        await supabase.rpc('log_audit_event', {
+          _user_id: user.id,
+          _action: 'leave_delete',
+          _entity_type: 'hr_request',
+          _entity_id: leave.id,
+          _details: { 
+            days_reverted: numberOfDays,
+            period: `${leave.details?.startDate || '?'} - ${leave.details?.endDate || '?'}`
+          }
+        });
+      }
+
+      toast({ title: 'Șters', description: `Concediul a fost șters. ${numberOfDays} zile au fost readăugate în sold.` });
+      fetchData();
+    } catch (error) {
+      console.error('Delete leave error:', error);
+      toast({ title: 'Eroare', description: 'Nu s-a putut șterge concediul.', variant: 'destructive' });
+    }
+    setDeletingLeave(null);
   };
 
   const leaveProgress = employeeRecord 
@@ -316,7 +383,7 @@ const MyProfile = () => {
                   
                   return (
                     <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 border rounded-lg hover:bg-muted/40 transition-colors">
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-sm">
                             {startDate && endDate
@@ -338,6 +405,22 @@ const MyProfile = () => {
                           <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>
                         )}
                       </div>
+                      {canManageHR && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive shrink-0"
+                          onClick={() => deleteLeaveRequest(leave)}
+                          disabled={deletingLeave === leave.id}
+                        >
+                          {deletingLeave === leave.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-1" />
+                          )}
+                          Șterge
+                        </Button>
+                      )}
                     </div>
                   );
                 })}

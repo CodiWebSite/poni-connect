@@ -165,6 +165,7 @@ const HRManagement = () => {
     const { data: personalData, error: pdError } = await supabase
       .from('employee_personal_data')
       .select('*')
+      .eq('is_archived', false)
       .order('last_name');
     
     if (pdError) {
@@ -357,6 +358,40 @@ const HRManagement = () => {
       fetchEmployees();
     } catch (error) {
       toast({ title: 'Eroare', description: 'Nu s-a putut șterge documentul.', variant: 'destructive' });
+    }
+  };
+
+  const archiveEmployee = async (employee: EmployeeWithData) => {
+    const reason = prompt(`Motivul arhivării angajatului ${employee.full_name}:`);
+    if (reason === null) return;
+    
+    try {
+      const { error } = await supabase
+        .from('employee_personal_data')
+        .update({
+          is_archived: true,
+          archived_at: new Date().toISOString(),
+          archived_by: user?.id || null,
+          archive_reason: reason || 'Fără motiv specificat',
+        })
+        .eq('id', employee.id);
+
+      if (error) throw error;
+
+      if (user) {
+        await supabase.rpc('log_audit_event', {
+          _user_id: user.id,
+          _action: 'employee_archive',
+          _entity_type: 'employee_personal_data',
+          _entity_id: employee.id,
+          _details: { employee_name: employee.full_name, reason: reason || 'Fără motiv' }
+        });
+      }
+
+      toast({ title: 'Arhivat', description: `${employee.full_name} a fost arhivat. Datele rămân în baza de date.` });
+      fetchEmployees();
+    } catch (error) {
+      toast({ title: 'Eroare', description: 'Nu s-a putut arhiva angajatul.', variant: 'destructive' });
     }
   };
 
@@ -837,6 +872,15 @@ const HRManagement = () => {
                           >
                             <CreditCard className="w-4 h-4 mr-1" />
                             Date CI
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => archiveEmployee(employee)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Arhivează
                           </Button>
                         </div>
                       </div>
