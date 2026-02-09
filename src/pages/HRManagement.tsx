@@ -19,6 +19,7 @@ import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
 import { CorrectionRequestsManager } from '@/components/hr/CorrectionRequestsManager';
 import HRExportButton from '@/components/hr/HRExportButton';
 import { EmployeeLeaveHistory } from '@/components/hr/EmployeeLeaveHistory';
+import LeaveCalendar from '@/components/hr/LeaveCalendar';
 import { 
   Users, 
   UserPlus, 
@@ -768,7 +769,11 @@ const HRManagement = () => {
             </TabsTrigger>
             <TabsTrigger value="archived" className="gap-2">
               <Archive className="h-4 w-4" />
-              <span className="hidden sm:inline">Arhivați ({archivedEmployees.length})</span>
+              <span className="hidden sm:inline">Arhivați</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-2">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden sm:inline">Calendar</span>
             </TabsTrigger>
             <TabsTrigger value="import" className="gap-2">
               <Upload className="h-4 w-4" />
@@ -1104,6 +1109,11 @@ const HRManagement = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Calendar Tab */}
+        <TabsContent value="calendar">
+          <LeaveCalendar />
         </TabsContent>
 
         {/* Corrections Tab */}
