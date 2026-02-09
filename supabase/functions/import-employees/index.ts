@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
     
     console.log(`Deduplicated: ${records.length} -> ${employeeData.length} unique CNPs`);
     
-    // Insert in batches of 50
+    // Insert in batches of 50, with individual fallback for failed batches
     const batchSize = 50;
     let inserted = 0;
     let skipped = 0;
@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < employeeData.length; i += batchSize) {
       const batch = employeeData.slice(i, i + batchSize);
       
-      // Try upsert by cnp first, then by email
+      // Try batch upsert by cnp first
       const { data, error } = await supabaseAdmin
         .from('employee_personal_data')
         .upsert(batch, { 
@@ -141,22 +141,89 @@ Deno.serve(async (req) => {
         .select('id');
       
       if (error) {
-        console.error(`Batch error (cnp upsert):`, error);
-        // Fallback: try by email
-        const { data: data2, error: error2 } = await supabaseAdmin
-          .from('employee_personal_data')
-          .upsert(batch, { 
-            onConflict: 'email',
-            ignoreDuplicates: false 
-          })
-          .select('id');
+        console.log(`Batch ${Math.floor(i/batchSize) + 1} failed on cnp upsert, trying individual records...`);
         
-        if (error2) {
-          console.error(`Batch error (email upsert):`, error2);
-          errors.push(`Lot ${Math.floor(i/batchSize) + 1}: ${error2.message}`);
-          skipped += batch.length;
-        } else {
-          inserted += data2?.length || 0;
+        // Process each record individually when batch fails
+        for (const record of batch) {
+          // First try: upsert by CNP
+          const { error: err1 } = await supabaseAdmin
+            .from('employee_personal_data')
+            .upsert(record, { onConflict: 'cnp', ignoreDuplicates: false })
+            .select('id');
+          
+          if (!err1) {
+            inserted++;
+            continue;
+          }
+          
+          // CNP upsert failed - likely email conflict. 
+          // Find and update the existing record by email, then retry
+          console.log(`Individual cnp upsert failed for ${record.email}: ${err1.message}`);
+          
+          // Try: update existing record matching this email with new data
+          const { data: existing } = await supabaseAdmin
+            .from('employee_personal_data')
+            .select('id, cnp')
+            .eq('email', record.email)
+            .maybeSingle();
+          
+          if (existing) {
+            // Update the existing email record with new CNP and data
+            const { error: updateErr } = await supabaseAdmin
+              .from('employee_personal_data')
+              .update({
+                cnp: record.cnp,
+                first_name: record.first_name,
+                last_name: record.last_name,
+                department: record.department,
+                position: record.position,
+                contract_type: record.contract_type,
+                total_leave_days: record.total_leave_days,
+                used_leave_days: record.used_leave_days,
+                employment_date: record.employment_date,
+              })
+              .eq('id', existing.id);
+            
+            if (!updateErr) {
+              inserted++;
+              continue;
+            }
+            console.error(`Update by email failed for ${record.email}:`, updateErr.message);
+          }
+          
+          // Try: find by CNP and update email
+          const { data: existingByCnp } = await supabaseAdmin
+            .from('employee_personal_data')
+            .select('id, email')
+            .eq('cnp', record.cnp)
+            .maybeSingle();
+          
+          if (existingByCnp) {
+            const { error: updateErr2 } = await supabaseAdmin
+              .from('employee_personal_data')
+              .update({
+                email: record.email,
+                first_name: record.first_name,
+                last_name: record.last_name,
+                department: record.department,
+                position: record.position,
+                contract_type: record.contract_type,
+                total_leave_days: record.total_leave_days,
+                used_leave_days: record.used_leave_days,
+                employment_date: record.employment_date,
+              })
+              .eq('id', existingByCnp.id);
+            
+            if (!updateErr2) {
+              inserted++;
+              continue;
+            }
+            console.error(`Update by cnp failed for ${record.cnp}:`, updateErr2.message);
+          }
+          
+          // All strategies failed
+          errors.push(`${record.first_name} ${record.last_name} (${record.email}): nu s-a putut importa`);
+          skipped++;
         }
       } else {
         inserted += data?.length || 0;
