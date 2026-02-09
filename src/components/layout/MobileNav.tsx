@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Home,
   Calendar,
@@ -13,15 +14,30 @@ import {
   Shield,
   UserCircle,
   ClipboardList,
+  User,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { isSuperAdmin, canManageHR } = useUserRole();
   const [isOpen, setIsOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [fullName, setFullName] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').select('avatar_url, full_name').eq('user_id', user.id).maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setAvatarUrl(data.avatar_url);
+            setFullName(data.full_name || '');
+          }
+        });
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -54,6 +70,22 @@ const MobileNav = () => {
               <p className="text-xs text-sidebar-foreground/70">Intranet</p>
             </div>
           </div>
+        </div>
+
+        {/* User info */}
+        <div className="p-3 border-b border-sidebar-border">
+          <Link to="/my-profile" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+            <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center overflow-hidden flex-shrink-0">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-4 h-4 text-sidebar-foreground/70" />
+              )}
+            </div>
+            {fullName && (
+              <span className="text-sm font-medium text-sidebar-foreground truncate">{fullName}</span>
+            )}
+          </Link>
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)]">
