@@ -155,7 +155,8 @@ const HRManagement = () => {
     employee_id: '', // can be user_id or epd_id prefixed with 'epd:'
     start_date: '',
     end_date: '',
-    notes: ''
+    notes: '',
+    leave_type: 'co',
   });
   const [manualLeaveFile, setManualLeaveFile] = useState<File | null>(null);
   const [submittingManualLeave, setSubmittingManualLeave] = useState(false);
@@ -641,6 +642,7 @@ const HRManagement = () => {
           startDate: manualLeaveForm.start_date,
           endDate: manualLeaveForm.end_date,
           numberOfDays,
+          leaveType: manualLeaveForm.leave_type,
           manualEntry: true,
           scannedDocumentUrl: fileUrl,
           notes: manualLeaveForm.notes,
@@ -670,7 +672,7 @@ const HRManagement = () => {
         description: `Cererea de concediu a fost înregistrată. ${numberOfDays} zile deduse din sold.` 
       });
 
-      setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '' });
+      setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '', leave_type: 'co' });
       setManualLeaveFile(null);
       setShowManualLeave(false);
       fetchEmployees();
@@ -1472,7 +1474,7 @@ const HRManagement = () => {
       <Dialog open={showManualLeave} onOpenChange={(open) => {
         setShowManualLeave(open);
         if (!open) {
-          setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '' });
+          setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '', leave_type: 'co' });
           setManualLeaveFile(null);
         }
       }}>
@@ -1558,6 +1560,25 @@ const HRManagement = () => {
               </div>
             )}
 
+            <div className="space-y-2">
+              <Label>Tip Concediu *</Label>
+              <Select
+                value={manualLeaveForm.leave_type}
+                onValueChange={(v) => setManualLeaveForm({ ...manualLeaveForm, leave_type: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="co">CO — Concediu de odihnă</SelectItem>
+                  <SelectItem value="bo">BO — Concediu medical</SelectItem>
+                  <SelectItem value="ccc">CCC — Concediu creștere copil</SelectItem>
+                  <SelectItem value="cfp">CFP — Concediu fără plată</SelectItem>
+                  <SelectItem value="ev">EV — Eveniment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Data Început *</Label>
@@ -1576,6 +1597,43 @@ const HRManagement = () => {
                 />
               </div>
             </div>
+
+            {/* Overlap warning */}
+            {selectedManualEmployee && manualLeaveForm.start_date && manualLeaveForm.end_date && (() => {
+              const sameDeptEmployees = employees.filter(e => 
+                e.department && e.department === selectedManualEmployee.department && 
+                e.full_name !== selectedManualEmployee.full_name
+              );
+              const overlapping = sameDeptEmployees.filter(colleague => {
+                return (colleague.leaveHistory || []).some(lv => {
+                  if (!lv.startDate || !lv.endDate) return false;
+                  return lv.startDate <= manualLeaveForm.end_date && lv.endDate >= manualLeaveForm.start_date;
+                });
+              });
+              
+              if (overlapping.length === 0) return null;
+              
+              return (
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <p className="text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                    ⚠️ Suprapunere cu colegi din același departament:
+                  </p>
+                  <div className="mt-1.5 space-y-1">
+                    {overlapping.map(c => {
+                      const overlappingLeave = (c.leaveHistory || []).find(lv => 
+                        lv.startDate <= manualLeaveForm.end_date && lv.endDate >= manualLeaveForm.start_date
+                      );
+                      return (
+                        <p key={c.full_name} className="text-xs text-amber-600 dark:text-amber-400">
+                          • <span className="font-medium">{c.full_name}</span>
+                          {overlappingLeave && ` (${format(new Date(overlappingLeave.startDate), 'dd.MM')} - ${format(new Date(overlappingLeave.endDate), 'dd.MM')})`}
+                        </p>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {manualLeaveForm.start_date && manualLeaveForm.end_date && (() => {
               const workingDays = calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date);
