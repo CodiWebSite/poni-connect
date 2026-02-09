@@ -16,6 +16,7 @@ export interface ParsedEmployee {
 interface EmailEntry {
   name: string;
   email: string;
+  cnp?: string;
 }
 
 /**
@@ -214,24 +215,35 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Rec
 function extractDepartment(sheet: XLSX.WorkSheet, sheetName: string): string {
   const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
   
-  // Search first 10 rows for department info
-  for (let r = range.s.r; r <= Math.min(range.e.r, 10); r++) {
+  // Search first 15 rows for department info - check all columns
+  for (let r = range.s.r; r <= Math.min(range.e.r, 15); r++) {
     for (let c = range.s.c; c <= Math.min(range.e.c, 10); c++) {
       const cell = sheet[XLSX.utils.encode_cell({ r, c })];
       if (!cell) continue;
       const val = String(cell.v || '').trim();
+      if (!val || val.length < 5) continue;
       
-      // Look for patterns like "Laborator X - ..." or "SRUS" etc.
-      if (val.match(/^Laborator/i) || val.match(/^Lab\s*\d/i)) {
+      // Look for patterns like "Laborator X - ...", "Lab X", "SRUS", "Serviciul", etc.
+      if (val.match(/^Laborator\s*\d/i) || val.match(/^Lab\s*\d/i)) {
+        console.log(`  Department found at row ${r}, col ${c}: "${val}"`);
         return val;
       }
-      if (val.match(/^SRUS/i) || val.match(/^Serviciul/i) || val.match(/^Compartiment/i) || val.match(/^Audit/i)) {
+      if (val.match(/^SRUS/i) || val.match(/^Serviciul/i) || val.match(/^Compartiment/i) || 
+          val.match(/^Audit/i) || val.match(/^Centrul/i) || val.match(/^Directia/i) ||
+          val.match(/^Sectia/i) || val.match(/^Biroul/i)) {
+        console.log(`  Department found at row ${r}, col ${c}: "${val}"`);
+        return val;
+      }
+      // Generic pattern: long text with " - " that looks like a department description
+      if (val.includes(' - ') && val.length > 15 && !val.toLowerCase().includes('nume') && !val.toLowerCase().includes('cnp')) {
+        console.log(`  Department found (long desc) at row ${r}, col ${c}: "${val}"`);
         return val;
       }
     }
   }
   
   // Fall back to sheet name
+  console.log(`  Department: using sheet name "${sheetName}"`);
   return sheetName;
 }
 
@@ -377,13 +389,14 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
 }
 
 /**
- * Detect header row in email file and return column indices for name/email
+ * Detect header row in email file and return column indices for name/email/cnp
  */
-function detectEmailFileHeaders(values: unknown[]): { nameCol: number; firstNameCol: number; lastNameCol: number; emailCol: number } | null {
+function detectEmailFileHeaders(values: unknown[]): { nameCol: number; firstNameCol: number; lastNameCol: number; emailCol: number; cnpCol: number } | null {
   let emailCol = -1;
   let nameCol = -1;
   let firstNameCol = -1;
   let lastNameCol = -1;
+  let cnpCol = -1;
 
   for (let i = 0; i < values.length; i++) {
     const raw = String(values[i] || '').trim();
@@ -391,8 +404,9 @@ function detectEmailFileHeaders(values: unknown[]): { nameCol: number; firstName
     
     if (val.includes('email') || val.includes('e-mail') || val === 'mail' || val.includes('adresa email') || val.includes('adresa de email') || val.includes('adresa mail')) {
       emailCol = i;
+    } else if (val === 'cnp' || val === 'c.n.p' || val === 'c.n.p.' || val.includes('cod numeric personal')) {
+      cnpCol = i;
     } else if (val.includes('nume') && (val.includes('prenume') || val.includes('si') || val.includes('complet'))) {
-      // "Nume si Prenume", "Nume Prenume", "Nume complet"
       nameCol = i;
     } else if ((val === 'nume' || val === 'name' || val === 'last_name' || val === 'last name' || val === 'numele') && nameCol === -1) {
       lastNameCol = i;
@@ -403,9 +417,9 @@ function detectEmailFileHeaders(values: unknown[]): { nameCol: number; firstName
 
   if (emailCol === -1) return null;
   
-  // If we have separate first/last name columns or a combined name column, we're good
-  if (nameCol !== -1 || (firstNameCol !== -1 && lastNameCol !== -1) || lastNameCol !== -1) {
-    return { nameCol, firstNameCol, lastNameCol, emailCol };
+  // We need at least an email column and some name info
+  if (nameCol !== -1 || (firstNameCol !== -1 && lastNameCol !== -1) || lastNameCol !== -1 || firstNameCol !== -1) {
+    return { nameCol, firstNameCol, lastNameCol, emailCol, cnpCol };
   }
 
   return null;
@@ -414,11 +428,12 @@ function detectEmailFileHeaders(values: unknown[]): { nameCol: number; firstName
 /**
  * Extract name from a row given column mapping
  */
-function extractNameFromRow(values: unknown[], cols: { nameCol: number; firstNameCol: number; lastNameCol: number; emailCol: number }): string {
+function extractNameFromRow(values: unknown[], cols: { nameCol: number; firstNameCol: number; lastNameCol: number }): string {
   if (cols.nameCol !== -1) {
     return String(values[cols.nameCol] || '').trim();
   }
   
+  // Combine last name + first name (NUME PRENUME)
   const parts: string[] = [];
   if (cols.lastNameCol !== -1) {
     const ln = String(values[cols.lastNameCol] || '').trim();
@@ -432,15 +447,29 @@ function extractNameFromRow(values: unknown[], cols: { nameCol: number; firstNam
 }
 
 /**
+ * Extract CNP from a row - look for a 13-digit number
+ */
+function extractCnpFromRow(values: unknown[], cnpCol: number): string {
+  if (cnpCol !== -1 && cnpCol < values.length) {
+    const val = String(values[cnpCol] || '').trim();
+    if (/^\d{13}$/.test(val)) return val;
+  }
+  // Fallback: scan all cells for a 13-digit number
+  for (const val of values) {
+    const str = String(val || '').trim();
+    if (/^\d{13}$/.test(str)) return str;
+  }
+  return '';
+}
+
+/**
  * Extract email from a row - find the cell containing @
  */
 function extractEmailFromRow(values: unknown[], emailCol: number): string {
-  // First try the known email column
   if (emailCol !== -1) {
     const val = String(values[emailCol] || '').trim();
     if (val.includes('@')) return val.toLowerCase();
   }
-  // Fallback: scan all cells
   for (const val of values) {
     const str = String(val || '').trim();
     if (str.includes('@')) return str.toLowerCase();
@@ -449,10 +478,11 @@ function extractEmailFromRow(values: unknown[], emailCol: number): string {
 }
 
 /**
- * Heuristic: from a row of values, guess name and email without header info
+ * Heuristic: from a row of values, guess name, email, and cnp without header info
  */
-function guessNameAndEmail(values: unknown[]): { name: string; email: string } {
+function guessNameEmailCnp(values: unknown[]): { name: string; email: string; cnp: string } {
   let email = '';
+  let cnp = '';
   const textCandidates: { value: string; index: number }[] = [];
 
   for (let i = 0; i < values.length; i++) {
@@ -461,32 +491,30 @@ function guessNameAndEmail(values: unknown[]): { name: string; email: string } {
     
     if (str.includes('@') && !email) {
       email = str.toLowerCase();
+    } else if (/^\d{13}$/.test(str) && !cnp) {
+      cnp = str;
     } else if (str.length > 2 && !str.includes('@') && isNaN(Number(str))) {
-      // Text that's not a number - could be a name
       textCandidates.push({ value: str, index: i });
     }
   }
 
-  // Pick the longest text candidate as name (most likely to be full name)
   let name = '';
   if (textCandidates.length > 0) {
-    // If multiple text candidates, try to find one that looks like a name (has spaces = full name)
     const fullNameCandidate = textCandidates.find(c => c.value.includes(' '));
     if (fullNameCandidate) {
       name = fullNameCandidate.value;
     } else if (textCandidates.length >= 2) {
-      // Two separate text columns might be last name + first name
       name = textCandidates.map(c => c.value).join(' ');
     } else {
       name = textCandidates[0].value;
     }
   }
 
-  return { name, email };
+  return { name, email, cnp };
 }
 
 /**
- * Parse email file (CSV or XLS) and return name-email pairs
+ * Parse email file (CSV or XLS) and return name-email-cnp entries
  */
 export function parseEmailFile(workbook: XLSX.WorkBook): EmailEntry[] {
   const entries: EmailEntry[] = [];
@@ -508,7 +536,7 @@ export function parseEmailFile(workbook: XLSX.WorkBook): EmailEntry[] {
       headerCols = detectEmailFileHeaders(row);
       if (headerCols) {
         dataStartRow = r + 1;
-        console.log(`Email file: detected headers at row ${r}: nameCol=${headerCols.nameCol}, firstNameCol=${headerCols.firstNameCol}, lastNameCol=${headerCols.lastNameCol}, emailCol=${headerCols.emailCol}`);
+        console.log(`Email file: detected headers at row ${r}: nameCol=${headerCols.nameCol}, firstNameCol=${headerCols.firstNameCol}, lastNameCol=${headerCols.lastNameCol}, emailCol=${headerCols.emailCol}, cnpCol=${headerCols.cnpCol}`);
         break;
       }
     }
@@ -523,22 +551,26 @@ export function parseEmailFile(workbook: XLSX.WorkBook): EmailEntry[] {
       
       let name: string;
       let email: string;
+      let cnp: string;
       
       if (headerCols) {
         name = extractNameFromRow(row, headerCols);
         email = extractEmailFromRow(row, headerCols.emailCol);
+        cnp = extractCnpFromRow(row, headerCols.cnpCol);
       } else {
-        ({ name, email } = guessNameAndEmail(row));
+        ({ name, email, cnp } = guessNameEmailCnp(row));
       }
       
-      if (email && name && name.length > 1) {
-        entries.push({ name, email });
+      if (email && (name.length > 1 || cnp)) {
+        entries.push({ name, email, cnp: cnp || undefined });
       }
     }
     
     console.log(`Email file sheet "${sheetName}": ${entries.length} entries parsed`);
     if (entries.length > 0) {
-      console.log('Sample entries:', entries.slice(0, 5).map(e => `"${e.name}" -> ${e.email}`));
+      const withCnp = entries.filter(e => e.cnp).length;
+      console.log(`  ${withCnp}/${entries.length} entries have CNP`);
+      console.log('Sample entries:', entries.slice(0, 5).map(e => `"${e.name}" cnp=${e.cnp || 'N/A'} -> ${e.email}`));
     }
   }
   
@@ -553,14 +585,13 @@ export function parseEmailCsv(content: string): EmailEntry[] {
   const lines = content.trim().split('\n');
   if (lines.length === 0) return entries;
   
-  // Try to detect headers in first line
   const firstLineParts = lines[0].split(';').map(p => p.trim());
   const headerCols = detectEmailFileHeaders(firstLineParts);
   
   let dataStartLine = 0;
   if (headerCols) {
     dataStartLine = 1;
-    console.log(`CSV: detected headers: nameCol=${headerCols.nameCol}, firstNameCol=${headerCols.firstNameCol}, lastNameCol=${headerCols.lastNameCol}, emailCol=${headerCols.emailCol}`);
+    console.log(`CSV: detected headers: nameCol=${headerCols.nameCol}, firstNameCol=${headerCols.firstNameCol}, lastNameCol=${headerCols.lastNameCol}, emailCol=${headerCols.emailCol}, cnpCol=${headerCols.cnpCol}`);
   } else {
     console.log('CSV: no headers detected, using heuristic parsing');
   }
@@ -571,32 +602,43 @@ export function parseEmailCsv(content: string): EmailEntry[] {
     
     let name: string;
     let email: string;
+    let cnp: string;
     
     if (headerCols) {
       name = extractNameFromRow(parts, headerCols);
       email = extractEmailFromRow(parts, headerCols.emailCol);
+      cnp = extractCnpFromRow(parts, headerCols.cnpCol);
     } else {
-      ({ name, email } = guessNameAndEmail(parts));
+      ({ name, email, cnp } = guessNameEmailCnp(parts));
     }
     
-    if (email && name && name.length > 1) {
-      entries.push({ name, email });
+    if (email && (name.length > 1 || cnp)) {
+      entries.push({ name, email, cnp: cnp || undefined });
     }
   }
   
   console.log(`CSV parsed: ${entries.length} entries`);
   if (entries.length > 0) {
-    console.log('Sample CSV entries:', entries.slice(0, 5).map(e => `"${e.name}" -> ${e.email}`));
+    console.log('Sample CSV entries:', entries.slice(0, 5).map(e => `"${e.name}" cnp=${e.cnp || 'N/A'} -> ${e.email}`));
   }
   
   return entries;
 }
 
 /**
- * Match employees with emails by fuzzy name comparison
+ * Match employees with emails - PRIMARY: by CNP (exact), FALLBACK: by name (fuzzy)
  */
 export function matchEmails(employees: ParsedEmployee[], emailEntries: EmailEntry[]): ParsedEmployee[] {
   console.log(`Matching ${employees.length} employees with ${emailEntries.length} email entries`);
+  
+  // Build CNP lookup map for O(1) matching
+  const cnpToEmail = new Map<string, EmailEntry>();
+  for (const entry of emailEntries) {
+    if (entry.cnp) {
+      cnpToEmail.set(entry.cnp, entry);
+    }
+  }
+  console.log(`  CNP lookup: ${cnpToEmail.size} entries with CNP`);
   
   const normalizedEmails = emailEntries.map(e => ({
     ...e,
@@ -604,17 +646,28 @@ export function matchEmails(employees: ParsedEmployee[], emailEntries: EmailEntr
     tokens: getNameTokens(e.name),
   }));
   
-  let matchedCount = 0;
+  let matchedByCnp = 0;
+  let matchedByName = 0;
   let unmatchedNames: string[] = [];
   
   const result = employees.map(emp => {
+    // === PRIORITY 1: Match by CNP (exact, 100% reliable) ===
+    if (emp.cnp) {
+      const cnpMatch = cnpToEmail.get(emp.cnp);
+      if (cnpMatch) {
+        matchedByCnp++;
+        return { ...emp, email: cnpMatch.email, emailMatched: true };
+      }
+    }
+    
+    // === PRIORITY 2: Fuzzy name matching (fallback) ===
     const empNormalized = normalizeName(emp.fullName);
     const empTokens = getNameTokens(emp.fullName);
     
-    // 1. Exact normalized match
+    // 2a. Exact normalized match
     let match = normalizedEmails.find(e => e.normalizedName === empNormalized);
     
-    // 2. All tokens match (handles different order: "POPESCU ION" vs "ION POPESCU")
+    // 2b. All tokens match (handles different order)
     if (!match) {
       match = normalizedEmails.find(e => {
         if (e.tokens.length !== empTokens.length) return false;
@@ -624,7 +677,7 @@ export function matchEmails(employees: ParsedEmployee[], emailEntries: EmailEntr
       });
     }
     
-    // 3. Containment match: all tokens from the shorter name exist in the longer name
+    // 2c. Containment match
     if (!match) {
       match = normalizedEmails.find(e => {
         const shorter = e.tokens.length <= empTokens.length ? e.tokens : empTokens;
@@ -633,7 +686,7 @@ export function matchEmails(employees: ParsedEmployee[], emailEntries: EmailEntr
       });
     }
     
-    // 4. High overlap: at least 2 tokens match AND that's >= 60% of the shorter name's tokens
+    // 2d. High overlap (≥2 tokens, ≥60%)
     if (!match && empTokens.length >= 2) {
       match = normalizedEmails.find(e => {
         if (e.tokens.length < 2) return false;
@@ -643,16 +696,8 @@ export function matchEmails(employees: ParsedEmployee[], emailEntries: EmailEntr
       });
     }
     
-    // 5. Substring match: one name contains the other (min 5 chars to avoid false positives)
-    if (!match) {
-      match = normalizedEmails.find(e => {
-        if (e.normalizedName.length < 5 || empNormalized.length < 5) return false;
-        return e.normalizedName.includes(empNormalized) || empNormalized.includes(e.normalizedName);
-      });
-    }
-    
     if (match) {
-      matchedCount++;
+      matchedByName++;
       return { ...emp, email: match.email, emailMatched: true };
     }
     
@@ -660,17 +705,12 @@ export function matchEmails(employees: ParsedEmployee[], emailEntries: EmailEntr
     return emp;
   });
   
-  console.log(`Matched: ${matchedCount}/${employees.length}`);
+  const totalMatched = matchedByCnp + matchedByName;
+  console.log(`Matched: ${totalMatched}/${employees.length} (${matchedByCnp} by CNP, ${matchedByName} by name)`);
   if (unmatchedNames.length > 0 && unmatchedNames.length <= 20) {
     console.log('Unmatched names:', unmatchedNames);
   } else if (unmatchedNames.length > 20) {
     console.log(`${unmatchedNames.length} unmatched. First 10:`, unmatchedNames.slice(0, 10));
-  }
-  
-  // Log samples for debugging
-  if (unmatchedNames.length > 0) {
-    console.log('Sample email entries:', normalizedEmails.slice(0, 5).map(e => `"${e.normalizedName}" [${e.tokens.join(',')}] -> ${e.email}`));
-    console.log('Sample employee names:', employees.slice(0, 5).map(e => `"${normalizeName(e.fullName)}" [${getNameTokens(e.fullName).join(',')}]`));
   }
   
   return result;
