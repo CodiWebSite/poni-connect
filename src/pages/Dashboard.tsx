@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/card';
 import MainLayout from '@/components/layout/MainLayout';
 import StatCard from '@/components/dashboard/StatCard';
 import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
@@ -9,7 +10,7 @@ import ActivityHistory from '@/components/dashboard/ActivityHistory';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Users, Megaphone, FileText, Calendar } from 'lucide-react';
+import { Users, Megaphone, FileText, Calendar, UserCheck, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -36,6 +37,7 @@ const Dashboard = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [stats, setStats] = useState({
     employees: 0,
+    employeesWithAccount: 0,
     announcements: 0,
     documents: 0,
     events: 0,
@@ -76,8 +78,9 @@ const Dashboard = () => {
     }
 
     // Fetch counts
-    const [employeesCount, announcementsCount, documentsCount, eventsCount] = await Promise.all([
+    const [employeesCount, employeesWithAccountCount, announcementsCount, documentsCount, eventsCount] = await Promise.all([
       supabase.from('employee_personal_data').select('*', { count: 'exact', head: true }),
+      supabase.from('employee_personal_data').select('*', { count: 'exact', head: true }).not('employee_record_id', 'is', null),
       supabase.from('announcements').select('*', { count: 'exact', head: true }),
       supabase.from('documents').select('*', { count: 'exact', head: true }),
       supabase.from('events').select('*', { count: 'exact', head: true }),
@@ -85,6 +88,7 @@ const Dashboard = () => {
 
     setStats({
       employees: employeesCount.count || 0,
+      employeesWithAccount: employeesWithAccountCount.count || 0,
       announcements: announcementsCount.count || 0,
       documents: documentsCount.count || 0,
       events: eventsCount.count || 0,
@@ -110,6 +114,24 @@ const Dashboard = () => {
           icon={Users}
           iconClassName="bg-primary"
         />
+        <Card className="p-4 flex items-center gap-3">
+          <div className="flex gap-4 w-full">
+            <div className="flex items-center gap-2 flex-1">
+              <UserCheck className="w-5 h-5 text-green-600" />
+              <div>
+                <p className="text-lg font-bold">{stats.employeesWithAccount}</p>
+                <p className="text-xs text-muted-foreground">Cu cont</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-1">
+              <UserX className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="text-lg font-bold">{stats.employees - stats.employeesWithAccount}</p>
+                <p className="text-xs text-muted-foreground">Fără cont</p>
+              </div>
+            </div>
+          </div>
+        </Card>
         <StatCard
           title="Anunțuri"
           value={stats.announcements}
