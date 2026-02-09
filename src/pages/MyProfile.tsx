@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { 
   User, 
@@ -19,15 +19,13 @@ import {
   Phone,
   Clock,
   Loader2,
-  Cake,
-  Save,
   MapPin,
   CreditCard,
   Hash,
-  History
+  History,
+  Mail,
+  BadgeCheck
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -74,6 +72,8 @@ interface PersonalData {
   address_city: string | null;
   address_county: string | null;
   employment_date: string;
+  department: string | null;
+  position: string | null;
 }
 
 interface LeaveHistoryItem {
@@ -99,6 +99,17 @@ const leaveStatusConfig: Record<string, { label: string; variant: 'default' | 's
   rejected: { label: 'Respins', variant: 'destructive' },
 };
 
+const roleLabels: Record<string, string> = {
+  user: 'Angajat',
+  admin: 'Administrator',
+  super_admin: 'Super Administrator',
+  department_head: 'Șef Compartiment',
+  hr: 'HR (SRUS)',
+  secretariat: 'Secretariat',
+  director: 'Director',
+  achizitii_contabilitate: 'Achiziții / Contabilitate'
+};
+
 const MyProfile = () => {
   const { user } = useAuth();
   const { role } = useUserRole();
@@ -110,8 +121,6 @@ const MyProfile = () => {
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [birthDate, setBirthDate] = useState('');
-  const [savingBirthDate, setSavingBirthDate] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -121,66 +130,28 @@ const MyProfile = () => {
 
   const fetchData = async () => {
     if (!user) return;
-    
     setLoading(true);
     
-    // Fetch profile
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('full_name, department, position, phone, avatar_url, birth_date')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (profileData) {
-      setProfile(profileData);
-      setBirthDate(profileData.birth_date || '');
-    }
+    const [profileRes, recordRes, docsRes, leaveRes] = await Promise.all([
+      supabase.from('profiles').select('full_name, department, position, phone, avatar_url, birth_date').eq('user_id', user.id).single(),
+      supabase.from('employee_records').select('*').eq('user_id', user.id).single(),
+      supabase.from('employee_documents').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('hr_requests').select('id, status, details, created_at').eq('user_id', user.id).eq('request_type', 'concediu').order('created_at', { ascending: false }),
+    ]);
 
-    // Fetch employee record
-    const { data: recordData } = await supabase
-      .from('employee_records')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (recordData) {
-      setEmployeeRecord(recordData);
-    }
-
-    // Fetch employee documents
-    const { data: docsData } = await supabase
-      .from('employee_documents')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    
-    if (docsData) {
-      setDocuments(docsData);
-    }
-
-    // Fetch leave history
-    const { data: leaveData } = await supabase
-      .from('hr_requests')
-      .select('id, status, details, created_at')
-      .eq('user_id', user.id)
-      .eq('request_type', 'concediu')
-      .order('created_at', { ascending: false });
-    
-    if (leaveData) {
-      setLeaveHistory(leaveData);
-    }
+    if (profileRes.data) setProfile(profileRes.data);
+    if (recordRes.data) setEmployeeRecord(recordRes.data);
+    if (docsRes.data) setDocuments(docsRes.data);
+    if (leaveRes.data) setLeaveHistory(leaveRes.data);
 
     // Fetch personal data linked to employee record
-    if (recordData) {
-      const { data: personalDataResult } = await supabase
+    if (recordRes.data) {
+      const { data: pd } = await supabase
         .from('employee_personal_data')
         .select('*')
-        .eq('employee_record_id', recordData.id)
+        .eq('employee_record_id', recordRes.data.id)
         .maybeSingle();
-      
-      if (personalDataResult) {
-        setPersonalData(personalDataResult);
-      }
+      if (pd) setPersonalData(pd);
     }
 
     setLoading(false);
@@ -191,14 +162,9 @@ const MyProfile = () => {
       toast({ title: 'Eroare', description: 'Fișierul nu este disponibil.', variant: 'destructive' });
       return;
     }
-
     try {
-      const { data, error } = await supabase.storage
-        .from('employee-documents')
-        .download(doc.file_url);
-
+      const { data, error } = await supabase.storage.from('employee-documents').download(doc.file_url);
       if (error) throw error;
-
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
@@ -213,38 +179,13 @@ const MyProfile = () => {
     }
   };
 
-  const saveBirthDate = async () => {
-    if (!user) return;
-    
-    setSavingBirthDate(true);
-    
-    const { error } = await supabase
-      .from('profiles')
-      .update({ birth_date: birthDate || null })
-      .eq('user_id', user.id);
-
-    if (error) {
-      toast({ title: 'Eroare', description: 'Nu s-a putut salva data nașterii.', variant: 'destructive' });
-    } else {
-      toast({ title: 'Salvat', description: 'Data nașterii a fost actualizată.' });
-    }
-    
-    setSavingBirthDate(false);
-  };
-
-  const roleLabels: Record<string, string> = {
-    user: 'Angajat',
-    admin: 'Administrator',
-    super_admin: 'Super Administrator',
-    department_head: 'Șef Compartiment',
-    hr: 'HR (SRUS)',
-    secretariat: 'Secretariat',
-    director: 'Director'
-  };
-
   const leaveProgress = employeeRecord 
     ? (employeeRecord.used_leave_days / employeeRecord.total_leave_days) * 100 
     : 0;
+
+  // Determine department and position from personalData or profile
+  const department = personalData?.department || profile?.department;
+  const position = personalData?.position || profile?.position;
 
   if (loading) {
     return (
@@ -258,127 +199,113 @@ const MyProfile = () => {
 
   return (
     <MainLayout title="Profilul Meu" description="Vizualizați datele personale și documentele dvs.">
-      <div className="space-y-6">
-        {/* Profile Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Personal Info Card */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5 text-primary" />
-                Date Personale
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="w-8 h-8 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">{profile?.full_name || 'N/A'}</h3>
-                  <Badge variant="secondary">{roleLabels[role || 'user']}</Badge>
-                </div>
-              </div>
+      <div className="space-y-6 max-w-5xl mx-auto">
 
-              <div className="space-y-3 pt-4 border-t">
-                <div className="flex items-center gap-3 text-sm">
-                  <Briefcase className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Funcție:</span>
-                  <span className="font-medium">{profile?.position || 'Nespecificat'}</span>
+        {/* Profile Header Card */}
+        <Card className="overflow-hidden">
+          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+              <div className="w-20 h-20 rounded-full bg-primary/15 border-2 border-primary/20 flex items-center justify-center shrink-0">
+                <User className="w-10 h-10 text-primary" />
+              </div>
+              <div className="space-y-2 flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h2 className="text-2xl font-bold tracking-tight">{profile?.full_name || 'N/A'}</h2>
+                  <Badge variant="secondary" className="text-xs font-medium">
+                    <BadgeCheck className="w-3 h-3 mr-1" />
+                    {roleLabels[role || 'user']}
+                  </Badge>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Building className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Compartiment:</span>
-                  <span className="font-medium">{profile?.department || 'Nespecificat'}</span>
-                </div>
-                {profile?.phone && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Telefon:</span>
-                    <span className="font-medium">{profile.phone}</span>
-                  </div>
+                {position && (
+                  <p className="text-base text-muted-foreground font-medium">{position}</p>
                 )}
               </div>
+            </div>
+          </div>
 
-            </CardContent>
-          </Card>
-
-          {/* Leave Balance Card */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                Sold Zile Concediu
-              </CardTitle>
-              <CardDescription>
-                Anul {new Date().getFullYear()}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {employeeRecord ? (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-green-500/10 rounded-lg">
-                      <p className="text-3xl font-bold text-green-600">{employeeRecord.remaining_leave_days}</p>
-                      <p className="text-sm text-muted-foreground">Zile Disponibile</p>
-                    </div>
-                    <div className="text-center p-4 bg-blue-500/10 rounded-lg">
-                      <p className="text-3xl font-bold text-blue-600">{employeeRecord.used_leave_days}</p>
-                      <p className="text-sm text-muted-foreground">Zile Utilizate</p>
-                    </div>
-                    <div className="text-center p-4 bg-gray-500/10 rounded-lg">
-                      <p className="text-3xl font-bold text-gray-600">{employeeRecord.total_leave_days}</p>
-                      <p className="text-sm text-muted-foreground">Total Zile</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Progres utilizare</span>
-                      <span className="font-medium">{Math.round(leaveProgress)}%</span>
-                    </div>
-                    <Progress value={leaveProgress} className="h-3" />
-                  </div>
-
-                  {employeeRecord.hire_date && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t">
-                      <Clock className="w-4 h-4" />
-                      <span>Data angajării: {format(new Date(employeeRecord.hire_date), 'dd MMMM yyyy', { locale: ro })}</span>
-                    </div>
-                  )}
-
-                  {employeeRecord.contract_type && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <FileText className="w-4 h-4" />
-                      <span>Tip contract: {employeeRecord.contract_type === 'nedeterminat' ? 'Perioadă nedeterminată' : 'Perioadă determinată'}</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Nu există date despre concediu.</p>
-                  <p className="text-sm">Contactați departamentul HR pentru actualizare.</p>
-                </div>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <InfoItem icon={Building} label="Departament" value={department || 'Nespecificat'} />
+              <InfoItem icon={Briefcase} label="Funcție" value={position || 'Nespecificată'} />
+              <InfoItem 
+                icon={Clock} 
+                label="Data angajării" 
+                value={employeeRecord?.hire_date 
+                  ? format(new Date(employeeRecord.hire_date), 'dd MMM yyyy', { locale: ro }) 
+                  : 'Nespecificată'
+                } 
+              />
+              <InfoItem 
+                icon={FileText} 
+                label="Tip contract" 
+                value={employeeRecord?.contract_type === 'nedeterminat' ? 'Perioadă nedeterminată' : employeeRecord?.contract_type === 'determinat' ? 'Perioadă determinată' : employeeRecord?.contract_type || 'Nespecificat'} 
+              />
+              {user?.email && (
+                <InfoItem icon={Mail} label="Email" value={user.email} />
               )}
-            </CardContent>
-          </Card>
-        </div>
+              {profile?.phone && (
+                <InfoItem icon={Phone} label="Telefon" value={profile.phone} />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Leave Balance */}
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Calendar className="w-5 h-5 text-primary" />
+              Sold Concediu — {new Date().getFullYear()}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {employeeRecord ? (
+              <div className="space-y-5">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center p-4 rounded-xl bg-primary/10 border border-primary/20">
+                    <p className="text-3xl font-bold text-primary">{employeeRecord.remaining_leave_days}</p>
+                    <p className="text-xs text-muted-foreground mt-1 font-medium">Disponibile</p>
+                  </div>
+                  <div className="text-center p-4 rounded-xl bg-secondary/50 border border-secondary">
+                    <p className="text-3xl font-bold text-secondary-foreground">{employeeRecord.used_leave_days}</p>
+                    <p className="text-xs text-muted-foreground mt-1 font-medium">Utilizate</p>
+                  </div>
+                  <div className="text-center p-4 rounded-xl bg-muted/50 border">
+                    <p className="text-3xl font-bold">{employeeRecord.total_leave_days}</p>
+                    <p className="text-xs text-muted-foreground mt-1 font-medium">Total cuvenite</p>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Progres utilizare</span>
+                    <span className="font-semibold">{Math.round(leaveProgress)}%</span>
+                  </div>
+                  <Progress value={leaveProgress} className="h-2.5" />
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">Nu există date despre concediu.</p>
+                <p className="text-xs">Contactați departamentul HR pentru actualizare.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Leave History */}
         {leaveHistory.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <History className="w-5 h-5 text-primary" />
                 Istoricul Concediilor
               </CardTitle>
-              <CardDescription>
-                Toate concediile înregistrate în sistem
-              </CardDescription>
+              <CardDescription>Toate concediile înregistrate în sistem</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {leaveHistory.map((leave) => {
                   const details = leave.details || {};
                   const status = leaveStatusConfig[leave.status] || leaveStatusConfig.pending;
@@ -386,27 +313,27 @@ const MyProfile = () => {
                   const endDate = details.endDate ? new Date(details.endDate) : null;
                   
                   return (
-                    <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="space-y-1">
+                    <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 border rounded-lg hover:bg-muted/40 transition-colors">
+                      <div className="space-y-0.5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-sm">
                             {startDate && endDate
-                              ? `${format(startDate, 'dd MMMM', { locale: ro })} — ${format(endDate, 'dd MMMM yyyy', { locale: ro })}`
+                              ? `${format(startDate, 'dd MMM', { locale: ro })} — ${format(endDate, 'dd MMM yyyy', { locale: ro })}`
                               : 'Perioadă nespecificată'}
                           </p>
-                          <Badge variant={status.variant}>{status.label}</Badge>
+                          <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
                           {details.manualEntry && (
-                            <Badge variant="outline" className="text-xs">Înregistrare manuală HR</Badge>
+                            <Badge variant="outline" className="text-[10px]">HR</Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           {details.numberOfDays && (
-                            <span className="font-medium">{details.numberOfDays} zile lucrătoare</span>
+                            <span className="font-medium">{details.numberOfDays} zile</span>
                           )}
-                          <span>Înregistrat: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
+                          <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
                         </div>
                         {details.notes && (
-                          <p className="text-xs text-muted-foreground italic">{details.notes}</p>
+                          <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>
                         )}
                       </div>
                     </div>
@@ -419,48 +346,44 @@ const MyProfile = () => {
 
         {leaveHistory.length === 0 && employeeRecord && (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <History className="w-5 h-5 text-primary" />
                 Istoricul Concediilor
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center py-6 text-muted-foreground">
-                <History className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <History className="w-10 h-10 mx-auto mb-2 opacity-40" />
                 <p className="text-sm">Nu aveți concedii înregistrate în sistem.</p>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Personal Data Section - CNP, CI, Address */}
+        {/* Personal Data Section */}
         {personalData && (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <CreditCard className="w-5 h-5 text-primary" />
                 Date de Identificare
               </CardTitle>
-              <CardDescription>
-                Informații confidențiale din dosarul de personal
-              </CardDescription>
+              <CardDescription>Informații confidențiale din dosarul de personal</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* CNP */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Hash className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    <Hash className="w-3.5 h-3.5" />
                     CNP
                   </div>
-                  <p className="font-mono font-medium text-lg">{personalData.cnp}</p>
+                  <p className="font-mono font-semibold text-base">{personalData.cnp}</p>
                 </div>
 
-                {/* Carte de Identitate */}
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CreditCard className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    <CreditCard className="w-3.5 h-3.5" />
                     Carte de Identitate
                   </div>
                   <p className="font-medium">
@@ -469,24 +392,19 @@ const MyProfile = () => {
                       : 'Nespecificat'}
                   </p>
                   {personalData.ci_issued_by && (
-                    <p className="text-sm text-muted-foreground">
-                      Eliberat de: {personalData.ci_issued_by}
-                    </p>
+                    <p className="text-xs text-muted-foreground">Eliberat de: {personalData.ci_issued_by}</p>
                   )}
                   {personalData.ci_issued_date && (
-                    <p className="text-sm text-muted-foreground">
-                      La data: {format(new Date(personalData.ci_issued_date), 'dd.MM.yyyy')}
-                    </p>
+                    <p className="text-xs text-muted-foreground">La data: {format(new Date(personalData.ci_issued_date), 'dd.MM.yyyy')}</p>
                   )}
                 </div>
 
-                {/* Address */}
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    Adresă de Domiciliu
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    <MapPin className="w-3.5 h-3.5" />
+                    Adresă
                   </div>
-                  <p className="font-medium">
+                  <p className="font-medium text-sm">
                     {[
                       personalData.address_street,
                       personalData.address_number && `Nr. ${personalData.address_number}`,
@@ -496,7 +414,7 @@ const MyProfile = () => {
                     ].filter(Boolean).join(', ') || 'Nespecificată'}
                   </p>
                   {(personalData.address_city || personalData.address_county) && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {[personalData.address_city, personalData.address_county].filter(Boolean).join(', ')}
                     </p>
                   )}
@@ -506,56 +424,27 @@ const MyProfile = () => {
           </Card>
         )}
 
-        {/* Documents Section */}
+        {/* Documents */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <FileText className="w-5 h-5 text-primary" />
               Documentele Mele
             </CardTitle>
-            <CardDescription>
-              CV, contracte, certificate și alte documente personale
-            </CardDescription>
+            <CardDescription>Contracte, certificate și alte documente personale</CardDescription>
           </CardHeader>
           <CardContent>
             {documents.length > 0 ? (
-              <Tabs defaultValue="all" className="space-y-4">
-                <TabsList className="flex-wrap h-auto">
-                  <TabsTrigger value="all">Toate</TabsTrigger>
-                  <TabsTrigger value="contract">Contracte</TabsTrigger>
-                  <TabsTrigger value="cv">CV</TabsTrigger>
-                  <TabsTrigger value="certificat">Certificate</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="all" className="space-y-3">
-                  {documents.map((doc) => (
-                    <DocumentItem key={doc.id} doc={doc} onDownload={downloadDocument} />
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="contract" className="space-y-3">
-                  {documents.filter(d => d.document_type === 'contract' || d.document_type === 'anexa').map((doc) => (
-                    <DocumentItem key={doc.id} doc={doc} onDownload={downloadDocument} />
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="cv" className="space-y-3">
-                  {documents.filter(d => d.document_type === 'cv').map((doc) => (
-                    <DocumentItem key={doc.id} doc={doc} onDownload={downloadDocument} />
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="certificat" className="space-y-3">
-                  {documents.filter(d => d.document_type === 'certificat' || d.document_type === 'diploma').map((doc) => (
-                    <DocumentItem key={doc.id} doc={doc} onDownload={downloadDocument} />
-                  ))}
-                </TabsContent>
-              </Tabs>
+              <div className="space-y-2">
+                {documents.map((doc) => (
+                  <DocumentItem key={doc.id} doc={doc} onDownload={downloadDocument} />
+                ))}
+              </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>Nu aveți documente încărcate.</p>
-                <p className="text-sm">Documentele vor fi adăugate de departamentul HR.</p>
+                <FileText className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">Nu aveți documente încărcate.</p>
+                <p className="text-xs">Documentele vor fi adăugate de departamentul HR.</p>
               </div>
             )}
           </CardContent>
@@ -565,35 +454,38 @@ const MyProfile = () => {
   );
 };
 
-const DocumentItem = ({ doc, onDownload }: { doc: EmployeeDocument; onDownload: (doc: EmployeeDocument) => void }) => {
-  return (
-    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-          <FileText className="w-5 h-5 text-primary" />
-        </div>
-        <div>
-          <p className="font-medium">{doc.name}</p>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Badge variant="outline" className="text-xs">
-              {documentTypeLabels[doc.document_type] || doc.document_type}
-            </Badge>
-            <span>•</span>
-            <span>{format(new Date(doc.created_at), 'dd MMM yyyy', { locale: ro })}</span>
-          </div>
-          {doc.description && (
-            <p className="text-sm text-muted-foreground mt-1">{doc.description}</p>
-          )}
+const InfoItem = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
+  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+    <Icon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+    <div className="min-w-0">
+      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-sm font-medium truncate">{value}</p>
+    </div>
+  </div>
+);
+
+const DocumentItem = ({ doc, onDownload }: { doc: EmployeeDocument; onDownload: (doc: EmployeeDocument) => void }) => (
+  <div className="flex items-center justify-between p-3.5 border rounded-lg hover:bg-muted/40 transition-colors">
+    <div className="flex items-center gap-3 min-w-0">
+      <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+        <FileText className="w-4 h-4 text-primary" />
+      </div>
+      <div className="min-w-0">
+        <p className="font-medium text-sm truncate">{doc.name}</p>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant="outline" className="text-[10px]">
+            {documentTypeLabels[doc.document_type] || doc.document_type}
+          </Badge>
+          <span>{format(new Date(doc.created_at), 'dd MMM yyyy', { locale: ro })}</span>
         </div>
       </div>
-      {doc.file_url && (
-        <Button variant="outline" size="sm" onClick={() => onDownload(doc)}>
-          <Download className="w-4 h-4 mr-1" />
-          Descarcă
-        </Button>
-      )}
     </div>
-  );
-};
+    {doc.file_url && (
+      <Button variant="ghost" size="sm" onClick={() => onDownload(doc)} className="shrink-0 ml-2">
+        <Download className="w-4 h-4" />
+      </Button>
+    )}
+  </div>
+);
 
 export default MyProfile;
