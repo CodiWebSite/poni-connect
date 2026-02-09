@@ -4,8 +4,51 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isSameMonth, addMonths, subMonths, isWithinInterval, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isSameMonth, addMonths, subMonths, isWithinInterval, parseISO, isSameDay } from 'date-fns';
 import { ro } from 'date-fns/locale';
+
+// Romanian public holidays for 2025-2030 (fixed + variable Orthodox Easter/Rusalii)
+const PUBLIC_HOLIDAYS: Record<number, string[]> = {
+  2025: [
+    '2025-01-01','2025-01-02','2025-01-06','2025-01-07','2025-01-24',
+    '2025-04-18','2025-04-19','2025-04-20','2025-04-21',
+    '2025-05-01','2025-06-01','2025-06-08','2025-06-09',
+    '2025-08-15','2025-11-30','2025-12-01','2025-12-25','2025-12-26',
+  ],
+  2026: [
+    '2026-01-01','2026-01-02','2026-01-06','2026-01-07','2026-01-24',
+    '2026-04-10','2026-04-11','2026-04-12','2026-04-13',
+    '2026-05-01','2026-05-31','2026-06-01',
+    '2026-08-15','2026-11-30','2026-12-01','2026-12-25','2026-12-26',
+  ],
+  2027: [
+    '2027-01-01','2027-01-02','2027-01-06','2027-01-07','2027-01-24',
+    '2027-05-01','2027-05-02','2027-05-03','2027-05-04',
+    '2027-06-01','2027-06-20','2027-06-21',
+    '2027-08-15','2027-11-30','2027-12-01','2027-12-25','2027-12-26',
+  ],
+};
+
+const HOLIDAY_NAMES: Record<string, string> = {
+  '01-01': 'Anul Nou', '01-02': 'Anul Nou', '01-06': 'Boboteaza', '01-07': 'Sf. Ioan',
+  '01-24': 'Ziua Unirii', '05-01': 'Ziua Muncii', '06-01': 'Ziua Copilului',
+  '08-15': 'Adormirea Maicii Domnului', '11-30': 'Sf. Andrei',
+  '12-01': 'Ziua Națională', '12-25': 'Crăciunul', '12-26': 'Crăciunul',
+};
+
+function isPublicHoliday(day: Date): boolean {
+  const year = day.getFullYear();
+  const dateStr = format(day, 'yyyy-MM-dd');
+  return PUBLIC_HOLIDAYS[year]?.includes(dateStr) ?? false;
+}
+
+function getHolidayName(day: Date): string | null {
+  const dateStr = format(day, 'yyyy-MM-dd');
+  const year = day.getFullYear();
+  if (!PUBLIC_HOLIDAYS[year]?.includes(dateStr)) return null;
+  const mmdd = format(day, 'MM-dd');
+  return HOLIDAY_NAMES[mmdd] || 'Sărbătoare legală';
+}
 
 interface LeaveEntry {
   employeeName: string;
@@ -208,16 +251,22 @@ const LeaveCalendar = () => {
                 <div className="flex flex-1">
                   {days.map((day, i) => {
                     const weekend = isWeekend(day);
+                    const holiday = isPublicHoliday(day);
+                    const holidayName = getHolidayName(day);
+                    const dayOff = weekend || holiday;
                     return (
                       <div
                         key={i}
-                        className={`flex-1 min-w-[28px] p-1 text-center border-r border-border last:border-r-0 ${weekend ? 'bg-muted/50' : ''}`}
+                        className={`flex-1 min-w-[28px] p-1 text-center border-r border-border last:border-r-0 ${
+                          holiday ? 'bg-destructive/10' : weekend ? 'bg-muted/50' : ''
+                        }`}
+                        title={holidayName || undefined}
                       >
-                        <span className={`text-[10px] font-medium ${weekend ? 'text-muted-foreground' : 'text-foreground'}`}>
+                        <span className={`text-[10px] font-medium ${holiday ? 'text-destructive' : weekend ? 'text-muted-foreground' : 'text-foreground'}`}>
                           {format(day, 'EEE', { locale: ro }).charAt(0).toUpperCase()}
                         </span>
                         <br />
-                        <span className={`text-xs font-semibold ${weekend ? 'text-muted-foreground' : 'text-foreground'}`}>
+                        <span className={`text-xs font-semibold ${holiday ? 'text-destructive' : weekend ? 'text-muted-foreground' : 'text-foreground'}`}>
                           {format(day, 'd')}
                         </span>
                       </div>
@@ -238,6 +287,8 @@ const LeaveCalendar = () => {
                   <div className="flex flex-1">
                     {days.map((day, dayIdx) => {
                       const weekend = isWeekend(day);
+                      const holiday = isPublicHoliday(day);
+                      const dayOff = weekend || holiday;
                       const onLeave = isOnLeave(emp.entries, day);
                       const colorClass = colors[empIdx % colors.length];
 
@@ -245,9 +296,9 @@ const LeaveCalendar = () => {
                         <div
                           key={dayIdx}
                           className={`flex-1 min-w-[28px] h-[36px] border-r border-border last:border-r-0 ${
-                            weekend ? 'bg-muted/30' : ''
-                          } ${onLeave && !weekend ? colorClass + ' border-y' : ''}`}
-                          title={onLeave ? `${emp.name} - Concediu` : ''}
+                            holiday && !onLeave ? 'bg-destructive/8' : weekend ? 'bg-muted/30' : ''
+                          } ${onLeave && !dayOff ? colorClass + ' border-y' : ''}`}
+                          title={onLeave ? `${emp.name} - Concediu` : getHolidayName(day) || ''}
                         />
                       );
                     })}
@@ -263,15 +314,17 @@ const LeaveCalendar = () => {
                 <div className="flex flex-1">
                   {days.map((day, dayIdx) => {
                     const weekend = isWeekend(day);
+                    const holiday = isPublicHoliday(day);
+                    const dayOff = weekend || holiday;
                     const count = employeeLeaves.filter(emp => isOnLeave(emp.entries, day)).length;
                     return (
                       <div
                         key={dayIdx}
                         className={`flex-1 min-w-[28px] h-[36px] border-r border-border last:border-r-0 flex items-center justify-center ${
-                          weekend ? 'bg-muted/30' : ''
+                          holiday ? 'bg-destructive/8' : weekend ? 'bg-muted/30' : ''
                         }`}
                       >
-                        {count > 0 && !weekend && (
+                        {count > 0 && !dayOff && (
                           <span className={`text-[10px] font-bold ${count >= 3 ? 'text-destructive' : 'text-muted-foreground'}`}>
                             {count}
                           </span>
@@ -291,6 +344,10 @@ const LeaveCalendar = () => {
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-3 rounded-sm bg-chart-1/30 border border-chart-1/50" />
               <span>Perioadă concediu</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-3 rounded-sm bg-destructive/10 border border-destructive/20" />
+              <span>Sărbătoare legală</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-3 rounded-sm bg-muted/50" />
