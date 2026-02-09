@@ -101,6 +101,51 @@ export type Database = {
         }
         Relationships: []
       }
+      data_correction_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          current_value: string | null
+          field_name: string
+          id: string
+          reason: string | null
+          requested_value: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          current_value?: string | null
+          field_name: string
+          id?: string
+          reason?: string | null
+          requested_value: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          current_value?: string | null
+          field_name?: string
+          id?: string
+          reason?: string | null
+          requested_value?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       document_registry: {
         Row: {
           category: string | null
