@@ -183,27 +183,27 @@ const MyProfile = () => {
 
   return (
     <MainLayout title="Profilul Meu" description="Vizualizați datele personale și documentele dvs.">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
 
         {/* ─── Hero Header ─── */}
         <Card className="overflow-hidden border-0 shadow-lg">
-          <div className="relative bg-gradient-to-br from-primary/15 via-primary/5 to-accent/10 p-8">
-            <div className="flex flex-col sm:flex-row items-center gap-6">
+          <div className="relative bg-gradient-to-br from-primary/15 via-primary/5 to-accent/10 p-5 sm:p-8">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
               {/* Avatar */}
-              <div className="relative">
-                <div className="w-24 h-24 rounded-2xl bg-background/80 backdrop-blur border-2 border-primary/20 shadow-xl flex items-center justify-center">
-                  <User className="w-12 h-12 text-primary" />
+              <div className="relative shrink-0">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-background/80 backdrop-blur border-2 border-primary/20 shadow-xl flex items-center justify-center">
+                  <User className="w-8 h-8 sm:w-12 sm:h-12 text-primary" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-background" />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 sm:w-6 sm:h-6 bg-green-500 rounded-full border-2 border-background" />
               </div>
               
               {/* Info */}
               <div className="text-center sm:text-left space-y-1.5 flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-foreground">
                   {profile?.full_name || 'N/A'}
                 </h1>
                 {position && (
-                  <p className="text-base text-muted-foreground font-medium">{position}</p>
+                  <p className="text-sm sm:text-base text-muted-foreground font-medium">{position}</p>
                 )}
                 <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start pt-1">
                   <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">
@@ -255,10 +255,10 @@ const MyProfile = () => {
         </Card>
 
         {/* ─── Two-column layout ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
           
           {/* ─── Left Column (3/5) ─── */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-4 sm:space-y-6">
 
             {/* Leave Balance */}
             <Card>
@@ -271,18 +271,18 @@ const MyProfile = () => {
               <CardContent>
                 {employeeRecord ? (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="text-center p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-                        <p className="text-3xl font-bold text-green-600 dark:text-green-400">{employeeRecord.remaining_leave_days}</p>
-                        <p className="text-xs text-muted-foreground mt-1 font-medium">Disponibile</p>
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                      <div className="text-center p-2.5 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                        <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{employeeRecord.remaining_leave_days}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Disponibile</p>
                       </div>
-                      <div className="text-center p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{employeeRecord.used_leave_days}</p>
-                        <p className="text-xs text-muted-foreground mt-1 font-medium">Utilizate</p>
+                      <div className="text-center p-2.5 sm:p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                        <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">{employeeRecord.used_leave_days}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Utilizate</p>
                       </div>
-                      <div className="text-center p-4 rounded-xl bg-muted/50 border">
-                        <p className="text-3xl font-bold text-foreground">{employeeRecord.total_leave_days}</p>
-                        <p className="text-xs text-muted-foreground mt-1 font-medium">Total</p>
+                      <div className="text-center p-2.5 sm:p-4 rounded-xl bg-muted/50 border">
+                        <p className="text-2xl sm:text-3xl font-bold text-foreground">{employeeRecord.total_leave_days}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Total</p>
                       </div>
                     </div>
                     <div className="space-y-1.5">
@@ -356,7 +356,7 @@ const MyProfile = () => {
           </div>
 
           {/* ─── Right Column (2/5) ─── */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
 
             {/* Personal Data */}
             {personalData && (
