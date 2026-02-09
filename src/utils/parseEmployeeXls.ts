@@ -58,10 +58,20 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Rec
     let foundName = false;
     let foundCNP = false;
     
+    // Log all cells in this row for debugging
+    const rowCells: string[] = [];
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = sheet[XLSX.utils.encode_cell({ r, c })];
+      if (cell) {
+        rowCells.push(`[${c}]="${String(cell.v || '').trim()}"`);
+      }
+    }
+    
     for (let c = range.s.c; c <= range.e.c; c++) {
       const cell = sheet[XLSX.utils.encode_cell({ r, c })];
       if (!cell) continue;
-      const val = String(cell.v || '').trim().toLowerCase();
+      const raw = String(cell.v || '').trim();
+      const val = removeDiacritics(raw).toLowerCase();
       
       if (val.includes('nume') && (val.includes('prenume') || val.includes('si'))) {
         columns['name'] = c;
@@ -69,12 +79,21 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Rec
       } else if (val === 'cnp' || val.includes('c.n.p')) {
         columns['cnp'] = c;
         foundCNP = true;
-      } else if (val.includes('functia') || val === 'funcția' || val === 'functie') {
+      } else if (val.includes('functia') || val.includes('functie') || val.includes('functia')) {
         columns['function'] = c;
       } else if (val.includes('grad') || val.includes('treapta')) {
         columns['grade'] = c;
-      } else if (val.includes('nr. zile co cuvenite') || val.includes('zile co cuvenite') || val.includes('nr.zile co cuvenite')) {
+      } else if (val.includes('cuvenite') && (val.includes('zile') || val.includes('co'))) {
+        // Match: "Nr. zile CO cuvenite", "zile CO cuvenite", "Nr.zile C.O. cuvenite", "CO cuvenite"
         columns['totalLeave'] = c;
+        console.log(`  Found totalLeave column at [${c}]: "${raw}"`);
+      }
+    }
+    
+    if (foundName && foundCNP) {
+      console.log(`Header row ${r}: name=[${columns['name']}] cnp=[${columns['cnp']}] func=[${columns['function']}] grade=[${columns['grade']}] totalLeave=[${columns['totalLeave']}]`);
+      if (rowCells.length > 0) {
+        console.log(`  Row ${r} cells: ${rowCells.join(', ')}`);
       }
     }
     
@@ -84,23 +103,31 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Rec
       for (let c = columns['totalLeave'] + 1; c <= range.e.c; c++) {
         const cell = sheet[XLSX.utils.encode_cell({ r, c })];
         if (!cell) continue;
-        const val = String(cell.v || '').trim().toLowerCase();
-        if (val.includes('nr. zile') || val.includes('nr.zile') || val === 'nr. zile co' || val.includes('zile co')) {
-          // Check it's not the "cuvenite" one
+        const raw = String(cell.v || '').trim();
+        const val = removeDiacritics(raw).toLowerCase();
+        // Match any "Nr. zile" or "zile CO" column that's NOT the "cuvenite" one
+        if ((val.includes('nr.') && val.includes('zile')) || 
+            (val.includes('nr ') && val.includes('zile')) ||
+            val.includes('zile co') || 
+            val.includes('zile c.o')) {
           if (!val.includes('cuvenite')) {
             usedLeaveCols.push(c);
+            console.log(`  Found usedLeave column at [${c}]: "${raw}"`);
           }
         }
       }
+      console.log(`  Total usedLeave columns found: ${usedLeaveCols.length}`);
       columns['usedLeaveCols'] = -1; // marker
       return { headerRow: r, columns: { ...columns, _usedLeaveCols: JSON.stringify(usedLeaveCols) } as unknown as Record<string, number> };
     }
     
     if (foundName && foundCNP) {
+      console.log(`  WARNING: No totalLeave column found in this header row`);
       return { headerRow: r, columns };
     }
   }
   
+  console.log('WARNING: No header row found in sheet!');
   return null;
 }
 
@@ -159,10 +186,15 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
     const sheet = workbook.Sheets[sheetName];
     if (!sheet || !sheet['!ref']) continue;
     
+    console.log(`\n=== Processing sheet: "${sheetName}" ===`);
     const department = extractDepartment(sheet, sheetName);
+    console.log(`  Department: "${department}"`);
     const headerInfo = findHeaderRow(sheet);
     
-    if (!headerInfo) continue;
+    if (!headerInfo) {
+      console.log(`  Skipping sheet - no header row found`);
+      continue;
+    }
     
     const { headerRow, columns } = headerInfo;
     const range = XLSX.utils.decode_range(sheet['!ref']);
@@ -170,6 +202,8 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
     // Parse used leave columns
     const usedLeaveColsRaw = (columns as Record<string, unknown>)['_usedLeaveCols'];
     const usedLeaveCols: number[] = usedLeaveColsRaw ? JSON.parse(String(usedLeaveColsRaw)) : [];
+    
+    let sheetEmployeeCount = 0;
     
     // Read data rows after header
     for (let r = headerRow + 1; r <= range.e.r; r++) {
@@ -207,12 +241,21 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
       let totalLeaveDays = 21;
       if (columns['totalLeave'] !== undefined) {
         const totalCell = sheet[XLSX.utils.encode_cell({ r, c: columns['totalLeave'] })];
-        if (totalCell && typeof totalCell.v === 'number') {
-          totalLeaveDays = totalCell.v;
-        } else if (totalCell) {
-          const parsed = parseInt(String(totalCell.v), 10);
-          if (!isNaN(parsed)) totalLeaveDays = parsed;
+        if (totalCell) {
+          if (typeof totalCell.v === 'number') {
+            totalLeaveDays = totalCell.v;
+          } else {
+            const parsed = parseInt(String(totalCell.v), 10);
+            if (!isNaN(parsed)) totalLeaveDays = parsed;
+          }
         }
+        // Log first 3 employees per sheet for debugging
+        if (sheetEmployeeCount < 3) {
+          const totalCellRaw = totalCell ? `type=${typeof totalCell.v}, value=${totalCell.v}` : 'null';
+          console.log(`  Employee "${fullName}": totalLeave col=${columns['totalLeave']}, cell=(${totalCellRaw}), result=${totalLeaveDays}`);
+        }
+      } else if (sheetEmployeeCount < 3) {
+        console.log(`  Employee "${fullName}": NO totalLeave column detected, defaulting to ${totalLeaveDays}`);
       }
       
       // Calculate used leave days by summing all "Nr. zile CO" columns after the cuvenite column
@@ -229,6 +272,12 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
         }
       }
       
+      if (sheetEmployeeCount < 3) {
+        console.log(`    usedLeaveDays=${usedLeaveDays} (from ${usedLeaveCols.length} columns)`);
+      }
+      
+      sheetEmployeeCount++;
+      
       employees.push({
         firstName,
         lastName,
@@ -242,8 +291,11 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
         emailMatched: false,
       });
     }
+    
+    console.log(`  Sheet "${sheetName}": ${sheetEmployeeCount} employees parsed`);
   }
   
+  console.log(`\nTotal employees parsed: ${employees.length}`);
   return employees;
 }
 
