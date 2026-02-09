@@ -278,14 +278,80 @@ Deno.serve(async (req) => {
       }
     }
     
+    // SYNC employee_records with the imported data
+    // The UI reads from employee_records, so we must keep it in sync
+    console.log("Syncing employee_records with imported data...");
+    let syncedRecords = 0;
+    
+    for (const record of employeeData) {
+      // Find the employee_personal_data entry to get the employee_record_id
+      const { data: epd } = await supabaseAdmin
+        .from('employee_personal_data')
+        .select('employee_record_id')
+        .eq('cnp', record.cnp)
+        .maybeSingle();
+      
+      if (epd?.employee_record_id) {
+        // Update the linked employee_records entry
+        const { error: syncErr } = await supabaseAdmin
+          .from('employee_records')
+          .update({
+            total_leave_days: record.total_leave_days,
+            used_leave_days: record.used_leave_days,
+            hire_date: record.employment_date,
+            contract_type: record.contract_type,
+          })
+          .eq('id', epd.employee_record_id);
+        
+        if (!syncErr) {
+          syncedRecords++;
+        } else {
+          console.log(`Failed to sync employee_record for ${record.email}: ${syncErr.message}`);
+        }
+      }
+    }
+    
+    console.log(`Synced ${syncedRecords} employee_records entries`);
+    
+    // Also sync profiles with department and position data
+    for (const record of employeeData) {
+      // Find user by email in auth
+      const { data: epd } = await supabaseAdmin
+        .from('employee_personal_data')
+        .select('employee_record_id')
+        .eq('email', record.email)
+        .maybeSingle();
+      
+      if (epd?.employee_record_id) {
+        // Get user_id from employee_records
+        const { data: er } = await supabaseAdmin
+          .from('employee_records')
+          .select('user_id')
+          .eq('id', epd.employee_record_id)
+          .maybeSingle();
+        
+        if (er?.user_id && (record.department || record.position)) {
+          const updateData: Record<string, string | null> = {};
+          if (record.department) updateData.department = record.department;
+          if (record.position) updateData.position = record.position;
+          
+          await supabaseAdmin
+            .from('profiles')
+            .update(updateData)
+            .eq('user_id', er.user_id);
+        }
+      }
+    }
+    
     return new Response(
       JSON.stringify({
         success: true,
         imported: inserted,
+        synced_records: syncedRecords,
         skipped: skipped,
         total: records.length,
         errors: errors.length > 0 ? errors : undefined,
-        message: `Importați ${inserted} din ${records.length} angajați.`
+        message: `Importați ${inserted} din ${records.length} angajați. ${syncedRecords} dosare sincronizate.`
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
