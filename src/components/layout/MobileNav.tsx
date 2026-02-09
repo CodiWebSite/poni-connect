@@ -6,15 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   Home,
-  Megaphone,
-  Users,
-  FileText,
   Calendar,
   Settings,
   LogOut,
-  FlaskConical,
   Menu,
-  UserCog,
   Shield,
   UserCircle,
   ClipboardList,
@@ -25,7 +20,7 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { role, canManageHR } = useUserRole();
+  const { isSuperAdmin, canManageHR } = useUserRole();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -34,19 +29,13 @@ const MobileNav = () => {
     navigate('/auth');
   };
 
-  const isEmployee = role === 'user';
-
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
-    ...(!isEmployee ? [{ icon: Megaphone, label: 'Anunțuri', path: '/announcements' }] : []),
-    ...(!isEmployee ? [{ icon: Users, label: 'Angajați', path: '/employees' }] : []),
-    ...(!isEmployee ? [{ icon: FileText, label: 'Documente', path: '/documents' }] : []),
-    ...(!isEmployee ? [{ icon: Calendar, label: 'Evenimente', path: '/calendar' }] : []),
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
-    ...(role === 'super_admin' ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
+    ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
 
   return (
@@ -57,12 +46,9 @@ const MobileNav = () => {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-72 bg-sidebar text-sidebar-foreground p-0">
-        {/* Header */}
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-sidebar-primary to-accent rounded-xl flex items-center justify-center">
-              <FlaskConical className="w-5 h-5 text-sidebar-primary-foreground" />
-            </div>
+            <img src="/logo-icmpp.png" alt="ICMPP Logo" className="w-10 h-10 object-contain" />
             <div>
               <h1 className="font-display font-bold text-lg leading-tight">ICMPP</h1>
               <p className="text-xs text-sidebar-foreground/70">Intranet</p>
@@ -70,7 +56,6 @@ const MobileNav = () => {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)]">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -93,7 +78,6 @@ const MobileNav = () => {
           })}
         </nav>
 
-        {/* Footer */}
         <div className="p-3 border-t border-sidebar-border absolute bottom-0 left-0 right-0 bg-sidebar">
           <Button
             variant="ghost"

@@ -11,7 +11,8 @@ import SecretariatNotifications from '@/components/secretariat/SecretariatNotifi
 
 const SecretariatManagement = () => {
   const { user, loading: authLoading } = useAuth();
-  const { canManageSecretariat, loading: roleLoading } = useUserRole();
+  const { loading: roleLoading } = useUserRole();
+  const canManageSecretariat = false;
   const [activeTab, setActiveTab] = useState('dashboard');
 
   if (authLoading || roleLoading) {

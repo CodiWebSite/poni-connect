@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-export type AppRole = 'admin' | 'user' | 'super_admin' | 'department_head' | 'secretariat' | 'director' | 'hr' | 'achizitii_contabilitate';
+export type AppRole = 'user' | 'super_admin' | 'hr';
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -24,9 +24,13 @@ export function useUserRole() {
         .maybeSingle();
 
       if (data && !error) {
-        setRole(data.role as AppRole);
+        // Map legacy roles to current ones
+        const r = data.role as string;
+        if (r === 'super_admin') setRole('super_admin');
+        else if (r === 'hr') setRole('hr');
+        else setRole('user');
       } else {
-        setRole('user'); // Default role
+        setRole('user');
       }
       setLoading(false);
     };
@@ -34,43 +38,23 @@ export function useUserRole() {
     fetchRole();
   }, [user]);
 
-  const isAdmin = role === 'admin' || role === 'super_admin';
   const isSuperAdmin = role === 'super_admin';
-  const isDepartmentHead = role === 'department_head';
-  const isDirector = role === 'director';
-  const isSecretariat = role === 'secretariat';
   const isHR = role === 'hr';
-  const isProcurement = role === 'achizitii_contabilitate';
-  
-  // Can manage content (announcements, documents, events)
-  const canManageContent = ['admin', 'super_admin', 'department_head', 'director', 'secretariat'].includes(role || '');
-  
-  // Can approve HR requests
-  const canApproveHR = ['admin', 'super_admin', 'department_head', 'director'].includes(role || '');
+  const isStaff = isSuperAdmin || isHR;
   
   // Can manage employee records and documents (HR department)
-  const canManageHR = ['admin', 'super_admin', 'hr', 'director'].includes(role || '');
+  const canManageHR = isSuperAdmin || isHR;
   
-  // Can manage procurement requests
-  const canManageProcurement = ['admin', 'super_admin', 'director', 'achizitii_contabilitate'].includes(role || '');
-  
-  // Can manage secretariat functions
-  const canManageSecretariat = ['admin', 'super_admin', 'secretariat', 'director'].includes(role || '');
+  // Can manage content (events, calendar)
+  const canManageContent = isSuperAdmin || isHR;
 
   return { 
     role, 
-    isAdmin, 
     isSuperAdmin,
-    isDepartmentHead,
-    isDirector,
-    isSecretariat,
     isHR,
-    isProcurement,
+    isStaff,
     canManageContent,
-    canApproveHR,
     canManageHR,
-    canManageProcurement,
-    canManageSecretariat,
     loading 
   };
 }

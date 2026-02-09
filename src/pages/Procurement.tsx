@@ -120,7 +120,9 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 
 const Procurement = () => {
   const { user } = useAuth();
-  const { role, isProcurement, isAdmin, isSuperAdmin } = useUserRole();
+  const { role, isSuperAdmin } = useUserRole();
+  const isProcurement = false;
+  const isAdmin = isSuperAdmin;
   const { toast } = useToast();
 
   const [profile, setProfile] = useState<Profile | null>(null);

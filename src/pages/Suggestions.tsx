@@ -58,7 +58,9 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 
 export default function Suggestions() {
   const { user } = useAuth();
-  const { isAdmin, isSuperAdmin, isDirector } = useUserRole();
+  const { isSuperAdmin } = useUserRole();
+  const isAdmin = isSuperAdmin;
+  const isDirector = false;
   const { toast } = useToast();
   
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);

@@ -11,7 +11,8 @@ import VisitorLog from '@/components/secretariat/VisitorLog';
 
 const Secretariat = () => {
   const { user, loading: authLoading } = useAuth();
-  const { canManageSecretariat, loading: roleLoading } = useUserRole();
+  const { loading: roleLoading } = useUserRole();
+  const canManageSecretariat = false;
   const [activeTab, setActiveTab] = useState('registry');
 
   if (authLoading || roleLoading) {
