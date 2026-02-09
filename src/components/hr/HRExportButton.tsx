@@ -26,10 +26,12 @@ interface HRRequest {
 }
 
 interface Employee {
-  user_id: string;
+  user_id?: string;
   full_name: string;
+  email?: string;
   department: string | null;
   position: string | null;
+  hasAccount?: boolean;
   record?: {
     total_leave_days: number;
     used_leave_days: number;
@@ -134,13 +136,32 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
     try {
       const data = employees.map(e => ({
         'Nume Complet': e.full_name,
+        'Email': e.email || '-',
         'Departament': e.department || '-',
         'Funcție': e.position || '-',
         'Data Angajării': e.record?.hire_date ? format(new Date(e.record.hire_date), 'dd.MM.yyyy') : '-',
-        'Tip Contract': e.record?.contract_type || '-'
+        'Tip Contract': e.record?.contract_type || '-',
+        'Cont Activ': e.hasAccount ? 'Da' : 'Nu'
       }));
       downloadExcel(data, 'lista_angajati', 'Angajați');
       toast({ title: 'Export realizat', description: `${data.length} angajați exportați.` });
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const exportWithoutAccount = () => {
+    setExporting('no_account');
+    try {
+      const noAccount = employees.filter(e => !e.hasAccount);
+      const data = noAccount.map(e => ({
+        'Nume Complet': e.full_name,
+        'Email': e.email || '-',
+        'Departament': e.department || '-',
+        'Funcție': e.position || '-',
+      }));
+      downloadExcel(data, 'angajati_fara_cont', 'Fără Cont');
+      toast({ title: 'Export realizat', description: `${data.length} angajați fără cont exportați.` });
     } finally {
       setExporting(null);
     }
@@ -177,6 +198,10 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         <DropdownMenuItem onClick={exportEmployeeList}>
           <Users className="w-4 h-4 mr-2" />
           Lista angajați
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={exportWithoutAccount}>
+          <FileText className="w-4 h-4 mr-2" />
+          Angajați fără cont
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AuditLog from '@/components/admin/AuditLog';
 
 type AppRole = 'admin' | 'user' | 'super_admin' | 'department_head' | 'secretariat' | 'director' | 'hr' | 'achizitii_contabilitate';
 
@@ -108,6 +110,7 @@ const Admin = () => {
 
   const updateUserRole = async (userId: string, roleId: string, newRole: AppRole) => {
     setUpdating(userId);
+    const oldUser = users.find(u => u.user_id === userId);
     
     const { error } = await supabase
       .from('user_roles')
@@ -122,6 +125,16 @@ const Admin = () => {
       setUsers(prev => prev.map(u => 
         u.user_id === userId ? { ...u, role: newRole } : u
       ));
+      // Log audit event
+      if (user?.id) {
+        await supabase.rpc('log_audit_event', {
+          _user_id: user.id,
+          _action: 'role_change',
+          _entity_type: 'user_role',
+          _entity_id: userId,
+          _details: { user_name: oldUser?.full_name, old_role: oldUser?.role, new_role: newRole }
+        });
+      }
     }
     
     setUpdating(null);
@@ -129,6 +142,7 @@ const Admin = () => {
 
   const handleDeleteUser = async (userId: string) => {
     setDeleting(userId);
+    const deletedUser = users.find(u => u.user_id === userId);
     
     try {
       const { data, error } = await supabase.functions.invoke('delete-user', {
@@ -140,6 +154,16 @@ const Admin = () => {
       if (data?.success) {
         toast({ title: 'Succes', description: 'Contul a fost șters din sistem.' });
         setUsers(prev => prev.filter(u => u.user_id !== userId));
+        // Log audit event
+        if (user?.id) {
+          await supabase.rpc('log_audit_event', {
+            _user_id: user.id,
+            _action: 'user_delete',
+            _entity_type: 'user',
+            _entity_id: userId,
+            _details: { deleted_user_name: deletedUser?.full_name, deleted_user_id: userId }
+          });
+        }
       } else {
         toast({ title: 'Eroare', description: data?.error || 'Nu s-a putut șterge contul.', variant: 'destructive' });
       }
@@ -170,7 +194,12 @@ const Admin = () => {
 
   return (
     <MainLayout title="Administrare" description="Gestionează rolurile și configurările sistemului">
-      <div className="space-y-6">
+      <Tabs defaultValue="roles" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="roles">Roluri</TabsTrigger>
+          <TabsTrigger value="audit">Jurnal Audit</TabsTrigger>
+        </TabsList>
+        <TabsContent value="roles" className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -267,7 +296,11 @@ const Admin = () => {
             )}
           </CardContent>
         </Card>
-      </div>
+        </TabsContent>
+        <TabsContent value="audit">
+          <AuditLog />
+        </TabsContent>
+      </Tabs>
 
       {/* Delete user confirmation dialog */}
       <Dialog open={!!deleteConfirmUser} onOpenChange={() => setDeleteConfirmUser(null)}>

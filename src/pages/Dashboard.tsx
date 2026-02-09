@@ -8,6 +8,7 @@ import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
 import { Progress } from '@/components/ui/progress';
 import ActivityHistory from '@/components/dashboard/ActivityHistory';
+import ActivationChart from '@/components/dashboard/ActivationChart';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -174,6 +175,10 @@ const Dashboard = () => {
           iconClassName="bg-success"
         />
       </div>
+
+      {/* Activation Chart - only for admin roles */}
+      {role && <ActivationChart />}
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Announcements */}
