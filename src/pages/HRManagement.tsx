@@ -100,6 +100,7 @@ interface EmployeeWithData {
   archived_by?: string;
   archive_reason?: string;
   archived_by_name?: string;
+  leaveHistory?: { startDate: string; endDate: string; numberOfDays: number }[];
 }
 
 const documentTypes = [
@@ -199,6 +200,28 @@ const HRManagement = () => {
       .from('employee_documents')
       .select('*');
 
+    // Fetch all approved leave requests for all employees
+    const { data: allLeaves } = await supabase
+      .from('hr_requests')
+      .select('user_id, details, status')
+      .eq('request_type', 'concediu')
+      .eq('status', 'approved');
+
+    // Build leave lookup maps: by user_id and by epd_id
+    const leavesByUserId: Record<string, { startDate: string; endDate: string; numberOfDays: number }[]> = {};
+    const leavesByEpdId: Record<string, { startDate: string; endDate: string; numberOfDays: number }[]> = {};
+    (allLeaves || []).forEach((lr: any) => {
+      const d = lr.details || {};
+      const entry = { startDate: d.startDate || '', endDate: d.endDate || '', numberOfDays: d.numberOfDays || 0 };
+      if (d.epd_id) {
+        if (!leavesByEpdId[d.epd_id]) leavesByEpdId[d.epd_id] = [];
+        leavesByEpdId[d.epd_id].push(entry);
+      } else if (lr.user_id) {
+        if (!leavesByUserId[lr.user_id]) leavesByUserId[lr.user_id] = [];
+        leavesByUserId[lr.user_id].push(entry);
+      }
+    });
+
     // Fetch updater names
     const updaterIds = [...new Set((personalData || []).map((pd: any) => pd.last_updated_by).filter(Boolean))];
     let updaterNames: Record<string, string> = {};
@@ -235,6 +258,10 @@ const HRManagement = () => {
         updated_at: pd.updated_at,
         last_updated_by: (pd as any).last_updated_by,
         last_updated_by_name: (pd as any).last_updated_by ? updaterNames[(pd as any).last_updated_by] : undefined,
+        leaveHistory: [
+          ...(record?.user_id ? (leavesByUserId[record.user_id] || []) : []),
+          ...(leavesByEpdId[pd.id] || []),
+        ].sort((a, b) => (b.startDate || '').localeCompare(a.startDate || '')),
       };
     }) || [];
 
@@ -937,6 +964,12 @@ const HRManagement = () => {
                                   {employee.documents.length} doc.
                                 </Badge>
                               )}
+                              {employee.leaveHistory && employee.leaveHistory.length > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Calendar className="w-3 h-3 mr-1" />
+                                  {employee.leaveHistory.length} concedii
+                                </Badge>
+                              )}
                               {employee.updated_at && (
                                 <Badge variant="outline" className="text-xs text-muted-foreground">
                                   <Clock className="w-3 h-3 mr-1" />
@@ -946,6 +979,26 @@ const HRManagement = () => {
                                   )}
                                 </Badge>
                               )}
+                            </div>
+
+                            {/* Leave periods summary */}
+                            {employee.leaveHistory && employee.leaveHistory.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                {employee.leaveHistory.slice(0, 4).map((lv, idx) => (
+                                  <span key={idx} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border">
+                                    {lv.startDate && lv.endDate
+                                      ? `${format(new Date(lv.startDate), 'dd.MM')} - ${format(new Date(lv.endDate), 'dd.MM.yy')}`
+                                      : '—'}
+                                    {lv.numberOfDays > 0 && <span className="font-medium">({lv.numberOfDays}z)</span>}
+                                  </span>
+                                ))}
+                                {employee.leaveHistory.length > 4 && (
+                                  <span className="text-[11px] text-muted-foreground px-2 py-0.5">
+                                    +{employee.leaveHistory.length - 4} altele
+                                  </span>
+                                )}
+                              </div>
+                            )}
                             </div>
                           </div>
                         </div>
