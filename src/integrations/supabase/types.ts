@@ -232,7 +232,9 @@ export type Database = {
           ci_number: string | null
           ci_series: string | null
           cnp: string
+          contract_type: string | null
           created_at: string
+          department: string | null
           email: string
           employee_record_id: string | null
           employment_date: string
@@ -240,7 +242,10 @@ export type Database = {
           id: string
           last_name: string
           original_id: string | null
+          position: string | null
+          total_leave_days: number | null
           updated_at: string
+          used_leave_days: number | null
         }
         Insert: {
           address_apartment?: string | null
@@ -255,7 +260,9 @@ export type Database = {
           ci_number?: string | null
           ci_series?: string | null
           cnp: string
+          contract_type?: string | null
           created_at?: string
+          department?: string | null
           email: string
           employee_record_id?: string | null
           employment_date: string
@@ -263,7 +270,10 @@ export type Database = {
           id?: string
           last_name: string
           original_id?: string | null
+          position?: string | null
+          total_leave_days?: number | null
           updated_at?: string
+          used_leave_days?: number | null
         }
         Update: {
           address_apartment?: string | null
@@ -278,7 +288,9 @@ export type Database = {
           ci_number?: string | null
           ci_series?: string | null
           cnp?: string
+          contract_type?: string | null
           created_at?: string
+          department?: string | null
           email?: string
           employee_record_id?: string | null
           employment_date?: string
@@ -286,7 +298,10 @@ export type Database = {
           id?: string
           last_name?: string
           original_id?: string | null
+          position?: string | null
+          total_leave_days?: number | null
           updated_at?: string
+          used_leave_days?: number | null
         }
         Relationships: []
       }
