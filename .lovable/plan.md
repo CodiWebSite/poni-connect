@@ -1,66 +1,135 @@
 
-# Imbunatatiri Sistem Concedii HR
 
-## Obiectiv
-Doua imbunatatiri principale: (1) simplificarea procesului de inregistrare manuala a concediilor in Gestiune HR si (2) afisarea istoricului concediilor in profilul angajatului.
+# Import Centralizat din XLS cu Potrivire Email
 
----
+## Ce facem
 
-## Partea 1: Acces rapid la inregistrare concediu din lista angajatilor
+Transformam complet sistemul de import pentru a accepta fisierul XLS exact asa cum il aveti, cu toate sheet-urile pe departamente (Lab1, Lab2, ..., SRUS, Audit etc.). Sistemul va:
 
-**Problema actuala:** HR trebuie sa apese butonul "Concediu Manual" din bara de sus, apoi sa caute angajatul intr-un dropdown cu toti angajatii. Acest proces este incomod cand HR vrea sa inregistreze concediul pentru un angajat specific pe care il are deja in fata.
+1. Citi automat fiecare sheet si extrage departamentul din header
+2. Parsa angajatii cu: nume, CNP, functie, grad, zile CO cuvenite
+3. Calcula automat zilele de concediu folosite din coloanele cu intervale
+4. Accepta un al doilea fisier (XLS sau CSV) cu emailuri si nume pentru potrivire
+5. Afisa un tabel de previzualizare unde puteti verifica si corecta emailurile inainte de import
 
-**Solutia:** Adaugam un buton "Concediu" direct pe fiecare card de angajat din lista, langa butoanele existente ("Editeaza", "Incarca Doc.", "Cereri"). Cand HR apasa pe acest buton, dialogul de concediu manual se deschide cu angajatul deja preselectat.
+## Fluxul de lucru
 
-### Ce se schimba in fisierul `src/pages/HRManagement.tsx`
+```text
++---------------------------+      +---------------------------+
+| 1. Incarcati XLS-ul       |      | 2. Incarcati fisierul     |
+|    cu angajati             |      |    cu emailuri            |
+|    (toate sheet-urile)     |      |    (nume -> email)        |
++---------------------------+      +---------------------------+
+            |                                   |
+            +-----------------------------------+
+            |
+    +-------v-----------+
+    | 3. Previzualizare  |
+    |    - Departament   |
+    |    - Nume          |
+    |    - CNP           |
+    |    - Functie       |
+    |    - Email (editable) |
+    |    - Zile CO       |
+    |    - Zile folosite |
+    +-------------------+
+            |
+    +-------v-----------+
+    | 4. Import in baza  |
+    |    de date         |
+    +--------------------+
+```
 
-**1. Buton nou pe fiecare angajat (zona liniilor 745-780)**
-- Se adauga un buton "Concediu" cu iconita Calendar
-- Butonul apare doar daca angajatul are date de angajare (employee record) configurate
-- La click, seteaza `manualLeaveForm.employee_id` cu user_id-ul angajatului si deschide dialogul
+## Detalii tehnice
 
-**2. Cautare rapida in dialogul de concediu manual**
-- In dropdown-ul de selectie angajat, adaugam un camp de cautare (filter) pentru a gasi rapid angajatul dupa nume
-- Afisam departamentul angajatului langa nume pentru identificare mai usoara
+### 1. Migrare baza de date
 
-**3. Calcul automat vizibil**
-- Cand HR selecteaza perioada, se afiseaza clar: numar zile lucratoare, sold curent, sold dupa inregistrare
-- Mesaj de atentionare vizibil daca zilele solicitate depasesc soldul disponibil
+Se adauga 5 coloane noi la tabela `employee_personal_data`:
+- `department` (text, nullable) -- departamentul din sheet
+- `position` (text, nullable) -- functia + grad (ex: "CS III", "ACS", "referent II")
+- `contract_type` (text, default 'nedeterminat')
+- `total_leave_days` (integer, default 21) -- Nr. zile CO cuvenite
+- `used_leave_days` (integer, default 0) -- calculat din intervale
 
----
+Se actualizeaza functia trigger `sync_employee_on_signup()` sa preia si aceste valori noi cand un angajat isi face cont. Trigger-ul va seta:
+- `profiles.department` si `profiles.position`
+- `employee_records.total_leave_days` si `employee_records.used_leave_days`
+- `employee_records.contract_type`
 
-## Partea 2: Istoric concedii vizibil pentru angajat
+Se actualizeaza si functia `sync_existing_employees()` cu aceeasi logica.
 
-**Solutia:** In pagina "Profilul Meu" (`src/pages/MyProfile.tsx`), adaugam un card nou intre soldul de concediu si sectiunea "Date de Identificare" care afiseaza lista tuturor concediilor inregistrate.
+### 2. Componenta `EmployeeImport.tsx` -- rescriere completa
 
-### Ce se schimba in fisierul `src/pages/MyProfile.tsx`
+**Pasul 1: Upload XLS angajati**
+- Accept `.xls` si `.xlsx`
+- Parseaza cu biblioteca `xlsx` (deja instalata)
+- Citeste fiecare sheet: numele sheet-ului sau primul rand cu text identifica departamentul
+- Din fiecare sheet, extrage randurile de angajati:
+  - Coloana B: Nume (format "PRENUME NUME" -- splitare automata)
+  - Coloana C: CNP
+  - Coloana F: Functia (CS, ACS, CS-CD, referent, Inspector sp.)
+  - Coloana G: Grad/treapta (I, II, III, IA)
+  - Coloana N: Nr. zile CO cuvenite (total leave days)
+  - Coloanele Q, S, U...: Nr. zile CO (se aduna pentru used_leave_days)
+- Ignora randurile goale, header-uri, sectiunea "Doctoranzi" (se importa si ei cu 21 zile CO)
 
-**1. Adaugare state si query (zona fetchData, linia ~107)**
-- Se adauga un state `leaveHistory` pentru lista de concedii
-- In functia `fetchData()`, se adauga un query:
-  - Tabela: `hr_requests`
-  - Filtru: `user_id = user.id` si `request_type = 'concediu'`
-  - Ordonare: `created_at` descrescator (cele mai recente primele)
-- Nu sunt necesare modificari la baza de date sau politici RLS -- angajatii au deja acces la propriile cereri HR prin polita existenta "Users can view their own HR requests"
+**Pasul 2: Upload fisier emailuri**
+- Accepta XLS sau CSV cu minim 2 coloane: nume si email
+- Potrivire automata dupa nume (comparatie case-insensitive, cu toleranta la diacritice)
+- Afisare status potrivire: verde (gasit), rosu (negasit)
 
-**2. Card nou "Istoricul Concediilor" (dupa linia 338)**
-- Se insereaza intre cardul "Sold Zile Concediu" si sectiunea "Date de Identificare"
-- Pentru fiecare concediu inregistrat se afiseaza:
-  - Perioada: data inceput - data sfarsit (format: 15 Ianuarie - 22 Ianuarie 2026)
-  - Numar de zile lucratoare
-  - Status cu badge colorat: verde = Aprobat, galben = In asteptare, rosu = Respins
-  - Data inregistrarii in sistem
-  - Eticheta "Inregistrare manuala HR" daca campul `manualEntry` din details este `true`
-- Daca nu exista concedii, se afiseaza un mesaj informativ
+**Pasul 3: Previzualizare si editare**
+- Tabel cu toti angajatii parsati
+- Coloana email editabila manual
+- Filtru pe departament
+- Buton "Importa" activ doar dupa ce emailurile sunt completate
 
-**3. Import iconita suplimentara**
-- Se adauga `History` din lucide-react
+### 3. Edge function `import-employees` -- actualizare
 
----
+- Accepta JSON array in loc de CSV
+- Fiecare element: `{ email, first_name, last_name, cnp, department, position, contract_type, total_leave_days, used_leave_days, employment_date }`
+- Upsert in `employee_personal_data` dupa `cnp` (mai fiabil decat email)
+- Adaugare conflict pe `cnp` in plus fata de `email`
 
-## Detalii tehnice importante
+### 4. Edge function `sync-employees` -- actualizare
 
-- **Nu sunt necesare migrari SQL** -- toate datele exista deja in tabela `hr_requests`
-- **Nu sunt necesare noi politici RLS** -- angajatii pot citi propriile cereri, HR poate citi toate cererile
-- **Nu sunt necesare edge functions noi**
-- **Fisiere modificate:** doar `src/pages/HRManagement.tsx` si `src/pages/MyProfile.tsx`
+La sincronizare, preia si datele noi din `employee_personal_data`:
+- `department` -> `profiles.department`
+- `position` -> `profiles.position`
+- `total_leave_days` -> `employee_records.total_leave_days`
+- `used_leave_days` -> `employee_records.used_leave_days`
+- `contract_type` -> `employee_records.contract_type`
+
+### 5. Logica parsare XLS
+
+Detectare coloane prin cautare in header-ul fiecarui sheet:
+- Se cauta "Nume si prenume" -> coloana cu numele
+- Se cauta "CNP" -> coloana CNP
+- Se cauta "Functia" -> coloana pozitie
+- Se cauta "Grad" -> coloana grad
+- Se cauta "Nr. zile CO cuvenite" -> total leave days
+- Se cauta "Nr. zile CO" (coloanele repetate dupa) -> used leave days (suma)
+- Departamentul se ia din: randul cu "Laborator X -..." sau din numele sheet-ului
+
+Calculul zilelor folosite: se aduna toate valorile numerice din coloanele "Nr. zile CO" (cele repetate, dupa coloana cu zile cuvenite).
+
+## Fisiere modificate
+
+- `supabase/migrations/` -- migrare SQL noua (coloane + trigger actualizat)
+- `src/components/hr/EmployeeImport.tsx` -- rescriere completa (upload XLS + emailuri + previzualizare)
+- `supabase/functions/import-employees/index.ts` -- accepta JSON, campuri noi
+- `supabase/functions/sync-employees/index.ts` -- sincronizare campuri noi
+
+## Format fisier emailuri
+
+Fisierul cu emailuri poate fi:
+- **XLS/XLSX** cu coloane: Nume | Email
+- **CSV** cu separator `;`: `nume;email`
+
+Exemplu:
+```text
+PINTEALA MARIANA;pinteala.mariana@icmpp.ro
+AL-MATARNEH MARIA-CRISTINA;almatarneh.maria@icmpp.ro
+ARVINTE ADINA;arvinte.adina@icmpp.ro
+```
+
