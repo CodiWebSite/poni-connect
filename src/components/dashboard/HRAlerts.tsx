@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertTriangle, CalendarClock, CreditCard, Info } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { differenceInDays, parse, isValid, addYears } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 
 interface Alert {
   id: string;
@@ -12,37 +12,6 @@ interface Alert {
   severity: 'warning' | 'critical';
   employeeName: string;
   message: string;
-}
-
-// Romanian CI validity based on age (from CNP birth year)
-function getCIExpiryDate(ciIssuedDate: string, cnp: string): Date | null {
-  if (!ciIssuedDate) return null;
-  const issued = new Date(ciIssuedDate);
-  if (!isValid(issued)) return null;
-
-  // Extract birth year from CNP
-  const s = cnp.charAt(0);
-  const yy = parseInt(cnp.substring(1, 3));
-  let birthYear: number;
-  if (s === '1' || s === '2') birthYear = 1900 + yy;
-  else if (s === '5' || s === '6') birthYear = 2000 + yy;
-  else birthYear = 1900 + yy;
-
-  const birthMonth = parseInt(cnp.substring(3, 5));
-  const birthDay = parseInt(cnp.substring(5, 7));
-  const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
-
-  // Age at CI issue
-  const ageAtIssue = differenceInDays(issued, birthDate) / 365.25;
-
-  // Validity periods by age
-  let validityYears: number;
-  if (ageAtIssue < 14) validityYears = 4;
-  else if (ageAtIssue < 18) validityYears = 4;
-  else if (ageAtIssue < 25) validityYears = 7;
-  else validityYears = 10;
-
-  return addYears(issued, validityYears);
 }
 
 const LEAVE_THRESHOLD = 3; // alert when remaining <= 3 days
@@ -59,7 +28,7 @@ const HRAlerts = () => {
   const fetchAlerts = async () => {
     const { data: employees } = await supabase
       .from('employee_personal_data')
-      .select('id, first_name, last_name, total_leave_days, used_leave_days, employee_record_id, ci_issued_date, cnp')
+      .select('id, first_name, last_name, total_leave_days, used_leave_days, employee_record_id, ci_expiry_date')
       .eq('is_archived', false);
 
     const { data: records } = await supabase
@@ -100,28 +69,26 @@ const HRAlerts = () => {
         });
       }
 
-      // CI expiry alert
-      if (e.ci_issued_date && e.cnp) {
-        const expiryDate = getCIExpiryDate(e.ci_issued_date, e.cnp);
-        if (expiryDate) {
-          const daysUntilExpiry = differenceInDays(expiryDate, now);
-          if (daysUntilExpiry < 0) {
-            result.push({
-              id: `ci-${e.id}`,
-              type: 'ci_expiring',
-              severity: 'critical',
-              employeeName: name,
-              message: `Cartea de identitate a expirat (de ${Math.abs(daysUntilExpiry)} zile)`,
-            });
-          } else if (daysUntilExpiry <= CI_EXPIRY_DAYS) {
-            result.push({
-              id: `ci-${e.id}`,
-              type: 'ci_expiring',
-              severity: 'warning',
-              employeeName: name,
-              message: `CI expiră în ${daysUntilExpiry} zile`,
-            });
-          }
+      // CI expiry alert (uses manually entered ci_expiry_date)
+      if (e.ci_expiry_date) {
+        const expiryDate = new Date(e.ci_expiry_date);
+        const daysUntilExpiry = differenceInDays(expiryDate, now);
+        if (daysUntilExpiry < 0) {
+          result.push({
+            id: `ci-${e.id}`,
+            type: 'ci_expiring',
+            severity: 'critical',
+            employeeName: name,
+            message: `Cartea de identitate a expirat (de ${Math.abs(daysUntilExpiry)} zile)`,
+          });
+        } else if (daysUntilExpiry <= CI_EXPIRY_DAYS) {
+          result.push({
+            id: `ci-${e.id}`,
+            type: 'ci_expiring',
+            severity: 'warning',
+            employeeName: name,
+            message: `CI expiră în ${daysUntilExpiry} zile`,
+          });
         }
       }
     });

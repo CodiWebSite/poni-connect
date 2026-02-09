@@ -52,6 +52,7 @@ interface PersonalData {
   ci_number: string | null;
   ci_issued_by: string | null;
   ci_issued_date: string | null;
+  ci_expiry_date: string | null;
   address_street: string | null;
   address_number: string | null;
   address_block: string | null;
@@ -443,6 +444,9 @@ const MyProfile = () => {
                     )}
                     {personalData.ci_issued_date && (
                       <p className="text-xs text-muted-foreground">La data: {format(new Date(personalData.ci_issued_date), 'dd.MM.yyyy')}</p>
+                    )}
+                    {personalData.ci_expiry_date && (
+                      <p className="text-xs text-muted-foreground font-medium">Expiră: {format(new Date(personalData.ci_expiry_date), 'dd.MM.yyyy')}</p>
                     )}
                   </div>
 
