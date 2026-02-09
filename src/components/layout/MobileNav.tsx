@@ -39,11 +39,11 @@ const MobileNav = () => {
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
+    { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     ...(!isEmployee ? [{ icon: Megaphone, label: 'Anunțuri', path: '/announcements' }] : []),
     ...(!isEmployee ? [{ icon: Users, label: 'Angajați', path: '/employees' }] : []),
     ...(!isEmployee ? [{ icon: FileText, label: 'Documente', path: '/documents' }] : []),
-    
-    ...(!isEmployee ? [{ icon: Calendar, label: 'Calendar', path: '/calendar' }] : []),
+    ...(!isEmployee ? [{ icon: Calendar, label: 'Evenimente', path: '/calendar' }] : []),
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(role === 'super_admin' ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),

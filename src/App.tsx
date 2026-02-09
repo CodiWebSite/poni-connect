@@ -17,7 +17,7 @@ import HRManagement from "./pages/HRManagement";
 import Admin from "./pages/Admin";
 import IntranetUpdates from "./pages/IntranetUpdates";
 import Suggestions from "./pages/Suggestions";
-
+import LeaveCalendar from "./pages/LeaveCalendar";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +38,7 @@ const App = () => (
             <Route path="/employees" element={<Employees />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/leave-calendar" element={<LeaveCalendar />} />
             
             <Route path="/my-profile" element={<MyProfile />} />
             <Route path="/hr-management" element={<HRManagement />} />
