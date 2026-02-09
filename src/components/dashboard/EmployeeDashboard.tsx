@@ -102,20 +102,6 @@ const EmployeeDashboard = () => {
                   <Progress value={leaveProgress} className="h-3" />
                 </div>
 
-                <div className="flex flex-wrap gap-4 pt-2 border-t border-border">
-                  {employeeRecord.hire_date && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="w-4 h-4" />
-                      <span>Angajat din: {format(new Date(employeeRecord.hire_date), 'dd MMMM yyyy', { locale: ro })}</span>
-                    </div>
-                  )}
-                  {employeeRecord.contract_type && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Briefcase className="w-4 h-4" />
-                      <span>{employeeRecord.contract_type === 'nedeterminat' ? 'Perioadă nedeterminată' : 'Perioadă determinată'}</span>
-                    </div>
-                  )}
-                </div>
 
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/my-profile" className="flex items-center gap-1">
