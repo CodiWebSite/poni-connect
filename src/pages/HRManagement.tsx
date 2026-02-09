@@ -743,13 +743,13 @@ const HRManagement = () => {
     department: e.department,
     position: e.position,
     hasAccount: e.hasAccount,
-    record: e.record ? {
+    record: {
       total_leave_days: e.total_leave_days,
       used_leave_days: e.used_leave_days,
       remaining_leave_days: e.total_leave_days - e.used_leave_days,
-      hire_date: e.record.hire_date,
-      contract_type: e.record.contract_type,
-    } : undefined,
+      hire_date: e.record?.hire_date || e.employment_date || null,
+      contract_type: e.record?.contract_type || e.contract_type || '-',
+    },
   }));
 
   const syncEmployees = async () => {
