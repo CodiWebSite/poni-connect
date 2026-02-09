@@ -283,23 +283,37 @@ const PersonalCalendarWidget = () => {
           </div>
         )}
 
-        {/* Mini legend */}
+        {/* Legend */}
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[9px] text-muted-foreground">
           <div className="flex items-center gap-1">
             <span className="font-bold text-sky-600 bg-sky-500/20 px-1 rounded text-[8px]">CO</span>
-            <span>Odihnă</span>
+            <span>Concediu de odihnă</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="font-bold text-rose-600 bg-rose-500/20 px-1 rounded text-[8px]">BO</span>
-            <span>Medical</span>
+            <span>Concediu medical</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-2 rounded-sm bg-red-500/15" />
-            <span>Sărbătoare</span>
+            <span className="font-bold text-purple-600 bg-purple-500/20 px-1 rounded text-[8px]">CCC</span>
+            <span>Creștere copil</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-2 rounded-sm bg-amber-500/15" />
-            <span>Zi liberă</span>
+            <span className="font-bold text-amber-600 bg-amber-500/20 px-1 rounded text-[8px]">CFP</span>
+            <span>Fără plată</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-emerald-600 bg-emerald-500/20 px-1 rounded text-[8px]">EV</span>
+            <span>Eveniment</span>
+          </div>
+          <div className="border-l pl-2 flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-2 rounded-sm bg-red-500/15" />
+              <span>Sărbătoare</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-2 rounded-sm bg-amber-500/15" />
+              <span>Zi liberă</span>
+            </div>
           </div>
         </div>
       </CardContent>
