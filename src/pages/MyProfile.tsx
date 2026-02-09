@@ -11,8 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestForm';
 import { 
   User, FileText, Download, Calendar, Briefcase, Building, Phone,
-  Loader2, MapPin, CreditCard, Hash, History, Mail, BadgeCheck, AlertTriangle,
+  Loader2, MapPin, CreditCard, Hash, History, Mail, BadgeCheck, AlertTriangle, Camera,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -97,7 +98,7 @@ const MyProfile = () => {
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
-
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
@@ -152,6 +153,43 @@ const MyProfile = () => {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Eroare', description: 'Selectați un fișier imagine.', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Eroare', description: 'Imaginea trebuie să fie sub 2MB.', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase.from('profiles').update({ avatar_url: avatarUrl }).eq('user_id', user.id);
+      if (updateError) throw updateError;
+
+      setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : prev);
+      toast({ title: 'Succes', description: 'Avatarul a fost actualizat.' });
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      toast({ title: 'Eroare', description: 'Nu s-a putut încărca avatarul.', variant: 'destructive' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const leaveProgress = employeeRecord 
     ? (employeeRecord.used_leave_days / employeeRecord.total_leave_days) * 100 
     : 0;
@@ -190,10 +228,22 @@ const MyProfile = () => {
           <div className="relative bg-gradient-to-br from-primary/15 via-primary/5 to-accent/10 p-5 sm:p-8">
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
               {/* Avatar */}
-              <div className="relative shrink-0">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-background/80 backdrop-blur border-2 border-primary/20 shadow-xl flex items-center justify-center">
-                  <User className="w-8 h-8 sm:w-12 sm:h-12 text-primary" />
+              <div className="relative shrink-0 group">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-background/80 backdrop-blur border-2 border-primary/20 shadow-xl flex items-center justify-center overflow-hidden">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-8 h-8 sm:w-12 sm:h-12 text-primary" />
+                  )}
                 </div>
+                <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  {uploadingAvatar ? (
+                    <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-white animate-spin" />
+                  ) : (
+                    <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+                </label>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 sm:w-6 sm:h-6 bg-green-500 rounded-full border-2 border-background" />
               </div>
               
