@@ -11,12 +11,38 @@ export interface ParsedEmployee {
   usedLeaveDays: number;
   email: string;
   emailMatched: boolean;
+  // Identity card (CI) fields
+  ci_series?: string;
+  ci_number?: string;
+  ci_issued_by?: string;
+  ci_issued_date?: string;
+  // Address fields
+  address_street?: string;
+  address_number?: string;
+  address_block?: string;
+  address_floor?: string;
+  address_apartment?: string;
+  address_city?: string;
+  address_county?: string;
 }
 
 interface EmailEntry {
   name: string;
   email: string;
   cnp?: string;
+  // Identity card (CI) fields
+  ci_series?: string;
+  ci_number?: string;
+  ci_issued_by?: string;
+  ci_issued_date?: string;
+  // Address fields
+  address_street?: string;
+  address_number?: string;
+  address_block?: string;
+  address_floor?: string;
+  address_apartment?: string;
+  address_city?: string;
+  address_county?: string;
 }
 
 /**
@@ -463,12 +489,42 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
 /**
  * Detect header row in email file and return column indices for name/email/cnp
  */
-function detectEmailFileHeaders(values: unknown[]): { nameCol: number; firstNameCol: number; lastNameCol: number; emailCol: number; cnpCol: number } | null {
+interface EmailFileColumns {
+  nameCol: number;
+  firstNameCol: number;
+  lastNameCol: number;
+  emailCol: number;
+  cnpCol: number;
+  ciSeriesCol: number;
+  ciNumberCol: number;
+  ciIssuedByCol: number;
+  ciIssuedDateCol: number;
+  addressStreetCol: number;
+  addressNumberCol: number;
+  addressBlockCol: number;
+  addressFloorCol: number;
+  addressApartmentCol: number;
+  addressCityCol: number;
+  addressCountyCol: number;
+}
+
+function detectEmailFileHeaders(values: unknown[]): EmailFileColumns | null {
   let emailCol = -1;
   let nameCol = -1;
   let firstNameCol = -1;
   let lastNameCol = -1;
   let cnpCol = -1;
+  let ciSeriesCol = -1;
+  let ciNumberCol = -1;
+  let ciIssuedByCol = -1;
+  let ciIssuedDateCol = -1;
+  let addressStreetCol = -1;
+  let addressNumberCol = -1;
+  let addressBlockCol = -1;
+  let addressFloorCol = -1;
+  let addressApartmentCol = -1;
+  let addressCityCol = -1;
+  let addressCountyCol = -1;
 
   for (let i = 0; i < values.length; i++) {
     const raw = String(values[i] || '').trim();
@@ -485,13 +541,51 @@ function detectEmailFileHeaders(values: unknown[]): { nameCol: number; firstName
     } else if (val === 'prenume' || val === 'prenumele' || val === 'first_name' || val === 'first name' || val === 'prename') {
       firstNameCol = i;
     }
+    // CI fields
+    else if ((val.includes('serie') && (val.includes('ci') || val.includes('buletin') || val.includes('carte'))) || val === 'seria' || val === 'serie ci' || val === 'seria ci') {
+      ciSeriesCol = i;
+    } else if ((val.includes('numar') && (val.includes('ci') || val.includes('buletin') || val.includes('carte'))) || val === 'nr ci' || val === 'nr. ci' || val === 'numar ci') {
+      ciNumberCol = i;
+    } else if (val.includes('eliberat') || val.includes('emis de') || val.includes('emitent')) {
+      ciIssuedByCol = i;
+    } else if ((val.includes('data') && (val.includes('eliberar') || val.includes('emiter'))) || val === 'data ci') {
+      ciIssuedDateCol = i;
+    }
+    // Address fields
+    else if ((val === 'strada' || val === 'str' || val === 'str.' || val.includes('strada')) && !val.includes('nr')) {
+      addressStreetCol = i;
+    } else if ((val === 'nr' || val === 'nr.' || val === 'numar') && addressStreetCol !== -1) {
+      addressNumberCol = i;
+    } else if (val === 'bloc' || val === 'bl' || val === 'bl.' || val === 'block') {
+      addressBlockCol = i;
+    } else if (val === 'etaj' || val === 'et' || val === 'et.' || val === 'floor') {
+      addressFloorCol = i;
+    } else if (val === 'apartament' || val === 'ap' || val === 'ap.' || val === 'apt') {
+      addressApartmentCol = i;
+    } else if (val === 'oras' || val === 'localitate' || val === 'municipiu' || val === 'municipiul' || val === 'localitatea' || val === 'orasul' || val.includes('localitat')) {
+      addressCityCol = i;
+    } else if (val === 'judet' || val === 'jud' || val === 'jud.' || val === 'judetul' || val.includes('judet')) {
+      addressCountyCol = i;
+    }
+    // Also detect combined address column
+    else if (val === 'adresa' || val === 'adresa domiciliu' || val === 'domiciliu' || val === 'adresa de domiciliu') {
+      // Use street col as the general address column
+      addressStreetCol = i;
+    }
   }
 
   if (emailCol === -1) return null;
   
   // We need at least an email column and some name info
   if (nameCol !== -1 || (firstNameCol !== -1 && lastNameCol !== -1) || lastNameCol !== -1 || firstNameCol !== -1) {
-    return { nameCol, firstNameCol, lastNameCol, emailCol, cnpCol };
+    console.log(`  CI columns detected: series=${ciSeriesCol}, number=${ciNumberCol}, issuedBy=${ciIssuedByCol}, issuedDate=${ciIssuedDateCol}`);
+    console.log(`  Address columns detected: street=${addressStreetCol}, number=${addressNumberCol}, block=${addressBlockCol}, floor=${addressFloorCol}, apt=${addressApartmentCol}, city=${addressCityCol}, county=${addressCountyCol}`);
+    return { 
+      nameCol, firstNameCol, lastNameCol, emailCol, cnpCol,
+      ciSeriesCol, ciNumberCol, ciIssuedByCol, ciIssuedDateCol,
+      addressStreetCol, addressNumberCol, addressBlockCol, addressFloorCol,
+      addressApartmentCol, addressCityCol, addressCountyCol
+    };
   }
 
   return null;
@@ -547,6 +641,55 @@ function extractEmailFromRow(values: unknown[], emailCol: number): string {
     if (str.includes('@')) return str.toLowerCase();
   }
   return '';
+}
+
+/**
+ * Read a cell value as a trimmed string, or return undefined if empty
+ */
+function readCellString(values: unknown[], col: number): string | undefined {
+  if (col === -1 || col >= values.length) return undefined;
+  const val = String(values[col] || '').trim();
+  return val || undefined;
+}
+
+/**
+ * Extract CI and address fields from a row given column mapping
+ */
+function extractCiAddressFromRow(values: unknown[], cols: EmailFileColumns): Partial<EmailEntry> {
+  const result: Partial<EmailEntry> = {};
+  
+  result.ci_series = readCellString(values, cols.ciSeriesCol);
+  result.ci_number = readCellString(values, cols.ciNumberCol);
+  result.ci_issued_by = readCellString(values, cols.ciIssuedByCol);
+  
+  // Handle date - could be a Date object or string
+  if (cols.ciIssuedDateCol !== -1 && cols.ciIssuedDateCol < values.length) {
+    const raw = values[cols.ciIssuedDateCol];
+    if (raw instanceof Date) {
+      result.ci_issued_date = raw.toISOString().split('T')[0];
+    } else if (raw) {
+      const str = String(raw).trim();
+      if (str) {
+        // Try to parse common date formats
+        const dateMatch = str.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{4})/);
+        if (dateMatch) {
+          result.ci_issued_date = `${dateMatch[3]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`;
+        } else {
+          result.ci_issued_date = str;
+        }
+      }
+    }
+  }
+  
+  result.address_street = readCellString(values, cols.addressStreetCol);
+  result.address_number = readCellString(values, cols.addressNumberCol);
+  result.address_block = readCellString(values, cols.addressBlockCol);
+  result.address_floor = readCellString(values, cols.addressFloorCol);
+  result.address_apartment = readCellString(values, cols.addressApartmentCol);
+  result.address_city = readCellString(values, cols.addressCityCol);
+  result.address_county = readCellString(values, cols.addressCountyCol);
+  
+  return result;
 }
 
 /**
@@ -624,17 +767,19 @@ export function parseEmailFile(workbook: XLSX.WorkBook): EmailEntry[] {
       let name: string;
       let email: string;
       let cnp: string;
+      let ciAddress: Partial<EmailEntry> = {};
       
       if (headerCols) {
         name = extractNameFromRow(row, headerCols);
         email = extractEmailFromRow(row, headerCols.emailCol);
         cnp = extractCnpFromRow(row, headerCols.cnpCol);
+        ciAddress = extractCiAddressFromRow(row, headerCols);
       } else {
         ({ name, email, cnp } = guessNameEmailCnp(row));
       }
       
       if (email && (name.length > 1 || cnp)) {
-        entries.push({ name, email, cnp: cnp || undefined });
+        entries.push({ name, email, cnp: cnp || undefined, ...ciAddress });
       }
     }
     
@@ -675,17 +820,19 @@ export function parseEmailCsv(content: string): EmailEntry[] {
     let name: string;
     let email: string;
     let cnp: string;
+    let ciAddress: Partial<EmailEntry> = {};
     
     if (headerCols) {
       name = extractNameFromRow(parts, headerCols);
       email = extractEmailFromRow(parts, headerCols.emailCol);
       cnp = extractCnpFromRow(parts, headerCols.cnpCol);
+      ciAddress = extractCiAddressFromRow(parts, headerCols);
     } else {
       ({ name, email, cnp } = guessNameEmailCnp(parts));
     }
     
     if (email && (name.length > 1 || cnp)) {
-      entries.push({ name, email, cnp: cnp || undefined });
+      entries.push({ name, email, cnp: cnp || undefined, ...ciAddress });
     }
   }
   
@@ -722,13 +869,31 @@ export function matchEmails(employees: ParsedEmployee[], emailEntries: EmailEntr
   let matchedByName = 0;
   let unmatchedNames: string[] = [];
   
+  /** Helper: merge CI/address data from an email entry into employee */
+  const mergeEntryData = (emp: ParsedEmployee, entry: EmailEntry): ParsedEmployee => ({
+    ...emp,
+    email: entry.email,
+    emailMatched: true,
+    ci_series: entry.ci_series || emp.ci_series,
+    ci_number: entry.ci_number || emp.ci_number,
+    ci_issued_by: entry.ci_issued_by || emp.ci_issued_by,
+    ci_issued_date: entry.ci_issued_date || emp.ci_issued_date,
+    address_street: entry.address_street || emp.address_street,
+    address_number: entry.address_number || emp.address_number,
+    address_block: entry.address_block || emp.address_block,
+    address_floor: entry.address_floor || emp.address_floor,
+    address_apartment: entry.address_apartment || emp.address_apartment,
+    address_city: entry.address_city || emp.address_city,
+    address_county: entry.address_county || emp.address_county,
+  });
+  
   const result = employees.map(emp => {
     // === PRIORITY 1: Match by CNP (exact, 100% reliable) ===
     if (emp.cnp) {
       const cnpMatch = cnpToEmail.get(emp.cnp);
       if (cnpMatch) {
         matchedByCnp++;
-        return { ...emp, email: cnpMatch.email, emailMatched: true };
+        return mergeEntryData(emp, cnpMatch);
       }
     }
     
@@ -770,7 +935,7 @@ export function matchEmails(employees: ParsedEmployee[], emailEntries: EmailEntr
     
     if (match) {
       matchedByName++;
-      return { ...emp, email: match.email, emailMatched: true };
+      return mergeEntryData(emp, match);
     }
     
     unmatchedNames.push(emp.fullName);

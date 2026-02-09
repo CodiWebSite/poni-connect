@@ -186,6 +186,19 @@ export const EmployeeImport = () => {
         total_leave_days: emp.totalLeaveDays,
         used_leave_days: emp.usedLeaveDays,
         employment_date: new Date().toISOString().split('T')[0],
+        // CI fields from email file
+        ci_series: emp.ci_series || null,
+        ci_number: emp.ci_number || null,
+        ci_issued_by: emp.ci_issued_by || null,
+        ci_issued_date: emp.ci_issued_date || null,
+        // Address fields from email file
+        address_street: emp.address_street || null,
+        address_number: emp.address_number || null,
+        address_block: emp.address_block || null,
+        address_floor: emp.address_floor || null,
+        address_apartment: emp.address_apartment || null,
+        address_city: emp.address_city || null,
+        address_county: emp.address_county || null,
       }));
 
       const { data, error } = await supabase.functions.invoke('import-employees', {

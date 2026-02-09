@@ -16,6 +16,19 @@ interface EmployeePayload {
   total_leave_days?: number;
   used_leave_days?: number;
   employment_date?: string;
+  // CI fields
+  ci_series?: string | null;
+  ci_number?: string | null;
+  ci_issued_by?: string | null;
+  ci_issued_date?: string | null;
+  // Address fields
+  address_street?: string | null;
+  address_number?: string | null;
+  address_block?: string | null;
+  address_floor?: string | null;
+  address_apartment?: string | null;
+  address_city?: string | null;
+  address_county?: string | null;
 }
 
 Deno.serve(async (req) => {
@@ -118,6 +131,19 @@ Deno.serve(async (req) => {
       total_leave_days: record.total_leave_days ?? 21,
       used_leave_days: record.used_leave_days ?? 0,
       employment_date: record.employment_date || new Date().toISOString().split('T')[0],
+      // CI fields
+      ci_series: record.ci_series || null,
+      ci_number: record.ci_number || null,
+      ci_issued_by: record.ci_issued_by || null,
+      ci_issued_date: record.ci_issued_date || null,
+      // Address fields
+      address_street: record.address_street || null,
+      address_number: record.address_number || null,
+      address_block: record.address_block || null,
+      address_floor: record.address_floor || null,
+      address_apartment: record.address_apartment || null,
+      address_city: record.address_city || null,
+      address_county: record.address_county || null,
     }));
     
     console.log(`Deduplicated: ${records.length} -> ${employeeData.length} unique CNPs`);
@@ -181,6 +207,17 @@ Deno.serve(async (req) => {
                 total_leave_days: record.total_leave_days,
                 used_leave_days: record.used_leave_days,
                 employment_date: record.employment_date,
+                ci_series: record.ci_series,
+                ci_number: record.ci_number,
+                ci_issued_by: record.ci_issued_by,
+                ci_issued_date: record.ci_issued_date,
+                address_street: record.address_street,
+                address_number: record.address_number,
+                address_block: record.address_block,
+                address_floor: record.address_floor,
+                address_apartment: record.address_apartment,
+                address_city: record.address_city,
+                address_county: record.address_county,
               })
               .eq('id', existing.id);
             
@@ -211,6 +248,17 @@ Deno.serve(async (req) => {
                 total_leave_days: record.total_leave_days,
                 used_leave_days: record.used_leave_days,
                 employment_date: record.employment_date,
+                ci_series: record.ci_series,
+                ci_number: record.ci_number,
+                ci_issued_by: record.ci_issued_by,
+                ci_issued_date: record.ci_issued_date,
+                address_street: record.address_street,
+                address_number: record.address_number,
+                address_block: record.address_block,
+                address_floor: record.address_floor,
+                address_apartment: record.address_apartment,
+                address_city: record.address_city,
+                address_county: record.address_county,
               })
               .eq('id', existingByCnp.id);
             
