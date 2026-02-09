@@ -6,8 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Loader2, Save, Upload, Download, Trash2, Clock, FileImage } from 'lucide-react';
+import { format } from 'date-fns';
+import { ro } from 'date-fns/locale';
 
 interface PersonalData {
   id: string;
@@ -25,6 +29,8 @@ interface PersonalData {
   ci_number: string | null;
   ci_issued_by: string | null;
   ci_issued_date: string | null;
+  ci_scan_url: string | null;
+  ci_scan_uploaded_at: string | null;
   address_street: string | null;
   address_number: string | null;
   address_block: string | null;
@@ -32,6 +38,7 @@ interface PersonalData {
   address_apartment: string | null;
   address_city: string | null;
   address_county: string | null;
+  updated_at: string;
 }
 
 interface PersonalDataEditorProps {
@@ -52,9 +59,12 @@ export const PersonalDataEditor = ({
   employeePersonalDataId
 }: PersonalDataEditorProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [personalData, setPersonalData] = useState<PersonalData | null>(null);
+  const [ciFile, setCiFile] = useState<File | null>(null);
+  const [uploadingCi, setUploadingCi] = useState(false);
   const [form, setForm] = useState({
     email: '',
     first_name: '',
@@ -102,7 +112,7 @@ export const PersonalDataEditor = ({
     const { data, error } = await query.maybeSingle();
 
     if (data) {
-      setPersonalData(data);
+      setPersonalData(data as PersonalData);
       setForm({
         email: data.email || '',
         first_name: data.first_name || '',
@@ -130,6 +140,91 @@ export const PersonalDataEditor = ({
       console.error('Error fetching personal data:', error);
     }
     setLoading(false);
+  };
+
+  const handleUploadCi = async () => {
+    if (!ciFile || !personalData?.id) return;
+    
+    setUploadingCi(true);
+    try {
+      const fileExt = ciFile.name.split('.').pop();
+      const fileName = `ci-scans/${personalData.id}/${Date.now()}.${fileExt}`;
+      
+      // Remove old CI scan if exists
+      if (personalData.ci_scan_url) {
+        await supabase.storage.from('employee-documents').remove([personalData.ci_scan_url]);
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('employee-documents')
+        .upload(fileName, ciFile);
+
+      if (uploadError) throw uploadError;
+
+      const { error: updateError } = await supabase
+        .from('employee_personal_data')
+        .update({ 
+          ci_scan_url: fileName,
+          ci_scan_uploaded_at: new Date().toISOString()
+        })
+        .eq('id', personalData.id);
+
+      if (updateError) throw updateError;
+
+      // Log audit event
+      if (user) {
+        await supabase.rpc('log_audit_event', {
+          _user_id: user.id,
+          _action: 'ci_scan_upload',
+          _entity_type: 'employee_personal_data',
+          _entity_id: personalData.id,
+          _details: { employee_name: `${form.last_name} ${form.first_name}`, file_name: ciFile.name }
+        });
+      }
+
+      toast({ title: 'Succes', description: 'Cartea de identitate a fost încărcată.' });
+      setCiFile(null);
+      fetchPersonalData();
+    } catch (error) {
+      console.error('CI upload error:', error);
+      toast({ title: 'Eroare', description: 'Nu s-a putut încărca CI.', variant: 'destructive' });
+    }
+    setUploadingCi(false);
+  };
+
+  const downloadCiScan = async () => {
+    if (!personalData?.ci_scan_url) return;
+    try {
+      const { data, error } = await supabase.storage
+        .from('employee-documents')
+        .download(personalData.ci_scan_url);
+      if (error) throw error;
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CI_${form.last_name}_${form.first_name}.${personalData.ci_scan_url.split('.').pop()}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({ title: 'Eroare', description: 'Nu s-a putut descărca fișierul.', variant: 'destructive' });
+    }
+  };
+
+  const deleteCiScan = async () => {
+    if (!personalData?.ci_scan_url || !confirm('Sigur doriți să ștergeți scanarea CI?')) return;
+    try {
+      await supabase.storage.from('employee-documents').remove([personalData.ci_scan_url]);
+      await supabase
+        .from('employee_personal_data')
+        .update({ ci_scan_url: null, ci_scan_uploaded_at: null })
+        .eq('id', personalData.id);
+      toast({ title: 'Succes', description: 'Scanarea CI a fost ștearsă.' });
+      fetchPersonalData();
+    } catch (error) {
+      toast({ title: 'Eroare', description: 'Nu s-a putut șterge fișierul.', variant: 'destructive' });
+    }
   };
 
   const handleSave = async () => {
@@ -175,6 +270,16 @@ export const PersonalDataEditor = ({
     if (error) {
       toast({ title: 'Eroare', description: `Nu s-au putut salva datele: ${error.message}`, variant: 'destructive' });
     } else {
+      // Log audit event
+      if (user) {
+        await supabase.rpc('log_audit_event', {
+          _user_id: user.id,
+          _action: 'employee_edit',
+          _entity_type: 'employee_personal_data',
+          _entity_id: personalData.id,
+          _details: { employee_name: `${form.last_name} ${form.first_name}` }
+        });
+      }
       toast({ title: 'Salvat', description: 'Datele personale au fost actualizate.' });
       onSaved?.();
       onOpenChange(false);
@@ -206,22 +311,30 @@ export const PersonalDataEditor = ({
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Last update info */}
+            {personalData.updated_at && (
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg text-sm text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                Ultima actualizare: {format(new Date(personalData.updated_at), 'dd.MM.yyyy HH:mm', { locale: ro })}
+              </div>
+            )}
+
             {/* Core Data */}
             <div className="space-y-4">
               <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Date de bază</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Prenume *</Label>
-                  <Input 
-                    value={form.first_name} 
-                    onChange={(e) => updateForm('first_name', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label>Nume *</Label>
                   <Input 
                     value={form.last_name} 
                     onChange={(e) => updateForm('last_name', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Prenume *</Label>
+                  <Input 
+                    value={form.first_name} 
+                    onChange={(e) => updateForm('first_name', e.target.value)}
                   />
                 </div>
               </div>
@@ -362,6 +475,57 @@ export const PersonalDataEditor = ({
                     onChange={(e) => updateForm('ci_issued_date', e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* CI Scan Upload */}
+              <div className="p-4 border border-dashed border-border rounded-lg space-y-3">
+                <div className="flex items-center gap-2">
+                  <FileImage className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">Scanare CI</span>
+                </div>
+
+                {personalData.ci_scan_url ? (
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        <FileImage className="w-3 h-3 mr-1" />
+                        CI atașată
+                      </Badge>
+                      {personalData.ci_scan_uploaded_at && (
+                        <span className="text-xs text-muted-foreground">
+                          Încărcată: {format(new Date(personalData.ci_scan_uploaded_at), 'dd.MM.yyyy HH:mm', { locale: ro })}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="w-8 h-8" onClick={downloadCiScan}>
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive" onClick={deleteCiScan}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nicio scanare CI atașată.</p>
+                )}
+
+                <div className="flex gap-2">
+                  <Input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => setCiFile(e.target.files?.[0] || null)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={handleUploadCi} 
+                    disabled={!ciFile || uploadingCi}
+                  >
+                    {uploadingCi ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Format: PDF, JPG, PNG</p>
               </div>
             </div>
 
