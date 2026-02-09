@@ -7,27 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestForm';
 import { 
-  User, 
-  FileText, 
-  Download, 
-  Calendar,
-  Briefcase,
-  Building,
-  Phone,
-  Clock,
-  Loader2,
-  MapPin,
-  CreditCard,
-  Hash,
-  History,
-  Mail,
-  BadgeCheck,
-  AlertTriangle,
+  User, FileText, Download, Calendar, Briefcase, Building, Phone,
+  Loader2, MapPin, CreditCard, Hash, History, Mail, BadgeCheck, AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -87,13 +71,8 @@ interface LeaveHistoryItem {
 }
 
 const documentTypeLabels: Record<string, string> = {
-  cv: 'CV',
-  contract: 'Contract de Muncă',
-  anexa: 'Anexă Contract',
-  certificat: 'Certificat',
-  diploma: 'Diplomă',
-  adeverinta: 'Adeverință',
-  altele: 'Altele'
+  cv: 'CV', contract: 'Contract de Muncă', anexa: 'Anexă Contract',
+  certificat: 'Certificat', diploma: 'Diplomă', adeverinta: 'Adeverință', altele: 'Altele'
 };
 
 const leaveStatusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
@@ -103,14 +82,7 @@ const leaveStatusConfig: Record<string, { label: string; variant: 'default' | 's
 };
 
 const roleLabels: Record<string, string> = {
-  user: 'Angajat',
-  admin: 'Administrator',
-  super_admin: 'Super Administrator',
-  department_head: 'Șef Compartiment',
-  hr: 'HR (SRUS)',
-  secretariat: 'Secretariat',
-  director: 'Director',
-  achizitii_contabilitate: 'Achiziții / Contabilitate'
+  user: 'Angajat', super_admin: 'Super Administrator', hr: 'HR (SRUS)',
 };
 
 const MyProfile = () => {
@@ -127,9 +99,7 @@ const MyProfile = () => {
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      fetchData();
-    }
+    if (user) fetchData();
   }, [user]);
 
   const fetchData = async () => {
@@ -148,7 +118,6 @@ const MyProfile = () => {
     if (docsRes.data) setDocuments(docsRes.data);
     if (leaveRes.data) setLeaveHistory(leaveRes.data);
 
-    // Fetch personal data linked to employee record
     if (recordRes.data) {
       const { data: pd } = await supabase
         .from('employee_personal_data')
@@ -183,12 +152,10 @@ const MyProfile = () => {
     }
   };
 
-
   const leaveProgress = employeeRecord 
     ? (employeeRecord.used_leave_days / employeeRecord.total_leave_days) * 100 
     : 0;
 
-  // Determine department and position from personalData or profile
   const department = personalData?.department || profile?.department;
   const position = personalData?.position || profile?.position;
 
@@ -202,257 +169,312 @@ const MyProfile = () => {
     );
   }
 
+  const addressParts = personalData ? [
+    personalData.address_street,
+    personalData.address_number && `Nr. ${personalData.address_number}`,
+    personalData.address_block && `Bl. ${personalData.address_block}`,
+    personalData.address_floor && `Et. ${personalData.address_floor}`,
+    personalData.address_apartment && `Ap. ${personalData.address_apartment}`
+  ].filter(Boolean).join(', ') : '';
+
+  const addressLocality = personalData 
+    ? [personalData.address_city, personalData.address_county].filter(Boolean).join(', ') 
+    : '';
+
   return (
     <MainLayout title="Profilul Meu" description="Vizualizați datele personale și documentele dvs.">
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto space-y-6">
 
-        {/* Profile Header Card */}
-        <Card className="overflow-hidden">
-          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 sm:p-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-              <div className="w-20 h-20 rounded-full bg-primary/15 border-2 border-primary/20 flex items-center justify-center shrink-0">
-                <User className="w-10 h-10 text-primary" />
-              </div>
-              <div className="space-y-2 flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h2 className="text-2xl font-bold tracking-tight">{profile?.full_name || 'N/A'}</h2>
-                  <Badge variant="secondary" className="text-xs font-medium">
-                    <BadgeCheck className="w-3 h-3 mr-1" />
-                    {roleLabels[role || 'user']}
-                  </Badge>
+        {/* ─── Hero Header ─── */}
+        <Card className="overflow-hidden border-0 shadow-lg">
+          <div className="relative bg-gradient-to-br from-primary/15 via-primary/5 to-accent/10 p-8">
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              {/* Avatar */}
+              <div className="relative">
+                <div className="w-24 h-24 rounded-2xl bg-background/80 backdrop-blur border-2 border-primary/20 shadow-xl flex items-center justify-center">
+                  <User className="w-12 h-12 text-primary" />
                 </div>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-background" />
+              </div>
+              
+              {/* Info */}
+              <div className="text-center sm:text-left space-y-1.5 flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                  {profile?.full_name || 'N/A'}
+                </h1>
                 {position && (
                   <p className="text-base text-muted-foreground font-medium">{position}</p>
+                )}
+                <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start pt-1">
+                  <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">
+                    <BadgeCheck className="w-3 h-3 mr-1" />
+                    {roleLabels[role || 'user'] || 'Angajat'}
+                  </Badge>
+                  {department && (
+                    <Badge variant="outline" className="gap-1">
+                      <Building className="w-3 h-3" />
+                      {department}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick contact */}
+              <div className="hidden lg:flex flex-col gap-2 text-sm">
+                {user?.email && (
+                  <div className="flex items-center gap-2 text-muted-foreground bg-background/60 backdrop-blur rounded-lg px-3 py-2">
+                    <Mail className="w-4 h-4 text-primary" />
+                    <span>{user.email}</span>
+                  </div>
+                )}
+                {profile?.phone && (
+                  <div className="flex items-center gap-2 text-muted-foreground bg-background/60 backdrop-blur rounded-lg px-3 py-2">
+                    <Phone className="w-4 h-4 text-primary" />
+                    <span>{profile.phone}</span>
+                  </div>
                 )}
               </div>
             </div>
           </div>
 
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <InfoItem icon={Building} label="Departament" value={department || 'Nespecificat'} />
-              <InfoItem icon={Briefcase} label="Funcție" value={position || 'Nespecificată'} />
-              {user?.email && (
-                <InfoItem icon={Mail} label="Email" value={user.email} />
-              )}
-              {profile?.phone && (
-                <InfoItem icon={Phone} label="Telefon" value={profile.phone} />
-              )}
-            </div>
-            
-            <div className="mt-4 pt-4 border-t">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-muted-foreground hover:text-foreground gap-2"
-                onClick={() => setShowCorrectionForm(true)}
-              >
-                <AlertTriangle className="w-4 h-4" />
-                Date incorecte? Solicitați o corecție
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Leave Balance */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Calendar className="w-5 h-5 text-primary" />
-              Sold Concediu — {new Date().getFullYear()}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {employeeRecord ? (
-              <div className="space-y-5">
-                <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                  <div className="text-center p-3 sm:p-4 rounded-xl bg-primary/10 border border-primary/20">
-                    <p className="text-2xl sm:text-3xl font-bold text-primary">{employeeRecord.remaining_leave_days}</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Disponibile</p>
-                  </div>
-                  <div className="text-center p-3 sm:p-4 rounded-xl bg-secondary/50 border border-secondary">
-                    <p className="text-2xl sm:text-3xl font-bold text-secondary-foreground">{employeeRecord.used_leave_days}</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Utilizate</p>
-                  </div>
-                  <div className="text-center p-3 sm:p-4 rounded-xl bg-muted/50 border">
-                    <p className="text-2xl sm:text-3xl font-bold">{employeeRecord.total_leave_days}</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Total cuvenite</p>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Progres utilizare</span>
-                    <span className="font-semibold">{Math.round(leaveProgress)}%</span>
-                  </div>
-                  <Progress value={leaveProgress} className="h-2.5" />
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">Nu există date despre concediu.</p>
-                <p className="text-xs">Contactați departamentul HR pentru actualizare.</p>
+          {/* Mobile contact + correction */}
+          <div className="lg:hidden p-4 border-t flex flex-wrap gap-3">
+            {user?.email && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Mail className="w-4 h-4 text-primary" />
+                <span>{user.email}</span>
               </div>
             )}
-          </CardContent>
+            {profile?.phone && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Phone className="w-4 h-4 text-primary" />
+                <span>{profile.phone}</span>
+              </div>
+            )}
+          </div>
         </Card>
 
-        {/* Leave History */}
-        {leaveHistory.length > 0 && (
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <History className="w-5 h-5 text-primary" />
-                Istoricul Concediilor
-              </CardTitle>
-              <CardDescription>Toate concediile înregistrate în sistem</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {leaveHistory.map((leave) => {
-                  const details = leave.details || {};
-                  const status = leaveStatusConfig[leave.status] || leaveStatusConfig.pending;
-                  const startDate = details.startDate ? new Date(details.startDate) : null;
-                  const endDate = details.endDate ? new Date(details.endDate) : null;
-                  
-                  return (
-                    <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 border rounded-lg hover:bg-muted/40 transition-colors">
-                      <div className="space-y-0.5 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium text-sm">
-                            {startDate && endDate
-                              ? `${format(startDate, 'dd MMM', { locale: ro })} — ${format(endDate, 'dd MMM yyyy', { locale: ro })}`
-                              : 'Perioadă nespecificată'}
-                          </p>
-                          <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
-                          {details.manualEntry && (
-                            <Badge variant="outline" className="text-[10px]">HR</Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          {details.numberOfDays && (
-                            <span className="font-medium">{details.numberOfDays} zile</span>
-                          )}
-                          <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
-                        </div>
-                        {details.notes && (
-                          <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>
-                        )}
+        {/* ─── Two-column layout ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          
+          {/* ─── Left Column (3/5) ─── */}
+          <div className="lg:col-span-3 space-y-6">
+
+            {/* Leave Balance */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Sold Concediu — {new Date().getFullYear()}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {employeeRecord ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                        <p className="text-3xl font-bold text-green-600 dark:text-green-400">{employeeRecord.remaining_leave_days}</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-medium">Disponibile</p>
+                      </div>
+                      <div className="text-center p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{employeeRecord.used_leave_days}</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-medium">Utilizate</p>
+                      </div>
+                      <div className="text-center p-4 rounded-xl bg-muted/50 border">
+                        <p className="text-3xl font-bold text-foreground">{employeeRecord.total_leave_days}</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-medium">Total</p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {leaveHistory.length === 0 && employeeRecord && (
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <History className="w-5 h-5 text-primary" />
-                Istoricul Concediilor
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-6 text-muted-foreground">
-                <History className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">Nu aveți concedii înregistrate în sistem.</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Personal Data Section */}
-        {personalData && (
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <CreditCard className="w-5 h-5 text-primary" />
-                Date de Identificare
-              </CardTitle>
-              <CardDescription>Informații confidențiale din dosarul de personal</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                    <Hash className="w-3.5 h-3.5" />
-                    CNP
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Progres utilizare</span>
+                        <span className="font-semibold text-foreground">{Math.round(leaveProgress)}%</span>
+                      </div>
+                      <Progress value={leaveProgress} className="h-2.5" />
+                    </div>
                   </div>
-                  <p className="font-mono font-semibold text-base">{personalData.cnp}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                    <CreditCard className="w-3.5 h-3.5" />
-                    Carte de Identitate
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">Nu există date despre concediu.</p>
+                    <p className="text-xs">Contactați departamentul HR.</p>
                   </div>
-                  <p className="font-medium">
-                    {personalData.ci_series && personalData.ci_number 
-                      ? `${personalData.ci_series} ${personalData.ci_number}`
-                      : 'Nespecificat'}
-                  </p>
-                  {personalData.ci_issued_by && (
-                    <p className="text-xs text-muted-foreground">Eliberat de: {personalData.ci_issued_by}</p>
-                  )}
-                  {personalData.ci_issued_date && (
-                    <p className="text-xs text-muted-foreground">La data: {format(new Date(personalData.ci_issued_date), 'dd.MM.yyyy')}</p>
-                  )}
-                </div>
+                )}
+              </CardContent>
+            </Card>
 
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                    <MapPin className="w-3.5 h-3.5" />
-                    Adresă
+            {/* Leave History */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <History className="w-5 h-5 text-primary" />
+                  Istoricul Concediilor
+                </CardTitle>
+                {leaveHistory.length > 0 && (
+                  <CardDescription>{leaveHistory.length} {leaveHistory.length === 1 ? 'înregistrare' : 'înregistrări'}</CardDescription>
+                )}
+              </CardHeader>
+              <CardContent>
+                {leaveHistory.length > 0 ? (
+                  <div className="space-y-2">
+                    {leaveHistory.map((leave) => {
+                      const details = leave.details || {};
+                      const status = leaveStatusConfig[leave.status] || leaveStatusConfig.pending;
+                      const startDate = details.startDate ? new Date(details.startDate) : null;
+                      const endDate = details.endDate ? new Date(details.endDate) : null;
+                      
+                      return (
+                        <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                          <div className="space-y-0.5 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-medium text-sm">
+                                {startDate && endDate
+                                  ? `${format(startDate, 'dd MMM', { locale: ro })} — ${format(endDate, 'dd MMM yyyy', { locale: ro })}`
+                                  : 'Perioadă nespecificată'}
+                              </p>
+                              <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
+                              {details.manualEntry && <Badge variant="outline" className="text-[10px]">HR</Badge>}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              {details.numberOfDays && <span className="font-medium">{details.numberOfDays} zile</span>}
+                              <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
+                            </div>
+                            {details.notes && <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <p className="font-medium text-sm">
-                    {[
-                      personalData.address_street,
-                      personalData.address_number && `Nr. ${personalData.address_number}`,
-                      personalData.address_block && `Bl. ${personalData.address_block}`,
-                      personalData.address_floor && `Et. ${personalData.address_floor}`,
-                      personalData.address_apartment && `Ap. ${personalData.address_apartment}`
-                    ].filter(Boolean).join(', ') || 'Nespecificată'}
-                  </p>
-                  {(personalData.address_city || personalData.address_county) && (
-                    <p className="text-xs text-muted-foreground">
-                      {[personalData.address_city, personalData.address_county].filter(Boolean).join(', ')}
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <History className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">Nu aveți concedii înregistrate.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ─── Right Column (2/5) ─── */}
+          <div className="lg:col-span-2 space-y-6">
+
+            {/* Personal Data */}
+            {personalData && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <CreditCard className="w-5 h-5 text-primary" />
+                    Date de Identificare
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* CNP */}
+                  <div className="p-3 rounded-lg bg-muted/40 border">
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
+                      <Hash className="w-3.5 h-3.5" />
+                      CNP
+                    </div>
+                    <p className="font-mono font-bold text-lg tracking-wide">{personalData.cnp}</p>
+                  </div>
+
+                  {/* CI */}
+                  <div className="p-3 rounded-lg bg-muted/40 border">
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
+                      <CreditCard className="w-3.5 h-3.5" />
+                      Carte de Identitate
+                    </div>
+                    <p className="font-semibold">
+                      {personalData.ci_series && personalData.ci_number 
+                        ? `${personalData.ci_series} ${personalData.ci_number}`
+                        : 'Nespecificat'}
                     </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                    {personalData.ci_issued_by && (
+                      <p className="text-xs text-muted-foreground mt-0.5">Eliberat de: {personalData.ci_issued_by}</p>
+                    )}
+                    {personalData.ci_issued_date && (
+                      <p className="text-xs text-muted-foreground">La data: {format(new Date(personalData.ci_issued_date), 'dd.MM.yyyy')}</p>
+                    )}
+                  </div>
 
-        {/* Documents */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="w-5 h-5 text-primary" />
-              Documentele Mele
-            </CardTitle>
-            <CardDescription>Contracte, certificate și alte documente personale</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {documents.length > 0 ? (
-              <div className="space-y-2">
-                {documents.map((doc) => (
-                  <DocumentItem key={doc.id} doc={doc} onDownload={downloadDocument} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">Nu aveți documente încărcate.</p>
-                <p className="text-xs">Documentele vor fi adăugate de departamentul HR.</p>
-              </div>
+                  {/* Address */}
+                  <div className="p-3 rounded-lg bg-muted/40 border">
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
+                      <MapPin className="w-3.5 h-3.5" />
+                      Adresă
+                    </div>
+                    <p className="font-medium text-sm break-words">{addressParts || 'Nespecificată'}</p>
+                    {addressLocality && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{addressLocality}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+
+            {/* Documents */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileText className="w-5 h-5 text-primary" />
+                  Documentele Mele
+                </CardTitle>
+                {documents.length > 0 && (
+                  <CardDescription>{documents.length} {documents.length === 1 ? 'document' : 'documente'}</CardDescription>
+                )}
+              </CardHeader>
+              <CardContent>
+                {documents.length > 0 ? (
+                  <div className="space-y-2">
+                    {documents.map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                            <FileText className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{doc.name}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Badge variant="outline" className="text-[10px]">
+                                {documentTypeLabels[doc.document_type] || doc.document_type}
+                              </Badge>
+                              <span>{format(new Date(doc.created_at), 'dd MMM yyyy', { locale: ro })}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {doc.file_url && (
+                          <Button variant="ghost" size="sm" onClick={() => downloadDocument(doc)} className="shrink-0 ml-2">
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <FileText className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">Nu aveți documente încărcate.</p>
+                    <p className="text-xs">Documentele vor fi adăugate de HR.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Correction request */}
+            <Card className="border-dashed">
+              <CardContent className="p-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full text-muted-foreground hover:text-foreground gap-2"
+                  onClick={() => setShowCorrectionForm(true)}
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Date incorecte? Solicitați o corecție
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
 
       <CorrectionRequestForm 
@@ -465,43 +487,8 @@ const MyProfile = () => {
           phone: profile?.phone || undefined,
         }}
       />
-
     </MainLayout>
   );
 };
-
-const InfoItem = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
-  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-    <Icon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-    <div className="min-w-0">
-      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
-      <p className="text-sm font-medium break-words">{value}</p>
-    </div>
-  </div>
-);
-
-const DocumentItem = ({ doc, onDownload }: { doc: EmployeeDocument; onDownload: (doc: EmployeeDocument) => void }) => (
-  <div className="flex items-center justify-between p-3.5 border rounded-lg hover:bg-muted/40 transition-colors">
-    <div className="flex items-center gap-3 min-w-0">
-      <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-        <FileText className="w-4 h-4 text-primary" />
-      </div>
-      <div className="min-w-0">
-        <p className="font-medium text-sm truncate">{doc.name}</p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant="outline" className="text-[10px]">
-            {documentTypeLabels[doc.document_type] || doc.document_type}
-          </Badge>
-          <span>{format(new Date(doc.created_at), 'dd MMM yyyy', { locale: ro })}</span>
-        </div>
-      </div>
-    </div>
-    {doc.file_url && (
-      <Button variant="ghost" size="sm" onClick={() => onDownload(doc)} className="shrink-0 ml-2">
-        <Download className="w-4 h-4" />
-      </Button>
-    )}
-  </div>
-);
 
 export default MyProfile;
