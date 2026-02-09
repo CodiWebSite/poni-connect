@@ -264,6 +264,7 @@ export const PersonalDataEditor = ({
         address_apartment: form.address_apartment || null,
         address_city: form.address_city || null,
         address_county: form.address_county || null,
+        last_updated_by: user?.id || null,
       })
       .eq('id', personalData.id);
 

@@ -89,6 +89,8 @@ interface EmployeeWithData {
   hasAccount: boolean;
   user_id?: string;
   updated_at?: string;
+  last_updated_by?: string;
+  last_updated_by_name?: string;
 }
 
 const documentTypes = [
@@ -182,6 +184,19 @@ const HRManagement = () => {
       .from('employee_documents')
       .select('*');
 
+    // Fetch updater names
+    const updaterIds = [...new Set((personalData || []).map((pd: any) => pd.last_updated_by).filter(Boolean))];
+    let updaterNames: Record<string, string> = {};
+    if (updaterIds.length > 0) {
+      const { data: updaterProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', updaterIds);
+      if (updaterProfiles) {
+        updaterProfiles.forEach(p => { updaterNames[p.user_id] = p.full_name; });
+      }
+    }
+
     const employeesWithData: EmployeeWithData[] = personalData?.map(pd => {
       const record = records?.find(r => r.id === pd.employee_record_id);
       return {
@@ -203,6 +218,8 @@ const HRManagement = () => {
         hasAccount: !!pd.employee_record_id && !!record,
         user_id: record?.user_id,
         updated_at: pd.updated_at,
+        last_updated_by: (pd as any).last_updated_by,
+        last_updated_by_name: (pd as any).last_updated_by ? updaterNames[(pd as any).last_updated_by] : undefined,
       };
     }) || [];
 
@@ -237,6 +254,7 @@ const HRManagement = () => {
         contract_type: editForm.contract_type,
         total_leave_days: editForm.total_leave_days,
         used_leave_days: editForm.used_leave_days,
+        last_updated_by: user?.id || null,
       })
       .eq('id', editingEmployee.id);
 
@@ -770,6 +788,9 @@ const HRManagement = () => {
                                 <Badge variant="outline" className="text-xs text-muted-foreground">
                                   <Clock className="w-3 h-3 mr-1" />
                                   Actualizat: {format(new Date(employee.updated_at), 'dd.MM.yyyy HH:mm', { locale: ro })}
+                                  {employee.last_updated_by_name && (
+                                    <span className="ml-1">de {employee.last_updated_by_name}</span>
+                                  )}
                                 </Badge>
                               )}
                             </div>
