@@ -50,6 +50,33 @@ function getNameTokens(name: string): string[] {
 /**
  * Find a header row in a sheet and return column indices
  */
+/**
+ * Check if a header value represents the total leave days column
+ */
+function isTotalLeaveHeader(val: string): boolean {
+  // "Nr. zile CO cuvenite", "Zile CO cuvenite", "zile cuvenite", "CO cuvenite"
+  if (val.includes('cuvenite') && (val.includes('zile') || val.includes('co') || val.includes('c.o'))) return true;
+  // "Nr. zile CO" standalone (exactly, not part of a longer phrase)
+  if (/^nr\.?\s*zile\s*c\.?o\.?$/.test(val)) return true;
+  return false;
+}
+
+/**
+ * Check if a header value represents a used leave days column
+ */
+function isUsedLeaveHeader(val: string): boolean {
+  if (val.includes('cuvenite')) return false;
+  if (val.includes('concediu platite')) return false; // "Zile concediu platite in avans"
+  if ((val.includes('nr') && val.includes('zile') && (val.includes('co') || val.includes('c.o'))) ||
+      (val.includes('zile co') || val.includes('zile c.o'))) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Find a header row in a sheet and return column indices
+ */
 function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Record<string, number> } | null {
   const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
   
@@ -79,12 +106,11 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Rec
       } else if (val === 'cnp' || val.includes('c.n.p')) {
         columns['cnp'] = c;
         foundCNP = true;
-      } else if (val.includes('functia') || val.includes('functie') || val.includes('functia')) {
+      } else if (val.includes('functia') || val.includes('functie')) {
         columns['function'] = c;
       } else if (val.includes('grad') || val.includes('treapta')) {
         columns['grade'] = c;
-      } else if (val.includes('cuvenite') && (val.includes('zile') || val.includes('co'))) {
-        // Match: "Nr. zile CO cuvenite", "zile CO cuvenite", "Nr.zile C.O. cuvenite", "CO cuvenite"
+      } else if (isTotalLeaveHeader(val)) {
         columns['totalLeave'] = c;
         console.log(`  Found totalLeave column at [${c}]: "${raw}"`);
       }
@@ -95,34 +121,58 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Rec
       if (rowCells.length > 0) {
         console.log(`  Row ${r} cells: ${rowCells.join(', ')}`);
       }
-    }
-    
-    // After finding totalLeave, find all "Nr. zile CO" columns that come after it
-    if (foundName && foundCNP && columns['totalLeave'] !== undefined) {
-      const usedLeaveCols: number[] = [];
-      for (let c = columns['totalLeave'] + 1; c <= range.e.c; c++) {
-        const cell = sheet[XLSX.utils.encode_cell({ r, c })];
-        if (!cell) continue;
-        const raw = String(cell.v || '').trim();
-        const val = removeDiacritics(raw).toLowerCase();
-        // Match any "Nr. zile" or "zile CO" column that's NOT the "cuvenite" one
-        if ((val.includes('nr.') && val.includes('zile')) || 
-            (val.includes('nr ') && val.includes('zile')) ||
-            val.includes('zile co') || 
-            val.includes('zile c.o')) {
-          if (!val.includes('cuvenite')) {
-            usedLeaveCols.push(c);
-            console.log(`  Found usedLeave column at [${c}]: "${raw}"`);
+      
+      // If totalLeave not found on header row, search nearby rows (merged cells scenario)
+      if (columns['totalLeave'] === undefined) {
+        console.log(`  Searching nearby rows for totalLeave column...`);
+        for (let searchR = Math.max(range.s.r, r - 2); searchR <= Math.min(range.e.r, r + 3); searchR++) {
+          if (searchR === r) continue;
+          const nearbyRowCells: string[] = [];
+          for (let c = range.s.c; c <= range.e.c; c++) {
+            const cell = sheet[XLSX.utils.encode_cell({ r: searchR, c })];
+            if (!cell) continue;
+            const raw = String(cell.v || '').trim();
+            const val = removeDiacritics(raw).toLowerCase();
+            nearbyRowCells.push(`[${c}]="${raw}"`);
+            
+            if (isTotalLeaveHeader(val) && columns['totalLeave'] === undefined) {
+              columns['totalLeave'] = c;
+              console.log(`  Found totalLeave on row ${searchR} at [${c}]: "${raw}"`);
+            }
+          }
+          if (nearbyRowCells.length > 0) {
+            console.log(`  Nearby row ${searchR}: ${nearbyRowCells.join(', ')}`);
           }
         }
       }
-      console.log(`  Total usedLeave columns found: ${usedLeaveCols.length}`);
-      columns['usedLeaveCols'] = -1; // marker
-      return { headerRow: r, columns: { ...columns, _usedLeaveCols: JSON.stringify(usedLeaveCols) } as unknown as Record<string, number> };
-    }
-    
-    if (foundName && foundCNP) {
-      console.log(`  WARNING: No totalLeave column found in this header row`);
+      
+      // After finding totalLeave, find used leave columns after it
+      if (columns['totalLeave'] !== undefined) {
+        const usedLeaveCols: number[] = [];
+        const searchRows = [r];
+        for (let sr = Math.max(range.s.r, r - 2); sr <= Math.min(range.e.r, r + 3); sr++) {
+          if (sr !== r) searchRows.push(sr);
+        }
+        
+        for (let c = columns['totalLeave'] + 1; c <= range.e.c; c++) {
+          for (const sr of searchRows) {
+            const cell = sheet[XLSX.utils.encode_cell({ r: sr, c })];
+            if (!cell) continue;
+            const raw = String(cell.v || '').trim();
+            const val = removeDiacritics(raw).toLowerCase();
+            if (isUsedLeaveHeader(val)) {
+              usedLeaveCols.push(c);
+              console.log(`  Found usedLeave column at [${c}] (row ${sr}): "${raw}"`);
+              break;
+            }
+          }
+        }
+        console.log(`  Total usedLeave columns found: ${usedLeaveCols.length}`);
+        columns['usedLeaveCols'] = -1;
+        return { headerRow: r, columns: { ...columns, _usedLeaveCols: JSON.stringify(usedLeaveCols) } as unknown as Record<string, number> };
+      }
+      
+      console.log(`  WARNING: No totalLeave column found even after searching nearby rows`);
       return { headerRow: r, columns };
     }
   }
