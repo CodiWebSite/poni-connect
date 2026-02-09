@@ -485,7 +485,7 @@ const InfoItem = ({ icon: Icon, label, value }: { icon: any; label: string; valu
     <Icon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
     <div className="min-w-0">
       <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
-      <p className="text-sm font-medium truncate">{value}</p>
+      <p className="text-sm font-medium break-words">{value}</p>
     </div>
   </div>
 );
