@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, X, Star, Users } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, X, Star, Users, Filter } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, parseISO, isWithinInterval } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ const LeaveCalendar = () => {
   const [showAddHoliday, setShowAddHoliday] = useState(false);
   const [newHolidayName, setNewHolidayName] = useState('');
   const [newHolidayDate, setNewHolidayDate] = useState<Date>();
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchLeaves();
@@ -128,7 +130,15 @@ const LeaveCalendar = () => {
     setLoading(false);
   };
 
-  const onLeaveToday = leaves.filter(l => {
+  // Get unique departments for filter
+  const departments = [...new Set(leaves.map(l => l.department).filter(Boolean))] as string[];
+
+  // Filter leaves by department
+  const filteredLeaves = departmentFilter === 'all'
+    ? leaves
+    : leaves.filter(l => l.department === departmentFilter);
+
+  const onLeaveToday = filteredLeaves.filter(l => {
     const today = new Date();
     return isWithinInterval(today, { start: parseISO(l.startDate), end: parseISO(l.endDate) });
   });
@@ -155,6 +165,29 @@ const LeaveCalendar = () => {
           </div>
         </div>
 
+        {/* Department filter */}
+        {departments.length > 0 && (
+          <div className="mt-3 flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-[260px] h-8 text-sm">
+                <SelectValue placeholder="Toate departamentele" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toate departamentele</SelectItem>
+                {departments.sort().map(dep => (
+                  <SelectItem key={dep} value={dep}>{dep}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {departmentFilter !== 'all' && (
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setDepartmentFilter('all')}>
+                <X className="w-3 h-3 mr-1" /> Resetează
+              </Button>
+            )}
+          </div>
+        )}
+
         {uniqueOnLeaveToday.length > 0 && (
           <div className="mt-3 p-3 rounded-lg bg-muted border">
             <p className="text-sm font-medium mb-1 flex items-center gap-1.5">
@@ -175,7 +208,7 @@ const LeaveCalendar = () => {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <LeaveCalendarTable currentMonth={currentMonth} leaves={leaves} customHolidays={customHolidays} />
+          <LeaveCalendarTable currentMonth={currentMonth} leaves={filteredLeaves} customHolidays={customHolidays} />
         )}
 
         {/* Custom Holidays Management */}
