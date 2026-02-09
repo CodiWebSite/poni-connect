@@ -51,14 +51,37 @@ function getNameTokens(name: string): string[] {
  * Find a header row in a sheet and return column indices
  */
 /**
- * Check if a header value represents the total leave days column
+ * Check if a header value (possibly from a multi-row merged cell) represents 
+ * the total leave days column. The header may be split across rows like:
+ *   Row 1: "Nr. zile"
+ *   Row 2: "CO"  
+ *   Row 3: "cuvenite"
+ * So we need to match individual parts too.
  */
 function isTotalLeaveHeader(val: string): boolean {
-  // "Nr. zile CO cuvenite", "Zile CO cuvenite", "zile cuvenite", "CO cuvenite"
+  // Full text match: "Nr. zile CO cuvenite", "Zile CO cuvenite", "zile cuvenite", "CO cuvenite"
   if (val.includes('cuvenite') && (val.includes('zile') || val.includes('co') || val.includes('c.o'))) return true;
-  // "Nr. zile CO" standalone (exactly, not part of a longer phrase)
+  // "Nr. zile CO" standalone
   if (/^nr\.?\s*zile\s*c\.?o\.?$/.test(val)) return true;
+  // Just "cuvenite" alone (from a split multi-row header)
+  if (val.trim() === 'cuvenite') return true;
   return false;
+}
+
+/**
+ * Collect the full header text for a column by reading across multiple rows.
+ * This handles merged/split headers where "Nr. zile" / "CO" / "cuvenite" are on separate rows.
+ */
+function getMultiRowHeaderText(sheet: XLSX.WorkSheet, col: number, startRow: number, endRow: number): string {
+  const parts: string[] = [];
+  for (let r = startRow; r <= endRow; r++) {
+    const cell = sheet[XLSX.utils.encode_cell({ r, c: col })];
+    if (cell) {
+      const val = String(cell.v || '').trim();
+      if (val) parts.push(val);
+    }
+  }
+  return parts.join(' ');
 }
 
 /**
@@ -122,49 +145,53 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Rec
         console.log(`  Row ${r} cells: ${rowCells.join(', ')}`);
       }
       
-      // If totalLeave not found on header row, search nearby rows (merged cells scenario)
+      // If totalLeave not found on header row, use multi-row header detection
+      // Headers like "Nr. zile" / "CO" / "cuvenite" split across 3 rows in the same column
       if (columns['totalLeave'] === undefined) {
-        console.log(`  Searching nearby rows for totalLeave column...`);
-        for (let searchR = Math.max(range.s.r, r - 2); searchR <= Math.min(range.e.r, r + 3); searchR++) {
+        console.log(`  Searching multi-row headers for totalLeave column...`);
+        const headerStartRow = Math.max(range.s.r, r - 3);
+        const headerEndRow = Math.min(range.e.r, r + 3);
+        
+        // Log nearby rows for debugging
+        for (let searchR = headerStartRow; searchR <= headerEndRow; searchR++) {
           if (searchR === r) continue;
           const nearbyRowCells: string[] = [];
           for (let c = range.s.c; c <= range.e.c; c++) {
             const cell = sheet[XLSX.utils.encode_cell({ r: searchR, c })];
-            if (!cell) continue;
-            const raw = String(cell.v || '').trim();
-            const val = removeDiacritics(raw).toLowerCase();
-            nearbyRowCells.push(`[${c}]="${raw}"`);
-            
-            if (isTotalLeaveHeader(val) && columns['totalLeave'] === undefined) {
-              columns['totalLeave'] = c;
-              console.log(`  Found totalLeave on row ${searchR} at [${c}]: "${raw}"`);
-            }
+            if (cell) nearbyRowCells.push(`[${c}]="${String(cell.v || '').trim()}"`);
           }
           if (nearbyRowCells.length > 0) {
-            console.log(`  Nearby row ${searchR}: ${nearbyRowCells.join(', ')}`);
+            console.log(`  Row ${searchR}: ${nearbyRowCells.join(', ')}`);
+          }
+        }
+        
+        // For each column, combine text from all header rows and check
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const combinedRaw = getMultiRowHeaderText(sheet, c, headerStartRow, headerEndRow);
+          const combinedVal = removeDiacritics(combinedRaw).toLowerCase();
+          if (combinedVal.includes('cuvenite') && (combinedVal.includes('zile') || combinedVal.includes('co'))) {
+            columns['totalLeave'] = c;
+            console.log(`  Found totalLeave via multi-row at [${c}]: combined="${combinedRaw}"`);
+            break;
           }
         }
       }
       
-      // After finding totalLeave, find used leave columns after it
+      // After finding totalLeave, find used leave columns after it using multi-row combined headers
       if (columns['totalLeave'] !== undefined) {
         const usedLeaveCols: number[] = [];
-        const searchRows = [r];
-        for (let sr = Math.max(range.s.r, r - 2); sr <= Math.min(range.e.r, r + 3); sr++) {
-          if (sr !== r) searchRows.push(sr);
-        }
+        const headerStartRow = Math.max(range.s.r, r - 3);
+        const headerEndRow = Math.min(range.e.r, r + 3);
         
         for (let c = columns['totalLeave'] + 1; c <= range.e.c; c++) {
-          for (const sr of searchRows) {
-            const cell = sheet[XLSX.utils.encode_cell({ r: sr, c })];
-            if (!cell) continue;
-            const raw = String(cell.v || '').trim();
-            const val = removeDiacritics(raw).toLowerCase();
-            if (isUsedLeaveHeader(val)) {
-              usedLeaveCols.push(c);
-              console.log(`  Found usedLeave column at [${c}] (row ${sr}): "${raw}"`);
-              break;
-            }
+          // Combine text from all header rows for this column
+          const combinedRaw = getMultiRowHeaderText(sheet, c, headerStartRow, headerEndRow);
+          const combinedVal = removeDiacritics(combinedRaw).toLowerCase();
+          
+          // Check combined multi-row header text
+          if (isUsedLeaveHeader(combinedVal)) {
+            usedLeaveCols.push(c);
+            console.log(`  Found usedLeave column at [${c}]: combined="${combinedRaw}"`);
           }
         }
         console.log(`  Total usedLeave columns found: ${usedLeaveCols.length}`);
