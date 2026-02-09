@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,7 @@ import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, X, 
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, parseISO, isWithinInterval } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { toast } from 'sonner';
-import MonthlyCalendarGrid, { DayInfo } from '@/components/shared/MonthlyCalendarGrid';
+import LeaveCalendarTable from './LeaveCalendarTable';
 
 interface CustomHoliday {
   id: string;
@@ -28,6 +28,7 @@ interface LeaveEntry {
   startDate: string;
   endDate: string;
   numberOfDays: number;
+  leaveType?: string;
 }
 
 const LeaveCalendar = () => {
@@ -78,8 +79,8 @@ const LeaveCalendar = () => {
 
   const fetchLeaves = async () => {
     setLoading(true);
-    const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-    const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
 
     const { data: allLeaves } = await supabase
       .from('hr_requests').select('user_id, details, status')
@@ -100,9 +101,7 @@ const LeaveCalendar = () => {
       if (!d.startDate || !d.endDate) return;
       const leaveStart = parseISO(d.startDate);
       const leaveEnd = parseISO(d.endDate);
-      const mStart = startOfMonth(currentMonth);
-      const mEnd = endOfMonth(currentMonth);
-      if (leaveEnd < mStart || leaveStart > mEnd) return;
+      if (leaveEnd < monthStart || leaveStart > monthEnd) return;
 
       let empInfo: { name: string; department: string | null } | undefined;
       if (d.epd_id && epdMap[d.epd_id]) empInfo = epdMap[d.epd_id];
@@ -110,7 +109,14 @@ const LeaveCalendar = () => {
       else if (d.employee_name) empInfo = { name: d.employee_name, department: null };
 
       if (empInfo) {
-        entries.push({ employeeName: empInfo.name, department: empInfo.department, startDate: d.startDate, endDate: d.endDate, numberOfDays: d.numberOfDays || 0 });
+        entries.push({
+          employeeName: empInfo.name,
+          department: empInfo.department,
+          startDate: d.startDate,
+          endDate: d.endDate,
+          numberOfDays: d.numberOfDays || 0,
+          leaveType: d.leaveType || d.leave_type || 'co',
+        });
       }
     });
 
@@ -122,32 +128,11 @@ const LeaveCalendar = () => {
     setLoading(false);
   };
 
-  const customHolidayDates = useMemo(() => new Set(customHolidays.map(h => h.holiday_date)), [customHolidays]);
-
-  const getDayInfo = useCallback((day: Date): DayInfo => {
-    const dateStr = format(day, 'yyyy-MM-dd');
-    const customH = customHolidays.find(h => h.holiday_date === dateStr);
-    const onLeave = leaves.some(l => {
-      const start = parseISO(l.startDate);
-      const end = parseISO(l.endDate);
-      return isWithinInterval(day, { start, end });
-    });
-    const leaveNames = onLeave
-      ? leaves.filter(l => isWithinInterval(day, { start: parseISO(l.startDate), end: parseISO(l.endDate) })).map(l => l.employeeName)
-      : [];
-
-    return {
-      isLeave: onLeave,
-      leaveLabel: leaveNames.length > 0 ? `Concediu: ${leaveNames.join(', ')}` : undefined,
-      isCustomHoliday: !!customH,
-      customHolidayName: customH?.name,
-    };
-  }, [leaves, customHolidays]);
-
-  const onLeaveToday = useMemo(() => {
+  const onLeaveToday = leaves.filter(l => {
     const today = new Date();
-    return [...new Set(leaves.filter(l => isWithinInterval(today, { start: parseISO(l.startDate), end: parseISO(l.endDate) })).map(l => l.employeeName))];
-  }, [leaves]);
+    return isWithinInterval(today, { start: parseISO(l.startDate), end: parseISO(l.endDate) });
+  });
+  const uniqueOnLeaveToday = [...new Set(onLeaveToday.map(l => l.employeeName))];
 
   return (
     <Card>
@@ -170,14 +155,14 @@ const LeaveCalendar = () => {
           </div>
         </div>
 
-        {onLeaveToday.length > 0 && (
+        {uniqueOnLeaveToday.length > 0 && (
           <div className="mt-3 p-3 rounded-lg bg-muted border">
             <p className="text-sm font-medium mb-1 flex items-center gap-1.5">
               <Users className="w-4 h-4" />
-              Astăzi în concediu ({onLeaveToday.length}):
+              Astăzi în concediu ({uniqueOnLeaveToday.length}):
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {onLeaveToday.map(name => (
+              {uniqueOnLeaveToday.map(name => (
                 <Badge key={name} variant="secondary" className="text-xs">{name}</Badge>
               ))}
             </div>
@@ -190,50 +175,8 @@ const LeaveCalendar = () => {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <MonthlyCalendarGrid currentMonth={currentMonth} getDayInfo={getDayInfo} />
+          <LeaveCalendarTable currentMonth={currentMonth} leaves={leaves} customHolidays={customHolidays} />
         )}
-
-        {/* Leave list for this month */}
-        {leaves.length > 0 && (
-          <div className="mt-6 border-t pt-4">
-            <h4 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
-              <Users className="w-4 h-4" />
-              Concedii în {format(currentMonth, 'MMMM yyyy', { locale: ro })}
-            </h4>
-            <div className="space-y-1.5">
-              {leaves.map((l, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs p-2 rounded-md bg-sky-500/10 border border-sky-500/20">
-                  <div className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
-                  <span className="font-medium">{l.employeeName}</span>
-                  <span className="text-muted-foreground">
-                    {format(parseISO(l.startDate), 'dd MMM', { locale: ro })} — {format(parseISO(l.endDate), 'dd MMM', { locale: ro })}
-                  </span>
-                  {l.numberOfDays > 0 && <Badge variant="outline" className="text-[10px] ml-auto">{l.numberOfDays} zile</Badge>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Legend */}
-        <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground border-t pt-3">
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded-sm bg-sky-500/25 ring-1 ring-sky-500/50 ring-inset" />
-            <span>Concediu</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded-sm bg-red-500/15" />
-            <span>Sărbătoare legală</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded-sm bg-amber-500/20" />
-            <span>Zi liberă instituție</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded-sm bg-orange-500/10" />
-            <span>Weekend</span>
-          </div>
-        </div>
 
         {/* Custom Holidays Management */}
         <div className="mt-4 border-t pt-4">
