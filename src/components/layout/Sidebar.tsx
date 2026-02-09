@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Home,
   Calendar,
@@ -13,15 +14,30 @@ import {
   Shield,
   UserCircle,
   ClipboardList,
+  User,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { isSuperAdmin, canManageHR } = useUserRole();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [fullName, setFullName] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').select('avatar_url, full_name').eq('user_id', user.id).maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setAvatarUrl(data.avatar_url);
+            setFullName(data.full_name || '');
+          }
+        });
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -59,6 +75,22 @@ const Sidebar = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* User info */}
+      <div className="p-3 border-b border-sidebar-border">
+        <Link to="/my-profile" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+          <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center overflow-hidden flex-shrink-0">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-4 h-4 text-sidebar-foreground/70" />
+            )}
+          </div>
+          {!isCollapsed && fullName && (
+            <span className="text-sm font-medium text-sidebar-foreground truncate">{fullName}</span>
+          )}
+        </Link>
       </div>
 
       {/* Navigation */}
