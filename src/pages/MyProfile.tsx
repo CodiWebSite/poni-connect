@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestForm';
+import { LeaveEditDialog } from '@/components/profile/LeaveEditDialog';
 import { 
   User, 
   FileText, 
@@ -28,7 +29,8 @@ import {
   Mail,
   BadgeCheck,
   AlertTriangle,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -127,6 +129,7 @@ const MyProfile = () => {
   const [loading, setLoading] = useState(true);
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
   const [deletingLeave, setDeletingLeave] = useState<string | null>(null);
+  const [editingLeave, setEditingLeave] = useState<LeaveHistoryItem | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -406,20 +409,30 @@ const MyProfile = () => {
                         )}
                       </div>
                       {canManageHR && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive shrink-0"
-                          onClick={() => deleteLeaveRequest(leave)}
-                          disabled={deletingLeave === leave.id}
-                        >
-                          {deletingLeave === leave.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4 mr-1" />
-                          )}
-                          Șterge
-                        </Button>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingLeave(leave)}
+                          >
+                            <Pencil className="w-4 h-4 mr-1" />
+                            Editează
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => deleteLeaveRequest(leave)}
+                            disabled={deletingLeave === leave.id}
+                          >
+                            {deletingLeave === leave.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4 mr-1" />
+                            )}
+                            Șterge
+                          </Button>
+                        </div>
                       )}
                     </div>
                   );
@@ -545,6 +558,14 @@ const MyProfile = () => {
           position: position || undefined,
           phone: profile?.phone || undefined,
         }}
+      />
+
+      <LeaveEditDialog
+        open={!!editingLeave}
+        onOpenChange={(open) => !open && setEditingLeave(null)}
+        leave={editingLeave}
+        employeeRecordId={employeeRecord?.id || null}
+        onSaved={fetchData}
       />
     </MainLayout>
   );
