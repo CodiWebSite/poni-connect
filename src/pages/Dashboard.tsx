@@ -76,15 +76,15 @@ const Dashboard = () => {
     }
 
     // Fetch counts
-    const [profilesCount, announcementsCount, documentsCount, eventsCount] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    const [employeesCount, announcementsCount, documentsCount, eventsCount] = await Promise.all([
+      supabase.from('employee_personal_data').select('*', { count: 'exact', head: true }),
       supabase.from('announcements').select('*', { count: 'exact', head: true }),
       supabase.from('documents').select('*', { count: 'exact', head: true }),
       supabase.from('events').select('*', { count: 'exact', head: true }),
     ]);
 
     setStats({
-      employees: profilesCount.count || 0,
+      employees: employeesCount.count || 0,
       announcements: announcementsCount.count || 0,
       documents: documentsCount.count || 0,
       events: eventsCount.count || 0,
