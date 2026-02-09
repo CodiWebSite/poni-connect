@@ -263,18 +263,18 @@ const MyProfile = () => {
           <CardContent>
             {employeeRecord ? (
               <div className="space-y-5">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center p-4 rounded-xl bg-primary/10 border border-primary/20">
-                    <p className="text-3xl font-bold text-primary">{employeeRecord.remaining_leave_days}</p>
-                    <p className="text-xs text-muted-foreground mt-1 font-medium">Disponibile</p>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  <div className="text-center p-3 sm:p-4 rounded-xl bg-primary/10 border border-primary/20">
+                    <p className="text-2xl sm:text-3xl font-bold text-primary">{employeeRecord.remaining_leave_days}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Disponibile</p>
                   </div>
-                  <div className="text-center p-4 rounded-xl bg-secondary/50 border border-secondary">
-                    <p className="text-3xl font-bold text-secondary-foreground">{employeeRecord.used_leave_days}</p>
-                    <p className="text-xs text-muted-foreground mt-1 font-medium">Utilizate</p>
+                  <div className="text-center p-3 sm:p-4 rounded-xl bg-secondary/50 border border-secondary">
+                    <p className="text-2xl sm:text-3xl font-bold text-secondary-foreground">{employeeRecord.used_leave_days}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Utilizate</p>
                   </div>
-                  <div className="text-center p-4 rounded-xl bg-muted/50 border">
-                    <p className="text-3xl font-bold">{employeeRecord.total_leave_days}</p>
-                    <p className="text-xs text-muted-foreground mt-1 font-medium">Total cuvenite</p>
+                  <div className="text-center p-3 sm:p-4 rounded-xl bg-muted/50 border">
+                    <p className="text-2xl sm:text-3xl font-bold">{employeeRecord.total_leave_days}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Total cuvenite</p>
                   </div>
                 </div>
 

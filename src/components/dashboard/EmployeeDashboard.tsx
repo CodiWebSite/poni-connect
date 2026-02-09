@@ -79,18 +79,18 @@ const EmployeeDashboard = () => {
           <CardContent>
             {employeeRecord ? (
               <div className="space-y-6">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-5 bg-green-500/10 rounded-xl border border-green-500/20">
-                    <p className="text-4xl font-bold text-green-600">{employeeRecord.remaining_leave_days}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Disponibile</p>
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                  <div className="text-center p-3 sm:p-5 bg-green-500/10 rounded-xl border border-green-500/20">
+                    <p className="text-2xl sm:text-4xl font-bold text-green-600">{employeeRecord.remaining_leave_days}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">Disponibile</p>
                   </div>
-                  <div className="text-center p-5 bg-blue-500/10 rounded-xl border border-blue-500/20">
-                    <p className="text-4xl font-bold text-blue-600">{employeeRecord.used_leave_days}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Utilizate</p>
+                  <div className="text-center p-3 sm:p-5 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                    <p className="text-2xl sm:text-4xl font-bold text-blue-600">{employeeRecord.used_leave_days}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">Utilizate</p>
                   </div>
-                  <div className="text-center p-5 bg-muted rounded-xl border border-border">
-                    <p className="text-4xl font-bold text-foreground">{employeeRecord.total_leave_days}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Total</p>
+                  <div className="text-center p-3 sm:p-5 bg-muted rounded-xl border border-border">
+                    <p className="text-2xl sm:text-4xl font-bold text-foreground">{employeeRecord.total_leave_days}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">Total</p>
                   </div>
                 </div>
 
