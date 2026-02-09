@@ -100,8 +100,14 @@ Deno.serve(async (req) => {
       throw new Error("No valid employee records found in the provided data.");
     }
     
-    // Transform records for insertion
-    const employeeData = records.map(record => ({
+    // Transform records for insertion and deduplicate by CNP
+    const employeeMap = new Map<string, typeof records[0]>();
+    for (const record of records) {
+      // Keep last occurrence (overwrite duplicates)
+      employeeMap.set(record.cnp, record);
+    }
+    
+    const employeeData = Array.from(employeeMap.values()).map(record => ({
       email: record.email.toLowerCase(),
       first_name: record.first_name,
       last_name: record.last_name,
@@ -113,6 +119,8 @@ Deno.serve(async (req) => {
       used_leave_days: record.used_leave_days ?? 0,
       employment_date: record.employment_date || new Date().toISOString().split('T')[0],
     }));
+    
+    console.log(`Deduplicated: ${records.length} -> ${employeeData.length} unique CNPs`);
     
     // Insert in batches of 50
     const batchSize = 50;
