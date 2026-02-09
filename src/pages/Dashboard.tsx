@@ -5,6 +5,9 @@ import PersonalCalendarWidget from '@/components/dashboard/PersonalCalendarWidge
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
 import ActivityHistory from '@/components/dashboard/ActivityHistory';
 import ActivationChart from '@/components/dashboard/ActivationChart';
+import AdoptionTrendChart from '@/components/dashboard/AdoptionTrendChart';
+import LeaveByDepartment from '@/components/dashboard/LeaveByDepartment';
+import HRAlerts from '@/components/dashboard/HRAlerts';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -34,7 +37,7 @@ const Dashboard = () => {
   return (
     <MainLayout title="Dashboard" description="Bine ați venit în intranetul ICMPP">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <StatCard
           title="Angajați"
           value={stats.employees}
@@ -44,15 +47,27 @@ const Dashboard = () => {
         <ActivationChart />
       </div>
 
-      {/* Widgets */}
+      {/* HR Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <AdoptionTrendChart />
+        </div>
+        <HRAlerts />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <LeaveByDepartment />
+        </div>
+        <WeatherWidget />
+      </div>
+
+      {/* Calendar & Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <PersonalCalendarWidget />
         </div>
-        <div className="space-y-6">
-          <WeatherWidget />
-          <ActivityHistory />
-        </div>
+        <ActivityHistory />
       </div>
     </MainLayout>
   );
