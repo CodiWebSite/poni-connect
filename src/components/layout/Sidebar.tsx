@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -24,9 +24,15 @@ import { useState } from 'react';
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { signOut } = useAuth();
   const { role, canManageHR } = useUserRole();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   const isEmployee = role === 'user';
 
@@ -104,7 +110,7 @@ const Sidebar = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={signOut}
+          onClick={handleSignOut}
           className={cn(
             "w-full text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10",
             isCollapsed ? "justify-center" : "justify-start"

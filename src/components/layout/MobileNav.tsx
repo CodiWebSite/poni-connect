@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -23,9 +23,16 @@ import { useState } from 'react';
 
 const MobileNav = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { signOut } = useAuth();
   const { role, canManageHR } = useUserRole();
   const [isOpen, setIsOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsOpen(false);
+    navigate('/auth');
+  };
 
   const isEmployee = role === 'user';
 
@@ -91,10 +98,7 @@ const MobileNav = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              signOut();
-              setIsOpen(false);
-            }}
+            onClick={handleSignOut}
             className="w-full justify-start text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10"
           >
             <LogOut className="w-5 h-5" />
