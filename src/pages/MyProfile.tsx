@@ -115,7 +115,7 @@ const roleLabels: Record<string, string> = {
 
 const MyProfile = () => {
   const { user } = useAuth();
-  const { role, canApproveHR, canManageHR } = useUserRole();
+  const { role, canManageHR } = useUserRole();
   const { toast } = useToast();
   
   const [profile, setProfile] = useState<Profile | null>(null);

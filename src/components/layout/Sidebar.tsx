@@ -5,20 +5,14 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import {
   Home,
-  Megaphone,
-  Users,
-  FileText,
   Calendar,
   Settings,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  UserCog,
   Shield,
   UserCircle,
   ClipboardList,
-  Lightbulb,
-  
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -26,7 +20,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { role, canManageHR } = useUserRole();
+  const { isSuperAdmin, canManageHR } = useUserRole();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleSignOut = async () => {
@@ -34,20 +28,13 @@ const Sidebar = () => {
     navigate('/auth');
   };
 
-  const isEmployee = role === 'user';
-
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
-    ...(!isEmployee ? [{ icon: Megaphone, label: 'Anunțuri', path: '/announcements' }] : []),
-    ...(!isEmployee ? [{ icon: Users, label: 'Angajați', path: '/employees' }] : []),
-    ...(!isEmployee ? [{ icon: FileText, label: 'Documente', path: '/documents' }] : []),
-    ...(!isEmployee ? [{ icon: Calendar, label: 'Evenimente', path: '/calendar' }] : []),
-    ...(!isEmployee ? [{ icon: Lightbulb, label: 'Sugestii', path: '/suggestions' }] : []),
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
-    ...(role === 'super_admin' ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
+    ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
 
   return (
