@@ -65,6 +65,7 @@ export const PersonalDataEditor = ({
   const [personalData, setPersonalData] = useState<PersonalData | null>(null);
   const [ciFile, setCiFile] = useState<File | null>(null);
   const [uploadingCi, setUploadingCi] = useState(false);
+  const [extractingCi, setExtractingCi] = useState(false);
   const [form, setForm] = useState({
     email: '',
     first_name: '',
@@ -184,9 +185,53 @@ export const PersonalDataEditor = ({
         });
       }
 
-      toast({ title: 'Succes', description: 'Cartea de identitate a fost încărcată.' });
+      toast({ title: 'Succes', description: 'Cartea de identitate a fost încărcată. Se extrage data de expirare...' });
       setCiFile(null);
       fetchPersonalData();
+
+      // Auto-extract expiry date using AI OCR
+      if (fileExt && ['jpg', 'jpeg', 'png', 'pdf'].includes(fileExt.toLowerCase())) {
+        setExtractingCi(true);
+        try {
+          const { data: extractData, error: extractError } = await supabase.functions.invoke('extract-ci-expiry', {
+            body: { file_path: fileName },
+          });
+
+          if (extractError) throw extractError;
+
+          if (extractData?.success && extractData?.expiry_date) {
+            // Auto-fill the expiry date field
+            updateForm('ci_expiry_date', extractData.expiry_date);
+            
+            // Also save it to DB immediately
+            await supabase
+              .from('employee_personal_data')
+              .update({ ci_expiry_date: extractData.expiry_date } as any)
+              .eq('id', personalData.id);
+
+            const confidenceLabel = extractData.confidence === 'high' ? 'ridicată' : extractData.confidence === 'medium' ? 'medie' : 'scăzută';
+            toast({ 
+              title: '✅ Data expirare CI extrasă automat', 
+              description: `${extractData.raw_text || extractData.expiry_date} (încredere ${confidenceLabel}). Verificați și corectați dacă e necesar.`,
+            });
+          } else {
+            toast({ 
+              title: 'Extragere incompletă', 
+              description: extractData?.error || 'Nu s-a putut citi data de expirare. Completați manual.',
+              variant: 'destructive',
+            });
+          }
+        } catch (ocrError) {
+          console.error('OCR extraction error:', ocrError);
+          toast({ 
+            title: 'Extragere eșuată', 
+            description: 'Nu s-a putut extrage data de expirare automat. Completați manual.',
+            variant: 'destructive',
+          });
+        } finally {
+          setExtractingCi(false);
+        }
+      }
     } catch (error) {
       console.error('CI upload error:', error);
       toast({ title: 'Eroare', description: 'Nu s-a putut încărca CI.', variant: 'destructive' });
@@ -482,7 +527,15 @@ export const PersonalDataEditor = ({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Data Expirare CI</Label>
+                  <Label className="flex items-center gap-2">
+                    Data Expirare CI
+                    {extractingCi && (
+                      <span className="flex items-center gap-1 text-xs text-primary font-normal">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Se extrage automat...
+                      </span>
+                    )}
+                  </Label>
                   <Input 
                     type="date"
                     value={form.ci_expiry_date} 
