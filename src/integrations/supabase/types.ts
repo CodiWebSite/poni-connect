@@ -318,6 +318,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          last_updated_by: string | null
           original_id: string | null
           position: string | null
           total_leave_days: number | null
@@ -348,6 +349,7 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
+          last_updated_by?: string | null
           original_id?: string | null
           position?: string | null
           total_leave_days?: number | null
@@ -378,6 +380,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          last_updated_by?: string | null
           original_id?: string | null
           position?: string | null
           total_leave_days?: number | null
