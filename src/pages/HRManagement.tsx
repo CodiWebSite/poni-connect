@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { EmployeeImport } from '@/components/hr/EmployeeImport';
 import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
 import { CorrectionRequestsManager } from '@/components/hr/CorrectionRequestsManager';
+import HRExportButton from '@/components/hr/HRExportButton';
 import { 
   Users, 
   UserPlus, 
@@ -481,32 +482,22 @@ const HRManagement = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const exportLeaveReport = () => {
-    const data = employees.map(e => ({
-      'Nume': e.last_name,
-      'Prenume': e.first_name,
-      'Email': e.email,
-      'Departament': e.department || '-',
-      'Funcție': e.position || '-',
-      'Data Angajării': e.employment_date ? format(new Date(e.employment_date), 'dd.MM.yyyy') : '-',
-      'Tip Contract': e.contract_type || '-',
-      'Total Zile Concediu': e.total_leave_days,
-      'Zile Utilizate': e.used_leave_days,
-      'Zile Rămase': e.total_leave_days - e.used_leave_days,
-      'Cont Creat': e.hasAccount ? 'Da' : 'Nu',
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Raport Concedii');
-    
-    const colWidths = Object.keys(data[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
-    ws['!cols'] = colWidths;
-
-    XLSX.writeFile(wb, `Raport_Concedii_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-    
-    toast({ title: 'Export realizat', description: 'Raportul a fost descărcat cu succes.' });
-  };
+  // HR Export data adapters
+  const exportEmployees = employees.map(e => ({
+    user_id: e.user_id,
+    full_name: e.full_name,
+    email: e.email,
+    department: e.department,
+    position: e.position,
+    hasAccount: e.hasAccount,
+    record: e.record ? {
+      total_leave_days: e.total_leave_days,
+      used_leave_days: e.used_leave_days,
+      remaining_leave_days: e.total_leave_days - e.used_leave_days,
+      hire_date: e.record.hire_date,
+      contract_type: e.record.contract_type,
+    } : undefined,
+  }));
 
   const syncEmployees = async () => {
     setSyncing(true);
@@ -578,10 +569,7 @@ const HRManagement = () => {
               <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">{syncing ? 'Sincronizare...' : 'Sincronizează'}</span>
             </Button>
-            <Button variant="outline" onClick={exportLeaveReport} disabled={employees.length === 0}>
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Export Concedii</span>
-            </Button>
+            <HRExportButton requests={[]} employees={exportEmployees} />
             <Button variant="outline" onClick={() => setShowManualLeave(true)}>
               <FilePlus2 className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Concediu Manual</span>
