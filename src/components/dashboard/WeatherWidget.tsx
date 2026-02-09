@@ -17,8 +17,8 @@ const WeatherWidget = () => {
 
   useEffect(() => {
     fetchWeather();
-    // Refresh every 30 minutes
-    const interval = setInterval(fetchWeather, 30 * 60 * 1000);
+    // Refresh every second
+    const interval = setInterval(fetchWeather, 1000);
     return () => clearInterval(interval);
   }, []);
 
