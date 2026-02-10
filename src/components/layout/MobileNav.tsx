@@ -22,7 +22,7 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isSuperAdmin, canManageHR } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS } = useUserRole();
   const [isOpen, setIsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');

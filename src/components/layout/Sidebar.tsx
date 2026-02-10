@@ -22,7 +22,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isSuperAdmin, canManageHR } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS } = useUserRole();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');

@@ -19,12 +19,16 @@ import AuditLog from '@/components/admin/AuditLog';
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
   hr: 'HR (SRUS)',
+  sef_srus: 'Șef Serviciu Resurse Umane',
+  sef: 'Șef Departament',
   user: 'Angajat',
 };
 
 const roleBadgeColors: Record<string, string> = {
   super_admin: 'bg-destructive text-destructive-foreground',
   hr: 'bg-purple-500 text-white',
+  sef_srus: 'bg-blue-600 text-white',
+  sef: 'bg-amber-600 text-white',
   user: 'bg-muted text-muted-foreground',
 };
 
@@ -69,8 +73,8 @@ const Admin = () => {
     const usersWithRoles: UserWithRole[] = profiles.map(profile => {
       const userRole = roles.find(r => r.user_id === profile.user_id);
       const r = userRole?.role as string || 'user';
-      // Map legacy roles to current ones for display
-      const mappedRole = (r === 'super_admin' || r === 'hr' || r === 'user') ? r : 'user';
+      const validRoles = ['super_admin', 'hr', 'sef_srus', 'sef', 'user'];
+      const mappedRole = validRoles.includes(r) ? r : 'user';
       return {
         user_id: profile.user_id,
         full_name: profile.full_name,
