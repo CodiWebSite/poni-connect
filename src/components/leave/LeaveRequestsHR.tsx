@@ -107,9 +107,36 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     setLoading(false);
   };
 
-  const handleDownload = async (request: LeaveRequestRow) => {
+  const handleDownload = async (request: LeaveRequestRow & { epd_id?: string; employee_signature?: string | null }) => {
     setDownloading(request.id);
     try {
+      // Get leave balance data
+      let totalLeaveDays = 0;
+      let usedLeaveDays = 0;
+      let carryoverDays = 0;
+      let carryoverFromYear: number | undefined;
+
+      if (request.epd_id) {
+        const { data: epd } = await supabase
+          .from('employee_personal_data')
+          .select('total_leave_days, used_leave_days')
+          .eq('id', request.epd_id)
+          .maybeSingle();
+        totalLeaveDays = epd?.total_leave_days ?? 0;
+        usedLeaveDays = epd?.used_leave_days ?? 0;
+
+        const { data: carryover } = await supabase
+          .from('leave_carryover')
+          .select('initial_days, from_year')
+          .eq('employee_personal_data_id', request.epd_id)
+          .eq('to_year', request.year)
+          .maybeSingle();
+        if (carryover) {
+          carryoverDays = carryover.initial_days;
+          carryoverFromYear = carryover.from_year;
+        }
+      }
+
       await generateLeaveDocx({
         employeeName: request.employee_name,
         employeePosition: request.employee_position,
@@ -122,6 +149,11 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         requestDate: format(parseISO(request.created_at), 'dd.MM.yyyy'),
         requestNumber: request.request_number,
         isApproved: request.status === 'approved',
+        employeeSignature: request.employee_signature,
+        totalLeaveDays,
+        usedLeaveDays,
+        carryoverDays,
+        carryoverFromYear,
       });
       toast({ title: 'Descărcat', description: `Document ${request.request_number} generat cu succes.` });
     } catch (err) {

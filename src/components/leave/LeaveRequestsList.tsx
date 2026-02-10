@@ -70,9 +70,25 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
     // Get employee data for the docx
     const { data: epd } = await supabase
       .from('employee_personal_data')
-      .select('first_name, last_name, department, position')
+      .select('first_name, last_name, department, position, total_leave_days, used_leave_days')
       .eq('id', request.epd_id)
       .maybeSingle();
+
+    // Get carryover data
+    let carryoverDays = 0;
+    let carryoverFromYear: number | undefined;
+    if (request.epd_id) {
+      const { data: carryover } = await supabase
+        .from('leave_carryover')
+        .select('initial_days, from_year')
+        .eq('employee_personal_data_id', request.epd_id)
+        .eq('to_year', request.year)
+        .maybeSingle();
+      if (carryover) {
+        carryoverDays = carryover.initial_days;
+        carryoverFromYear = carryover.from_year;
+      }
+    }
 
     await generateLeaveDocx({
       employeeName: epd ? `${epd.last_name} ${epd.first_name}` : '',
@@ -86,6 +102,11 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       requestDate: format(parseISO(request.created_at), 'dd.MM.yyyy'),
       requestNumber: request.request_number,
       isApproved: request.status === 'approved',
+      employeeSignature: request.employee_signature,
+      totalLeaveDays: epd?.total_leave_days ?? 0,
+      usedLeaveDays: epd?.used_leave_days ?? 0,
+      carryoverDays,
+      carryoverFromYear,
     });
   };
 
