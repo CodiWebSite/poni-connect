@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 
 import { EmployeeImport } from '@/components/hr/EmployeeImport';
+import { CIExpiryImport } from '@/components/hr/CIExpiryImport';
 import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
 import { CorrectionRequestsManager } from '@/components/hr/CorrectionRequestsManager';
 import HRExportButton from '@/components/hr/HRExportButton';
@@ -1265,8 +1266,9 @@ const HRManagement = () => {
         </TabsContent>
 
         {/* Import Tab */}
-        <TabsContent value="import">
+        <TabsContent value="import" className="space-y-6">
           <EmployeeImport />
+          <CIExpiryImport />
         </TabsContent>
       </Tabs>
 
