@@ -18,17 +18,23 @@ import AuditLog from '@/components/admin/AuditLog';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
-  hr: 'HR (SRUS)',
+  director_institut: 'Director',
+  director_adjunct: 'Director Adjunct',
+  secretar_stiintific: 'Secretar Științific',
   sef_srus: 'Șef Serviciu Resurse Umane',
   sef: 'Șef Departament',
+  hr: 'HR (SRUS)',
   user: 'Angajat',
 };
 
 const roleBadgeColors: Record<string, string> = {
   super_admin: 'bg-destructive text-destructive-foreground',
-  hr: 'bg-purple-500 text-white',
+  director_institut: 'bg-indigo-700 text-white',
+  director_adjunct: 'bg-indigo-500 text-white',
+  secretar_stiintific: 'bg-teal-600 text-white',
   sef_srus: 'bg-blue-600 text-white',
   sef: 'bg-amber-600 text-white',
+  hr: 'bg-purple-500 text-white',
   user: 'bg-muted text-muted-foreground',
 };
 
@@ -73,7 +79,7 @@ const Admin = () => {
     const usersWithRoles: UserWithRole[] = profiles.map(profile => {
       const userRole = roles.find(r => r.user_id === profile.user_id);
       const r = userRole?.role as string || 'user';
-      const validRoles = ['super_admin', 'hr', 'sef_srus', 'sef', 'user'];
+      const validRoles = ['super_admin', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'sef_srus', 'sef', 'hr', 'user'];
       const mappedRole = validRoles.includes(r) ? r : 'user';
       return {
         user_id: profile.user_id,

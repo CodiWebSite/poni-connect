@@ -1032,6 +1032,9 @@ export type Database = {
         | "achizitii_contabilitate"
         | "sef"
         | "sef_srus"
+        | "director_institut"
+        | "director_adjunct"
+        | "secretar_stiintific"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
       document_direction: "incoming" | "outgoing"
       hr_request_status: "pending" | "approved" | "rejected"
@@ -1192,6 +1195,9 @@ export const Constants = {
         "achizitii_contabilitate",
         "sef",
         "sef_srus",
+        "director_institut",
+        "director_adjunct",
+        "secretar_stiintific",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
       document_direction: ["incoming", "outgoing"],
