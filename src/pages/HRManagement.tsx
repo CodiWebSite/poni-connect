@@ -195,14 +195,16 @@ const HRManagement = () => {
     }
   }, [canManageHR]);
 
+  const leadershipRoles = ['sef', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'hr', 'super_admin'];
+
   const fetchDepartmentHeads = async () => {
     const headEmails = new Set<string>();
 
-    // 1. Get users with 'sef' or 'sef_srus' roles who have accounts
+    // 1. Get users with leadership roles who have accounts
     const { data: sefRoles } = await supabase
       .from('user_roles')
       .select('user_id')
-      .in('role', ['sef', 'sef_srus'] as any[]);
+      .in('role', leadershipRoles as any[]);
 
     if (sefRoles && sefRoles.length > 0) {
       const userIds = sefRoles.map(r => r.user_id);
@@ -222,11 +224,11 @@ const HRManagement = () => {
       }
     }
 
-    // 2. Also check pre_assigned_roles for 'sef' or 'sef_srus' (employees without accounts yet)
+    // 2. Also check pre_assigned_roles for leadership roles (employees without accounts yet)
     const { data: preAssigned } = await supabase
       .from('pre_assigned_roles')
       .select('email')
-      .in('role', ['sef', 'sef_srus'] as any[]);
+      .in('role', leadershipRoles as any[]);
 
     (preAssigned || []).forEach(p => headEmails.add(p.email.toLowerCase()));
 
