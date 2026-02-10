@@ -173,6 +173,40 @@ export const PersonalDataEditor = ({
 
       if (updateError) throw updateError;
 
+      // Also add to employee_documents so it appears in the employee's documents section
+      // Find user_id via employee_records
+      const { data: epdData } = await supabase
+        .from('employee_personal_data')
+        .select('employee_record_id')
+        .eq('id', personalData.id)
+        .maybeSingle();
+      
+      if (epdData?.employee_record_id) {
+        const { data: recData } = await supabase
+          .from('employee_records')
+          .select('user_id')
+          .eq('id', epdData.employee_record_id)
+          .maybeSingle();
+        
+        if (recData?.user_id) {
+          // Remove old CI document entries for this user
+          await supabase
+            .from('employee_documents')
+            .delete()
+            .eq('user_id', recData.user_id)
+            .eq('document_type', 'carte_identitate');
+
+          await supabase.from('employee_documents').insert({
+            user_id: recData.user_id,
+            document_type: 'carte_identitate',
+            name: `Carte de Identitate - ${form.last_name} ${form.first_name}`,
+            description: `CI ${form.ci_series}${form.ci_number} - scanare încărcată de HR`,
+            file_url: fileName,
+            uploaded_by: user?.id,
+          });
+        }
+      }
+
       // Log audit event
       if (user) {
         await supabase.rpc('log_audit_event', {
