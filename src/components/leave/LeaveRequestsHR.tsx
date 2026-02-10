@@ -108,7 +108,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     setLoading(false);
   };
 
-  const handleDownload = async (request: LeaveRequestRow & { epd_id?: string; employee_signature?: string | null }) => {
+  const handleDownload = async (request: LeaveRequestRow & { epd_id?: string; employee_signature?: string | null; end_date: string }) => {
     setDownloading(request.id);
     try {
       // Get leave balance data
@@ -145,6 +145,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         workingDays: request.working_days,
         year: request.year,
         startDate: request.start_date,
+        endDate: request.end_date,
         replacementName: request.replacement_name,
         replacementPosition: request.replacement_position || '',
         requestDate: format(parseISO(request.created_at), 'dd.MM.yyyy'),

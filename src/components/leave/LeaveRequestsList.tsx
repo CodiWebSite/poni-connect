@@ -97,6 +97,7 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       workingDays: request.working_days,
       year: request.year,
       startDate: request.start_date,
+      endDate: request.end_date,
       replacementName: request.replacement_name,
       replacementPosition: request.replacement_position || '',
       requestDate: format(parseISO(request.created_at), 'dd.MM.yyyy'),
