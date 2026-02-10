@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Lock, Mail, User, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Lock, Mail, User, Eye, EyeOff, ArrowLeft, CheckCircle2, MailCheck } from 'lucide-react';
 import { z } from 'zod';
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,6 +75,8 @@ const Auth = () => {
   const [signupToken, setSignupToken] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState('');
   const loginTurnstileRef = useRef<TurnstileInstance>(null);
   const signupTurnstileRef = useRef<TurnstileInstance>(null);
   const { signIn, signUp, user } = useAuth();
@@ -138,6 +140,8 @@ const Auth = () => {
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Email sau parolă incorectă');
+      } else if (error.message.includes('Email not confirmed')) {
+        toast.error('Contul nu a fost verificat. Verifică-ți emailul pentru linkul de confirmare.');
       } else {
         toast.error('Eroare la autentificare. Încercați din nou.');
       }
@@ -191,8 +195,9 @@ const Auth = () => {
       signupTurnstileRef.current?.reset();
       setSignupToken(null);
     } else {
-      toast.success('Cont creat cu succes!');
-      navigate('/');
+      setConfirmationEmail(signupData.email);
+      setShowEmailConfirmation(true);
+      setSignupData({ email: '', password: '', fullName: '' });
     }
     
     setIsLoading(false);
@@ -246,7 +251,39 @@ const Auth = () => {
         </CardHeader>
         
         <CardContent>
-          {showForgotPassword ? (
+          {showEmailConfirmation ? (
+            <div className="space-y-6 text-center py-4">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <MailCheck className="w-8 h-8 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Verifică-ți emailul</h3>
+                <p className="text-sm text-muted-foreground">
+                  Am trimis un email de confirmare la:
+                </p>
+                <p className="text-sm font-medium text-foreground">{confirmationEmail}</p>
+              </div>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  Deschide emailul și apasă pe linkul de confirmare pentru a-ți activa contul.
+                </p>
+                <p className="text-xs">
+                  Nu ai primit emailul? Verifică folderul Spam sau încearcă din nou peste câteva minute.
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowEmailConfirmation(false);
+                  setConfirmationEmail('');
+                }}
+                className="w-full"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Înapoi la autentificare
+              </Button>
+            </div>
+          ) : showForgotPassword ? (
             <div className="space-y-4">
               <button
                 type="button"
