@@ -73,10 +73,37 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
     XLSX.writeFile(wb, `${filename}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
+  const applyCenterAlignment = (ws: XLSX.WorkSheet) => {
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    for (let R = range.s.r; R <= range.e.r; R++) {
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const addr = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[addr]) continue;
+        if (!ws[addr].s) ws[addr].s = {};
+        ws[addr].s = { ...ws[addr].s, alignment: { horizontal: 'center', vertical: 'center', wrapText: true } };
+      }
+    }
+    // Auto-size columns
+    const colWidths: number[] = [];
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      let maxLen = 8;
+      for (let R = range.s.r; R <= range.e.r; R++) {
+        const addr = XLSX.utils.encode_cell({ r: R, c: C });
+        if (ws[addr] && ws[addr].v != null) {
+          const len = String(ws[addr].v).length;
+          if (len > maxLen) maxLen = len;
+        }
+      }
+      colWidths.push(Math.min(maxLen + 2, 30));
+    }
+    ws['!cols'] = colWidths.map(w => ({ wch: w }));
+  };
+
   const downloadExcelMultiSheet = (sheets: { name: string; data: any[] }[], filename: string) => {
     const wb = XLSX.utils.book_new();
     sheets.forEach(s => {
       const ws = XLSX.utils.json_to_sheet(s.data);
+      applyCenterAlignment(ws);
       XLSX.utils.book_append_sheet(wb, ws, s.name.substring(0, 31));
     });
     XLSX.writeFile(wb, `${filename}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
