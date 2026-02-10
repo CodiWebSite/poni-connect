@@ -743,6 +743,10 @@ const HRManagement = () => {
     department: e.department,
     position: e.position,
     hasAccount: e.hasAccount,
+    cnp: e.cnp,
+    employment_date: e.employment_date,
+    contract_type: e.contract_type,
+    leaveHistory: e.leaveHistory,
     record: {
       total_leave_days: e.total_leave_days,
       used_leave_days: e.used_leave_days,
