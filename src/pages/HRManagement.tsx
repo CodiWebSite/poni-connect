@@ -127,6 +127,7 @@ const HRManagement = () => {
   const { toast } = useToast();
   
   const [employees, setEmployees] = useState<EmployeeWithData[]>([]);
+  const [departmentHeadEmails, setDepartmentHeadEmails] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [accountFilter, setAccountFilter] = useState<'all' | 'with_account' | 'without_account'>('all');
@@ -190,8 +191,45 @@ const HRManagement = () => {
       fetchEmployees();
       fetchCustomHolidays();
       fetchArchivedEmployees();
+      fetchDepartmentHeads();
     }
   }, [canManageHR]);
+
+  const fetchDepartmentHeads = async () => {
+    // Get all users with 'sef' or 'sef_srus' roles
+    const { data: sefRoles } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .in('role', ['sef', 'sef_srus'] as any[]);
+
+    if (sefRoles && sefRoles.length > 0) {
+      const userIds = sefRoles.map(r => r.user_id);
+      // Get their emails from auth via profiles matching
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+
+      // Match to employee_personal_data by looking up auth emails
+      // We'll use the profile user_ids to find corresponding employee_personal_data
+      const { data: records } = await supabase
+        .from('employee_records')
+        .select('user_id, id')
+        .in('user_id', userIds);
+
+      if (records) {
+        const recordIds = records.map(r => r.id);
+        const { data: epdData } = await supabase
+          .from('employee_personal_data')
+          .select('email')
+          .in('employee_record_id', recordIds);
+
+        if (epdData) {
+          setDepartmentHeadEmails(new Set(epdData.map(e => e.email.toLowerCase())));
+        }
+      }
+    }
+  };
 
   const fetchEmployees = async () => {
     setLoading(true);
@@ -875,6 +913,13 @@ const HRManagement = () => {
     const matchesDept = departmentFilter === 'all' ? true : e.department === departmentFilter;
     
     return matchesSearch && matchesFilter && matchesDept;
+  }).sort((a, b) => {
+    // Department heads appear first
+    const aIsHead = departmentHeadEmails.has(a.email.toLowerCase());
+    const bIsHead = departmentHeadEmails.has(b.email.toLowerCase());
+    if (aIsHead && !bIsHead) return -1;
+    if (!aIsHead && bIsHead) return 1;
+    return a.full_name.localeCompare(b.full_name, 'ro');
   });
 
   // Redirect if not authorized
@@ -1087,6 +1132,11 @@ const HRManagement = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="font-semibold text-foreground">{employee.full_name}</p>
+                              {departmentHeadEmails.has(employee.email.toLowerCase()) && (
+                                <Badge className="text-xs bg-amber-600 text-white">
+                                  Șef
+                                </Badge>
+                              )}
                               {employee.hasAccount ? (
                                 <Badge variant="outline" className="text-xs text-green-600 border-green-300">
                                   <UserCheck className="w-3 h-3 mr-1" />
