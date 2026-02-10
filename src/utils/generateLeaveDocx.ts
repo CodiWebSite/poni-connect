@@ -191,7 +191,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           children: [t('Doamnă/Domnule Director,', { italics: true })],
         }),
 
-        // ══════ BODY LINE 1: Subsemnatul/a, _name_, _position_ în ══════
+        // ══════ BODY: Subsemnatul/a, _name_, _position_ în cadrul _department_ ══════
         new Paragraph({
           spacing: { after: 0, line: 360 },
           children: [
@@ -202,32 +202,13 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
             t(' în'),
           ],
         }),
-        // Labels: (numele și prenumele)       (funcția)
         new Paragraph({
-          spacing: { after: 0 },
-          tabStops: [{ type: TabStopType.CENTER, position: 3500 }, { type: TabStopType.CENTER, position: 7500 }],
-          children: [
-            tab(),
-            t('(numele și prenumele)', { italics: true, size: SIZE_SMALL }),
-            tab(),
-            t('(funcția)', { italics: true, size: SIZE_SMALL }),
-          ],
-        }),
-
-        // cadrul ____department____,
-        new Paragraph({
-          spacing: { after: 0, line: 360 },
+          spacing: { after: 100, line: 360 },
           children: [
             t('cadrul '),
             ...underlinedField(department, '_______________________________________________________________________'),
             t(','),
           ],
-        }),
-        // (compartimentul)
-        new Paragraph({
-          spacing: { after: 100 },
-          alignment: AlignmentType.CENTER,
-          children: [t('(compartimentul)', { italics: true, size: SIZE_SMALL })],
         }),
 
         // vă rog ... zile de concediu de odihnă aferente
@@ -253,7 +234,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         }),
 
         // ══════ REPLACEMENT ══════
-        // În această perioadă voi fi înlocuit/ă de dl./d-na __name__,
+        // În această perioadă voi fi înlocuit/ă de dl./d-na __name__, __position__.
         new Paragraph({
           spacing: { after: 0, line: 360 },
           children: [
@@ -262,30 +243,18 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
             t(','),
           ],
         }),
-        // (numele și prenumele) right-aligned
         new Paragraph({
-          spacing: { after: 0 },
-          alignment: AlignmentType.RIGHT,
-          children: [t('(numele și prenumele)', { italics: true, size: SIZE_SMALL })],
-        }),
-        // __replacementPosition__.
-        new Paragraph({
-          spacing: { after: 0 },
+          spacing: { after: 200, line: 360 },
           children: [
             ...underlinedField(replacementPosition, '_____________________________'),
             t('.'),
           ],
         }),
-        // (funcția)
-        new Paragraph({
-          spacing: { after: 200 },
-          children: [t('(funcția)', { italics: true, size: SIZE_SMALL })],
-        }),
 
         // ══════ CLOSING ══════
         // Cu mulțumiri,                    __name__
         new Paragraph({
-          spacing: { before: 100, after: 0 },
+          spacing: { before: 100, after: 100 },
           tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
           children: [
             t('Cu mulțumiri,'),
@@ -293,14 +262,8 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
             ...underlinedField(employeeName, '____________________________'),
           ],
         }),
-        // right-aligned (numele și prenumele)
-        new Paragraph({
-          spacing: { after: 100 },
-          alignment: AlignmentType.RIGHT,
-          children: [t('(numele și prenumele)', { italics: true, size: SIZE_SMALL })],
-        }),
 
-        // ___date___          ___signature___
+        // Data          Semnătura
         new Paragraph({
           spacing: { after: 0 },
           tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
@@ -310,30 +273,12 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
               tab(),
               new ImageRun({ data: signatureData, transformation: { width: 120, height: 45 }, type: 'png' }),
             ] : [
-              t('___________________'),
+              t(requestDate || '___________________'),
               tab(),
               t('___________________'),
             ]),
           ],
         }),
-        // (data)          (semnătura)
-        new Paragraph({
-          spacing: { after: 0 },
-          tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-          children: [
-            t('(data)', { italics: true, size: SIZE_SMALL }),
-            tab(),
-            t('(semnătura)', { italics: true, size: SIZE_SMALL }),
-          ],
-        }),
-
-        // If we have the actual date and no signature image, show date below
-        ...(signatureData ? [] : [
-          new Paragraph({
-            spacing: { after: 0 },
-            children: [t(requestDate, { size: 22 })],
-          }),
-        ]),
 
         // ══════ SRUS SECTION (right-indented block) ══════
         empty(400),
@@ -387,18 +332,9 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           children: [t(srusOfficerName || '___________________', { bold: !!srusOfficerName, size: 22 })],
         }),
         new Paragraph({
-          spacing: { after: 0 },
-          indent: { left: convertMillimetersToTwip(80) },
-          children: [t('(numele salariatului de la SRUS)', { italics: true, size: SIZE_SMALL })],
-        }),
-        new Paragraph({
           spacing: { before: 50 },
           indent: { left: convertMillimetersToTwip(80) },
           children: [t('___________________', { size: 22 })],
-        }),
-        new Paragraph({
-          indent: { left: convertMillimetersToTwip(80) },
-          children: [t('(semnătura)', { italics: true, size: SIZE_SMALL })],
         }),
       ],
     }],
