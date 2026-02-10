@@ -130,6 +130,13 @@ const HRManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [accountFilter, setAccountFilter] = useState<'all' | 'with_account' | 'without_account'>('all');
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  
+  // Department rename dialog state
+  const [showRenameDept, setShowRenameDept] = useState(false);
+  const [renameDeptOld, setRenameDeptOld] = useState('');
+  const [renameDeptNew, setRenameDeptNew] = useState('');
+  const [renamingDept, setRenamingDept] = useState(false);
   
   // Edit dialog state
   const [editingEmployee, setEditingEmployee] = useState<EmployeeWithData | null>(null);
@@ -811,6 +818,48 @@ const HRManagement = () => {
     setSyncing(false);
   };
 
+  const allDepartments = [...new Set(employees.map(e => e.department).filter(Boolean) as string[])].sort();
+
+  const renameDepartment = async () => {
+    if (!renameDeptNew.trim() || !renameDeptOld) return;
+    setRenamingDept(true);
+    try {
+      // Update employee_personal_data
+      const { error: epdErr } = await supabase
+        .from('employee_personal_data')
+        .update({ department: renameDeptNew.trim() })
+        .eq('department', renameDeptOld);
+      if (epdErr) throw epdErr;
+
+      // Update profiles
+      await supabase
+        .from('profiles')
+        .update({ department: renameDeptNew.trim() })
+        .eq('department', renameDeptOld);
+
+      // Log audit
+      if (user) {
+        await supabase.rpc('log_audit_event', {
+          _user_id: user.id,
+          _action: 'department_rename',
+          _entity_type: 'department',
+          _entity_id: renameDeptOld,
+          _details: { old_name: renameDeptOld, new_name: renameDeptNew.trim() }
+        });
+      }
+
+      toast({ title: 'Succes', description: `Departamentul „${renameDeptOld}" a fost redenumit în „${renameDeptNew.trim()}".` });
+      setShowRenameDept(false);
+      setRenameDeptOld('');
+      setRenameDeptNew('');
+      if (departmentFilter === renameDeptOld) setDepartmentFilter(renameDeptNew.trim());
+      fetchEmployees();
+    } catch (error) {
+      toast({ title: 'Eroare', description: 'Nu s-a putut redenumi departamentul.', variant: 'destructive' });
+    }
+    setRenamingDept(false);
+  };
+
   const filteredEmployees = employees.filter(e => {
     const matchesSearch = e.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -822,8 +871,10 @@ const HRManagement = () => {
       : accountFilter === 'with_account' 
         ? e.hasAccount 
         : !e.hasAccount;
+
+    const matchesDept = departmentFilter === 'all' ? true : e.department === departmentFilter;
     
-    return matchesSearch && matchesFilter;
+    return matchesSearch && matchesFilter && matchesDept;
   });
 
   // Redirect if not authorized
@@ -885,7 +936,7 @@ const HRManagement = () => {
 
         {/* Employees Tab */}
         <TabsContent value="employees" className="space-y-6">
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
             <div className="relative max-w-md w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -895,6 +946,27 @@ const HRManagement = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Departament" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toate departamentele</SelectItem>
+                {allDepartments.map(d => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {departmentFilter !== 'all' && (
+              <Button variant="ghost" size="sm" onClick={() => {
+                setRenameDeptOld(departmentFilter);
+                setRenameDeptNew(departmentFilter);
+                setShowRenameDept(true);
+              }}>
+                <Edit className="w-3.5 h-3.5 mr-1" />
+                Redenumește
+              </Button>
+            )}
             <div className="flex gap-1 rounded-lg border border-border p-1 bg-muted/50">
               <Button
                 variant={accountFilter === 'all' ? 'default' : 'ghost'}
@@ -2026,6 +2098,39 @@ const HRManagement = () => {
           onSaved={fetchEmployees}
         />
       )}
+
+      {/* Department Rename Dialog */}
+      <Dialog open={showRenameDept} onOpenChange={setShowRenameDept}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redenumire departament</DialogTitle>
+            <DialogDescription>
+              Noul nume se va aplica tuturor angajaților din „{renameDeptOld}" și va fi reflectat în rapoarte.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>Nume curent</Label>
+              <Input value={renameDeptOld} disabled />
+            </div>
+            <div>
+              <Label>Nume nou</Label>
+              <Input
+                value={renameDeptNew}
+                onChange={(e) => setRenameDeptNew(e.target.value)}
+                placeholder="Introduceți noul nume..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRenameDept(false)}>Anulează</Button>
+            <Button onClick={renameDepartment} disabled={renamingDept || !renameDeptNew.trim() || renameDeptNew.trim() === renameDeptOld}>
+              {renamingDept && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Redenumește
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
