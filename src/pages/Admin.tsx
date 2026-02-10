@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX } from 'lucide-react';
+import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus, Mail } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AuditLog from '@/components/admin/AuditLog';
+import PreAssignRoles from '@/components/admin/PreAssignRoles';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -168,6 +169,7 @@ const Admin = () => {
       <Tabs defaultValue="roles" className="space-y-6">
         <TabsList>
           <TabsTrigger value="roles">Roluri</TabsTrigger>
+          <TabsTrigger value="preassign">Pre-atribuire Roluri</TabsTrigger>
           <TabsTrigger value="audit">Jurnal Audit</TabsTrigger>
         </TabsList>
         <TabsContent value="roles" className="space-y-6">
@@ -235,6 +237,9 @@ const Admin = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="preassign">
+          <PreAssignRoles />
         </TabsContent>
         <TabsContent value="audit">
           <AuditLog />
