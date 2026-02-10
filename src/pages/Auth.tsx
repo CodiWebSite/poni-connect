@@ -77,6 +77,8 @@ const Auth = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
+  const [loginCaptchaError, setLoginCaptchaError] = useState(false);
+  const [signupCaptchaError, setSignupCaptchaError] = useState(false);
   const loginTurnstileRef = useRef<TurnstileInstance>(null);
   const signupTurnstileRef = useRef<TurnstileInstance>(null);
   const { signIn, signUp, user } = useAuth();
@@ -371,16 +373,34 @@ const Auth = () => {
                     <Turnstile
                       ref={loginTurnstileRef}
                       siteKey={TURNSTILE_SITE_KEY}
-                      onSuccess={(token) => setLoginToken(token)}
+                      onSuccess={(token) => { setLoginToken(token); setLoginCaptchaError(false); }}
                       onError={() => {
                         setLoginToken(null);
-                        toast.error('Eroare la încărcarea CAPTCHA');
+                        setLoginCaptchaError(true);
                       }}
                       onExpire={() => setLoginToken(null)}
                       options={{
                         theme: 'auto',
                       }}
                     />
+                    {loginCaptchaError && (
+                      <div className="text-center space-y-2">
+                        <p className="text-sm text-destructive">
+                          Verificarea CAPTCHA nu a putut fi încărcată. Acest lucru se poate întâmpla în anumite browsere sau rețele.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setLoginCaptchaError(false);
+                            loginTurnstileRef.current?.reset();
+                          }}
+                        >
+                          Reîncearcă CAPTCHA
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   
                   <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
@@ -436,16 +456,34 @@ const Auth = () => {
                     <Turnstile
                       ref={signupTurnstileRef}
                       siteKey={TURNSTILE_SITE_KEY}
-                      onSuccess={(token) => setSignupToken(token)}
+                      onSuccess={(token) => { setSignupToken(token); setSignupCaptchaError(false); }}
                       onError={() => {
                         setSignupToken(null);
-                        toast.error('Eroare la încărcarea CAPTCHA');
+                        setSignupCaptchaError(true);
                       }}
                       onExpire={() => setSignupToken(null)}
                       options={{
                         theme: 'auto',
                       }}
                     />
+                    {signupCaptchaError && (
+                      <div className="text-center space-y-2">
+                        <p className="text-sm text-destructive">
+                          Verificarea CAPTCHA nu a putut fi încărcată. Încearcă să accesezi site-ul direct la <strong>intranet.icmpp.ro</strong> sau reîncearcă.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSignupCaptchaError(false);
+                            signupTurnstileRef.current?.reset();
+                          }}
+                        >
+                          Reîncearcă CAPTCHA
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   
                   <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
