@@ -629,6 +629,95 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_requests: {
+        Row: {
+          created_at: string
+          dept_head_approved_at: string | null
+          dept_head_id: string | null
+          dept_head_notes: string | null
+          director_approved_at: string | null
+          director_id: string | null
+          director_notes: string | null
+          employee_signature: string | null
+          employee_signed_at: string | null
+          end_date: string
+          epd_id: string | null
+          id: string
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          replacement_name: string
+          replacement_position: string | null
+          request_number: string
+          start_date: string
+          status: Database["public"]["Enums"]["leave_request_status"]
+          updated_at: string
+          user_id: string
+          working_days: number
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          dept_head_approved_at?: string | null
+          dept_head_id?: string | null
+          dept_head_notes?: string | null
+          director_approved_at?: string | null
+          director_id?: string | null
+          director_notes?: string | null
+          employee_signature?: string | null
+          employee_signed_at?: string | null
+          end_date: string
+          epd_id?: string | null
+          id?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          replacement_name: string
+          replacement_position?: string | null
+          request_number?: string
+          start_date: string
+          status?: Database["public"]["Enums"]["leave_request_status"]
+          updated_at?: string
+          user_id: string
+          working_days?: number
+          year?: number
+        }
+        Update: {
+          created_at?: string
+          dept_head_approved_at?: string | null
+          dept_head_id?: string | null
+          dept_head_notes?: string | null
+          director_approved_at?: string | null
+          director_id?: string | null
+          director_notes?: string | null
+          employee_signature?: string | null
+          employee_signed_at?: string | null
+          end_date?: string
+          epd_id?: string | null
+          id?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          replacement_name?: string
+          replacement_position?: string | null
+          request_number?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["leave_request_status"]
+          updated_at?: string
+          user_id?: string
+          working_days?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1013,6 +1102,7 @@ export type Database = {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
       }
+      generate_leave_request_number: { Args: never; Returns: string }
       generate_procurement_request_number: { Args: never; Returns: string }
       generate_registration_number: { Args: never; Returns: string }
       get_user_role: {
@@ -1063,6 +1153,12 @@ export type Database = {
       document_direction: "incoming" | "outgoing"
       hr_request_status: "pending" | "approved" | "rejected"
       hr_request_type: "concediu" | "adeverinta" | "delegatie" | "demisie"
+      leave_request_status:
+        | "draft"
+        | "pending_director"
+        | "pending_department_head"
+        | "approved"
+        | "rejected"
       procurement_category:
         | "consumabile_laborator"
         | "echipamente_it"
@@ -1227,6 +1323,13 @@ export const Constants = {
       document_direction: ["incoming", "outgoing"],
       hr_request_status: ["pending", "approved", "rejected"],
       hr_request_type: ["concediu", "adeverinta", "delegatie", "demisie"],
+      leave_request_status: [
+        "draft",
+        "pending_director",
+        "pending_department_head",
+        "approved",
+        "rejected",
+      ],
       procurement_category: [
         "consumabile_laborator",
         "echipamente_it",
