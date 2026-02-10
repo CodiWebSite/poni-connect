@@ -1030,6 +1030,8 @@ export type Database = {
         | "director"
         | "hr"
         | "achizitii_contabilitate"
+        | "sef"
+        | "sef_srus"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
       document_direction: "incoming" | "outgoing"
       hr_request_status: "pending" | "approved" | "rejected"
@@ -1188,6 +1190,8 @@ export const Constants = {
         "director",
         "hr",
         "achizitii_contabilitate",
+        "sef",
+        "sef_srus",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
       document_direction: ["incoming", "outgoing"],

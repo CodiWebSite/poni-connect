@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-export type AppRole = 'user' | 'super_admin' | 'hr';
+export type AppRole = 'user' | 'super_admin' | 'hr' | 'sef' | 'sef_srus';
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -24,11 +24,12 @@ export function useUserRole() {
         .maybeSingle();
 
       if (data && !error) {
-        // Map legacy roles to current ones
         const r = data.role as string;
-        if (r === 'super_admin') setRole('super_admin');
-        else if (r === 'hr') setRole('hr');
-        else setRole('user');
+        if (['super_admin', 'hr', 'sef', 'sef_srus'].includes(r)) {
+          setRole(r as AppRole);
+        } else {
+          setRole('user');
+        }
       } else {
         setRole('user');
       }
@@ -40,18 +41,22 @@ export function useUserRole() {
 
   const isSuperAdmin = role === 'super_admin';
   const isHR = role === 'hr';
-  const isStaff = isSuperAdmin || isHR;
+  const isSef = role === 'sef';
+  const isSefSRUS = role === 'sef_srus';
+  const isStaff = isSuperAdmin || isHR || isSefSRUS;
   
   // Can manage employee records and documents (HR department)
-  const canManageHR = isSuperAdmin || isHR;
+  const canManageHR = isSuperAdmin || isHR || isSefSRUS;
   
   // Can manage content (events, calendar)
-  const canManageContent = isSuperAdmin || isHR;
+  const canManageContent = isSuperAdmin || isHR || isSefSRUS;
 
   return { 
     role, 
     isSuperAdmin,
     isHR,
+    isSef,
+    isSefSRUS,
     isStaff,
     canManageContent,
     canManageHR,
