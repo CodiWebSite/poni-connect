@@ -71,6 +71,8 @@ interface LeaveHistoryItem {
   status: string;
   details: any;
   created_at: string;
+  source?: 'hr_requests' | 'leave_requests';
+  request_number?: string;
 }
 
 interface LeaveCarryover {
@@ -98,6 +100,9 @@ const documentTypeLabels: Record<string, string> = {
 const leaveStatusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
   approved: { label: 'Aprobat', variant: 'default' },
   pending: { label: 'În așteptare', variant: 'secondary' },
+  pending_director: { label: 'Așteptare Director', variant: 'secondary' },
+  pending_department_head: { label: 'Așteptare Șef', variant: 'secondary' },
+  draft: { label: 'Ciornă', variant: 'secondary' },
   rejected: { label: 'Respins', variant: 'destructive' },
 };
 
@@ -128,17 +133,32 @@ const MyProfile = () => {
     if (!user) return;
     setLoading(true);
     
-    const [profileRes, recordRes, docsRes, leaveRes] = await Promise.all([
+    const [profileRes, recordRes, docsRes, leaveRes, leaveReqRes] = await Promise.all([
       supabase.from('profiles').select('full_name, department, position, phone, avatar_url, birth_date').eq('user_id', user.id).single(),
       supabase.from('employee_records').select('*').eq('user_id', user.id).single(),
       supabase.from('employee_documents').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('hr_requests').select('id, status, details, created_at').eq('user_id', user.id).eq('request_type', 'concediu').order('created_at', { ascending: false }),
+      supabase.from('leave_requests').select('id, status, start_date, end_date, working_days, year, request_number, created_at, replacement_name').eq('user_id', user.id).order('created_at', { ascending: false }),
     ]);
 
     if (profileRes.data) setProfile(profileRes.data);
     if (recordRes.data) setEmployeeRecord(recordRes.data);
     if (docsRes.data) setDocuments(docsRes.data);
-    if (leaveRes.data) setLeaveHistory(leaveRes.data);
+
+    // Merge leave history from both hr_requests and leave_requests
+    const hrItems: LeaveHistoryItem[] = (leaveRes.data || []).map((r: any) => ({
+      ...r, source: 'hr_requests' as const,
+    }));
+    const leaveReqItems: LeaveHistoryItem[] = (leaveReqRes.data || []).map((r: any) => ({
+      id: r.id,
+      status: r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending',
+      details: { startDate: r.start_date, endDate: r.end_date, numberOfDays: r.working_days, year: r.year, replacementName: r.replacement_name },
+      created_at: r.created_at,
+      source: 'leave_requests' as const,
+      request_number: r.request_number,
+    }));
+    const allHistory = [...hrItems, ...leaveReqItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setLeaveHistory(allHistory);
 
     if (recordRes.data) {
       const { data: pd } = await supabase
@@ -459,10 +479,14 @@ const MyProfile = () => {
                                   : 'Perioadă nespecificată'}
                               </p>
                               <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
+                              {leave.source === 'leave_requests' && leave.request_number && (
+                                <Badge variant="outline" className="text-[10px] font-mono">{leave.request_number}</Badge>
+                              )}
                               {details.manualEntry && <Badge variant="outline" className="text-[10px]">HR</Badge>}
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                               {details.numberOfDays && <span className="font-medium">{details.numberOfDays} zile</span>}
+                              {details.replacementName && <span>Înlocuitor: {details.replacementName}</span>}
                               <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
                             </div>
                             {details.notes && <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>}
