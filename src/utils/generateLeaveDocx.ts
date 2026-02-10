@@ -9,10 +9,6 @@ import {
   ImageRun,
   TabStopType,
   TabStopPosition,
-  Table,
-  TableRow as DocxTableRow,
-  TableCell,
-  WidthType,
   BorderStyle,
 } from 'docx';
 import { saveAs } from 'file-saver';
@@ -61,565 +57,351 @@ function formatDate(dateStr: string): string {
 }
 
 const FONT = 'Times New Roman';
-const noBorders = {
-  top: { style: BorderStyle.NONE, size: 0 },
-  bottom: { style: BorderStyle.NONE, size: 0 },
-  left: { style: BorderStyle.NONE, size: 0 },
-  right: { style: BorderStyle.NONE, size: 0 },
-};
+const SIZE = 24; // 12pt
+const SIZE_SMALL = 18; // 9pt
+const SIZE_HEADER = 20; // 10pt
+const RIGHT_TAB = TabStopPosition.MAX;
+
+function underlinedField(value: string | undefined | null, fallback: string): TextRun[] {
+  if (value) {
+    return [new TextRun({ text: value, bold: true, size: SIZE, font: FONT, underline: { type: UnderlineType.SINGLE } })];
+  }
+  return [new TextRun({ text: fallback, size: SIZE, font: FONT })];
+}
 
 export async function generateLeaveDocx(params: LeaveDocxParams) {
   const {
-    employeeName,
-    employeePosition,
-    department,
-    workingDays,
-    year,
-    startDate,
-    endDate,
-    replacementName,
-    replacementPosition,
-    requestDate,
-    requestNumber,
-    isApproved,
-    employeeSignature,
-    totalLeaveDays,
-    usedLeaveDays,
-    carryoverDays,
-    carryoverFromYear,
-    srusOfficerName,
+    employeeName, employeePosition, department, workingDays, year,
+    startDate, endDate, replacementName, replacementPosition,
+    requestDate, requestNumber, isApproved, employeeSignature,
+    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear, srusOfficerName,
   } = params;
 
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = endDate ? formatDate(endDate) : '';
 
-  // Fetch logo image
+  // Fetch logo
   let logoData: Uint8Array;
-  try {
-    logoData = await fetchImageAsUint8Array('/logo_doc.jpg');
-  } catch {
-    logoData = new Uint8Array(0);
-  }
+  try { logoData = await fetchImageAsUint8Array('/logo_doc.jpg'); } catch { logoData = new Uint8Array(0); }
 
-  // Parse employee signature if available
+  // Parse signature
   let signatureData: Uint8Array | null = null;
   if (employeeSignature) {
     try {
-      if (employeeSignature.startsWith('data:')) {
-        signatureData = base64ToUint8Array(employeeSignature);
-      } else {
-        signatureData = await fetchImageAsUint8Array(employeeSignature);
-      }
-    } catch {
-      signatureData = null;
-    }
+      signatureData = employeeSignature.startsWith('data:')
+        ? base64ToUint8Array(employeeSignature)
+        : await fetchImageAsUint8Array(employeeSignature);
+    } catch { signatureData = null; }
   }
 
-  // Calculate leave balance
   const totalDays = totalLeaveDays ?? 0;
   const carryover = carryoverDays ?? 0;
   const totalAvailable = totalDays + carryover;
 
-  // Period text
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
     : formattedStartDate;
 
-  // Right tab at ~14cm from left margin
-  const RIGHT_TAB = TabStopPosition.MAX;
+  const t = (text: string, opts: Partial<{ bold: boolean; italics: boolean; size: number; underline: any }> = {}) =>
+    new TextRun({ text, font: FONT, size: opts.size ?? SIZE, bold: opts.bold, italics: opts.italics, underline: opts.underline });
+
+  const tab = () => new TextRun({ text: '\t', font: FONT });
+  const empty = (after = 0) => new Paragraph({ spacing: { after }, children: [] });
 
   const doc = new Document({
-    sections: [
-      {
-        properties: {
-          page: {
-            margin: {
-              top: convertMillimetersToTwip(20),
-              right: convertMillimetersToTwip(20),
-              bottom: convertMillimetersToTwip(20),
-              left: convertMillimetersToTwip(25),
-            },
+    sections: [{
+      properties: {
+        page: {
+          margin: {
+            top: convertMillimetersToTwip(20),
+            right: convertMillimetersToTwip(20),
+            bottom: convertMillimetersToTwip(20),
+            left: convertMillimetersToTwip(25),
           },
         },
-        children: [
-          // ═══════════ HEADER ═══════════
-          // Logo + ACADEMIA ROMÂNĂ on same line
-          new Paragraph({
-            spacing: { after: 0 },
-            children: [
-              ...(logoData.length > 0
-                ? [
-                    new ImageRun({
-                      data: logoData,
-                      transformation: { width: 55, height: 55 },
-                      type: 'jpg',
-                    }),
-                    new TextRun({ text: '   ', size: 22, font: FONT }),
-                  ]
-                : []),
-              new TextRun({
-                text: 'ACADEMIA ROMÂNĂ',
-                bold: true,
-                size: 22,
-                font: FONT,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 0 },
-            indent: { left: convertMillimetersToTwip(18) },
-            children: [
-              new TextRun({
-                text: 'INSTITUTUL DE CHIMIE MACROMOLECULARĂ "PETRU PONI"',
-                bold: true,
-                size: 20,
-                font: FONT,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 200 },
-            indent: { left: convertMillimetersToTwip(18) },
-            children: [
-              new TextRun({
-                text: 'Aleea Grigore Ghica Vodă, nr. 41A, 700487 IAȘI, ROMANIA',
-                size: 18,
-                font: FONT,
-              }),
-            ],
-          }),
-
-          // ═══════════ ANEXA - LEFT ALIGNED ═══════════
-          new Paragraph({
-            spacing: { after: 200 },
-            tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-            children: [
-              new TextRun({
-                text: 'Anexa 11.2.-P.O. ICMPP-SRUS',
-                bold: true,
-                size: 20,
-                font: FONT,
-              }),
-              new TextRun({ text: '\t', font: FONT }),
-              new TextRun({
-                text: 'Se aprobă,',
-                size: 22,
-                font: FONT,
-              }),
-            ],
-          }),
-
-          // ═══════════ APPROVAL ROW ═══════════
-          new Paragraph({
-            spacing: { after: 0 },
-            tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-            children: [
-              new TextRun({ text: 'Aprobat,', size: 22, font: FONT }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 100 },
-            tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-            children: [
-              new TextRun({ text: 'Șef compartiment', bold: true, size: 22, font: FONT }),
-              new TextRun({ text: '\t', font: FONT }),
-              new TextRun({ text: 'DIRECTOR', bold: true, size: 26, font: FONT }),
-            ],
-          }),
-
-          // Signature placeholders for approvers
-          ...(isApproved
-            ? [
-                new Paragraph({
-                  spacing: { after: 200 },
-                  tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-                  children: [
-                    new TextRun({ text: '_______________', size: 20, font: FONT }),
-                    new TextRun({ text: '\t', font: FONT }),
-                    new TextRun({ text: '_______________', size: 20, font: FONT }),
-                  ],
-                }),
-              ]
-            : [
-                new Paragraph({
-                  spacing: { after: 200 },
-                  tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-                  children: [
-                    new TextRun({ text: '_______________', size: 20, font: FONT }),
-                    new TextRun({ text: '\t', font: FONT }),
-                    new TextRun({ text: '_______________', size: 20, font: FONT }),
-                  ],
-                }),
-              ]),
-
-          // ═══════════ TITLE ═══════════
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 300, after: 200 },
-            children: [
-              new TextRun({
-                text: 'Cerere concediu odihnă',
-                bold: true,
-                size: 28,
-                font: FONT,
-              }),
-            ],
-          }),
-
-          // ═══════════ SALUTATION ═══════════
-          new Paragraph({
-            spacing: { after: 200 },
-            alignment: AlignmentType.CENTER,
-            children: [
-              new TextRun({
-                text: 'Doamnă/Domnule Director,',
-                italics: true,
-                size: 24,
-                font: FONT,
-              }),
-            ],
-          }),
-
-          // ═══════════ BODY ═══════════
-          new Paragraph({
-            spacing: { after: 100, line: 360 },
-            children: [
-              new TextRun({ text: '\tSubsemnatul/a, ', size: 24, font: FONT }),
-              new TextRun({
-                text: employeeName || '______________________________',
-                bold: !!employeeName,
-                size: 24,
-                font: FONT,
-                underline: employeeName ? { type: UnderlineType.SINGLE } : undefined,
-              }),
-              new TextRun({ text: ', ', size: 24, font: FONT }),
-              new TextRun({
-                text: employeePosition || '_______________',
-                bold: !!employeePosition,
-                size: 24,
-                font: FONT,
-                underline: employeePosition ? { type: UnderlineType.SINGLE } : undefined,
-              }),
-              new TextRun({ text: ', în', size: 24, font: FONT }),
-            ],
-          }),
-          // (numele si prenumele) / (functia) labels
-          new Paragraph({
-            spacing: { after: 0 },
-            children: [
-              new TextRun({ text: '\t\t\t', font: FONT }),
-              new TextRun({ text: '(numele și prenumele)', italics: true, size: 18, font: FONT }),
-              new TextRun({ text: '\t\t\t\t', font: FONT }),
-              new TextRun({ text: '(funcția)', italics: true, size: 18, font: FONT }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 100, line: 360 },
-            children: [
-              new TextRun({ text: 'cadrul ', size: 24, font: FONT }),
-              new TextRun({
-                text: department || '______________________________',
-                bold: !!department,
-                size: 24,
-                font: FONT,
-                underline: department ? { type: UnderlineType.SINGLE } : undefined,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 100 },
-            children: [
-              new TextRun({ text: '\t\t', font: FONT }),
-              new TextRun({ text: '(compartimentul)', italics: true, size: 18, font: FONT }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 100, line: 360 },
-            children: [
-              new TextRun({
-                text: 'vă rog să-mi aprobați efectuarea unui număr de ',
-                size: 24,
-                font: FONT,
-              }),
-              new TextRun({
-                text: `${workingDays}`,
-                bold: true,
-                size: 24,
-                font: FONT,
-                underline: { type: UnderlineType.SINGLE },
-              }),
-              new TextRun({
-                text: ' zile de concediu de odihnă aferente',
-                size: 24,
-                font: FONT,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 100, line: 360 },
-            children: [
-              new TextRun({ text: 'anului ', size: 24, font: FONT }),
-              new TextRun({
-                text: `${year}`,
-                bold: true,
-                size: 24,
-                font: FONT,
-                underline: { type: UnderlineType.SINGLE },
-              }),
-              new TextRun({
-                text: ', începând cu data de ',
-                size: 24,
-                font: FONT,
-              }),
-              new TextRun({
-                text: periodText,
-                bold: true,
-                size: 24,
-                font: FONT,
-                underline: { type: UnderlineType.SINGLE },
-              }),
-              new TextRun({ text: '.', size: 24, font: FONT }),
-            ],
-          }),
-
-          // ═══════════ REPLACEMENT ═══════════
-          new Paragraph({
-            spacing: { after: 50, line: 360 },
-            children: [
-              new TextRun({
-                text: '\tÎn această perioadă voi fi înlocuit/ă de dl./d-na ',
-                size: 24,
-                font: FONT,
-              }),
-              new TextRun({
-                text: replacementName || '______________________________',
-                bold: !!replacementName,
-                size: 24,
-                font: FONT,
-                underline: replacementName ? { type: UnderlineType.SINGLE } : undefined,
-              }),
-              new TextRun({ text: ',', size: 24, font: FONT }),
-            ],
-          }),
-          // (numele si prenumele) label
-          new Paragraph({
-            spacing: { after: 0 },
-            alignment: AlignmentType.RIGHT,
-            children: [
-              new TextRun({ text: '(numele și prenumele)', italics: true, size: 18, font: FONT }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 100 },
-            children: [
-              new TextRun({
-                text: replacementPosition || '______________________________',
-                bold: !!replacementPosition,
-                size: 24,
-                font: FONT,
-                underline: replacementPosition ? { type: UnderlineType.SINGLE } : undefined,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 200 },
-            children: [
-              new TextRun({ text: '\t', font: FONT }),
-              new TextRun({ text: '(funcția)', italics: true, size: 18, font: FONT }),
-            ],
-          }),
-
-          // ═══════════ SIGNATURE SECTION ═══════════
-          new Paragraph({
-            spacing: { before: 200, after: 200 },
-            children: [
-              new TextRun({ text: '\tCu mulțumiri,', size: 24, font: FONT }),
-            ],
-          }),
-
-          // Date left, Name + signature right
-          new Paragraph({
-            spacing: { after: 50 },
-            tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-            children: [
-              new TextRun({ text: '______________________________', size: 24, font: FONT }),
-              new TextRun({ text: '\t', font: FONT }),
-              new TextRun({
-                text: employeeName || '______________________________',
-                bold: !!employeeName,
-                size: 24,
-                font: FONT,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 50 },
-            tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-            children: [
-              new TextRun({ text: '(data)', italics: true, size: 18, font: FONT }),
-              new TextRun({ text: '\t', font: FONT }),
-              new TextRun({ text: '(semnătura)', italics: true, size: 18, font: FONT }),
-            ],
-          }),
-
-          // Actual date value & signature image if available
-          ...(signatureData
-            ? [
-                new Paragraph({
-                  spacing: { after: 100 },
-                  tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-                  children: [
-                    new TextRun({ text: requestDate, size: 22, font: FONT }),
-                    new TextRun({ text: '\t', font: FONT }),
-                    new ImageRun({
-                      data: signatureData,
-                      transformation: { width: 130, height: 50 },
-                      type: 'png',
-                    }),
-                  ],
-                }),
-              ]
-            : [
-                new Paragraph({
-                  spacing: { after: 100 },
-                  children: [
-                    new TextRun({ text: requestDate, size: 22, font: FONT }),
-                  ],
-                }),
-              ]),
-
-          // ═══════════ SRUS SECTION (right-aligned block) ═══════════
-          new Paragraph({ spacing: { before: 400 }, children: [] }),
-
-          // Use right-indented paragraphs to simulate the SRUS box
-          new Paragraph({
-            spacing: { after: 50 },
-            indent: { left: convertMillimetersToTwip(80) },
-            children: [
-              new TextRun({ text: 'Propunem să aprobați,', size: 22, font: FONT }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 50 },
-            indent: { left: convertMillimetersToTwip(80) },
-            children: [
-              new TextRun({ text: 'La această dată dl./d-na ', size: 22, font: FONT }),
-              new TextRun({
-                text: employeeName || '_______________',
-                bold: !!employeeName,
-                size: 22,
-                font: FONT,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 50 },
-            indent: { left: convertMillimetersToTwip(80) },
-            children: [
-              new TextRun({
-                text: `are dreptul la `,
-                size: 22,
-                font: FONT,
-              }),
-              new TextRun({
-                text: totalAvailable > 0 ? `${totalAvailable}` : '_____',
-                bold: totalAvailable > 0,
-                size: 22,
-                font: FONT,
-              }),
-              new TextRun({
-                text: ' zile concediu de odihnă, din care',
-                size: 22,
-                font: FONT,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 50 },
-            indent: { left: convertMillimetersToTwip(80) },
-            children: [
-              new TextRun({
-                text: totalDays > 0 ? `${totalDays}` : '_______',
-                bold: totalDays > 0,
-                size: 22,
-                font: FONT,
-              }),
-              new TextRun({
-                text: ` aferente anului ${year} și `,
-                size: 22,
-                font: FONT,
-              }),
-              new TextRun({
-                text: carryover > 0 ? `${carryover}` : '______',
-                bold: carryover > 0,
-                size: 22,
-                font: FONT,
-              }),
-              new TextRun({
-                text: ` aferente anului`,
-                size: 22,
-                font: FONT,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 100 },
-            indent: { left: convertMillimetersToTwip(80) },
-            children: [
-              new TextRun({
-                text: carryoverFromYear ? `${carryoverFromYear}` : '_______',
-                bold: !!carryoverFromYear,
-                size: 22,
-                font: FONT,
-              }),
-              new TextRun({ text: '.', size: 22, font: FONT }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { before: 100, after: 0 },
-            indent: { left: convertMillimetersToTwip(80) },
-            children: [
-              new TextRun({
-                text: srusOfficerName || '______________________________',
-                bold: !!srusOfficerName,
-                size: 22,
-                font: FONT,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { after: 0 },
-            indent: { left: convertMillimetersToTwip(80) },
-            children: [
-              new TextRun({
-                text: '(numele salariatului de la SRUS)',
-                italics: true,
-                size: 18,
-                font: FONT,
-              }),
-            ],
-          }),
-          new Paragraph({
-            spacing: { before: 100 },
-            indent: { left: convertMillimetersToTwip(80) },
-            children: [
-              new TextRun({ text: '______________________________', size: 22, font: FONT }),
-            ],
-          }),
-          new Paragraph({
-            indent: { left: convertMillimetersToTwip(80) },
-            children: [
-              new TextRun({
-                text: '(semnătura)',
-                italics: true,
-                size: 18,
-                font: FONT,
-              }),
-            ],
-          }),
-        ],
       },
-    ],
+      children: [
+        // ══════ HEADER: Logo + Institution ══════
+        new Paragraph({
+          spacing: { after: 0 },
+          children: [
+            ...(logoData.length > 0 ? [
+              new ImageRun({ data: logoData, transformation: { width: 55, height: 55 }, type: 'jpg' }),
+              t('   '),
+            ] : []),
+            t('ACADEMIA ROMÂNĂ', { bold: true, size: 22 }),
+          ],
+        }),
+        new Paragraph({
+          spacing: { after: 0 },
+          indent: { left: convertMillimetersToTwip(18) },
+          children: [t('INSTITUTUL DE CHIMIE MACROMOLECULARĂ "PETRU PONI"', { bold: true, size: SIZE_HEADER })],
+        }),
+        new Paragraph({
+          spacing: { after: 200 },
+          indent: { left: convertMillimetersToTwip(18) },
+          children: [t('Aleea Grigore Ghica Vodă, nr. 41A, 700487 IAȘI, ROMANIA', { size: SIZE_SMALL })],
+        }),
+
+        // ══════ ANEXA left ══════
+        new Paragraph({
+          spacing: { after: 200 },
+          children: [t('Anexa 11.2.-P.O. ICMPP-SRUS', { bold: true, size: SIZE_HEADER })],
+        }),
+
+        // ══════ "Se aprobă," right-aligned ══════
+        new Paragraph({
+          spacing: { after: 200 },
+          alignment: AlignmentType.RIGHT,
+          children: [t('Se aprobă,')],
+        }),
+
+        // ══════ "Aprobat," left + "DIRECTOR" right ══════
+        new Paragraph({
+          spacing: { after: 0 },
+          tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
+          children: [
+            t('Aprobat,'),
+            tab(),
+            t('DIRECTOR', { bold: true }),
+          ],
+        }),
+        new Paragraph({
+          spacing: { after: 0 },
+          children: [t('Șef compartiment', { bold: true })],
+        }),
+
+        // Signature line for department head
+        new Paragraph({
+          spacing: { after: 300 },
+          children: [t('________________')],
+        }),
+
+        // ══════ TITLE ══════
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 100, after: 100 },
+          children: [t('Cerere concediu odihnă', { bold: true })],
+        }),
+
+        // ══════ SALUTATION ══════
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 200 },
+          children: [t('Doamnă/Domnule Director,', { italics: true })],
+        }),
+
+        // ══════ BODY LINE 1: Subsemnatul/a, _name_, _position_ în ══════
+        new Paragraph({
+          spacing: { after: 0, line: 360 },
+          children: [
+            t('\tSubsemnatul/a, '),
+            ...underlinedField(employeeName, '_____________________________'),
+            t(', '),
+            ...underlinedField(employeePosition, '________________________'),
+            t(' în'),
+          ],
+        }),
+        // Labels: (numele și prenumele)       (funcția)
+        new Paragraph({
+          spacing: { after: 0 },
+          tabStops: [{ type: TabStopType.CENTER, position: 3500 }, { type: TabStopType.CENTER, position: 7500 }],
+          children: [
+            tab(),
+            t('(numele și prenumele)', { italics: true, size: SIZE_SMALL }),
+            tab(),
+            t('(funcția)', { italics: true, size: SIZE_SMALL }),
+          ],
+        }),
+
+        // cadrul ____department____,
+        new Paragraph({
+          spacing: { after: 0, line: 360 },
+          children: [
+            t('cadrul '),
+            ...underlinedField(department, '_______________________________________________________________________'),
+            t(','),
+          ],
+        }),
+        // (compartimentul)
+        new Paragraph({
+          spacing: { after: 100 },
+          alignment: AlignmentType.CENTER,
+          children: [t('(compartimentul)', { italics: true, size: SIZE_SMALL })],
+        }),
+
+        // vă rog ... zile de concediu de odihnă aferente
+        new Paragraph({
+          spacing: { after: 0, line: 360 },
+          children: [
+            t('vă rog să-mi aprobați efectuarea unui număr de '),
+            t(`${workingDays}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
+            t(' zile de  concediu de odihnă aferente'),
+          ],
+        }),
+
+        // anului __year__, începând cu data de __period__.
+        new Paragraph({
+          spacing: { after: 200, line: 360 },
+          children: [
+            t('anului '),
+            t(`${year}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
+            t(', începând cu data de '),
+            t(periodText, { bold: true, underline: { type: UnderlineType.SINGLE } }),
+            t('.'),
+          ],
+        }),
+
+        // ══════ REPLACEMENT ══════
+        // În această perioadă voi fi înlocuit/ă de dl./d-na __name__,
+        new Paragraph({
+          spacing: { after: 0, line: 360 },
+          children: [
+            t('\tÎn această perioadă voi fi înlocuit/ă de dl./d-na '),
+            ...underlinedField(replacementName, '_____________________________'),
+            t(','),
+          ],
+        }),
+        // (numele și prenumele) right-aligned
+        new Paragraph({
+          spacing: { after: 0 },
+          alignment: AlignmentType.RIGHT,
+          children: [t('(numele și prenumele)', { italics: true, size: SIZE_SMALL })],
+        }),
+        // __replacementPosition__.
+        new Paragraph({
+          spacing: { after: 0 },
+          children: [
+            ...underlinedField(replacementPosition, '_____________________________'),
+            t('.'),
+          ],
+        }),
+        // (funcția)
+        new Paragraph({
+          spacing: { after: 200 },
+          children: [t('(funcția)', { italics: true, size: SIZE_SMALL })],
+        }),
+
+        // ══════ CLOSING ══════
+        // Cu mulțumiri,                    __name__
+        new Paragraph({
+          spacing: { before: 100, after: 0 },
+          tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
+          children: [
+            t('Cu mulțumiri,'),
+            tab(),
+            ...underlinedField(employeeName, '____________________________'),
+          ],
+        }),
+        // right-aligned (numele și prenumele)
+        new Paragraph({
+          spacing: { after: 100 },
+          alignment: AlignmentType.RIGHT,
+          children: [t('(numele și prenumele)', { italics: true, size: SIZE_SMALL })],
+        }),
+
+        // ___date___          ___signature___
+        new Paragraph({
+          spacing: { after: 0 },
+          tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
+          children: [
+            ...(signatureData ? [
+              t(requestDate),
+              tab(),
+              new ImageRun({ data: signatureData, transformation: { width: 120, height: 45 }, type: 'png' }),
+            ] : [
+              t('___________________'),
+              tab(),
+              t('___________________'),
+            ]),
+          ],
+        }),
+        // (data)          (semnătura)
+        new Paragraph({
+          spacing: { after: 0 },
+          tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
+          children: [
+            t('(data)', { italics: true, size: SIZE_SMALL }),
+            tab(),
+            t('(semnătura)', { italics: true, size: SIZE_SMALL }),
+          ],
+        }),
+
+        // If we have the actual date and no signature image, show date below
+        ...(signatureData ? [] : [
+          new Paragraph({
+            spacing: { after: 0 },
+            children: [t(requestDate, { size: 22 })],
+          }),
+        ]),
+
+        // ══════ SRUS SECTION (right-indented block) ══════
+        empty(400),
+
+        new Paragraph({
+          spacing: { after: 50 },
+          indent: { left: convertMillimetersToTwip(80) },
+          children: [t('Propunem să aprobați,', { size: 22 })],
+        }),
+        new Paragraph({
+          spacing: { after: 50 },
+          indent: { left: convertMillimetersToTwip(80) },
+          children: [
+            t('La această dată dl./d-na ', { size: 22 }),
+            t(employeeName || '_________________________', { bold: !!employeeName, size: 22 }),
+          ],
+        }),
+        new Paragraph({
+          spacing: { after: 50 },
+          indent: { left: convertMillimetersToTwip(80) },
+          children: [
+            t('are dreptul la ', { size: 22 }),
+            t(totalAvailable > 0 ? `${totalAvailable}` : '_____', { bold: totalAvailable > 0, size: 22 }),
+            t(' zile concediu de odihnă, din care', { size: 22 }),
+          ],
+        }),
+        new Paragraph({
+          spacing: { after: 50 },
+          indent: { left: convertMillimetersToTwip(80) },
+          children: [
+            t(totalDays > 0 ? `${totalDays}` : '_______', { bold: totalDays > 0, size: 22 }),
+            t(` aferente anului `, { size: 22 }),
+            t(`${year}`, { bold: true, size: 22 }),
+            t(' și ', { size: 22 }),
+            t(carryover > 0 ? `${carryover}` : '______', { bold: carryover > 0, size: 22 }),
+            t(' aferente anului', { size: 22 }),
+          ],
+        }),
+        new Paragraph({
+          spacing: { after: 100 },
+          indent: { left: convertMillimetersToTwip(80) },
+          children: [
+            t(carryoverFromYear ? `${carryoverFromYear}` : '_______', { bold: !!carryoverFromYear, size: 22 }),
+            t('.', { size: 22 }),
+          ],
+        }),
+        empty(50),
+        new Paragraph({
+          spacing: { after: 0 },
+          indent: { left: convertMillimetersToTwip(80) },
+          children: [t(srusOfficerName || '___________________', { bold: !!srusOfficerName, size: 22 })],
+        }),
+        new Paragraph({
+          spacing: { after: 0 },
+          indent: { left: convertMillimetersToTwip(80) },
+          children: [t('(numele salariatului de la SRUS)', { italics: true, size: SIZE_SMALL })],
+        }),
+        new Paragraph({
+          spacing: { before: 50 },
+          indent: { left: convertMillimetersToTwip(80) },
+          children: [t('___________________', { size: 22 })],
+        }),
+        new Paragraph({
+          indent: { left: convertMillimetersToTwip(80) },
+          children: [t('(semnătura)', { italics: true, size: SIZE_SMALL })],
+        }),
+      ],
+    }],
   });
 
   const blob = await Packer.toBlob(doc);
