@@ -859,6 +859,10 @@ const HRManagement = () => {
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">Import</span>
             </TabsTrigger>
+            <TabsTrigger value="changelog" className="gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Modificări</span>
+            </TabsTrigger>
           </TabsList>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={syncEmployees} disabled={syncing}>
@@ -1319,6 +1323,154 @@ const HRManagement = () => {
           <EmployeeImport />
           <LeaveCarryoverImport onImported={fetchEmployees} />
           <CIExpiryImport />
+        </TabsContent>
+
+        {/* Changelog Tab */}
+        <TabsContent value="changelog" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Modificări și Actualizări - Modul HR
+              </CardTitle>
+              <CardDescription>
+                Istoric al funcționalităților noi, actualizărilor și măsurilor de securitate implementate în modulul de Resurse Umane.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* v2.5 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-primary text-primary-foreground">v2.5</Badge>
+                  <span className="text-sm text-muted-foreground">Februarie 2026</span>
+                </div>
+                <div className="ml-4 space-y-2 border-l-2 border-primary/20 pl-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">🎁 Sold Suplimentar Concediu (Bonus Leave)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Se pot adăuga oricâte alocări suplimentare de concediu per angajat, fiecare cu motiv și bază legală 
+                      (ex: Legea 448/2006 pentru handicap, HG 250/1992 pentru vechime). Soldul total se calculează automat: 
+                      zile cuvenite + bonus + report - utilizate.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📥 Import Concedii Reportate 2025 → 2026</p>
+                    <p className="text-xs text-muted-foreground">
+                      Funcționalitate de import Excel/CSV pentru zilele de concediu rămase din 2025 care se reportează în 2026. 
+                      Potrivirea se face automat după CNP. Zilele reportate apar ca badge pe cardul angajatului.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📊 Raport Salarizare cu 2 Sheet-uri</p>
+                    <p className="text-xs text-muted-foreground">
+                      Exportul Excel „Raport salarizare" include acum un al doilea sheet cu totaluri per departament 
+                      pe fiecare lună (nr. angajați, total CO, utilizate, rămase, zile/lună).
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">🪪 CI în Documente Angajat</p>
+                    <p className="text-xs text-muted-foreground">
+                      Când se încarcă o scanare a Cărții de Identitate, aceasta apare automat și în secțiunea 
+                      „Documente" din profilul angajatului, accesibilă acestuia pentru descărcare.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* v2.4 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">v2.4</Badge>
+                  <span className="text-sm text-muted-foreground">Februarie 2026</span>
+                </div>
+                <div className="ml-4 space-y-2 border-l-2 border-muted-foreground/20 pl-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📥 Import Date Expirare CI</p>
+                    <p className="text-xs text-muted-foreground">
+                      Import în masă al datelor de expirare CI din Excel/CSV cu potrivire automată după CNP. 
+                      Înlocuiește funcționalitatea anterioară de OCR cu AI Vision.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">💰 Raport Salarizare (CO/lună)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Export Excel cu detalii complete per angajat: date personale, sold concediu și defalcare lunară 
+                      a zilelor și perioadelor de concediu pentru anul curent.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* v2.3 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">v2.3</Badge>
+                  <span className="text-sm text-muted-foreground">Ianuarie 2026</span>
+                </div>
+                <div className="ml-4 space-y-2 border-l-2 border-muted-foreground/20 pl-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">🔒 Securitate - RLS Policies</p>
+                    <p className="text-xs text-muted-foreground">
+                      Toate tabelele HR au politici Row-Level Security (RLS) active. Doar utilizatorii cu rolurile 
+                      hr, admin, super_admin sau director pot accesa și modifica datele angajaților. Angajații pot vedea 
+                      doar propriile date.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📋 Jurnal de Audit</p>
+                    <p className="text-xs text-muted-foreground">
+                      Toate acțiunile critice sunt înregistrate automat: import angajați, modificări date personale, 
+                      încărcare CI, ștergere/arhivare angajați, înregistrare concedii manuale, import în masă. 
+                      Fiecare intrare conține cine, ce, când și detalii complete.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">🗂️ Arhivare Angajați</p>
+                    <p className="text-xs text-muted-foreground">
+                      Angajații pot fi arhivați (soft delete) cu posibilitate de restaurare. Datele arhivate sunt 
+                      păstrate dar nu apar în listele active. Include motiv și timestamp.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">👤 Editare Completă Date Personale</p>
+                    <p className="text-xs text-muted-foreground">
+                      HR-ul poate edita toate câmpurile: email, CNP, CI (serie, număr, emitent, data eliberării, 
+                      data expirării), adresă completă, departament, funcție, tip contract, sold concediu. 
+                      Se urmărește automat cine a făcut ultima modificare.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📄 Gestionare Documente</p>
+                    <p className="text-xs text-muted-foreground">
+                      Încărcare și gestionare documente per angajat (CI, contracte, adeverințe). Fișierele sunt 
+                      stocate securizat cu acces controlat prin politici de storage.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📅 Calendar Concedii</p>
+                    <p className="text-xs text-muted-foreground">
+                      Vizualizare calendar cu toate concediile angajaților, incluzând sărbătorile legale și 
+                      zilele libere personalizate. Filtrare după departament disponibilă.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📊 Export Rapoarte Excel</p>
+                    <p className="text-xs text-muted-foreground">
+                      Multiple tipuri de rapoarte exportabile: cereri concediu, toate cererile HR, sold concedii, 
+                      lista angajați, angajați fără cont. Toate în format Excel (.xlsx).
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">🔄 Sincronizare Automată</p>
+                    <p className="text-xs text-muted-foreground">
+                      La înregistrarea unui angajat cu email existent în sistemul de import, datele se sincronizează 
+                      automat: profil, departament, funcție, sold concediu. Funcționează și manual prin butonul Sincronizează.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
