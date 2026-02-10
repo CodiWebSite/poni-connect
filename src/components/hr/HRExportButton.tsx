@@ -262,10 +262,41 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         return row;
       });
 
+      // Build department sheets - only real departments
+      const departments = [...new Set(
+        employees
+          .filter(e => e.department && e.department.trim() !== '')
+          .map(e => e.department!)
+      )].sort();
+
+      const departmentSheets = departments.map(dept => {
+        const deptEmployees = employees.filter(e => e.department === dept);
+        const deptData = deptEmployees.map(e => {
+          const leaves = e.leaveHistory || [];
+          const row: Record<string, any> = {
+            'Nume': e.full_name,
+            'Funcție': e.position || '-',
+            'Total Zile CO': e.record?.total_leave_days ?? 21,
+            'Zile Utilizate': e.record?.used_leave_days ?? 0,
+            'Zile Rămase': (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0),
+          };
+
+          for (let m = 0; m < 12; m++) {
+            const days = leaves.reduce((sum, l) => sum + getWorkingDaysInMonth(l.startDate, l.endDate, m, currentYear), 0);
+            const periods = getPeriodsInMonth(leaves, m, currentYear);
+            row[`${MONTH_NAMES[m]} - Zile`] = days || '';
+            row[`${MONTH_NAMES[m]} - Perioade`] = periods;
+          }
+
+          return row;
+        });
+
+        return { name: dept.substring(0, 31), data: deptData };
+      });
+
       // Build department summary sheet
-      const departments = [...new Set(employees.map(e => e.department || 'Fără departament'))].sort();
       const deptSummary = departments.map(dept => {
-        const deptEmployees = employees.filter(e => (e.department || 'Fără departament') === dept);
+        const deptEmployees = employees.filter(e => e.department === dept);
         const row: Record<string, any> = {
           'Departament': dept,
           'Nr. Angajați': deptEmployees.length,
@@ -289,6 +320,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         [
           { name: 'Salarizare', data },
           { name: 'Total per Departament', data: deptSummary },
+          ...departmentSheets,
         ],
         `raport_salarizare_${currentYear}`
       );
