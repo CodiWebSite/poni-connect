@@ -262,8 +262,37 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         return row;
       });
 
-      downloadExcel(data, `raport_salarizare_${currentYear}`, 'Salarizare');
-      toast({ title: 'Export realizat', description: `Raport salarizare cu ${data.length} angajați exportat.` });
+      // Build department summary sheet
+      const departments = [...new Set(employees.map(e => e.department || 'Fără departament'))].sort();
+      const deptSummary = departments.map(dept => {
+        const deptEmployees = employees.filter(e => (e.department || 'Fără departament') === dept);
+        const row: Record<string, any> = {
+          'Departament': dept,
+          'Nr. Angajați': deptEmployees.length,
+          'Total Zile CO': deptEmployees.reduce((s, e) => s + (e.record?.total_leave_days ?? 21), 0),
+          'Total Utilizate': deptEmployees.reduce((s, e) => s + (e.record?.used_leave_days ?? 0), 0),
+          'Total Rămase': deptEmployees.reduce((s, e) => s + ((e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0)), 0),
+        };
+
+        for (let m = 0; m < 12; m++) {
+          const monthDays = deptEmployees.reduce((sum, e) => {
+            const leaves = e.leaveHistory || [];
+            return sum + leaves.reduce((s, l) => s + getWorkingDaysInMonth(l.startDate, l.endDate, m, currentYear), 0);
+          }, 0);
+          row[`${MONTH_NAMES[m]}`] = monthDays || '';
+        }
+
+        return row;
+      });
+
+      downloadExcelMultiSheet(
+        [
+          { name: 'Salarizare', data },
+          { name: 'Total per Departament', data: deptSummary },
+        ],
+        `raport_salarizare_${currentYear}`
+      );
+      toast({ title: 'Export realizat', description: `Raport salarizare cu ${data.length} angajați și ${departments.length} departamente exportat.` });
     } finally {
       setExporting(null);
     }
