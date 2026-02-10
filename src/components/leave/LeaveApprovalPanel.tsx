@@ -33,9 +33,10 @@ interface LeaveRequest {
 
 interface LeaveApprovalPanelProps {
   onUpdated: () => void;
+  debugPerspective?: 'director' | 'sef';
 }
 
-export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
+export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprovalPanelProps) {
   const { user } = useAuth();
   const { role } = useUserRole();
   const { toast } = useToast();
@@ -47,13 +48,18 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const [rejectionReason, setRejectionReason] = useState('');
   const [detailsDialog, setDetailsDialog] = useState<LeaveRequest | null>(null);
 
-  const isDirector = role === 'director_institut' || role === 'director_adjunct';
-  const isDeptHead = role === 'sef' || role === 'sef_srus';
-  const relevantStatus = isDirector ? 'pending_director' : isDeptHead ? 'pending_department_head' : null;
+  // Use debug perspective if provided, otherwise use actual role
+  const isDirector = debugPerspective === 'director' || role === 'director_institut' || role === 'director_adjunct';
+  const isDeptHead = debugPerspective === 'sef' || role === 'sef' || role === 'sef_srus';
+  const relevantStatus = debugPerspective === 'director' ? 'pending_director' 
+    : debugPerspective === 'sef' ? 'pending_department_head'
+    : isDirector ? 'pending_director' 
+    : isDeptHead ? 'pending_department_head' 
+    : null;
 
   useEffect(() => {
     fetchPendingRequests();
-  }, [role]);
+  }, [role, debugPerspective]);
 
   const fetchPendingRequests = async () => {
     if (!relevantStatus) {
