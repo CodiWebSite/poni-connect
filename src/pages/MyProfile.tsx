@@ -12,6 +12,7 @@ import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestFor
 import { 
   User, FileText, Download, Calendar, Briefcase, Building, Phone,
   Loader2, MapPin, CreditCard, Hash, History, Mail, BadgeCheck, AlertTriangle, Camera,
+  Gift, ArrowRightLeft, Scale,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
@@ -72,9 +73,26 @@ interface LeaveHistoryItem {
   created_at: string;
 }
 
+interface LeaveCarryover {
+  from_year: number;
+  to_year: number;
+  initial_days: number;
+  used_days: number;
+  remaining_days: number;
+}
+
+interface LeaveBonus {
+  id: string;
+  year: number;
+  bonus_days: number;
+  reason: string;
+  legal_basis: string | null;
+}
+
 const documentTypeLabels: Record<string, string> = {
   cv: 'CV', contract: 'Contract de Muncă', anexa: 'Anexă Contract',
-  certificat: 'Certificat', diploma: 'Diplomă', adeverinta: 'Adeverință', altele: 'Altele'
+  certificat: 'Certificat', diploma: 'Diplomă', adeverinta: 'Adeverință',
+  carte_identitate: 'Carte de Identitate', altele: 'Altele'
 };
 
 const leaveStatusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
@@ -97,6 +115,8 @@ const MyProfile = () => {
   const [personalData, setPersonalData] = useState<PersonalData | null>(null);
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistoryItem[]>([]);
+  const [carryovers, setCarryovers] = useState<LeaveCarryover[]>([]);
+  const [bonuses, setBonuses] = useState<LeaveBonus[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -126,7 +146,16 @@ const MyProfile = () => {
         .select('*')
         .eq('employee_record_id', recordRes.data.id)
         .maybeSingle();
-      if (pd) setPersonalData(pd);
+      if (pd) {
+        setPersonalData(pd);
+        // Fetch carryover and bonus data using EPD id
+        const [carryRes, bonusRes] = await Promise.all([
+          supabase.from('leave_carryover').select('from_year, to_year, initial_days, used_days, remaining_days').eq('employee_personal_data_id', pd.id).order('from_year', { ascending: false }),
+          supabase.from('leave_bonus').select('id, year, bonus_days, reason, legal_basis').eq('employee_personal_data_id', pd.id).eq('year', new Date().getFullYear()),
+        ]);
+        setCarryovers((carryRes.data as LeaveCarryover[]) || []);
+        setBonuses((bonusRes.data as LeaveBonus[]) || []);
+      }
     }
 
     setLoading(false);
@@ -343,6 +372,52 @@ const MyProfile = () => {
                       </div>
                       <Progress value={leaveProgress} className="h-2.5" />
                     </div>
+
+                    {/* Carryover info */}
+                    {carryovers.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                          <ArrowRightLeft className="w-3.5 h-3.5" />
+                          Concedii Reportate
+                        </p>
+                        {carryovers.map((c, i) => (
+                          <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/15">
+                            <div>
+                              <p className="text-sm font-medium">Report {c.from_year} → {c.to_year}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Inițial: {c.initial_days} • Utilizate: {c.used_days} • Rămase: {c.remaining_days}
+                              </p>
+                            </div>
+                            <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                              {c.remaining_days} zile
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Bonus leave info */}
+                    {bonuses.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                          <Gift className="w-3.5 h-3.5" />
+                          Sold Suplimentar {new Date().getFullYear()}
+                        </p>
+                        {bonuses.map((b) => (
+                          <div key={b.id} className="flex items-center justify-between p-2.5 rounded-lg bg-primary/5 border border-primary/15">
+                            <div>
+                              <p className="text-sm font-medium">+{b.bonus_days} zile — {b.reason}</p>
+                              {b.legal_basis && (
+                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                  <Scale className="w-3 h-3" />
+                                  {b.legal_basis}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
