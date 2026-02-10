@@ -75,6 +75,9 @@ const LeaveCalendar = () => {
     setCustomHolidays(holidayMap);
 
     const { data: allLeaves } = await supabase.from('hr_requests').select('user_id, details').eq('request_type', 'concediu').eq('status', 'approved');
+    // Also fetch approved leave_requests
+    const { data: leaveReqs } = await supabase.from('leave_requests').select('user_id, epd_id, start_date, end_date, status').eq('status', 'approved' as any);
+
     const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department');
     const { data: epdData } = await supabase.from('employee_personal_data').select('id, first_name, last_name, department').eq('is_archived', false);
 
@@ -87,6 +90,8 @@ const LeaveCalendar = () => {
     const monthEnd = endOfMonth(currentMonth);
 
     const entries: DepartmentLeave[] = [];
+
+    // Process hr_requests leaves
     (allLeaves || []).forEach((lr: any) => {
       const d = lr.details || {};
       if (!d.startDate || !d.endDate) return;
@@ -103,6 +108,28 @@ const LeaveCalendar = () => {
       const isCurrentUser = lr.user_id === user.id;
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
         entries.push({ employeeName: empInfo.name, startDate: d.startDate, endDate: d.endDate, leaveType: d.leaveType || d.leave_type || 'co', isCurrentUser });
+      }
+    });
+
+    // Process leave_requests
+    (leaveReqs || []).forEach((lr: any) => {
+      if (!lr.start_date || !lr.end_date) return;
+      const leaveStart = parseISO(lr.start_date);
+      const leaveEnd = parseISO(lr.end_date);
+      if (leaveEnd < monthStart || leaveStart > monthEnd) return;
+
+      let empInfo: { name: string; department: string | null } | undefined;
+      if (lr.epd_id && epdMap[lr.epd_id]) empInfo = epdMap[lr.epd_id];
+      else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      if (!empInfo) return;
+
+      // Avoid duplicates (same employee, overlapping period)
+      const isDuplicate = entries.some(e => e.employeeName === empInfo!.name && e.startDate === lr.start_date && e.endDate === lr.end_date);
+      if (isDuplicate) return;
+
+      const isCurrentUser = lr.user_id === user.id;
+      if (isCurrentUser || (userDept && empInfo.department === userDept)) {
+        entries.push({ employeeName: empInfo.name, startDate: lr.start_date, endDate: lr.end_date, leaveType: 'co', isCurrentUser });
       }
     });
 

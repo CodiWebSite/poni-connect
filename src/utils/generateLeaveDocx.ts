@@ -191,21 +191,21 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
             ],
           }),
 
-          // Approval section
+          // Approval section - Aprobat/Sef compartiment LEFT, Se aproba/DIRECTOR RIGHT
           new Paragraph({
             spacing: { after: 0 },
             children: [
-              new TextRun({ text: 'Se aprobă,', size: 22, font: 'Times New Roman' }),
-              new TextRun({ text: '\t\t\t\t\t\t\t' }),
               new TextRun({ text: 'Aprobat,', size: 22, font: 'Times New Roman' }),
+              new TextRun({ text: '\t\t\t\t\t\t\t' }),
+              new TextRun({ text: 'Se aprobă,', size: 22, font: 'Times New Roman' }),
             ],
           }),
           new Paragraph({
             spacing: { after: 400 },
             children: [
-              new TextRun({ text: 'DIRECTOR', bold: true, size: 22, font: 'Times New Roman' }),
-              new TextRun({ text: '\t\t\t\t\t\t\t' }),
               new TextRun({ text: 'Șef compartiment', bold: true, size: 22, font: 'Times New Roman' }),
+              new TextRun({ text: '\t\t\t\t\t\t\t' }),
+              new TextRun({ text: 'DIRECTOR', bold: true, size: 22, font: 'Times New Roman' }),
             ],
           }),
 

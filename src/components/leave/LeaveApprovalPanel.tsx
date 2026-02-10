@@ -101,14 +101,29 @@ export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprova
       });
     }
 
-    setRequests(
-      (data || []).map(r => ({
-        ...r,
-        employee_name: epdMap[r.epd_id]?.name || 'N/A',
-        employee_department: epdMap[r.epd_id]?.department || '',
-        employee_position: epdMap[r.epd_id]?.position || '',
-      }))
-    );
+    let enrichedRequests = (data || []).map(r => ({
+      ...r,
+      employee_name: epdMap[r.epd_id]?.name || 'N/A',
+      employee_department: epdMap[r.epd_id]?.department || '',
+      employee_position: epdMap[r.epd_id]?.position || '',
+    }));
+
+    // For dept heads (non-debug), filter to show only requests from their own department
+    if (isDeptHead && !debugPerspective && user) {
+      const { data: myProfile } = await supabase
+        .from('profiles')
+        .select('department')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (myProfile?.department) {
+        enrichedRequests = enrichedRequests.filter(
+          r => r.employee_department.toLowerCase() === myProfile.department!.toLowerCase()
+        );
+      }
+    }
+
+    setRequests(enrichedRequests);
     setLoading(false);
   };
 
