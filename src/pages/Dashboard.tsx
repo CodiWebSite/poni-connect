@@ -22,7 +22,7 @@ const Dashboard = () => {
   }, [role]);
 
   const fetchData = async () => {
-    const { count } = await supabase.from('employee_personal_data').select('*', { count: 'exact', head: true });
+    const { count } = await supabase.from('employee_personal_data').select('*', { count: 'exact', head: true }).eq('is_archived', false);
     setStats({ employees: count || 0 });
   };
 
