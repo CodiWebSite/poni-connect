@@ -196,7 +196,9 @@ const HRManagement = () => {
   }, [canManageHR]);
 
   const fetchDepartmentHeads = async () => {
-    // Get all users with 'sef' or 'sef_srus' roles
+    const headEmails = new Set<string>();
+
+    // 1. Get users with 'sef' or 'sef_srus' roles who have accounts
     const { data: sefRoles } = await supabase
       .from('user_roles')
       .select('user_id')
@@ -204,14 +206,6 @@ const HRManagement = () => {
 
     if (sefRoles && sefRoles.length > 0) {
       const userIds = sefRoles.map(r => r.user_id);
-      // Get their emails from auth via profiles matching
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', userIds);
-
-      // Match to employee_personal_data by looking up auth emails
-      // We'll use the profile user_ids to find corresponding employee_personal_data
       const { data: records } = await supabase
         .from('employee_records')
         .select('user_id, id')
@@ -224,11 +218,19 @@ const HRManagement = () => {
           .select('email')
           .in('employee_record_id', recordIds);
 
-        if (epdData) {
-          setDepartmentHeadEmails(new Set(epdData.map(e => e.email.toLowerCase())));
-        }
+        (epdData || []).forEach(e => headEmails.add(e.email.toLowerCase()));
       }
     }
+
+    // 2. Also check pre_assigned_roles for 'sef' or 'sef_srus' (employees without accounts yet)
+    const { data: preAssigned } = await supabase
+      .from('pre_assigned_roles')
+      .select('email')
+      .in('role', ['sef', 'sef_srus'] as any[]);
+
+    (preAssigned || []).forEach(p => headEmails.add(p.email.toLowerCase()));
+
+    setDepartmentHeadEmails(headEmails);
   };
 
   const fetchEmployees = async () => {
