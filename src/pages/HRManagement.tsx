@@ -1446,6 +1446,29 @@ const HRManagement = () => {
                       „Documente" din profilul angajatului, accesibilă acestuia pentru descărcare.
                     </p>
                   </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📊 Raport Salarizare – Sheet-uri per Departament</p>
+                    <p className="text-xs text-muted-foreground">
+                      Raportul de salarizare Excel include acum câte un sheet separat pentru fiecare departament, 
+                      cu lista angajaților, zilele de concediu și perioadele defalcate pe luni. Angajații fără departament 
+                      sunt excluși din sheet-urile departamentale.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">🔍 Filtru și Redenumire Departamente</p>
+                    <p className="text-xs text-muted-foreground">
+                      În tab-ul Angajați s-a adăugat un dropdown de filtrare pe departament. La selectarea unui departament, 
+                      apare un buton „Redenumește" care permite modificarea numelui departamentului pentru toți angajații 
+                      simultan, cu reflectare automată în profiluri și rapoarte.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">👤 Sold Reportat și Bonus în Profilul Meu</p>
+                    <p className="text-xs text-muted-foreground">
+                      Fiecare angajat poate vedea în pagina „Profilul Meu" zilele de concediu reportate din anul anterior 
+                      și bonusurile acordate (cu motiv și bază legală), alături de soldul curent.
+                    </p>
+                  </div>
                 </div>
               </div>
 
