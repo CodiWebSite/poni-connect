@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 
 import { EmployeeImport } from '@/components/hr/EmployeeImport';
 import { CIExpiryImport } from '@/components/hr/CIExpiryImport';
+import { LeaveCarryoverImport } from '@/components/hr/LeaveCarryoverImport';
+import { LeaveBonusManager } from '@/components/hr/LeaveBonusManager';
 import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
 import { CorrectionRequestsManager } from '@/components/hr/CorrectionRequestsManager';
 import HRExportButton from '@/components/hr/HRExportButton';
@@ -47,7 +49,8 @@ import {
   UserX,
   Archive,
   RotateCcw,
-  History
+  History,
+  Gift
 } from 'lucide-react';
 import { format, isWeekend, eachDayOfInterval, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -104,6 +107,8 @@ interface EmployeeWithData {
   archive_reason?: string;
   archived_by_name?: string;
   leaveHistory?: { startDate: string; endDate: string; numberOfDays: number }[];
+  carryoverDays?: number;
+  bonusDays?: number;
 }
 
 const documentTypes = [
@@ -171,6 +176,7 @@ const HRManagement = () => {
   const [leaveHistoryEmployee, setLeaveHistoryEmployee] = useState<EmployeeWithData | null>(null);
   const [customHolidayDates, setCustomHolidayDates] = useState<string[]>([]);
   const [customHolidayNames, setCustomHolidayNames] = useState<Record<string, string>>({});
+  const [bonusEmployee, setBonusEmployee] = useState<EmployeeWithData | null>(null);
 
   useEffect(() => {
     if (canManageHR) {
@@ -229,6 +235,28 @@ const HRManagement = () => {
       }
     });
 
+    // Fetch carryover and bonus data
+    const currentYear = new Date().getFullYear();
+    const { data: carryovers } = await supabase
+      .from('leave_carryover')
+      .select('employee_personal_data_id, remaining_days')
+      .eq('to_year', currentYear);
+
+    const { data: bonusesData } = await supabase
+      .from('leave_bonus')
+      .select('employee_personal_data_id, bonus_days')
+      .eq('year', currentYear);
+
+    const carryoverMap: Record<string, number> = {};
+    (carryovers || []).forEach((c: any) => {
+      carryoverMap[c.employee_personal_data_id] = (carryoverMap[c.employee_personal_data_id] || 0) + c.remaining_days;
+    });
+
+    const bonusMap: Record<string, number> = {};
+    (bonusesData || []).forEach((b: any) => {
+      bonusMap[b.employee_personal_data_id] = (bonusMap[b.employee_personal_data_id] || 0) + b.bonus_days;
+    });
+
     // Fetch updater names
     const updaterIds = [...new Set((personalData || []).map((pd: any) => pd.last_updated_by).filter(Boolean))];
     let updaterNames: Record<string, string> = {};
@@ -269,6 +297,8 @@ const HRManagement = () => {
           ...(record?.user_id ? (leavesByUserId[record.user_id] || []) : []),
           ...(leavesByEpdId[pd.id] || []),
         ].sort((a, b) => (b.startDate || '').localeCompare(a.startDate || '')),
+        carryoverDays: carryoverMap[pd.id] || 0,
+        bonusDays: bonusMap[pd.id] || 0,
       };
     }) || [];
 
@@ -802,7 +832,7 @@ const HRManagement = () => {
   }
 
   const employeesWithAccounts = employees.filter(e => e.hasAccount);
-  const remainingLeave = (emp: EmployeeWithData) => emp.total_leave_days - emp.used_leave_days;
+  const remainingLeave = (emp: EmployeeWithData) => emp.total_leave_days + (emp.carryoverDays || 0) + (emp.bonusDays || 0) - emp.used_leave_days;
 
   return (
     <MainLayout title="Gestiune HR" description="Administrare date angajați - Confidențial">
@@ -1003,6 +1033,17 @@ const HRManagement = () => {
                                 <Calendar className="w-3 h-3 mr-1" />
                                 {remainingLeave(employee)} zile disponibile
                               </Badge>
+                              {(employee.carryoverDays || 0) > 0 && (
+                                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                                  +{employee.carryoverDays} report 2025
+                                </Badge>
+                              )}
+                              {(employee.bonusDays || 0) > 0 && (
+                                <Badge variant="outline" className="text-xs text-primary border-primary/30">
+                                  <Gift className="w-3 h-3 mr-1" />
+                                  +{employee.bonusDays} bonus
+                                </Badge>
+                              )}
                               {employee.employment_date && (
                                 <Badge variant="outline" className="text-xs">
                                   Angajat: {format(new Date(employee.employment_date), 'dd MMM yyyy', { locale: ro })}
@@ -1104,6 +1145,14 @@ const HRManagement = () => {
                           >
                             <CreditCard className="w-4 h-4 mr-1" />
                             Date CI
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setBonusEmployee(employee)}
+                          >
+                            <Gift className="w-4 h-4 mr-1" />
+                            Sold+
                           </Button>
                           <Button
                             variant="outline"
@@ -1268,6 +1317,7 @@ const HRManagement = () => {
         {/* Import Tab */}
         <TabsContent value="import" className="space-y-6">
           <EmployeeImport />
+          <LeaveCarryoverImport onImported={fetchEmployees} />
           <CIExpiryImport />
         </TabsContent>
       </Tabs>
@@ -1813,6 +1863,17 @@ const HRManagement = () => {
         employeeRecordId={leaveHistoryEmployee?.employee_record_id || null}
         onChanged={fetchEmployees}
       />
+
+      {/* Leave Bonus Manager Dialog */}
+      {bonusEmployee && (
+        <LeaveBonusManager
+          employeePersonalDataId={bonusEmployee.id}
+          employeeName={bonusEmployee.full_name}
+          open={!!bonusEmployee}
+          onOpenChange={(open) => !open && setBonusEmployee(null)}
+          onSaved={fetchEmployees}
+        />
+      )}
     </MainLayout>
   );
 };

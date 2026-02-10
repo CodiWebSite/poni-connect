@@ -551,6 +551,84 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_bonus: {
+        Row: {
+          bonus_days: number
+          created_at: string
+          created_by: string | null
+          employee_personal_data_id: string
+          id: string
+          legal_basis: string | null
+          reason: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          bonus_days?: number
+          created_at?: string
+          created_by?: string | null
+          employee_personal_data_id: string
+          id?: string
+          legal_basis?: string | null
+          reason: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          bonus_days?: number
+          created_at?: string
+          created_by?: string | null
+          employee_personal_data_id?: string
+          id?: string
+          legal_basis?: string | null
+          reason?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      leave_carryover: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          employee_personal_data_id: string
+          from_year: number
+          id: string
+          initial_days: number
+          notes: string | null
+          remaining_days: number
+          to_year: number
+          updated_at: string
+          used_days: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          employee_personal_data_id: string
+          from_year: number
+          id?: string
+          initial_days?: number
+          notes?: string | null
+          remaining_days?: number
+          to_year: number
+          updated_at?: string
+          used_days?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          employee_personal_data_id?: string
+          from_year?: number
+          id?: string
+          initial_days?: number
+          notes?: string | null
+          remaining_days?: number
+          to_year?: number
+          updated_at?: string
+          used_days?: number
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
