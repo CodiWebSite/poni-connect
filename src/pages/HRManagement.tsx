@@ -127,7 +127,7 @@ const HRManagement = () => {
   const { toast } = useToast();
   
   const [employees, setEmployees] = useState<EmployeeWithData[]>([]);
-  const [departmentHeadEmails, setDepartmentHeadEmails] = useState<Set<string>>(new Set());
+  const [departmentHeadEmails, setDepartmentHeadEmails] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [accountFilter, setAccountFilter] = useState<'all' | 'with_account' | 'without_account'>('all');
@@ -197,16 +197,39 @@ const HRManagement = () => {
 
   const leadershipRoles = ['sef', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'hr', 'super_admin'];
 
+  const leadershipRoleLabels: Record<string, string> = {
+    super_admin: 'Super Admin',
+    director_institut: 'Director',
+    director_adjunct: 'Dir. Adjunct',
+    secretar_stiintific: 'Secretar Șt.',
+    sef_srus: 'Șef SRUS',
+    sef: 'Șef Dept.',
+    hr: 'HR',
+  };
+
+  const leadershipRoleColors: Record<string, string> = {
+    super_admin: 'bg-destructive text-destructive-foreground',
+    director_institut: 'bg-indigo-700 text-white',
+    director_adjunct: 'bg-indigo-500 text-white',
+    secretar_stiintific: 'bg-teal-600 text-white',
+    sef_srus: 'bg-blue-600 text-white',
+    sef: 'bg-amber-600 text-white',
+    hr: 'bg-purple-500 text-white',
+  };
+
   const fetchDepartmentHeads = async () => {
-    const headEmails = new Set<string>();
+    const headMap = new Map<string, string>();
 
     // 1. Get users with leadership roles who have accounts
     const { data: sefRoles } = await supabase
       .from('user_roles')
-      .select('user_id')
+      .select('user_id, role')
       .in('role', leadershipRoles as any[]);
 
     if (sefRoles && sefRoles.length > 0) {
+      const userRoleMap = new Map<string, string>();
+      sefRoles.forEach(r => userRoleMap.set(r.user_id, r.role));
+      
       const userIds = sefRoles.map(r => r.user_id);
       const { data: records } = await supabase
         .from('employee_records')
@@ -214,25 +237,36 @@ const HRManagement = () => {
         .in('user_id', userIds);
 
       if (records) {
+        const recordToUser = new Map<string, string>();
+        records.forEach(r => recordToUser.set(r.id, r.user_id));
+        
         const recordIds = records.map(r => r.id);
         const { data: epdData } = await supabase
           .from('employee_personal_data')
-          .select('email')
+          .select('email, employee_record_id')
           .in('employee_record_id', recordIds);
 
-        (epdData || []).forEach(e => headEmails.add(e.email.toLowerCase()));
+        (epdData || []).forEach(e => {
+          const userId = recordToUser.get(e.employee_record_id || '');
+          const role = userId ? userRoleMap.get(userId) : undefined;
+          if (role) headMap.set(e.email.toLowerCase(), role);
+        });
       }
     }
 
-    // 2. Also check pre_assigned_roles for leadership roles (employees without accounts yet)
+    // 2. Also check pre_assigned_roles for leadership roles
     const { data: preAssigned } = await supabase
       .from('pre_assigned_roles')
-      .select('email')
+      .select('email, role')
       .in('role', leadershipRoles as any[]);
 
-    (preAssigned || []).forEach(p => headEmails.add(p.email.toLowerCase()));
+    (preAssigned || []).forEach(p => {
+      if (!headMap.has(p.email.toLowerCase())) {
+        headMap.set(p.email.toLowerCase(), p.role);
+      }
+    });
 
-    setDepartmentHeadEmails(headEmails);
+    setDepartmentHeadEmails(headMap);
   };
 
   const fetchEmployees = async () => {
@@ -1136,11 +1170,14 @@ const HRManagement = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="font-semibold text-foreground">{employee.full_name}</p>
-                              {departmentHeadEmails.has(employee.email.toLowerCase()) && (
-                                <Badge className="text-xs bg-amber-600 text-white">
-                                  Șef
-                                </Badge>
-                              )}
+                              {departmentHeadEmails.has(employee.email.toLowerCase()) && (() => {
+                                const role = departmentHeadEmails.get(employee.email.toLowerCase()) || 'sef';
+                                return (
+                                  <Badge className={`text-xs ${leadershipRoleColors[role] || 'bg-amber-600 text-white'}`}>
+                                    {leadershipRoleLabels[role] || 'Șef'}
+                                  </Badge>
+                                );
+                              })()}
                               {employee.hasAccount ? (
                                 <Badge variant="outline" className="text-xs text-green-600 border-green-300">
                                   <UserCheck className="w-3 h-3 mr-1" />
