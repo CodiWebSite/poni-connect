@@ -665,6 +665,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pre_assigned_roles: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          email: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
       procurement_requests: {
         Row: {
           approver_signature: string | null
