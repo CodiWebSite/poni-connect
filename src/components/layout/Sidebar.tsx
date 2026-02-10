@@ -15,6 +15,7 @@ import {
   UserCircle,
   ClipboardList,
   User,
+  FileText,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -48,6 +49,7 @@ const Sidebar = () => {
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
+    ...(isSuperAdmin ? [{ icon: FileText, label: 'Cerere Concediu', path: '/leave-request' }] : []),
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),

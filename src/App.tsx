@@ -13,6 +13,7 @@ import MyProfile from "./pages/MyProfile";
 import HRManagement from "./pages/HRManagement";
 import Admin from "./pages/Admin";
 import LeaveCalendar from "./pages/LeaveCalendar";
+import LeaveRequest from "./pages/LeaveRequest";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/my-profile" element={<MyProfile />} />
               <Route path="/hr-management" element={<HRManagement />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/leave-request" element={<LeaveRequest />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
