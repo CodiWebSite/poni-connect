@@ -10,8 +10,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { FileSpreadsheet, Download, Calendar, Users, FileText, Loader2, Banknote } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import * as XLSX from 'xlsx';
-import { format, parseISO, eachDayOfInterval, isWeekend, getMonth } from 'date-fns';
+import ExcelJS from 'exceljs';
+import { format, parseISO, eachDayOfInterval, isWeekend } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { isPublicHoliday } from '@/utils/romanianHolidays';
 
@@ -62,54 +62,94 @@ const MONTH_NAMES = [
   'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'
 ];
 
+const HEADER_FILL: ExcelJS.Fill = {
+  type: 'pattern',
+  pattern: 'solid',
+  fgColor: { argb: 'FF1F4E79' },
+};
+
+const HEADER_FONT: Partial<ExcelJS.Font> = {
+  bold: true,
+  color: { argb: 'FFFFFFFF' },
+  size: 11,
+};
+
+const CENTER_ALIGNMENT: Partial<ExcelJS.Alignment> = {
+  horizontal: 'center',
+  vertical: 'middle',
+  wrapText: true,
+};
+
+const THIN_BORDER: Partial<ExcelJS.Borders> = {
+  top: { style: 'thin', color: { argb: 'FFB0B0B0' } },
+  bottom: { style: 'thin', color: { argb: 'FFB0B0B0' } },
+  left: { style: 'thin', color: { argb: 'FFB0B0B0' } },
+  right: { style: 'thin', color: { argb: 'FFB0B0B0' } },
+};
+
+const styleSheet = (ws: ExcelJS.Worksheet) => {
+  // Style header row
+  const headerRow = ws.getRow(1);
+  headerRow.eachCell((cell) => {
+    cell.fill = HEADER_FILL;
+    cell.font = HEADER_FONT;
+    cell.alignment = CENTER_ALIGNMENT;
+    cell.border = THIN_BORDER;
+  });
+  headerRow.height = 28;
+
+  // Style data rows
+  for (let i = 2; i <= ws.rowCount; i++) {
+    const row = ws.getRow(i);
+    row.eachCell((cell) => {
+      cell.alignment = CENTER_ALIGNMENT;
+      cell.border = THIN_BORDER;
+    });
+    // Zebra striping
+    if (i % 2 === 0) {
+      row.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F6FA' } };
+      });
+    }
+  }
+
+  // Auto-size columns
+  ws.columns.forEach((col) => {
+    let maxLen = 10;
+    col.eachCell?.({ includeEmpty: false }, (cell) => {
+      const len = cell.value ? String(cell.value).length : 0;
+      if (len > maxLen) maxLen = len;
+    });
+    col.width = Math.min(maxLen + 3, 35);
+  });
+};
+
+const saveWorkbook = async (wb: ExcelJS.Workbook, filename: string) => {
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filename}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
   const { toast } = useToast();
   const [exporting, setExporting] = useState<string | null>(null);
 
-  const downloadExcel = (data: any[], filename: string, sheetName: string) => {
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    XLSX.writeFile(wb, `${filename}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  const exportSingleSheet = async (data: Record<string, any>[], filename: string, sheetName: string) => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet(sheetName);
+    if (data.length === 0) return;
+    ws.columns = Object.keys(data[0]).map(key => ({ header: key, key }));
+    data.forEach(row => ws.addRow(row));
+    styleSheet(ws);
+    await saveWorkbook(wb, filename);
   };
 
-  const applyCenterAlignment = (ws: XLSX.WorkSheet) => {
-    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-    for (let R = range.s.r; R <= range.e.r; R++) {
-      for (let C = range.s.c; C <= range.e.c; C++) {
-        const addr = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!ws[addr]) continue;
-        if (!ws[addr].s) ws[addr].s = {};
-        ws[addr].s = { ...ws[addr].s, alignment: { horizontal: 'center', vertical: 'center', wrapText: true } };
-      }
-    }
-    // Auto-size columns
-    const colWidths: number[] = [];
-    for (let C = range.s.c; C <= range.e.c; C++) {
-      let maxLen = 8;
-      for (let R = range.s.r; R <= range.e.r; R++) {
-        const addr = XLSX.utils.encode_cell({ r: R, c: C });
-        if (ws[addr] && ws[addr].v != null) {
-          const len = String(ws[addr].v).length;
-          if (len > maxLen) maxLen = len;
-        }
-      }
-      colWidths.push(Math.min(maxLen + 2, 30));
-    }
-    ws['!cols'] = colWidths.map(w => ({ wch: w }));
-  };
-
-  const downloadExcelMultiSheet = (sheets: { name: string; data: any[] }[], filename: string) => {
-    const wb = XLSX.utils.book_new();
-    sheets.forEach(s => {
-      const ws = XLSX.utils.json_to_sheet(s.data);
-      applyCenterAlignment(ws);
-      XLSX.utils.book_append_sheet(wb, ws, s.name.substring(0, 31));
-    });
-    XLSX.writeFile(wb, `${filename}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-  };
-
-  const exportLeaveRequests = () => {
+  const exportLeaveRequests = async () => {
     setExporting('leave');
     try {
       const leaveRequests = requests.filter(r => r.request_type === 'concediu');
@@ -129,14 +169,14 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
           'Semnat Șef': r.department_head_signature ? 'Da' : 'Nu'
         };
       });
-      downloadExcel(data, 'cereri_concediu', 'Cereri Concediu');
+      await exportSingleSheet(data, 'cereri_concediu', 'Cereri Concediu');
       toast({ title: 'Export realizat', description: `${data.length} cereri de concediu exportate.` });
     } finally {
       setExporting(null);
     }
   };
 
-  const exportAllRequests = () => {
+  const exportAllRequests = async () => {
     setExporting('all');
     try {
       const data = requests.map(r => {
@@ -156,14 +196,14 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
           'Detalii': JSON.stringify(r.details)
         };
       });
-      downloadExcel(data, 'toate_cererile_hr', 'Cereri HR');
+      await exportSingleSheet(data, 'toate_cererile_hr', 'Cereri HR');
       toast({ title: 'Export realizat', description: `${data.length} cereri HR exportate.` });
     } finally {
       setExporting(null);
     }
   };
 
-  const exportLeaveBalances = () => {
+  const exportLeaveBalances = async () => {
     setExporting('balance');
     try {
       const data = employees.map(e => ({
@@ -176,14 +216,14 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         'Zile Utilizate': e.record?.used_leave_days ?? 0,
         'Zile Rămase': e.record?.remaining_leave_days ?? (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0)
       }));
-      downloadExcel(data, 'sold_concedii', 'Sold Concedii');
+      await exportSingleSheet(data, 'sold_concedii', 'Sold Concedii');
       toast({ title: 'Export realizat', description: `${data.length} angajați exportați.` });
     } finally {
       setExporting(null);
     }
   };
 
-  const exportEmployeeList = () => {
+  const exportEmployeeList = async () => {
     setExporting('employees');
     try {
       const data = employees.map(e => ({
@@ -195,14 +235,14 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         'Tip Contract': e.record?.contract_type || '-',
         'Cont Activ': e.hasAccount ? 'Da' : 'Nu'
       }));
-      downloadExcel(data, 'lista_angajati', 'Angajați');
+      await exportSingleSheet(data, 'lista_angajati', 'Angajați');
       toast({ title: 'Export realizat', description: `${data.length} angajați exportați.` });
     } finally {
       setExporting(null);
     }
   };
 
-  const exportWithoutAccount = () => {
+  const exportWithoutAccount = async () => {
     setExporting('no_account');
     try {
       const noAccount = employees.filter(e => !e.hasAccount);
@@ -212,7 +252,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         'Departament': e.department || '-',
         'Funcție': e.position || '-',
       }));
-      downloadExcel(data, 'angajati_fara_cont', 'Fără Cont');
+      await exportSingleSheet(data, 'angajati_fara_cont', 'Fără Cont');
       toast({ title: 'Export realizat', description: `${data.length} angajați fără cont exportați.` });
     } finally {
       setExporting(null);
@@ -225,12 +265,9 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
       const leaveEnd = parseISO(endDate);
       const monthStart = new Date(year, month, 1);
       const monthEnd = new Date(year, month + 1, 0);
-
       const overlapStart = leaveStart > monthStart ? leaveStart : monthStart;
       const overlapEnd = leaveEnd < monthEnd ? leaveEnd : monthEnd;
-
       if (overlapStart > overlapEnd) return 0;
-
       const days = eachDayOfInterval({ start: overlapStart, end: overlapEnd });
       return days.filter(d => !isWeekend(d) && !isPublicHoliday(d)).length;
     } catch {
@@ -242,7 +279,6 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
     const periods: string[] = [];
     const monthStart = new Date(year, month, 1);
     const monthEnd = new Date(year, month + 1, 0);
-
     leaves.forEach(l => {
       if (!l.startDate || !l.endDate) return;
       try {
@@ -258,14 +294,10 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
     return periods.join('; ') || '';
   };
 
-  const exportPayrollReport = () => {
-    setExporting('payroll');
-    try {
-      const currentYear = new Date().getFullYear();
-      
-      const data = employees.map(e => {
-        const leaves = e.leaveHistory || [];
-        const row: Record<string, any> = {
+  const buildPayrollRow = (e: Employee, currentYear: number, includeDetails: boolean) => {
+    const leaves = e.leaveHistory || [];
+    const row: Record<string, any> = includeDetails
+      ? {
           'Nume': e.full_name,
           'CNP': e.cnp || '-',
           'Email': e.email || '-',
@@ -276,52 +308,50 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
           'Total Zile CO': e.record?.total_leave_days ?? 21,
           'Zile Utilizate': e.record?.used_leave_days ?? 0,
           'Zile Rămase': (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0),
+        }
+      : {
+          'Nume': e.full_name,
+          'Funcție': e.position || '-',
+          'Total Zile CO': e.record?.total_leave_days ?? 21,
+          'Zile Utilizate': e.record?.used_leave_days ?? 0,
+          'Zile Rămase': (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0),
         };
 
-        // Add monthly columns: days + periods
-        for (let m = 0; m < 12; m++) {
-          const days = leaves.reduce((sum, l) => sum + getWorkingDaysInMonth(l.startDate, l.endDate, m, currentYear), 0);
-          const periods = getPeriodsInMonth(leaves, m, currentYear);
-          row[`${MONTH_NAMES[m]} - Zile`] = days || '';
-          row[`${MONTH_NAMES[m]} - Perioade`] = periods;
-        }
+    for (let m = 0; m < 12; m++) {
+      const days = leaves.reduce((sum, l) => sum + getWorkingDaysInMonth(l.startDate, l.endDate, m, currentYear), 0);
+      const periods = getPeriodsInMonth(leaves, m, currentYear);
+      row[`${MONTH_NAMES[m]} - Zile`] = days || '';
+      row[`${MONTH_NAMES[m]} - Perioade`] = periods;
+    }
+    return row;
+  };
 
-        return row;
-      });
+  const addStyledSheet = (wb: ExcelJS.Workbook, name: string, data: Record<string, any>[]) => {
+    const ws = wb.addWorksheet(name.substring(0, 31));
+    if (data.length === 0) return ws;
+    ws.columns = Object.keys(data[0]).map(key => ({ header: key, key }));
+    data.forEach(row => ws.addRow(row));
+    styleSheet(ws);
+    return ws;
+  };
 
-      // Build department sheets - only real departments
+  const exportPayrollReport = async () => {
+    setExporting('payroll');
+    try {
+      const currentYear = new Date().getFullYear();
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'ICMPP HR';
+      wb.created = new Date();
+
+      // Main sheet
+      const mainData = employees.map(e => buildPayrollRow(e, currentYear, true));
+      addStyledSheet(wb, 'Salarizare', mainData);
+
+      // Department summary
       const departments = [...new Set(
-        employees
-          .filter(e => e.department && e.department.trim() !== '')
-          .map(e => e.department!)
+        employees.filter(e => e.department?.trim()).map(e => e.department!)
       )].sort();
 
-      const departmentSheets = departments.map(dept => {
-        const deptEmployees = employees.filter(e => e.department === dept);
-        const deptData = deptEmployees.map(e => {
-          const leaves = e.leaveHistory || [];
-          const row: Record<string, any> = {
-            'Nume': e.full_name,
-            'Funcție': e.position || '-',
-            'Total Zile CO': e.record?.total_leave_days ?? 21,
-            'Zile Utilizate': e.record?.used_leave_days ?? 0,
-            'Zile Rămase': (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0),
-          };
-
-          for (let m = 0; m < 12; m++) {
-            const days = leaves.reduce((sum, l) => sum + getWorkingDaysInMonth(l.startDate, l.endDate, m, currentYear), 0);
-            const periods = getPeriodsInMonth(leaves, m, currentYear);
-            row[`${MONTH_NAMES[m]} - Zile`] = days || '';
-            row[`${MONTH_NAMES[m]} - Perioade`] = periods;
-          }
-
-          return row;
-        });
-
-        return { name: dept.substring(0, 31), data: deptData };
-      });
-
-      // Build department summary sheet
       const deptSummary = departments.map(dept => {
         const deptEmployees = employees.filter(e => e.department === dept);
         const row: Record<string, any> = {
@@ -331,7 +361,6 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
           'Total Utilizate': deptEmployees.reduce((s, e) => s + (e.record?.used_leave_days ?? 0), 0),
           'Total Rămase': deptEmployees.reduce((s, e) => s + ((e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0)), 0),
         };
-
         for (let m = 0; m < 12; m++) {
           const monthDays = deptEmployees.reduce((sum, e) => {
             const leaves = e.leaveHistory || [];
@@ -339,19 +368,19 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
           }, 0);
           row[`${MONTH_NAMES[m]}`] = monthDays || '';
         }
-
         return row;
       });
+      addStyledSheet(wb, 'Total per Departament', deptSummary);
 
-      downloadExcelMultiSheet(
-        [
-          { name: 'Salarizare', data },
-          { name: 'Total per Departament', data: deptSummary },
-          ...departmentSheets,
-        ],
-        `raport_salarizare_${currentYear}`
-      );
-      toast({ title: 'Export realizat', description: `Raport salarizare cu ${data.length} angajați și ${departments.length} departamente exportat.` });
+      // Per-department sheets
+      departments.forEach(dept => {
+        const deptEmployees = employees.filter(e => e.department === dept);
+        const deptData = deptEmployees.map(e => buildPayrollRow(e, currentYear, false));
+        addStyledSheet(wb, dept, deptData);
+      });
+
+      await saveWorkbook(wb, `raport_salarizare_${currentYear}`);
+      toast({ title: 'Export realizat', description: `Raport salarizare cu ${mainData.length} angajați și ${departments.length} departamente exportat.` });
     } finally {
       setExporting(null);
     }
