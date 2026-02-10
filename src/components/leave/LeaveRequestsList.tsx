@@ -159,11 +159,9 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
                 <Button variant="ghost" size="sm" onClick={() => handleDownload(r)}>
                   <Download className="w-4 h-4" />
                 </Button>
-                {r.status === 'draft' && (
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(r.id)} className="text-destructive hover:text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
+                <Button variant="ghost" size="sm" onClick={() => handleDelete(r.id)} className="text-destructive hover:text-destructive">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           </CardContent>

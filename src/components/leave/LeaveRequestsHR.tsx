@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Search, Loader2, FileText, Filter } from 'lucide-react';
+import { Download, Search, Loader2, FileText, Filter, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { generateLeaveDocx } from '@/utils/generateLeaveDocx';
@@ -58,6 +58,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllRequests();
@@ -163,6 +164,19 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     setDownloading(null);
   };
 
+  const handleDelete = async (id: string, requestNumber: string) => {
+    if (!confirm(`Sigur doriți să ștergeți cererea ${requestNumber}? Această acțiune este ireversibilă.`)) return;
+    setDeleting(id);
+    const { error } = await supabase.from('leave_requests').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Eroare', description: 'Nu s-a putut șterge cererea.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Șters', description: `Cererea ${requestNumber} a fost ștearsă.` });
+      fetchAllRequests();
+    }
+    setDeleting(null);
+  };
+
   const filtered = requests.filter(r => {
     const matchesSearch = !searchQuery ||
       r.employee_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -246,18 +260,33 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownload(r)}
-                        disabled={downloading === r.id}
-                      >
-                        {downloading === r.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Download className="w-4 h-4" />
-                        )}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownload(r)}
+                          disabled={downloading === r.id}
+                        >
+                          {downloading === r.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Download className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(r.id, r.request_number)}
+                          disabled={deleting === r.id}
+                        >
+                          {deleting === r.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
