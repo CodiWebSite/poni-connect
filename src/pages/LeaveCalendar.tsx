@@ -241,7 +241,7 @@ const LeaveCalendar = () => {
                       <div className="flex items-center gap-2 mb-2">
                         {emp.isCurrentUser && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
                         <p className={cn('font-medium text-sm', emp.isCurrentUser ? 'text-primary font-bold' : 'text-foreground')}>
-                          {emp.isCurrentUser ? 'Tu' : emp.employeeName}
+                          {emp.employeeName}
                         </p>
                       </div>
                       <div className="space-y-1.5">
