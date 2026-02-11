@@ -105,7 +105,8 @@ const LeaveCalendar = () => {
       else if (d.employee_name) empInfo = { name: d.employee_name, department: null };
       if (!empInfo) return;
 
-      const isCurrentUser = lr.user_id === user.id;
+      // If leave was submitted for another employee (epd_id), it's not the current user's leave
+      const isCurrentUser = lr.user_id === user.id && !d.epd_id;
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
         entries.push({ employeeName: empInfo.name, startDate: d.startDate, endDate: d.endDate, leaveType: d.leaveType || d.leave_type || 'co', isCurrentUser });
       }
@@ -127,7 +128,7 @@ const LeaveCalendar = () => {
       const isDuplicate = entries.some(e => e.employeeName === empInfo!.name && e.startDate === lr.start_date && e.endDate === lr.end_date);
       if (isDuplicate) return;
 
-      const isCurrentUser = lr.user_id === user.id;
+      const isCurrentUser = lr.user_id === user.id && !lr.epd_id;
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
         entries.push({ employeeName: empInfo.name, startDate: lr.start_date, endDate: lr.end_date, leaveType: 'co', isCurrentUser });
       }
