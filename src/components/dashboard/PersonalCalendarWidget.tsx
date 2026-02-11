@@ -105,7 +105,7 @@ const PersonalCalendarWidget = () => {
 
       if (!empInfo) return;
 
-      const isCurrentUser = lr.user_id === user.id;
+      const isCurrentUser = lr.user_id === user.id && !d.epd_id;
       // Show if: it's the current user OR same department
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
         entries.push({
@@ -232,7 +232,7 @@ const PersonalCalendarWidget = () => {
                           'sticky left-0 z-10 border border-border px-2 py-1 text-[10px] whitespace-nowrap bg-inherit',
                           emp.isCurrentUser ? 'font-bold text-primary' : 'font-medium'
                         )}>
-                          {emp.isCurrentUser ? '→ Tu' : emp.employeeName.split(' ').slice(0, 2).join(' ')}
+                          {emp.employeeName.split(' ').slice(0, 2).join(' ')}
                         </td>
                         {days.map(day => {
                           const dateStr = format(day, 'yyyy-MM-dd');
