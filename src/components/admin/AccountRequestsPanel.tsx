@@ -30,6 +30,32 @@ const AccountRequestsPanel = () => {
 
   useEffect(() => {
     fetchRequests();
+
+    // Realtime subscription for new requests
+    const channel = supabase
+      .channel('account-requests-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'account_requests' },
+        (payload) => {
+          const newReq = payload.new as unknown as AccountRequest;
+          setRequests(prev => [newReq, ...prev]);
+          toast({ title: 'Cerere nouă!', description: `${newReq.full_name} solicită creare cont.` });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'account_requests' },
+        (payload) => {
+          const updated = payload.new as unknown as AccountRequest;
+          setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchRequests = async () => {
