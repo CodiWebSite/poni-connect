@@ -15,6 +15,7 @@ import Admin from "./pages/Admin";
 import LeaveCalendar from "./pages/LeaveCalendar";
 import LeaveRequest from "./pages/LeaveRequest";
 import ResetPassword from "./pages/ResetPassword";
+import FormTemplates from "./pages/FormTemplates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/hr-management" element={<HRManagement />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/leave-request" element={<LeaveRequest />} />
+              <Route path="/formulare" element={<FormTemplates />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

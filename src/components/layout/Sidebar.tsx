@@ -16,6 +16,7 @@ import {
   ClipboardList,
   User,
   FileText,
+  FolderDown,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -49,6 +50,7 @@ const Sidebar = () => {
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
+    { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     ...(isSuperAdmin ? [{ icon: FileText, label: 'Cerere Concediu', path: '/leave-request' }] : []),
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
