@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
-import { User, Building2, Phone, Save, Sun, Moon, Monitor } from 'lucide-react';
+import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Profile {
   full_name: string;
@@ -17,6 +19,45 @@ interface Profile {
   phone: string;
   avatar_url: string;
 }
+
+const themeOptions = [
+  {
+    value: 'light',
+    label: 'Luminos',
+    icon: Sun,
+    preview: {
+      bg: 'bg-[hsl(210_20%_98%)]',
+      card: 'bg-white',
+      text: 'text-[hsl(220_30%_15%)]',
+      muted: 'text-[hsl(220_15%_45%)]',
+      accent: 'bg-[hsl(215_80%_35%)]',
+    },
+  },
+  {
+    value: 'dark',
+    label: 'Întunecat',
+    icon: Moon,
+    preview: {
+      bg: 'bg-[hsl(220_30%_8%)]',
+      card: 'bg-[hsl(220_30%_12%)]',
+      text: 'text-[hsl(210_20%_95%)]',
+      muted: 'text-[hsl(210_15%_60%)]',
+      accent: 'bg-[hsl(215_80%_55%)]',
+    },
+  },
+  {
+    value: 'system',
+    label: 'Sistem',
+    icon: Monitor,
+    preview: {
+      bg: 'bg-gradient-to-br from-[hsl(210_20%_98%)] to-[hsl(220_30%_12%)]',
+      card: 'bg-gradient-to-br from-white to-[hsl(220_30%_18%)]',
+      text: 'text-[hsl(220_30%_15%)]',
+      muted: 'text-[hsl(220_15%_45%)]',
+      accent: 'bg-[hsl(215_80%_45%)]',
+    },
+  },
+];
 
 const Settings = () => {
   const { user } = useAuth();
@@ -31,9 +72,7 @@ const Settings = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
+    if (user) fetchProfile();
   }, [user]);
 
   const fetchProfile = async () => {
@@ -57,7 +96,6 @@ const Settings = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
     setIsLoading(true);
 
     const { error, data } = await supabase
@@ -77,133 +115,136 @@ const Settings = () => {
     } else {
       toast.success('Profil actualizat cu succes');
     }
-    
     setIsLoading(false);
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
+  const getInitials = (name: string) =>
+    name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2);
 
   return (
     <MainLayout title="Setări" description="Gestionează-ți profilul și preferințele">
       <div className="max-w-4xl space-y-6">
-        <div className="bg-card rounded-xl border border-border">
-          <div className="p-6 border-b border-border">
-            <h2 className="text-lg font-semibold">Profilul meu</h2>
-            <p className="text-sm text-muted-foreground">Actualizează-ți informațiile personale</p>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            <div className="flex items-center gap-6">
-              <Avatar className="w-20 h-20 border-2 border-primary/20">
-                <AvatarImage src={profile.avatar_url} />
-                <AvatarFallback className="bg-primary/10 text-primary text-xl font-medium">
-                  {profile.full_name ? getInitials(profile.full_name) : 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium">{profile.full_name || 'Nume utilizator'}</p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
-              </div>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Nume complet</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="full_name"
-                    className="pl-10"
-                    value={profile.full_name}
-                    onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                    required
-                  />
+        {/* Profile Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Profilul meu</CardTitle>
+            <CardDescription>Actualizează-ți informațiile personale</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="flex items-center gap-6 p-4 rounded-xl bg-muted/50">
+                <Avatar className="w-20 h-20 border-2 border-primary/20 shadow-md">
+                  <AvatarImage src={profile.avatar_url} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xl font-medium">
+                    {profile.full_name ? getInitials(profile.full_name) : 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold text-lg">{profile.full_name || 'Nume utilizator'}</p>
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  {profile.department && (
+                    <p className="text-xs text-muted-foreground mt-1">{profile.department} · {profile.position}</p>
+                  )}
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefon</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    className="pl-10"
-                    value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                    placeholder="+40 XXX XXX XXX"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="department">Departament</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="department"
-                    className="pl-10 bg-muted"
-                    value={profile.department}
-                    disabled
-                    placeholder="Setat de HR"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Gestionat de departamentul HR</p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="position">Funcție</Label>
-                <Input
-                  id="position"
-                  value={profile.position}
-                  disabled
-                  className="bg-muted"
-                  placeholder="Setat de HR"
-                />
-                <p className="text-xs text-muted-foreground">Gestionat de departamentul HR</p>
-              </div>
-            </div>
-            
-            <Button type="submit" variant="hero" disabled={isLoading}>
-              <Save className="w-4 h-4 mr-2" />
-              {isLoading ? 'Se salvează...' : 'Salvează modificările'}
-            </Button>
-          </form>
-        </div>
 
-        {/* Theme */}
-        <div className="bg-card rounded-xl border border-border">
-          <div className="p-6 border-b border-border">
-            <h2 className="text-lg font-semibold">Aspect</h2>
-            <p className="text-sm text-muted-foreground">Alege tema de culoare preferată</p>
-          </div>
-          <div className="p-6">
-            <div className="flex flex-wrap gap-3">
-              {[
-                { value: 'light', label: 'Luminos', icon: Sun },
-                { value: 'dark', label: 'Întunecat', icon: Moon },
-                { value: 'system', label: 'Sistem', icon: Monitor },
-              ].map(opt => (
-                <Button
-                  key={opt.value}
-                  variant={theme === opt.value ? 'default' : 'outline'}
-                  className="gap-2 flex-1 min-w-[100px]"
-                  onClick={() => setTheme(opt.value)}
-                >
-                  <opt.icon className="w-4 h-4" />
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Nume complet</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="full_name"
+                      className="pl-10"
+                      value={profile.full_name}
+                      onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefon</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="phone"
+                      className="pl-10"
+                      value={profile.phone}
+                      onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                      placeholder="+40 XXX XXX XXX"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="department">Departament</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input id="department" className="pl-10 bg-muted" value={profile.department} disabled placeholder="Setat de HR" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Gestionat de departamentul HR</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="position">Funcție</Label>
+                  <Input id="position" value={profile.position} disabled className="bg-muted" placeholder="Setat de HR" />
+                  <p className="text-xs text-muted-foreground">Gestionat de departamentul HR</p>
+                </div>
+              </div>
+
+              <Button type="submit" variant="hero" disabled={isLoading}>
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading ? 'Se salvează...' : 'Salvează modificările'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Theme Card with Preview */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Aspect</CardTitle>
+            <CardDescription>Alege tema de culoare preferată</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {themeOptions.map((opt) => {
+                const isActive = theme === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setTheme(opt.value)}
+                    className={cn(
+                      'relative group rounded-xl border-2 p-1 transition-all duration-200 text-left',
+                      isActive
+                        ? 'border-primary shadow-md shadow-primary/10'
+                        : 'border-border hover:border-primary/40'
+                    )}
+                  >
+                    {/* Mini preview */}
+                    <div className={cn('rounded-lg p-3 space-y-2 h-24', opt.preview.bg)}>
+                      <div className={cn('h-2 w-12 rounded-full', opt.preview.accent)} />
+                      <div className={cn('rounded-md p-2 h-10', opt.preview.card)}>
+                        <div className={cn('h-1.5 w-16 rounded-full bg-current opacity-20', opt.preview.text)} />
+                        <div className={cn('h-1.5 w-10 rounded-full bg-current opacity-10 mt-1', opt.preview.muted)} />
+                      </div>
+                    </div>
+
+                    {/* Label */}
+                    <div className="flex items-center gap-2 p-3">
+                      <opt.icon className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{opt.label}</span>
+                      {isActive && (
+                        <Check className="w-4 h-4 text-primary ml-auto" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </MainLayout>
   );
