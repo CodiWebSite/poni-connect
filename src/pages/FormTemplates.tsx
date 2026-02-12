@@ -19,6 +19,15 @@ const templates: Template[] = [
   { name: 'Documente deplasări externe', filename: 'Deplasari_externe.docx', category: 'Deplasări' },
   { name: 'Decont cheltuieli deplasări externe', filename: 'Decont_cheltuieli_deplasari_externe.xlsx', category: 'Deplasări' },
   { name: 'Fișă solicitare analize (Digestor)', filename: 'Fisa_solicitare_analize.pdf', category: 'Laborator' },
+  { name: 'Fișă solicitare analize DSC', filename: 'Fisa_solicitare_analize_DSC.pdf', category: 'Laborator' },
+  { name: 'Fișă solicitare analize AAS', filename: 'Fisa_solicitare_analize_AAS.pdf', category: 'Laborator' },
+  { name: 'Fișă solicitare analize TOC (carbon-azot)', filename: 'Fisa_solicitare_analize_TOC_carbon_azot.pdf', category: 'Laborator' },
+  { name: 'Fișă solicitare analize – Sistem echipamente', filename: 'Fisa_solicitare_analize_sistem_echipamente.doc', category: 'Laborator' },
+  { name: 'Fișe SPM', filename: 'Fise_SPM.doc', category: 'Laborator' },
+  { name: 'Fișe WAXD', filename: 'Fise_WAXD.doc', category: 'Laborator' },
+  { name: 'Fișe Zeta Master / SurPASS', filename: 'Fise_Zeta_Master_SurPASS.doc', category: 'Laborator' },
+  { name: 'Curs de RMN', filename: 'Curs_de_RMN.pdf', category: 'Laborator' },
+  { name: 'Info și reguli analize RMN', filename: 'Info_reguli_analize_RMN.doc', category: 'Laborator' },
   { name: 'Model referat produse', filename: 'Model_referat_produse.docx', category: 'Achiziții' },
 ];
 
