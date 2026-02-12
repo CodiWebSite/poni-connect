@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AuditLog from '@/components/admin/AuditLog';
 import PreAssignRoles from '@/components/admin/PreAssignRoles';
+import ManualAccountCreate from '@/components/admin/ManualAccountCreate';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -167,11 +168,12 @@ const Admin = () => {
   return (
     <MainLayout title="Administrare" description="Gestionează rolurile și configurările sistemului">
       <Tabs defaultValue="roles" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="roles">Roluri</TabsTrigger>
-          <TabsTrigger value="preassign">Pre-atribuire Roluri</TabsTrigger>
-          <TabsTrigger value="audit">Jurnal Audit</TabsTrigger>
-        </TabsList>
+         <TabsList>
+           <TabsTrigger value="roles">Roluri</TabsTrigger>
+           <TabsTrigger value="preassign">Pre-atribuire Roluri</TabsTrigger>
+           <TabsTrigger value="create-account">Creare Cont</TabsTrigger>
+           <TabsTrigger value="audit">Jurnal Audit</TabsTrigger>
+         </TabsList>
         <TabsContent value="roles" className="space-y-6">
           <Card>
             <CardHeader>
@@ -240,6 +242,9 @@ const Admin = () => {
         </TabsContent>
         <TabsContent value="preassign">
           <PreAssignRoles />
+        </TabsContent>
+        <TabsContent value="create-account">
+          <ManualAccountCreate />
         </TabsContent>
         <TabsContent value="audit">
           <AuditLog />
