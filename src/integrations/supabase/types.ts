@@ -170,6 +170,39 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_login_logs: {
+        Row: {
+          device_summary: string | null
+          id: string
+          ip_address: string | null
+          is_suspicious: boolean
+          login_at: string
+          status: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          device_summary?: string | null
+          id?: string
+          ip_address?: string | null
+          is_suspicious?: boolean
+          login_at?: string
+          status?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          device_summary?: string | null
+          id?: string
+          ip_address?: string | null
+          is_suspicious?: boolean
+          login_at?: string
+          status?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       custom_holidays: {
         Row: {
           created_at: string
@@ -500,6 +533,89 @@ export type Database = {
           updated_at?: string
           used_leave_days?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      equipment_history: {
+        Row: {
+          action: string
+          created_at: string
+          equipment_id: string
+          from_user_id: string | null
+          id: string
+          notes: string | null
+          performed_by: string | null
+          to_user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          equipment_id: string
+          from_user_id?: string | null
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          to_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          equipment_id?: string
+          from_user_id?: string | null
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          to_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_history_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_items: {
+        Row: {
+          assigned_at: string | null
+          assigned_to_user_id: string | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          serial_number: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_to_user_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_to_user_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
