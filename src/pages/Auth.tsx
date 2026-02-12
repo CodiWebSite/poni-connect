@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Lock, Mail, User, Eye, EyeOff, ArrowLeft, CheckCircle2, MailCheck } from 'lucide-react';
+import { Lock, Mail, User, Eye, EyeOff, ArrowLeft, CheckCircle2, MailCheck, HelpCircle } from 'lucide-react';
 import { z } from 'zod';
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '@/integrations/supabase/client';
+import AccountHelpForm from '@/components/auth/AccountHelpForm';
 
 const TURNSTILE_SITE_KEY = '0x4AAAAAACGNQ32sLxuYBXgD';
 
@@ -74,6 +75,7 @@ const Auth = () => {
   const [loginToken, setLoginToken] = useState<string | null>(null);
   const [signupToken, setSignupToken] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showAccountHelp, setShowAccountHelp] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
@@ -253,7 +255,9 @@ const Auth = () => {
         </CardHeader>
         
         <CardContent>
-          {showEmailConfirmation ? (
+          {showAccountHelp ? (
+            <AccountHelpForm onBack={() => setShowAccountHelp(false)} />
+          ) : showEmailConfirmation ? (
             <div className="space-y-6 text-center py-4">
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                 <MailCheck className="w-8 h-8 text-primary" />
@@ -326,7 +330,7 @@ const Auth = () => {
               </form>
             </div>
           ) : (
-            <Tabs defaultValue="login" className="w-full">
+            <><Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Autentificare</TabsTrigger>
                 <TabsTrigger value="signup">Înregistrare</TabsTrigger>
@@ -492,6 +496,18 @@ const Auth = () => {
                 </form>
               </TabsContent>
             </Tabs>
+
+            <div className="mt-4 pt-4 border-t border-border text-center">
+              <button
+                type="button"
+                onClick={() => setShowAccountHelp(true)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                Nu reușești să-ți creezi cont? Solicită ajutor
+              </button>
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
