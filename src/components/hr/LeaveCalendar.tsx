@@ -84,9 +84,11 @@ const LeaveCalendar = () => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
 
-    const { data: allLeaves } = await supabase
+    const { data: allLeaves, error: leavesError } = await supabase
       .from('hr_requests').select('user_id, details, status')
       .eq('request_type', 'concediu').eq('status', 'approved');
+    
+    console.log('[LeaveCalendar] hr_requests query result:', { count: allLeaves?.length, error: leavesError, data: allLeaves });
 
     const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department');
     const { data: epdData } = await supabase
