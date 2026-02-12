@@ -60,15 +60,17 @@ const Settings = () => {
     
     setIsLoading(true);
 
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from('profiles')
       .update({
         full_name: profile.full_name,
-        department: profile.department || null,
-        position: profile.position || null,
         phone: profile.phone || null,
+        updated_at: new Date().toISOString(),
       })
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .select();
+
+    console.log('Profile update result:', { error, data, userId: user.id });
 
     if (error) {
       toast.error('Eroare la salvarea profilului');
@@ -146,12 +148,13 @@ const Settings = () => {
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="department"
-                    className="pl-10"
+                    className="pl-10 bg-muted"
                     value={profile.department}
-                    onChange={(e) => setProfile({ ...profile, department: e.target.value })}
-                    placeholder="ex: Laborator Polimeri"
+                    disabled
+                    placeholder="Setat de HR"
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">Gestionat de departamentul HR</p>
               </div>
               
               <div className="space-y-2">
@@ -159,9 +162,11 @@ const Settings = () => {
                 <Input
                   id="position"
                   value={profile.position}
-                  onChange={(e) => setProfile({ ...profile, position: e.target.value })}
-                  placeholder="ex: Cercetător științific"
+                  disabled
+                  className="bg-muted"
+                  placeholder="Setat de HR"
                 />
+                <p className="text-xs text-muted-foreground">Gestionat de departamentul HR</p>
               </div>
             </div>
             

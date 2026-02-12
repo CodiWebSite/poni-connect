@@ -334,7 +334,7 @@ const LeaveCalendar = () => {
                             <td className={cn('sticky left-0 z-10 border border-border px-4 py-2.5 whitespace-nowrap bg-inherit', emp.isCurrentUser ? 'font-bold text-primary' : 'font-medium text-foreground')}>
                               <div className="flex items-center gap-2">
                                 {emp.isCurrentUser && <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />}
-                                <span>{emp.isCurrentUser ? 'Tu' : emp.employeeName}</span>
+                                <span>{emp.employeeName}</span>
                               </div>
                             </td>
                             {days.map(day => {
