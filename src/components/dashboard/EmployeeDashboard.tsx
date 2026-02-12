@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Calendar, Loader2, ArrowRight, Briefcase, Clock } from 'lucide-react';
+import { Calendar, Loader2, ArrowRight, UserCircle, FolderDown } from 'lucide-react';
 import WeatherWidget from './WeatherWidget';
 import PersonalCalendarWidget from './PersonalCalendarWidget';
 import ActivityHistory from './ActivityHistory';
@@ -19,6 +19,13 @@ interface EmployeeRecord {
   used_leave_days: number;
   remaining_leave_days: number;
 }
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Bună dimineața';
+  if (hour < 18) return 'Bună ziua';
+  return 'Bună seara';
+};
 
 const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -55,17 +62,53 @@ const EmployeeDashboard = () => {
     );
   }
 
+  const today = format(new Date(), 'd MMMM yyyy', { locale: ro });
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Welcome */}
-      {fullName && (
-        <div>
-          <h2 className="text-lg sm:text-2xl font-display font-bold text-foreground">
-            Bună, {fullName.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}! 👋
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground mt-0.5 sm:mt-1">Iată un rezumat al situației tale.</p>
-        </div>
-      )}
+      {/* Welcome with contextual greeting */}
+      <div className="animate-fade-in">
+        <h2 className="text-lg sm:text-2xl font-display font-bold text-foreground">
+          {getGreeting()}, {fullName ? fullName.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ') : 'utilizator'}! 👋
+        </h2>
+        <p className="text-sm sm:text-base text-muted-foreground mt-0.5 sm:mt-1">
+          {today} — Iată un rezumat al situației tale.
+        </p>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-3 gap-3">
+        <Link to="/my-profile" className="group">
+          <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30 h-full">
+            <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center gap-2">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <UserCircle className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              </div>
+              <span className="text-xs sm:text-sm font-medium text-foreground">Profilul Meu</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/leave-calendar" className="group">
+          <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30 h-full">
+            <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center gap-2">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
+              </div>
+              <span className="text-xs sm:text-sm font-medium text-foreground">Calendar</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/formulare" className="group">
+          <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30 h-full">
+            <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center gap-2">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-info/10 flex items-center justify-center group-hover:bg-info/20 transition-colors">
+                <FolderDown className="w-5 h-5 sm:w-6 sm:h-6 text-info" />
+              </div>
+              <span className="text-xs sm:text-sm font-medium text-foreground">Formulare</span>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Leave Balance */}

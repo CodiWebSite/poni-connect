@@ -13,7 +13,8 @@ interface StatCardProps {
 const StatCard = ({ title, value, icon: Icon, trend, className, iconClassName }: StatCardProps) => {
   return (
     <div className={cn(
-      "bg-card rounded-xl p-5 shadow-sm border border-border hover:shadow-md transition-all duration-200",
+      "bg-card rounded-xl p-5 shadow-sm border border-border hover:shadow-md transition-all duration-300 animate-fade-in",
+      "bg-gradient-to-br from-card to-muted/30",
       className
     )}>
       <div className="flex items-start justify-between">

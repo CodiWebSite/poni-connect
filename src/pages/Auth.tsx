@@ -231,20 +231,25 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/10 rounded-full blur-3xl" />
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Animated background blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/8 rounded-full blur-3xl animate-blob" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/8 rounded-full blur-3xl animate-blob animation-delay-2000" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl animate-blob animation-delay-4000" />
       </div>
       
-      <Card className="w-full max-w-md relative glass animate-scale-in">
-        <CardHeader className="text-center space-y-4">
+      <Card className="w-full max-w-md relative animate-fade-in bg-card/90 backdrop-blur-xl border border-border/60 shadow-lg shadow-primary/5">
+        <CardHeader className="text-center space-y-4 pb-2">
           <div className="mx-auto">
-            <img 
-              src="/logo-icmpp.png" 
-              alt="ICMPP Logo" 
-              className="w-20 h-20 object-contain mx-auto"
-            />
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl scale-150" />
+              <img 
+                src="/logo-icmpp.png" 
+                alt="ICMPP Logo" 
+                className="w-24 h-24 object-contain mx-auto relative z-10 drop-shadow-md"
+              />
+            </div>
           </div>
           <div>
             <CardTitle className="text-2xl font-display">ICMPP Intranet</CardTitle>
@@ -373,7 +378,7 @@ const Auth = () => {
                     </button>
                   </div>
 
-                  <div className="flex justify-center">
+                  <div className="flex justify-center rounded-lg overflow-hidden">
                     <Turnstile
                       ref={loginTurnstileRef}
                       siteKey={TURNSTILE_SITE_KEY}
@@ -456,7 +461,7 @@ const Auth = () => {
                     />
                   </div>
 
-                  <div className="flex justify-center">
+                  <div className="flex justify-center rounded-lg overflow-hidden">
                     <Turnstile
                       ref={signupTurnstileRef}
                       siteKey={TURNSTILE_SITE_KEY}
@@ -501,9 +506,9 @@ const Auth = () => {
               <button
                 type="button"
                 onClick={() => setShowAccountHelp(true)}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5"
+                className="text-sm text-primary/80 hover:text-primary transition-colors inline-flex items-center gap-1.5 font-medium"
               >
-                <HelpCircle className="w-3.5 h-3.5" />
+                <HelpCircle className="w-4 h-4" />
                 Nu reușești să-ți creezi cont? Solicită ajutor
               </button>
             </div>

@@ -15,6 +15,8 @@ import {
   UserCircle,
   ClipboardList,
   User,
+  FileText,
+  FolderDown,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -45,14 +47,42 @@ const MobileNav = () => {
     navigate('/auth');
   };
 
-  const menuItems = [
+  const mainItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
+    { icon: FolderDown, label: 'Formulare', path: '/formulare' },
+    ...(isSuperAdmin ? [{ icon: FileText, label: 'Cerere Concediu', path: '/leave-request' }] : []),
+  ];
+
+  const managementItems = [
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
+
+  const renderNavItem = (item: { icon: any; label: string; path: string }) => {
+    const isActive = location.pathname === item.path;
+    return (
+      <Link
+        key={item.path}
+        to={item.path}
+        onClick={() => setIsOpen(false)}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative",
+          isActive
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+            : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        )}
+      >
+        {isActive && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-sidebar-primary-foreground rounded-r-full -ml-3" />
+        )}
+        <item.icon className="w-5 h-5" />
+        <span className="font-medium">{item.label}</span>
+      </Link>
+    );
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -88,26 +118,25 @@ const MobileNav = () => {
           </Link>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)]">
-          {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                  isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-3 overflow-y-auto max-h-[calc(100vh-220px)]">
+          {/* Main section */}
+          <p className="px-3 mb-2 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">
+            Meniu Principal
+          </p>
+          <div className="space-y-1">
+            {mainItems.map(renderNavItem)}
+          </div>
+
+          {/* Separator */}
+          <div className="my-3 border-t border-sidebar-border/50" />
+
+          {/* Management section */}
+          <p className="px-3 mb-2 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">
+            Administrare
+          </p>
+          <div className="space-y-1">
+            {managementItems.map(renderNavItem)}
+          </div>
         </nav>
 
         <div className="p-3 border-t border-sidebar-border absolute bottom-0 left-0 right-0 bg-sidebar">
