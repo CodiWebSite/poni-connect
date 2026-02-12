@@ -1,172 +1,107 @@
 
 
-# Sistem Cerere Concediu de Odihna - Plan de Implementare
+# Plan: Jurnal de Autentificare + Registru Inventar Echipamente
 
-## Rezumat
-Construim un sistem complet de depunere si aprobare a cererilor de concediu de odihna, cu generare automata de document conform modelului ICMPP, flux de aprobare in mai multi pasi, si semnatura electronica. Initial, sectiunea va fi accesibila doar pentru **Super Admin** in scop de testare.
-
-## Fluxul Principal
-
-```text
-Angajat completeaza cererea
-        |
-        v
-Cererea pleaca la DIRECTOR
-        |
-   Aproba / Respinge
-        |
-        v (daca aprobat)
-Pleaca la SEF COMPARTIMENT
-        |
-   Aproba / Respinge
-        |
-        v (daca aprobat)
-Ajunge in GESTIUNE HR (centralizat)
-        |
-   Se scade automat din sold
-   Se poate descarca/printa DOCX
-```
-
-## Ce va contine cererea (auto-completat)
-
-Din datele existente in sistem se vor completa automat:
-- Numele si prenumele angajatului
-- Functia (pozitia)
-- Compartimentul (departamentul)
-- Numarul de zile solicitate (calculat automat din perioada selectata, exclus weekenduri si sarbatori)
-- Anul aferent
-- Data de inceput
-- Soldul de concediu (zile disponibile, reportate, bonus)
-
-Angajatul completeaza manual:
-- **Perioada** (data inceput - data sfarsit)
-- **Inlocuitor** (selecteaza din lista colegilor din acelasi departament)
-
-## Documentul DOCX
-
-Se genereaza exact conform modelului ICMPP "Anexa 11.2.-P.O. ICMPP-SRUS":
-- Antet: ACADEMIA ROMANA / INSTITUTUL DE CHIMIE MACROMOLECULARA "PETRU PONI"
-- Sectiune "Se aproba" (Director) si "Aprobat" (Sef compartiment) - cu semnatura olografa si stampila prestabilite
-- Corpul cererii cu toate datele auto-completate
-- Sectiunea SRUS (soldul de zile, semnatura salariat SRUS)
-- Semnatura electronica a angajatului + data
-
-## Semnatura Electronica Angajat
-
-Se va folosi componenta `SignaturePad` existenta in proiect. Angajatul semneaza electronic la momentul depunerii cererii. Data si ora se inregistreaza automat.
-
-## Semnatura Olografa Director si Sef Compartiment
-
-Acestea vor fi **imagini pre-incarcate** in storage (semnatura + stampila). Se vor afisa pe document cand cererea este aprobata de fiecare.
+Ambele module vor fi accesibile exclusiv pentru **super_admin**, integrate ca tab-uri noi in pagina de Administrare.
 
 ---
 
-## Detalii Tehnice
+## 1. Jurnal de Autentificare (Auth Log)
 
-### 1. Tabel nou: `leave_requests`
+### Baza de date
+Tabel nou: `auth_login_logs`
+- `id` (uuid, PK)
+- `user_id` (uuid, NOT NULL)
+- `ip_address` (text)
+- `user_agent` (text) - browser/dispozitiv complet
+- `device_summary` (text) - rezumat scurt extras (ex: "Chrome / Windows")
+- `login_at` (timestamptz, default now())
+- `status` (text: 'success' | 'failed')
+- `is_suspicious` (boolean, default false)
 
-| Coloana | Tip | Descriere |
-|---------|-----|-----------|
-| id | uuid | PK |
-| user_id | uuid | Angajatul care depune |
-| epd_id | uuid | Link la employee_personal_data |
-| request_number | text | Numar auto-generat (CO-2026-0001) |
-| start_date | date | Data inceput concediu |
-| end_date | date | Data sfarsit concediu |
-| working_days | integer | Zile lucratoare calculate |
-| year | integer | Anul aferent |
-| replacement_name | text | Numele inlocuitorului |
-| replacement_position | text | Functia inlocuitorului |
-| status | text | draft/pending_director/pending_department_head/approved/rejected |
-| employee_signature | text | Semnatura base64 angajat |
-| employee_signed_at | timestamptz | Data semnare |
-| director_id | uuid | Directorul care aproba |
-| director_approved_at | timestamptz | Data aprobare director |
-| director_notes | text | Note director |
-| dept_head_id | uuid | Seful de compartiment |
-| dept_head_approved_at | timestamptz | Data aprobare sef |
-| dept_head_notes | text | Note sef compartiment |
-| rejected_by | uuid | Cine a respins |
-| rejected_at | timestamptz | Data respingere |
-| rejection_reason | text | Motivul respingerii |
-| created_at | timestamptz | Data creare |
-| updated_at | timestamptz | Data actualizare |
+RLS: doar super_admin poate vedea (SELECT). Inserarea se face printr-un trigger/edge function securizat.
 
-### 2. Politici RLS
+### Edge Function: `log-auth-event`
+- Apelata dupa fiecare login reusit din frontend
+- Primeste IP-ul din request headers (`x-forwarded-for`)
+- Primeste user_agent din request headers
+- Parseaza device_summary din user agent string
+- Detecteaza login suspect: IP diferit de ultimele 3 login-uri sau user agent complet nou
+- Daca e suspect, seteaza `is_suspicious = true` si creeaza o notificare pentru toti super_admins
 
-- Angajatii pot crea cereri proprii si le pot vedea
-- Angajatii pot sterge cereri in status `draft`
-- Directorii (director_institut, director_adjunct) pot vedea si actualiza cereri in status `pending_director`
-- Sefii de departament (sef, sef_srus) pot vedea si actualiza cereri in status `pending_department_head`
-- HR (super_admin, hr, sef_srus) poate vedea toate cererile
+### Frontend: componenta `AuthLoginLog.tsx`
+- Tabel paginat cu: Data/Ora, Utilizator, IP, Dispozitiv, Status, Badge "Suspect"
+- Filtrare dupa: utilizator, doar suspecte, interval de date
+- Badge rosu pentru login-uri suspecte
+- Integrat ca tab "Autentificari" in Admin.tsx
 
-### 3. Componente Noi
+### Integrare in `useAuth.tsx`
+- Dupa `signIn` reusit, apel catre edge function `log-auth-event`
 
-**`src/pages/LeaveRequest.tsx`** - Pagina principala (ruta: `/leave-request`)
-- Formular de depunere cerere (pentru angajat)
-- Lista cererilor proprii cu statusuri
-- Tab de aprobare (pentru director/sef)
-- Tab centralizat HR (pentru super_admin/hr)
+---
 
-**`src/components/leave/LeaveRequestForm.tsx`** - Formularul de cerere
-- Selectie perioada cu calendar
-- Calcul automat zile lucratoare (exclus weekenduri, sarbatori legale, custom holidays)
-- Selectie inlocuitor din colegii de departament
-- Preview document in timp real
-- SignaturePad pentru semnatura angajat
+## 2. Registru Inventar Echipamente
 
-**`src/components/leave/LeaveRequestDocument.tsx`** - Previzualizare document HTML
-- Replica exacta a modelului ICMPP
-- Afisare conditionala semnaturi (angajat, director, sef)
+### Baza de date
 
-**`src/utils/generateLeaveDocx.ts`** - Generator DOCX
-- Document Word generat cu biblioteca `docx` (deja instalata)
-- Format identic cu modelul ICMPP
+**Tabel: `equipment_items`**
+- `id` (uuid, PK)
+- `name` (text, NOT NULL) - denumire echipament
+- `category` (text) - laptop, card_acces, cheie, telefon, altele
+- `serial_number` (text) - numar serie/identificare
+- `description` (text)
+- `status` (text: 'available', 'assigned', 'in_repair', 'decommissioned')
+- `assigned_to_user_id` (uuid, nullable) - cui e atribuit
+- `assigned_at` (timestamptz)
+- `created_by` (uuid)
+- `created_at` (timestamptz)
+- `updated_at` (timestamptz)
 
-**`src/components/leave/LeaveApprovalPanel.tsx`** - Panou aprobare
-- Lista cereri de aprobat (pentru director/sef)
-- Buton Aproba/Respinge cu optional motiv
-- Previzualizare document
+**Tabel: `equipment_history`**
+- `id` (uuid, PK)
+- `equipment_id` (uuid, FK -> equipment_items)
+- `action` (text: 'assigned', 'returned', 'transferred', 'repair', 'decommissioned')
+- `from_user_id` (uuid, nullable)
+- `to_user_id` (uuid, nullable)
+- `performed_by` (uuid) - cine a facut actiunea
+- `notes` (text)
+- `created_at` (timestamptz)
 
-**`src/components/leave/LeaveRequestsHR.tsx`** - Centralizare HR
-- Tabel cu toate cererile aprobate
-- Descarcare individuala si bulk DOCX
-- Filtre pe departament, perioada, status
+RLS pe ambele tabele: doar `super_admin` poate SELECT, INSERT, UPDATE, DELETE.
 
-### 4. Flux de Aprobare (detaliat)
+### Frontend: componenta `EquipmentRegistry.tsx`
+- Lista echipamente cu: Denumire, Categorie, Serie, Status (badge colorat), Atribuit la
+- Formular adaugare/editare echipament (dialog)
+- Buton "Atribuie" - selecteaza angajat din lista profiles
+- Buton "Returneaza" - marcheaza disponibil
+- Buton "Transfera" - muta de la un angajat la altul
+- Fiecare actiune se logheaza automat in `equipment_history`
+- Expandare rand -> istoricul complet al echipamentului
+- Filtre: dupa categorie, status, angajat
+- Integrat ca tab "Inventar" in Admin.tsx
 
-1. **Angajat depune** - status: `pending_director`
-   - Se trimite notificare la toti utilizatorii cu rol `director_institut` / `director_adjunct`
+---
 
-2. **Director aproba** - status: `pending_department_head`
-   - Se trimite notificare la seful departamentului angajatului
-   - Daca respinge: status `rejected`, notificare la angajat
+## 3. Modificari in Admin.tsx
 
-3. **Sef compartiment aproba** - status: `approved`
-   - Se scade automat din soldul de concediu (`used_leave_days` in `employee_records` si `employee_personal_data`)
-   - Se trimite notificare la angajat: "Cererea a fost aprobata"
-   - Se trimite notificare la HR
-   - Daca respinge: status `rejected`, notificare la angajat
+Doua tab-uri noi:
+- **"Autentificari"** -> AuthLoginLog
+- **"Inventar"** -> EquipmentRegistry
 
-### 5. Accesibilitate pentru Testare
+---
 
-Initial, ruta `/leave-request` va fi accesibila **doar pentru Super Admin**. Dupa validare, se va deschide pentru toti angajatii.
+## Detalii tehnice
 
-### 6. Integrare cu Sidebar/Navigatie
+### Fisiere noi:
+- `supabase/functions/log-auth-event/index.ts`
+- `src/components/admin/AuthLoginLog.tsx`
+- `src/components/admin/EquipmentRegistry.tsx`
 
-Se adauga un link nou in sidebar: "Cerere Concediu" cu iconita `FileText`, vizibil doar pentru Super Admin in faza de testare.
+### Fisiere modificate:
+- `src/hooks/useAuth.tsx` - apel log-auth-event dupa login
+- `src/pages/Admin.tsx` - 2 tab-uri noi
 
-### 7. Fisiere Modificate/Create
-
-| Fisier | Actiune |
-|--------|---------|
-| `supabase/migrations/...` | Creare tabel `leave_requests` + RLS + sequence |
-| `src/pages/LeaveRequest.tsx` | NOU - Pagina principala |
-| `src/components/leave/LeaveRequestForm.tsx` | NOU - Formular |
-| `src/components/leave/LeaveRequestDocument.tsx` | NOU - Preview document |
-| `src/components/leave/LeaveApprovalPanel.tsx` | NOU - Panou aprobare |
-| `src/components/leave/LeaveRequestsHR.tsx` | NOU - Centralizare HR |
-| `src/utils/generateLeaveDocx.ts` | NOU - Generator DOCX |
-| `src/App.tsx` | Adaugare ruta `/leave-request` |
-| `src/components/layout/Sidebar.tsx` | Adaugare link navigatie (doar super_admin) |
+### Migratii SQL:
+- Creare `auth_login_logs` cu RLS super_admin only
+- Creare `equipment_items` + `equipment_history` cu RLS super_admin only
 
