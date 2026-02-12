@@ -11,7 +11,15 @@ import HRAlerts from '@/components/dashboard/HRAlerts';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Users } from 'lucide-react';
+import { Users, UserCircle, Calendar, FolderDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
+
+const quickActions = [
+  { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile', color: 'bg-primary/10 text-primary' },
+  { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar', color: 'bg-accent/10 text-accent' },
+  { icon: FolderDown, label: 'Formulare', path: '/formulare', color: 'bg-info/10 text-info' },
+];
 
 const Dashboard = () => {
   const { role, loading: roleLoading } = useUserRole();
@@ -36,6 +44,22 @@ const Dashboard = () => {
 
   return (
     <MainLayout title="Dashboard" description="Bine ați venit în intranetul ICMPP">
+      {/* Quick Actions */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {quickActions.map((action) => (
+          <Link key={action.path} to={action.path} className="group">
+            <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30">
+              <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${action.color} group-hover:scale-105 transition-transform`}>
+                  <action.icon className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-medium text-foreground hidden sm:block">{action.label}</span>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <StatCard

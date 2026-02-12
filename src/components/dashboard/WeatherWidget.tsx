@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets, Thermometer, Loader2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets, Loader2 } from 'lucide-react';
 
 interface WeatherData {
   temperature: number;
@@ -17,7 +17,6 @@ const WeatherWidget = () => {
 
   useEffect(() => {
     fetchWeather();
-    // Open-Meteo allows ~10k req/day; refresh every 10 minutes
     const interval = setInterval(fetchWeather, 10 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
@@ -38,7 +37,6 @@ const WeatherWidget = () => {
   const fetchWeather = async () => {
     try {
       setLoading(true);
-      // Open-Meteo API - free, no API key, generous rate limits
       const response = await fetch(
         'https://api.open-meteo.com/v1/forecast?latitude=47.1585&longitude=27.6014&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe%2FBucharest'
       );
@@ -67,34 +65,27 @@ const WeatherWidget = () => {
 
   const getWeatherIcon = (code: string) => {
     const codeNum = parseInt(code);
-    // Weather codes from wttr.in
-    if (codeNum === 113) return <Sun className="w-10 h-10 text-yellow-500" />;
-    if (codeNum >= 116 && codeNum <= 122) return <Cloud className="w-10 h-10 text-muted-foreground" />;
-    if (codeNum >= 176 && codeNum <= 377) return <CloudRain className="w-10 h-10 text-blue-500" />;
-    if (codeNum >= 200 && codeNum <= 232) return <CloudLightning className="w-10 h-10 text-yellow-600" />;
-    if (codeNum >= 320 && codeNum <= 395) return <CloudSnow className="w-10 h-10 text-blue-200" />;
-    return <Cloud className="w-10 h-10 text-muted-foreground" />;
+    if (codeNum === 113) return <Sun className="w-8 h-8 text-warning" />;
+    if (codeNum >= 116 && codeNum <= 122) return <Cloud className="w-8 h-8 text-muted-foreground" />;
+    if (codeNum >= 176 && codeNum <= 377) return <CloudRain className="w-8 h-8 text-info" />;
+    if (codeNum >= 200 && codeNum <= 232) return <CloudLightning className="w-8 h-8 text-warning" />;
+    if (codeNum >= 320 && codeNum <= 395) return <CloudSnow className="w-8 h-8 text-info" />;
+    return <Cloud className="w-8 h-8 text-muted-foreground" />;
   };
 
   const getTemperatureColor = (temp: number) => {
-    if (temp <= 0) return 'text-blue-400';
-    if (temp <= 10) return 'text-blue-500';
-    if (temp <= 20) return 'text-green-500';
-    if (temp <= 30) return 'text-orange-500';
-    return 'text-red-500';
+    if (temp <= 0) return 'text-info';
+    if (temp <= 10) return 'text-info';
+    if (temp <= 20) return 'text-success';
+    if (temp <= 30) return 'text-warning';
+    return 'text-destructive';
   };
 
   if (loading) {
     return (
       <Card className="bg-card border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-display flex items-center gap-2">
-            <Cloud className="w-5 h-5 text-primary" />
-            Vremea în Iași
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <CardContent className="p-4 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
     );
@@ -103,16 +94,8 @@ const WeatherWidget = () => {
   if (error || !weather) {
     return (
       <Card className="bg-card border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-display flex items-center gap-2">
-            <Cloud className="w-5 h-5 text-primary" />
-            Vremea în Iași
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-4">
-            {error || 'Datele meteo nu sunt disponibile'}
-          </p>
+        <CardContent className="p-4">
+          <p className="text-xs text-muted-foreground text-center">{error || 'Datele meteo nu sunt disponibile'}</p>
         </CardContent>
       </Card>
     );
@@ -120,41 +103,28 @@ const WeatherWidget = () => {
 
   return (
     <Card className="bg-card border-border overflow-hidden">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-display flex items-center gap-2">
-          <Cloud className="w-5 h-5 text-primary" />
-          Vremea în Iași
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {getWeatherIcon(weather.icon)}
-            <div>
-              <p className={`text-3xl font-bold ${getTemperatureColor(weather.temperature)}`}>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          {getWeatherIcon(weather.icon)}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-2">
+              <span className={`text-2xl font-bold ${getTemperatureColor(weather.temperature)}`}>
                 {weather.temperature}°C
-              </p>
-              <p className="text-sm text-muted-foreground capitalize">
-                {weather.condition}
-              </p>
+              </span>
+              <span className="text-xs text-muted-foreground">Iași</span>
             </div>
+            <p className="text-xs text-muted-foreground capitalize">{weather.condition}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
-          <div className="flex items-center gap-2">
-            <Droplets className="w-4 h-4 text-blue-500" />
-            <div>
-              <p className="text-xs text-muted-foreground">Umiditate</p>
-              <p className="text-sm font-medium">{weather.humidity}%</p>
-            </div>
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
+          <div className="flex items-center gap-1.5">
+            <Droplets className="w-3.5 h-3.5 text-info" />
+            <span className="text-xs text-muted-foreground">{weather.humidity}%</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Wind className="w-4 h-4 text-muted-foreground" />
-            <div>
-              <p className="text-xs text-muted-foreground">Vânt</p>
-              <p className="text-sm font-medium">{weather.windSpeed} km/h</p>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <Wind className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">{weather.windSpeed} km/h</span>
           </div>
         </div>
       </CardContent>

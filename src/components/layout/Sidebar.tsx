@@ -3,7 +3,9 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
+import { useSidebarContext } from '@/contexts/SidebarContext';
 import {
   Home,
   Calendar,
@@ -25,7 +27,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { isSuperAdmin, canManageHR, isSef, isSefSRUS } = useUserRole();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, toggleCollapsed } = useSidebarContext();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
 
@@ -46,16 +48,55 @@ const Sidebar = () => {
     navigate('/auth');
   };
 
-  const menuItems = [
+  const mainItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     ...(isSuperAdmin ? [{ icon: FileText, label: 'Cerere Concediu', path: '/leave-request' }] : []),
+  ];
+
+  const managementItems = [
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
+
+  const renderNavItem = (item: { icon: any; label: string; path: string }) => {
+    const isActive = location.pathname === item.path;
+    const linkContent = (
+      <Link
+        key={item.path}
+        to={item.path}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group",
+          isActive
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+            : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        )}
+      >
+        {/* Active indicator bar */}
+        {isActive && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-sidebar-primary-foreground rounded-r-full -ml-3" />
+        )}
+        <item.icon className="w-5 h-5 flex-shrink-0" />
+        {!isCollapsed && <span className="font-medium">{item.label}</span>}
+      </Link>
+    );
+
+    if (isCollapsed) {
+      return (
+        <Tooltip key={item.path} delayDuration={0}>
+          <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+          <TooltipContent side="right" className="font-medium">
+            {item.label}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return linkContent;
+  };
 
   return (
     <aside
@@ -64,83 +105,103 @@ const Sidebar = () => {
         isCollapsed ? "w-20" : "w-64"
       )}
     >
-      {/* Header */}
+      {/* Header with collapse button */}
       <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <img 
-            src="/logo-icmpp.png" 
-            alt="ICMPP Logo" 
-            className="w-10 h-10 object-contain flex-shrink-0"
-          />
-          {!isCollapsed && (
-            <div className="overflow-hidden">
-              <h1 className="font-display font-bold text-lg leading-tight">ICMPP</h1>
-              <p className="text-xs text-sidebar-foreground/70 truncate">Intranet</p>
-            </div>
-          )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo-icmpp.png" 
+              alt="ICMPP Logo" 
+              className="w-10 h-10 object-contain flex-shrink-0"
+            />
+            {!isCollapsed && (
+              <div className="overflow-hidden">
+                <h1 className="font-display font-bold text-lg leading-tight">ICMPP</h1>
+                <p className="text-xs text-sidebar-foreground/70 truncate">Intranet</p>
+              </div>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleCollapsed}
+            className="h-7 w-7 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent flex-shrink-0"
+          >
+            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </Button>
         </div>
       </div>
 
       {/* User info */}
       <div className="p-3 border-b border-sidebar-border">
-        <Link to="/my-profile" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-          <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center overflow-hidden flex-shrink-0">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-4 h-4 text-sidebar-foreground/70" />
-            )}
-          </div>
-          {!isCollapsed && fullName && (
-            <span className="text-sm font-medium text-sidebar-foreground truncate">{fullName}</span>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Link to="/my-profile" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+              <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center overflow-hidden flex-shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-4 h-4 text-sidebar-foreground/70" />
+                )}
+              </div>
+              {!isCollapsed && fullName && (
+                <span className="text-sm font-medium text-sidebar-foreground truncate">{fullName}</span>
+              )}
+            </Link>
+          </TooltipTrigger>
+          {isCollapsed && fullName && (
+            <TooltipContent side="right" className="font-medium">{fullName}</TooltipContent>
           )}
-        </Link>
+        </Tooltip>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}
-            >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && <span className="font-medium">{item.label}</span>}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 p-3 overflow-y-auto">
+        {/* Main section */}
+        {!isCollapsed && (
+          <p className="px-3 mb-2 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">
+            Meniu Principal
+          </p>
+        )}
+        <div className="space-y-1">
+          {mainItems.map(renderNavItem)}
+        </div>
+
+        {/* Separator */}
+        <div className="my-3 border-t border-sidebar-border/50" />
+
+        {/* Management section */}
+        {!isCollapsed && (
+          <p className="px-3 mb-2 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">
+            Administrare
+          </p>
+        )}
+        <div className="space-y-1">
+          {managementItems.map(renderNavItem)}
+        </div>
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-sidebar-border space-y-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="w-full justify-center text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-        >
-          {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleSignOut}
-          className={cn(
-            "w-full text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10",
-            isCollapsed ? "justify-center" : "justify-start"
+      <div className="p-3 border-t border-sidebar-border">
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className={cn(
+                "w-full text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10",
+                isCollapsed ? "justify-center" : "justify-start"
+              )}
+            >
+              <LogOut className="w-5 h-5" />
+              {!isCollapsed && <span className="ml-3">Deconectare</span>}
+            </Button>
+          </TooltipTrigger>
+          {isCollapsed && (
+            <TooltipContent side="right" className="font-medium">Deconectare</TooltipContent>
           )}
-        >
-          <LogOut className="w-5 h-5" />
-          {!isCollapsed && <span className="ml-3">Deconectare</span>}
-        </Button>
+        </Tooltip>
       </div>
     </aside>
   );

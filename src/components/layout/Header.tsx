@@ -4,8 +4,22 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { GlobalSearch } from '@/components/layout/GlobalSearch';
 import MobileNav from '@/components/layout/MobileNav';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, ChevronRight } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useLocation, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+const routeLabels: Record<string, string> = {
+  '/': 'Dashboard',
+  '/my-profile': 'Profilul Meu',
+  '/leave-calendar': 'Calendar Concedii',
+  '/formulare': 'Formulare',
+  '/leave-request': 'Cerere Concediu',
+  '/hr-management': 'Gestiune HR',
+  '/settings': 'Setări',
+  '/admin': 'Administrare',
+};
 
 interface HeaderProps {
   title: string;
@@ -15,12 +29,26 @@ interface HeaderProps {
 const Header = ({ title, description }: HeaderProps) => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const location = useLocation();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').select('avatar_url').eq('user_id', user.id).maybeSingle()
+        .then(({ data }) => {
+          if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+        });
+    }
+  }, [user]);
 
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
   };
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+
+  const currentRoute = location.pathname;
+  const breadcrumbLabel = routeLabels[currentRoute];
 
   return (
     <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border px-4 md:px-6 py-3 md:py-4">
@@ -31,7 +59,15 @@ const Header = ({ title, description }: HeaderProps) => {
           
           <div className="min-w-0">
             <h1 className="text-lg md:text-2xl font-display font-bold text-foreground truncate">{title}</h1>
-            {description && (
+            {/* Breadcrumb */}
+            {currentRoute !== '/' && breadcrumbLabel && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 hidden sm:flex">
+                <Link to="/" className="hover:text-foreground transition-colors">Dashboard</Link>
+                <ChevronRight className="w-3 h-3" />
+                <span className="text-foreground/70">{breadcrumbLabel}</span>
+              </div>
+            )}
+            {description && currentRoute === '/' && (
               <p className="text-xs md:text-sm text-muted-foreground mt-0.5 hidden sm:block">{description}</p>
             )}
           </div>
@@ -48,7 +84,7 @@ const Header = ({ title, description }: HeaderProps) => {
 
           <div className="hidden sm:flex items-center gap-3 pl-2 md:pl-4 border-l border-border">
             <Avatar className="w-8 h-8 md:w-9 md:h-9 border-2 border-primary/20">
-              <AvatarImage src="" />
+              <AvatarImage src={avatarUrl || ''} />
               <AvatarFallback className="bg-primary/10 text-primary text-xs md:text-sm font-medium">
                 {user?.email ? getInitials(user.email) : 'U'}
               </AvatarFallback>
