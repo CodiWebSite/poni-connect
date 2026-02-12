@@ -1135,6 +1135,10 @@ export type Database = {
           synced_count: number
         }[]
       }
+      user_same_department: {
+        Args: { _target_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
