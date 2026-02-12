@@ -18,6 +18,8 @@ import AuditLog from '@/components/admin/AuditLog';
 import PreAssignRoles from '@/components/admin/PreAssignRoles';
 import ManualAccountCreate from '@/components/admin/ManualAccountCreate';
 import AccountRequestsPanel from '@/components/admin/AccountRequestsPanel';
+import AuthLoginLog from '@/components/admin/AuthLoginLog';
+import EquipmentRegistry from '@/components/admin/EquipmentRegistry';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -174,7 +176,9 @@ const Admin = () => {
            <TabsTrigger value="preassign">Pre-atribuire Roluri</TabsTrigger>
             <TabsTrigger value="create-account">Creare Cont</TabsTrigger>
             <TabsTrigger value="account-requests">Cereri Cont</TabsTrigger>
-            <TabsTrigger value="audit">Jurnal Audit</TabsTrigger>
+             <TabsTrigger value="audit">Jurnal Audit</TabsTrigger>
+             <TabsTrigger value="auth-log">Autentificări</TabsTrigger>
+             <TabsTrigger value="inventory">Inventar</TabsTrigger>
          </TabsList>
         <TabsContent value="roles" className="space-y-6">
           <Card>
@@ -253,6 +257,12 @@ const Admin = () => {
         </TabsContent>
         <TabsContent value="audit">
           <AuditLog />
+        </TabsContent>
+        <TabsContent value="auth-log">
+          <AuthLoginLog />
+        </TabsContent>
+        <TabsContent value="inventory">
+          <EquipmentRegistry />
         </TabsContent>
       </Tabs>
 

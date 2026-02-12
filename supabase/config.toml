@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.create-user]
 verify_jwt = true
+
+[functions.log-auth-event]
+verify_jwt = true
