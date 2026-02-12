@@ -68,18 +68,22 @@ const LeaveCalendar = () => {
     const { data: profile } = await supabase.from('profiles').select('full_name, department').eq('user_id', user.id).single();
     const userDept = profile?.department || null;
     setDepartment(userDept);
+    console.log('[LeaveCalendar] Current user:', user.id, 'Department:', userDept);
 
     const { data: holidays } = await supabase.from('custom_holidays').select('holiday_date, name');
     const holidayMap: Record<string, string> = {};
     (holidays || []).forEach(h => { holidayMap[h.holiday_date] = h.name; });
     setCustomHolidays(holidayMap);
 
-    const { data: allLeaves } = await supabase.from('hr_requests').select('user_id, details').eq('request_type', 'concediu').eq('status', 'approved');
+    const { data: allLeaves, error: hrErr } = await supabase.from('hr_requests').select('user_id, details').eq('request_type', 'concediu').eq('status', 'approved');
+    console.log('[LeaveCalendar] hr_requests:', { count: allLeaves?.length, error: hrErr, data: allLeaves });
     // Also fetch approved leave_requests
     const { data: leaveReqs } = await supabase.from('leave_requests').select('user_id, epd_id, start_date, end_date, status').eq('status', 'approved' as any);
 
-    const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department');
-    const { data: epdData } = await supabase.from('employee_personal_data').select('id, first_name, last_name, department').eq('is_archived', false);
+    const { data: profiles, error: profErr } = await supabase.from('profiles').select('user_id, full_name, department');
+    const { data: epdData, error: epdErr } = await supabase.from('employee_personal_data').select('id, first_name, last_name, department').eq('is_archived', false);
+    console.log('[LeaveCalendar] profiles:', { count: profiles?.length, error: profErr });
+    console.log('[LeaveCalendar] epdData:', { count: epdData?.length, error: epdErr });
 
     const profileMap: Record<string, { name: string; department: string | null }> = {};
     (profiles || []).forEach(p => { profileMap[p.user_id] = { name: p.full_name, department: p.department }; });
