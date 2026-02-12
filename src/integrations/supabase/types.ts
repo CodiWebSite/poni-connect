@@ -1102,6 +1102,7 @@ export type Database = {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
       }
+      epd_same_department: { Args: { _epd_id: string }; Returns: boolean }
       generate_leave_request_number: { Args: never; Returns: string }
       generate_procurement_request_number: { Args: never; Returns: string }
       generate_registration_number: { Args: never; Returns: string }
