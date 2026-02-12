@@ -240,7 +240,7 @@ const PersonalCalendarWidget = () => {
                           const pubH = isPublicHoliday(day);
                           const customH = customHolidays[dateStr];
                           const isOff = weekend || pubH || !!customH;
-                          const leave = getLeaveForDay(emp.employeeName, day);
+                          const leave = isOff ? null : getLeaveForDay(emp.employeeName, day);
                           const style = leave ? getLeaveStyle(leave.leaveType) : null;
 
                           return (
