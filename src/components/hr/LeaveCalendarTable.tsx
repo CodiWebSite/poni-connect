@@ -172,7 +172,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                       const pubHoliday = isPublicHoliday(day);
                       const customH = customHolidayMap[dateStr];
                       const isOff = weekend || pubHoliday || !!customH;
-                      const leave = getLeaveForDay(emp.name, day);
+                      const leave = isOff ? null : getLeaveForDay(emp.name, day);
                       const leaveStyle = leave ? getLeaveStyle(leave.leaveType) : null;
 
                       return (
