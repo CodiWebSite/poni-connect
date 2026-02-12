@@ -1105,6 +1105,7 @@ export type Database = {
       generate_leave_request_number: { Args: never; Returns: string }
       generate_procurement_request_number: { Args: never; Returns: string }
       generate_registration_number: { Args: never; Returns: string }
+      get_user_department: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
