@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import MobileNav from './MobileNav';
+import PageTransition from './PageTransition';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import { cn } from '@/lib/utils';
 
@@ -28,7 +29,9 @@ const MainLayout = ({ children, title, description }: MainLayoutProps) => {
       )}>
         <Header title={title} description={description} />
         <main className="p-4 md:p-6">
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </main>
       </div>
     </div>
