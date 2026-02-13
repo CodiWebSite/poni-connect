@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-export type AppRole = 'user' | 'super_admin' | 'hr' | 'sef' | 'sef_srus' | 'director_institut' | 'director_adjunct' | 'secretar_stiintific';
+export type AppRole = 'user' | 'super_admin' | 'hr' | 'sef' | 'sef_srus' | 'director_institut' | 'director_adjunct' | 'secretar_stiintific' | 'bibliotecar';
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -25,7 +25,7 @@ export function useUserRole() {
 
       if (data && !error) {
         const r = data.role as string;
-        if (['super_admin', 'hr', 'sef', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific'].includes(r)) {
+        if (['super_admin', 'hr', 'sef', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'bibliotecar'].includes(r)) {
           setRole(r as AppRole);
         } else {
           setRole('user');
@@ -43,6 +43,7 @@ export function useUserRole() {
   const isHR = role === 'hr';
   const isSef = role === 'sef';
   const isSefSRUS = role === 'sef_srus';
+  const isBibliotecar = role === 'bibliotecar';
   const isStaff = isSuperAdmin || isHR || isSefSRUS;
   
   // Can manage employee records and documents (HR department)
@@ -51,15 +52,20 @@ export function useUserRole() {
   // Can manage content (events, calendar)
   const canManageContent = isSuperAdmin || isHR || isSefSRUS;
 
+  // Can manage library
+  const canManageLibrary = isSuperAdmin || isBibliotecar;
+
   return { 
     role, 
     isSuperAdmin,
     isHR,
     isSef,
     isSefSRUS,
+    isBibliotecar,
     isStaff,
     canManageContent,
     canManageHR,
+    canManageLibrary,
     loading 
   };
 }

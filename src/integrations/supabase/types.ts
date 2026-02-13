@@ -873,6 +873,90 @@ export type Database = {
           },
         ]
       }
+      library_books: {
+        Row: {
+          autor: string
+          borrowed_at: string | null
+          borrowed_by: string | null
+          cota: string
+          created_at: string
+          id: string
+          inventar: string
+          location_status: string
+          returned_at: string | null
+          titlu: string
+          updated_at: string
+        }
+        Insert: {
+          autor: string
+          borrowed_at?: string | null
+          borrowed_by?: string | null
+          cota: string
+          created_at?: string
+          id?: string
+          inventar: string
+          location_status?: string
+          returned_at?: string | null
+          titlu: string
+          updated_at?: string
+        }
+        Update: {
+          autor?: string
+          borrowed_at?: string | null
+          borrowed_by?: string | null
+          cota?: string
+          created_at?: string
+          id?: string
+          inventar?: string
+          location_status?: string
+          returned_at?: string | null
+          titlu?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      library_magazines: {
+        Row: {
+          an: number
+          borrowed_at: string | null
+          borrowed_by: string | null
+          created_at: string
+          id: string
+          location_status: string
+          numar: string | null
+          returned_at: string | null
+          titlu: string
+          updated_at: string
+          volum: string | null
+        }
+        Insert: {
+          an: number
+          borrowed_at?: string | null
+          borrowed_by?: string | null
+          created_at?: string
+          id?: string
+          location_status?: string
+          numar?: string | null
+          returned_at?: string | null
+          titlu: string
+          updated_at?: string
+          volum?: string | null
+        }
+        Update: {
+          an?: number
+          borrowed_at?: string | null
+          borrowed_by?: string | null
+          created_at?: string
+          id?: string
+          location_status?: string
+          numar?: string | null
+          returned_at?: string | null
+          titlu?: string
+          updated_at?: string
+          volum?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1251,6 +1335,7 @@ export type Database = {
     Functions: {
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_library: { Args: { _user_id: string }; Returns: boolean }
       can_manage_procurement: { Args: { _user_id: string }; Returns: boolean }
       can_manage_secretariat: { Args: { _user_id: string }; Returns: boolean }
       can_view_sensitive_profile_data: {
@@ -1310,6 +1395,7 @@ export type Database = {
         | "director_institut"
         | "director_adjunct"
         | "secretar_stiintific"
+        | "bibliotecar"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
       document_direction: "incoming" | "outgoing"
       hr_request_status: "pending" | "approved" | "rejected"
@@ -1479,6 +1565,7 @@ export const Constants = {
         "director_institut",
         "director_adjunct",
         "secretar_stiintific",
+        "bibliotecar",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
       document_direction: ["incoming", "outgoing"],

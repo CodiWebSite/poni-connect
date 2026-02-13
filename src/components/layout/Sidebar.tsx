@@ -19,6 +19,7 @@ import {
   User,
   FileText,
   FolderDown,
+  BookOpen,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -26,7 +27,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isSuperAdmin, canManageHR, isSef, isSefSRUS } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary } = useUserRole();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
@@ -54,6 +55,7 @@ const Sidebar = () => {
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     ...(isSuperAdmin ? [{ icon: FileText, label: 'Cerere Concediu', path: '/leave-request' }] : []),
+    ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
   ];
 
   const managementItems = [
