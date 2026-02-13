@@ -18,6 +18,7 @@ import LeaveRequest from "./pages/LeaveRequest";
 import ResetPassword from "./pages/ResetPassword";
 import FormTemplates from "./pages/FormTemplates";
 import NotFound from "./pages/NotFound";
+import Library from "./pages/Library";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/leave-request" element={<LeaveRequest />} />
               <Route path="/formulare" element={<FormTemplates />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/library" element={<Library />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
