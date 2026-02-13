@@ -93,6 +93,10 @@ const Library = () => {
   const [editingMag, setEditingMag] = useState<string | null>(null);
   const [editMagData, setEditMagData] = useState<Partial<Magazine>>({});
 
+  // Return dialog
+  const [showReturn, setShowReturn] = useState<{ type: 'book' | 'magazine'; id: string; borrowedBy: string | null } | null>(null);
+  const [returnDate, setReturnDate] = useState('');
+
   // History
   const [showHistory, setShowHistory] = useState<{ type: 'book' | 'magazine'; id: string; title: string } | null>(null);
   const [historyRecords, setHistoryRecords] = useState<BorrowRecord[]>([]);
@@ -227,14 +231,18 @@ const Library = () => {
     setUseManualEmployee(false);
   };
 
-  const handleReturn = async (type: 'book' | 'magazine', id: string, borrowedBy: string | null) => {
-    const table = type === 'book' ? 'library_books' : 'library_magazines';
+  const handleReturn = async () => {
+    if (!showReturn) return;
+    const table = showReturn.type === 'book' ? 'library_books' : 'library_magazines';
+    const returnDateValue = returnDate || new Date().toISOString();
     const { error } = await supabase.from(table as any).update({
-      location_status: 'depozit', borrowed_by: null, returned_at: new Date().toISOString(),
-    } as any).eq('id', id);
+      location_status: 'depozit', borrowed_by: null, returned_at: returnDateValue,
+    } as any).eq('id', showReturn.id);
     if (error) { toast({ title: 'Eroare', description: error.message, variant: 'destructive' }); return; }
-    await logHistory(type, id, 'return', borrowedBy);
+    await logHistory(showReturn.type, showReturn.id, 'return', showReturn.borrowedBy);
     toast({ title: 'Returnat cu succes' });
+    setShowReturn(null);
+    setReturnDate('');
     refreshData();
   };
 
@@ -454,7 +462,7 @@ const Library = () => {
                                       <UserPlus className="w-3 h-3 mr-1" />Împrumută
                                     </Button>
                                   ) : (
-                                    <Button size="sm" variant="outline" onClick={() => handleReturn('book', book.id, book.borrowed_by)}>
+                                    <Button size="sm" variant="outline" onClick={() => setShowReturn({ type: 'book', id: book.id, borrowedBy: book.borrowed_by })}>
                                       <RotateCcw className="w-3 h-3 mr-1" />Returnează
                                     </Button>
                                   )}
@@ -565,7 +573,7 @@ const Library = () => {
                                       <UserPlus className="w-3 h-3 mr-1" />Împrumută
                                     </Button>
                                   ) : (
-                                    <Button size="sm" variant="outline" onClick={() => handleReturn('magazine', mag.id, mag.borrowed_by)}>
+                                    <Button size="sm" variant="outline" onClick={() => setShowReturn({ type: 'magazine', id: mag.id, borrowedBy: mag.borrowed_by })}>
                                       <RotateCcw className="w-3 h-3 mr-1" />Returnează
                                     </Button>
                                   )}
@@ -706,6 +714,25 @@ const Library = () => {
             )}
           </div>
           <DialogFooter><Button onClick={handleBorrow} disabled={!canBorrow}>Confirmă împrumut</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Return Dialog */}
+      <Dialog open={!!showReturn} onOpenChange={() => { setShowReturn(null); setReturnDate(''); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Returnare</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Data returnării</Label>
+              <Input
+                type="date"
+                value={returnDate ? returnDate.slice(0, 10) : new Date().toISOString().slice(0, 10)}
+                onChange={e => setReturnDate(e.target.value ? new Date(e.target.value).toISOString() : '')}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Lasă data de azi sau schimbă pentru returnări din urmă.</p>
+            </div>
+          </div>
+          <DialogFooter><Button onClick={handleReturn}>Confirmă returnare</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
