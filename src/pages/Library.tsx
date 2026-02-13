@@ -76,6 +76,7 @@ const Library = () => {
   const [showAddMagazine, setShowAddMagazine] = useState(false);
   const [showBorrow, setShowBorrow] = useState<{ type: 'book' | 'magazine'; id: string } | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState('');
+  const [employeeSearch, setEmployeeSearch] = useState('');
 
   const [newBook, setNewBook] = useState({ cota: '', inventar: '', titlu: '', autor: '' });
   const [newMagazine, setNewMagazine] = useState({ titlu: '', an: new Date().getFullYear(), volum: '', numar: '' });
@@ -559,19 +560,35 @@ const Library = () => {
       </Dialog>
 
       {/* Borrow Dialog */}
-      <Dialog open={!!showBorrow} onOpenChange={() => { setShowBorrow(null); setSelectedEmployee(''); }}>
+      <Dialog open={!!showBorrow} onOpenChange={() => { setShowBorrow(null); setSelectedEmployee(''); setEmployeeSearch(''); }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Împrumută</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Label>Selectează angajatul</Label>
-            <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-              <SelectTrigger><SelectValue placeholder="Alege angajat..." /></SelectTrigger>
-              <SelectContent>
-                {employees.map(emp => (
-                  <SelectItem key={emp.id} value={emp.id}>{emp.last_name} {emp.first_name}</SelectItem>
+            <Label>Caută și selectează angajatul</Label>
+            <Input
+              placeholder="Caută după nume..."
+              value={employeeSearch}
+              onChange={(e) => setEmployeeSearch(e.target.value)}
+            />
+            <div className="max-h-60 overflow-y-auto border rounded-md">
+              {employees
+                .filter(emp => {
+                  const fullName = `${emp.last_name} ${emp.first_name}`.toLowerCase();
+                  return fullName.includes(employeeSearch.toLowerCase());
+                })
+                .map(emp => (
+                  <button
+                    key={emp.id}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-secondary/50 transition-colors ${selectedEmployee === emp.id ? 'bg-primary/10 font-medium text-primary' : ''}`}
+                    onClick={() => setSelectedEmployee(emp.id)}
+                  >
+                    {emp.last_name} {emp.first_name}
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
+              {employees.filter(emp => `${emp.last_name} ${emp.first_name}`.toLowerCase().includes(employeeSearch.toLowerCase())).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Niciun rezultat</p>
+              )}
+            </div>
           </div>
           <DialogFooter><Button onClick={handleBorrow} disabled={!selectedEmployee}>Confirmă împrumut</Button></DialogFooter>
         </DialogContent>

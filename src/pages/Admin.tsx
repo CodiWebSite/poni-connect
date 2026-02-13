@@ -29,6 +29,7 @@ const roleLabels: Record<string, string> = {
   sef_srus: 'Șef Serviciu Resurse Umane',
   sef: 'Șef Departament',
   hr: 'HR (SRUS)',
+  bibliotecar: 'Bibliotecar',
   user: 'Angajat',
 };
 
@@ -40,6 +41,7 @@ const roleBadgeColors: Record<string, string> = {
   sef_srus: 'bg-blue-600 text-white',
   sef: 'bg-amber-600 text-white',
   hr: 'bg-purple-500 text-white',
+  bibliotecar: 'bg-emerald-600 text-white',
   user: 'bg-muted text-muted-foreground',
 };
 
@@ -84,7 +86,7 @@ const Admin = () => {
     const usersWithRoles: UserWithRole[] = profiles.map(profile => {
       const userRole = roles.find(r => r.user_id === profile.user_id);
       const r = userRole?.role as string || 'user';
-      const validRoles = ['super_admin', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'sef_srus', 'sef', 'hr', 'user'];
+      const validRoles = ['super_admin', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'sef_srus', 'sef', 'hr', 'bibliotecar', 'user'];
       const mappedRole = validRoles.includes(r) ? r : 'user';
       return {
         user_id: profile.user_id,

@@ -17,6 +17,7 @@ const roleLabels: Record<string, string> = {
   sef_srus: 'Șef Serviciu Resurse Umane',
   sef: 'Șef Departament',
   hr: 'HR (SRUS)',
+  bibliotecar: 'Bibliotecar',
   user: 'Angajat',
 };
 
@@ -28,6 +29,7 @@ const roleBadgeColors: Record<string, string> = {
   sef_srus: 'bg-blue-600 text-white',
   sef: 'bg-amber-600 text-white',
   hr: 'bg-purple-500 text-white',
+  bibliotecar: 'bg-emerald-600 text-white',
   user: 'bg-muted text-muted-foreground',
 };
 
