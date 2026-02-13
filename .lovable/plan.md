@@ -1,97 +1,89 @@
 
-# Plan: Imbunatatiri Interfata si Navigare
+# Plan: Modul Biblioteca cu rol BIBLIOTECAR
 
-Imbunatatiri vizuale si de UX pentru pagina de login, sidebar si dashboard, fara a schimba functionalitatea existenta.
-
----
-
-## 1. Pagina de Login - Redesign
-
-### Ce se schimba:
-- Fundal cu gradient subtil si un pattern decorativ (blob-uri animate lent)
-- Logo-ul ICMPP mai mare, cu un efect de glow subtil
-- Card-ul de login cu efect glassmorphism mai pronuntat si shadow mai elegant
-- Animatie de fade-in la incarcare pentru un aspect mai profesionist
-- Captcha-ul sa fie mai bine integrat vizual (margini rotunjite, spacing uniform)
-- Butonul de "Solicita ajutor" sa fie mai vizibil (nu doar text gri)
-
-### Fisier modificat:
-- `src/pages/Auth.tsx` - restructurare layout si stiluri
+## Rezumat
+Se creaza un modul complet de biblioteca cu rol dedicat `bibliotecar`, doua tabele (carti si reviste), pagina cu doua tab-uri, posibilitate de imprumut catre angajati si export Excel.
 
 ---
 
-## 2. Sidebar - Imbunatatiri
+## 1. Baza de date - Migrari SQL
 
-### Ce se schimba:
-- Adaugare tooltip pe iconite cand sidebar-ul e collapsed (acum nu stii ce face fiecare icon)
-- Separator vizual intre sectiunile de navigare (ex: meniu principal vs. administrare)
-- Badge cu numar de notificari pe item-urile relevante (ex: daca sunt cereri de concediu in asteptare pe "Gestiune HR")
-- Animatie mai fluida la expand/collapse
-- Buton de collapse mutat sus, langa logo (mai intuitiv)
-- Evidentierea mai clara a item-ului activ (indicator lateral colorat, nu doar fundal)
+### 1.1 Adaugare rol `bibliotecar` in enum-ul `app_role`
+```sql
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'bibliotecar';
+```
 
-### Fisiere modificate:
-- `src/components/layout/Sidebar.tsx`
-- `src/components/layout/MobileNav.tsx` (sincronizare vizuala)
+### 1.2 Tabel `library_books` (Carti)
+Coloane: id, cota, inventar, titlu, autor, location_status (depozit/imprumutat), borrowed_by (referinta la profiles.user_id), borrowed_at, returned_at, created_at, updated_at.
 
----
+### 1.3 Tabel `library_magazines` (Reviste)
+Coloane: id, titlu, an, volum, numar, location_status, borrowed_by, borrowed_at, returned_at, created_at, updated_at.
 
-## 3. Dashboard - Reorganizare si Vizual
+### 1.4 Politici RLS
+- SELECT/INSERT/UPDATE/DELETE permise doar utilizatorilor cu rol `bibliotecar` sau `super_admin` (folosind functia `has_role` existenta).
 
-### Ce se schimba:
-- Salut personalizat cu data curenta si un mesaj contextual (ex: "Buna dimineata" / "Buna ziua" in functie de ora)
-- Stat card-uri cu gradient subtil pe fundal si micro-animatie la incarcare
-- Sectiune "Acces rapid" vizibila pe dashboard (linkuri catre Profilul Meu, Calendar Concedii, Formulare) - carduri cu iconite mari
-- Widget-ul meteo redesenat cu iconite animate si un layout mai compact
-- Calendar departamental cu header mai clar si legenda integrata mai elegant
-
-### Fisiere modificate:
-- `src/pages/Dashboard.tsx` - adaugare Quick Actions
-- `src/components/dashboard/EmployeeDashboard.tsx` - salut contextual cu ora
-- `src/components/dashboard/StatCard.tsx` - gradient si animatii
-- `src/components/dashboard/WeatherWidget.tsx` - layout compact
+### 1.5 Functie helper
+```sql
+CREATE FUNCTION can_manage_library(_user_id uuid) ...
+-- verifica daca rolul e bibliotecar sau super_admin
+```
 
 ---
 
-## 4. Header - Imbunatatiri minore
+## 2. Frontend - Hook useUserRole
 
-### Ce se schimba:
-- Avatar-ul din header sa afiseze poza reala (acum e mereu fallback cu initiale, nu se incarca avatarul din profil)
-- Breadcrumb simplu sub titlu care arata navigarea curenta
-
-### Fisier modificat:
-- `src/components/layout/Header.tsx`
+Se adauga:
+- `bibliotecar` in tipul `AppRole`
+- `isBibliotecar` flag
+- `canManageLibrary` flag (bibliotecar sau super_admin)
 
 ---
 
-## 5. Layout general - Bug fix
+## 3. Frontend - Pagina Biblioteca
 
-### Ce se schimba:
-- Cand sidebar-ul e collapsed, `MainLayout` are `md:pl-64` hardcodat, deci continutul nu se reajusteaza. Se va lega de starea sidebar-ului pentru a ajusta padding-ul corect.
-
-### Fisiere modificate:
-- `src/components/layout/MainLayout.tsx`
-- `src/components/layout/Sidebar.tsx` - expunere stare collapsed prin context
+### Fisier nou: `src/pages/Library.tsx`
+- Doua tab-uri: **Carti** si **Reviste**
+- Fiecare tab are un tabel cu coloanele cerute
+- Buton "Adauga carte" / "Adauga revista" care deschide un dialog cu formular
+- Coloana "Locatie actuala" afiseaza "Depozit" sau numele angajatului
+- Buton "Imprumuta" pe fiecare rand - deschide un select cu angajatii din profiles
+- Buton "Returneaza" cand e imprumutat
+- Buton "Export Excel" care genereaza un fisier .xlsx cu toate datele (carti sau reviste, incluzand cine a imprumutat si cand)
 
 ---
 
-## Detalii tehnice
+## 4. Navigare
 
-### Fisiere noi:
-- `src/contexts/SidebarContext.tsx` - context React pentru starea collapsed/expanded a sidebar-ului, partajata intre Sidebar si MainLayout
+### Sidebar.tsx
+- Se adauga item "Biblioteca" (icon: `BookOpen`) vizibil doar pentru `isBibliotecar` sau `isSuperAdmin`
 
-### Fisiere modificate:
-- `src/pages/Auth.tsx` - redesign vizual login
-- `src/components/layout/Sidebar.tsx` - tooltips, separator, indicator lateral activ, buton collapse repozitonat, context
-- `src/components/layout/MobileNav.tsx` - sincronizare stil cu sidebar
-- `src/components/layout/MainLayout.tsx` - padding dinamic bazat pe context sidebar
-- `src/components/layout/Header.tsx` - avatar real, breadcrumb
-- `src/pages/Dashboard.tsx` - quick actions
-- `src/components/dashboard/EmployeeDashboard.tsx` - salut contextual
-- `src/components/dashboard/StatCard.tsx` - gradient si animatii
-- `src/components/dashboard/WeatherWidget.tsx` - redesign compact
+### App.tsx
+- Ruta noua: `/library` -> componenta `Library`
 
-### Nu se modifica:
-- Functionalitatea existenta (autentificare, CAPTCHA, roluri)
-- Schema bazei de date
-- Edge functions
+### handle_new_user (trigger existent)
+- Rolul `bibliotecar` va fi automat mapat la label "Bibliotecar" in notificarea de bun-venit (se actualizeaza functia)
+
+---
+
+## 5. Export Excel
+
+Se foloseste biblioteca `exceljs` (deja instalata) pentru a genera:
+- **Raport Carti**: toate cartile cu cota, inventar, titlu, autor, locatie, imprumutat la, data imprumut
+- **Raport Reviste**: toate revistele cu titlu, an, volum, numar, locatie, imprumutat la, data imprumut
+
+---
+
+## Fisiere modificate
+- `src/hooks/useUserRole.tsx` - adaugare `bibliotecar`
+- `src/components/layout/Sidebar.tsx` - link Biblioteca
+- `src/App.tsx` - ruta `/library`
+
+## Fisiere noi
+- `src/pages/Library.tsx` - pagina principala cu tab-uri, CRUD, imprumut si export
+
+## Migrari baza de date
+- Adaugare valoare enum `bibliotecar`
+- Creare tabele `library_books` si `library_magazines`
+- RLS policies
+- Functie `can_manage_library`
+- Update trigger `handle_new_user` pentru label bibliotecar
