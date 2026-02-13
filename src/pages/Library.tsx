@@ -40,9 +40,10 @@ interface Magazine {
   returned_at: string | null;
 }
 
-interface Profile {
-  user_id: string;
-  full_name: string;
+interface EmployeeEntry {
+  id: string;
+  first_name: string;
+  last_name: string;
 }
 
 interface BorrowRecord {
@@ -61,7 +62,7 @@ const Library = () => {
 
   const [books, setBooks] = useState<Book[]>([]);
   const [magazines, setMagazines] = useState<Magazine[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [employees, setEmployees] = useState<EmployeeEntry[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   // Pagination
@@ -115,22 +116,22 @@ const Library = () => {
       const [booksRes, magsRes, profilesRes] = await Promise.all([
         supabase.from('library_books' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to),
         supabase.from('library_magazines' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(magFrom, magTo),
-        supabase.from('profiles').select('user_id, full_name'),
+        supabase.from('employee_personal_data').select('id, first_name, last_name').eq('is_archived', false).order('last_name'),
       ]);
       if (booksRes.data) setBooks(booksRes.data as any);
       if (booksRes.count != null) setBooksTotal(booksRes.count);
       if (magsRes.data) setMagazines(magsRes.data as any);
       if (magsRes.count != null) setMagsTotal(magsRes.count);
-      if (profilesRes.data) setProfiles(profilesRes.data as Profile[]);
+      if (profilesRes.data) setEmployees(profilesRes.data as EmployeeEntry[]);
       setLoadingData(false);
     };
     load();
   }, [canAccess, booksPage, magsPage]);
 
-  const getEmployeeName = (userId: string | null) => {
-    if (!userId) return 'Depozit';
-    const p = profiles.find(pr => pr.user_id === userId);
-    return p ? p.full_name : 'Necunoscut';
+  const getEmployeeName = (epdId: string | null) => {
+    if (!epdId) return 'Depozit';
+    const e = employees.find(emp => emp.id === epdId);
+    return e ? `${e.last_name} ${e.first_name}` : 'Necunoscut';
   };
 
   const logHistory = async (itemType: string, itemId: string, action: string, employeeId?: string | null) => {
@@ -566,8 +567,8 @@ const Library = () => {
             <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
               <SelectTrigger><SelectValue placeholder="Alege angajat..." /></SelectTrigger>
               <SelectContent>
-                {profiles.map(p => (
-                  <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
+                {employees.map(emp => (
+                  <SelectItem key={emp.id} value={emp.id}>{emp.last_name} {emp.first_name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
