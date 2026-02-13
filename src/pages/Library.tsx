@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { BookOpen, Plus, Download, RotateCcw, UserPlus, Trash2, History, Pencil, Check, X } from 'lucide-react';
+import { BookOpen, Plus, Download, RotateCcw, UserPlus, Trash2, History, Pencil, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -64,6 +64,13 @@ const Library = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
+  // Pagination
+  const PAGE_SIZE = 20;
+  const [booksPage, setBooksPage] = useState(0);
+  const [booksTotal, setBooksTotal] = useState(0);
+  const [magsPage, setMagsPage] = useState(0);
+  const [magsTotal, setMagsTotal] = useState(0);
+
   const [showAddBook, setShowAddBook] = useState(false);
   const [showAddMagazine, setShowAddMagazine] = useState(false);
   const [showBorrow, setShowBorrow] = useState<{ type: 'book' | 'magazine'; id: string } | null>(null);
@@ -101,18 +108,24 @@ const Library = () => {
     if (!canAccess) return;
     const load = async () => {
       setLoadingData(true);
+      const from = booksPage * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const magFrom = magsPage * PAGE_SIZE;
+      const magTo = magFrom + PAGE_SIZE - 1;
       const [booksRes, magsRes, profilesRes] = await Promise.all([
-        supabase.from('library_books' as any).select('*').order('created_at', { ascending: false }),
-        supabase.from('library_magazines' as any).select('*').order('created_at', { ascending: false }),
+        supabase.from('library_books' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to),
+        supabase.from('library_magazines' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(magFrom, magTo),
         supabase.from('profiles').select('user_id, full_name'),
       ]);
       if (booksRes.data) setBooks(booksRes.data as any);
+      if (booksRes.count != null) setBooksTotal(booksRes.count);
       if (magsRes.data) setMagazines(magsRes.data as any);
+      if (magsRes.count != null) setMagsTotal(magsRes.count);
       if (profilesRes.data) setProfiles(profilesRes.data as Profile[]);
       setLoadingData(false);
     };
     load();
-  }, [canAccess]);
+  }, [canAccess, booksPage, magsPage]);
 
   const getEmployeeName = (userId: string | null) => {
     if (!userId) return 'Depozit';
@@ -221,12 +234,18 @@ const Library = () => {
   };
 
   const refreshData = async () => {
+    const from = booksPage * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    const magFrom = magsPage * PAGE_SIZE;
+    const magTo = magFrom + PAGE_SIZE - 1;
     const [booksRes, magsRes] = await Promise.all([
-      supabase.from('library_books' as any).select('*').order('created_at', { ascending: false }),
-      supabase.from('library_magazines' as any).select('*').order('created_at', { ascending: false }),
+      supabase.from('library_books' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to),
+      supabase.from('library_magazines' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(magFrom, magTo),
     ]);
     if (booksRes.data) setBooks(booksRes.data as any);
+    if (booksRes.count != null) setBooksTotal(booksRes.count);
     if (magsRes.data) setMagazines(magsRes.data as any);
+    if (magsRes.count != null) setMagsTotal(magsRes.count);
   };
 
   const exportBooksExcel = async () => {
@@ -311,81 +330,98 @@ const Library = () => {
               <Button variant="outline" onClick={exportBooksExcel}><Download className="w-4 h-4 mr-2" />Export Excel</Button>
             </div>
             {loadingData ? <p>Se încarcă...</p> : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cotă</TableHead>
-                      <TableHead>Inventar</TableHead>
-                      <TableHead>Titlu</TableHead>
-                      <TableHead>Autor</TableHead>
-                      <TableHead>Locație actuală</TableHead>
-                      <TableHead>Acțiuni</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {books.length === 0 ? (
-                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nu există cărți</TableCell></TableRow>
-                    ) : books.map(book => (
-                      <TableRow key={book.id}>
-                        {editingBook === book.id ? (
-                          <>
-                            <TableCell><Input className="h-8 w-24" value={editBookData.cota || ''} onChange={e => setEditBookData(p => ({ ...p, cota: e.target.value }))} /></TableCell>
-                            <TableCell><Input className="h-8 w-24" value={editBookData.inventar || ''} onChange={e => setEditBookData(p => ({ ...p, inventar: e.target.value }))} /></TableCell>
-                            <TableCell><Input className="h-8" value={editBookData.titlu || ''} onChange={e => setEditBookData(p => ({ ...p, titlu: e.target.value }))} /></TableCell>
-                            <TableCell><Input className="h-8" value={editBookData.autor || ''} onChange={e => setEditBookData(p => ({ ...p, autor: e.target.value }))} /></TableCell>
-                            <TableCell>
-                              <span className={book.location_status === 'depozit' ? 'text-green-600' : 'text-orange-600'}>
-                                {book.location_status === 'depozit' ? 'Depozit' : getEmployeeName(book.borrowed_by)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button size="sm" variant="outline" onClick={() => saveBookEdit(book.id)}><Check className="w-3 h-3" /></Button>
-                                <Button size="sm" variant="ghost" onClick={() => setEditingBook(null)}><X className="w-3 h-3" /></Button>
-                              </div>
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell>{book.cota}</TableCell>
-                            <TableCell>{book.inventar}</TableCell>
-                            <TableCell className="font-medium">{book.titlu}</TableCell>
-                            <TableCell>{book.autor}</TableCell>
-                            <TableCell>
-                              <span className={book.location_status === 'depozit' ? 'text-green-600' : 'text-orange-600'}>
-                                {book.location_status === 'depozit' ? 'Depozit' : getEmployeeName(book.borrowed_by)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button size="sm" variant="ghost" onClick={() => { setEditingBook(book.id); setEditBookData({ cota: book.cota, inventar: book.inventar, titlu: book.titlu, autor: book.autor }); }}>
-                                  <Pencil className="w-3 h-3" />
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={() => openHistory('book', book.id, book.titlu)}>
-                                  <History className="w-3 h-3" />
-                                </Button>
-                                {book.location_status === 'depozit' ? (
-                                  <Button size="sm" variant="outline" onClick={() => setShowBorrow({ type: 'book', id: book.id })}>
-                                    <UserPlus className="w-3 h-3 mr-1" />Împrumută
-                                  </Button>
-                                ) : (
-                                  <Button size="sm" variant="outline" onClick={() => handleReturn('book', book.id, book.borrowed_by)}>
-                                    <RotateCcw className="w-3 h-3 mr-1" />Returnează
-                                  </Button>
-                                )}
-                                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete('book', book.id)}>
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </>
-                        )}
+              <>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Cotă</TableHead>
+                        <TableHead>Inventar</TableHead>
+                        <TableHead>Titlu</TableHead>
+                        <TableHead>Autor</TableHead>
+                        <TableHead>Locație actuală</TableHead>
+                        <TableHead>Acțiuni</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {books.length === 0 ? (
+                        <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nu există cărți</TableCell></TableRow>
+                      ) : books.map(book => (
+                        <TableRow key={book.id}>
+                          {editingBook === book.id ? (
+                            <>
+                              <TableCell><Input className="h-8 w-24" value={editBookData.cota || ''} onChange={e => setEditBookData(p => ({ ...p, cota: e.target.value }))} /></TableCell>
+                              <TableCell><Input className="h-8 w-24" value={editBookData.inventar || ''} onChange={e => setEditBookData(p => ({ ...p, inventar: e.target.value }))} /></TableCell>
+                              <TableCell><Input className="h-8" value={editBookData.titlu || ''} onChange={e => setEditBookData(p => ({ ...p, titlu: e.target.value }))} /></TableCell>
+                              <TableCell><Input className="h-8" value={editBookData.autor || ''} onChange={e => setEditBookData(p => ({ ...p, autor: e.target.value }))} /></TableCell>
+                              <TableCell>
+                                <span className={book.location_status === 'depozit' ? 'text-green-600' : 'text-orange-600'}>
+                                  {book.location_status === 'depozit' ? 'Depozit' : getEmployeeName(book.borrowed_by)}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="outline" onClick={() => saveBookEdit(book.id)}><Check className="w-3 h-3" /></Button>
+                                  <Button size="sm" variant="ghost" onClick={() => setEditingBook(null)}><X className="w-3 h-3" /></Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell>{book.cota}</TableCell>
+                              <TableCell>{book.inventar}</TableCell>
+                              <TableCell className="font-medium">{book.titlu}</TableCell>
+                              <TableCell>{book.autor}</TableCell>
+                              <TableCell>
+                                <span className={book.location_status === 'depozit' ? 'text-green-600' : 'text-orange-600'}>
+                                  {book.location_status === 'depozit' ? 'Depozit' : getEmployeeName(book.borrowed_by)}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="ghost" onClick={() => { setEditingBook(book.id); setEditBookData({ cota: book.cota, inventar: book.inventar, titlu: book.titlu, autor: book.autor }); }}>
+                                    <Pencil className="w-3 h-3" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => openHistory('book', book.id, book.titlu)}>
+                                    <History className="w-3 h-3" />
+                                  </Button>
+                                  {book.location_status === 'depozit' ? (
+                                    <Button size="sm" variant="outline" onClick={() => setShowBorrow({ type: 'book', id: book.id })}>
+                                      <UserPlus className="w-3 h-3 mr-1" />Împrumută
+                                    </Button>
+                                  ) : (
+                                    <Button size="sm" variant="outline" onClick={() => handleReturn('book', book.id, book.borrowed_by)}>
+                                      <RotateCcw className="w-3 h-3 mr-1" />Returnează
+                                    </Button>
+                                  )}
+                                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete('book', book.id)}>
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {booksTotal > PAGE_SIZE && (
+                  <div className="flex items-center justify-between pt-3">
+                    <p className="text-sm text-muted-foreground">
+                      {booksPage * PAGE_SIZE + 1}–{Math.min((booksPage + 1) * PAGE_SIZE, booksTotal)} din {booksTotal} cărți
+                    </p>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" disabled={booksPage === 0} onClick={() => setBooksPage(p => p - 1)}>
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" disabled={(booksPage + 1) * PAGE_SIZE >= booksTotal} onClick={() => setBooksPage(p => p + 1)}>
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
 
@@ -396,81 +432,98 @@ const Library = () => {
               <Button variant="outline" onClick={exportMagazinesExcel}><Download className="w-4 h-4 mr-2" />Export Excel</Button>
             </div>
             {loadingData ? <p>Se încarcă...</p> : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Titlu</TableHead>
-                      <TableHead>An</TableHead>
-                      <TableHead>Volum</TableHead>
-                      <TableHead>Număr</TableHead>
-                      <TableHead>Locație actuală</TableHead>
-                      <TableHead>Acțiuni</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {magazines.length === 0 ? (
-                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nu există reviste</TableCell></TableRow>
-                    ) : magazines.map(mag => (
-                      <TableRow key={mag.id}>
-                        {editingMag === mag.id ? (
-                          <>
-                            <TableCell><Input className="h-8" value={editMagData.titlu || ''} onChange={e => setEditMagData(p => ({ ...p, titlu: e.target.value }))} /></TableCell>
-                            <TableCell><Input className="h-8 w-20" type="number" value={editMagData.an || ''} onChange={e => setEditMagData(p => ({ ...p, an: parseInt(e.target.value) || 0 }))} /></TableCell>
-                            <TableCell><Input className="h-8 w-20" value={editMagData.volum || ''} onChange={e => setEditMagData(p => ({ ...p, volum: e.target.value }))} /></TableCell>
-                            <TableCell><Input className="h-8 w-20" value={editMagData.numar || ''} onChange={e => setEditMagData(p => ({ ...p, numar: e.target.value }))} /></TableCell>
-                            <TableCell>
-                              <span className={mag.location_status === 'depozit' ? 'text-green-600' : 'text-orange-600'}>
-                                {mag.location_status === 'depozit' ? 'Depozit' : getEmployeeName(mag.borrowed_by)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button size="sm" variant="outline" onClick={() => saveMagEdit(mag.id)}><Check className="w-3 h-3" /></Button>
-                                <Button size="sm" variant="ghost" onClick={() => setEditingMag(null)}><X className="w-3 h-3" /></Button>
-                              </div>
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell className="font-medium">{mag.titlu}</TableCell>
-                            <TableCell>{mag.an}</TableCell>
-                            <TableCell>{mag.volum || '-'}</TableCell>
-                            <TableCell>{mag.numar || '-'}</TableCell>
-                            <TableCell>
-                              <span className={mag.location_status === 'depozit' ? 'text-green-600' : 'text-orange-600'}>
-                                {mag.location_status === 'depozit' ? 'Depozit' : getEmployeeName(mag.borrowed_by)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button size="sm" variant="ghost" onClick={() => { setEditingMag(mag.id); setEditMagData({ titlu: mag.titlu, an: mag.an, volum: mag.volum, numar: mag.numar }); }}>
-                                  <Pencil className="w-3 h-3" />
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={() => openHistory('magazine', mag.id, mag.titlu)}>
-                                  <History className="w-3 h-3" />
-                                </Button>
-                                {mag.location_status === 'depozit' ? (
-                                  <Button size="sm" variant="outline" onClick={() => setShowBorrow({ type: 'magazine', id: mag.id })}>
-                                    <UserPlus className="w-3 h-3 mr-1" />Împrumută
-                                  </Button>
-                                ) : (
-                                  <Button size="sm" variant="outline" onClick={() => handleReturn('magazine', mag.id, mag.borrowed_by)}>
-                                    <RotateCcw className="w-3 h-3 mr-1" />Returnează
-                                  </Button>
-                                )}
-                                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete('magazine', mag.id)}>
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </>
-                        )}
+              <>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Titlu</TableHead>
+                        <TableHead>An</TableHead>
+                        <TableHead>Volum</TableHead>
+                        <TableHead>Număr</TableHead>
+                        <TableHead>Locație actuală</TableHead>
+                        <TableHead>Acțiuni</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {magazines.length === 0 ? (
+                        <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nu există reviste</TableCell></TableRow>
+                      ) : magazines.map(mag => (
+                        <TableRow key={mag.id}>
+                          {editingMag === mag.id ? (
+                            <>
+                              <TableCell><Input className="h-8" value={editMagData.titlu || ''} onChange={e => setEditMagData(p => ({ ...p, titlu: e.target.value }))} /></TableCell>
+                              <TableCell><Input className="h-8 w-20" type="number" value={editMagData.an || ''} onChange={e => setEditMagData(p => ({ ...p, an: parseInt(e.target.value) || 0 }))} /></TableCell>
+                              <TableCell><Input className="h-8 w-20" value={editMagData.volum || ''} onChange={e => setEditMagData(p => ({ ...p, volum: e.target.value }))} /></TableCell>
+                              <TableCell><Input className="h-8 w-20" value={editMagData.numar || ''} onChange={e => setEditMagData(p => ({ ...p, numar: e.target.value }))} /></TableCell>
+                              <TableCell>
+                                <span className={mag.location_status === 'depozit' ? 'text-green-600' : 'text-orange-600'}>
+                                  {mag.location_status === 'depozit' ? 'Depozit' : getEmployeeName(mag.borrowed_by)}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="outline" onClick={() => saveMagEdit(mag.id)}><Check className="w-3 h-3" /></Button>
+                                  <Button size="sm" variant="ghost" onClick={() => setEditingMag(null)}><X className="w-3 h-3" /></Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell className="font-medium">{mag.titlu}</TableCell>
+                              <TableCell>{mag.an}</TableCell>
+                              <TableCell>{mag.volum || '-'}</TableCell>
+                              <TableCell>{mag.numar || '-'}</TableCell>
+                              <TableCell>
+                                <span className={mag.location_status === 'depozit' ? 'text-green-600' : 'text-orange-600'}>
+                                  {mag.location_status === 'depozit' ? 'Depozit' : getEmployeeName(mag.borrowed_by)}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="ghost" onClick={() => { setEditingMag(mag.id); setEditMagData({ titlu: mag.titlu, an: mag.an, volum: mag.volum, numar: mag.numar }); }}>
+                                    <Pencil className="w-3 h-3" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => openHistory('magazine', mag.id, mag.titlu)}>
+                                    <History className="w-3 h-3" />
+                                  </Button>
+                                  {mag.location_status === 'depozit' ? (
+                                    <Button size="sm" variant="outline" onClick={() => setShowBorrow({ type: 'magazine', id: mag.id })}>
+                                      <UserPlus className="w-3 h-3 mr-1" />Împrumută
+                                    </Button>
+                                  ) : (
+                                    <Button size="sm" variant="outline" onClick={() => handleReturn('magazine', mag.id, mag.borrowed_by)}>
+                                      <RotateCcw className="w-3 h-3 mr-1" />Returnează
+                                    </Button>
+                                  )}
+                                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete('magazine', mag.id)}>
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {magsTotal > PAGE_SIZE && (
+                  <div className="flex items-center justify-between pt-3">
+                    <p className="text-sm text-muted-foreground">
+                      {magsPage * PAGE_SIZE + 1}–{Math.min((magsPage + 1) * PAGE_SIZE, magsTotal)} din {magsTotal} reviste
+                    </p>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" disabled={magsPage === 0} onClick={() => setMagsPage(p => p - 1)}>
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" disabled={(magsPage + 1) * PAGE_SIZE >= magsTotal} onClick={() => setMagsPage(p => p + 1)}>
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
         </Tabs>
