@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Calendar, Loader2, ArrowRight, UserCircle, FolderDown } from 'lucide-react';
+import { Calendar, ArrowRight, UserCircle, FolderDown } from 'lucide-react';
 import WeatherWidget from './WeatherWidget';
 import PersonalCalendarWidget from './PersonalCalendarWidget';
 import ActivityHistory from './ActivityHistory';
+import { ProgressRing } from '@/components/ui/progress-ring';
+import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
+import { QuickActionsSkeleton, LeaveBalanceSkeleton, ChartSkeleton } from './DashboardSkeleton';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -54,15 +56,29 @@ const EmployeeDashboard = () => {
     ? (employeeRecord.used_leave_days / employeeRecord.total_leave_days) * 100
     : 0;
 
+  const today = format(new Date(), 'd MMMM yyyy', { locale: ro });
+
+  const animatedRemaining = useAnimatedCounter(employeeRecord?.remaining_leave_days || 0);
+  const animatedUsed = useAnimatedCounter(employeeRecord?.used_leave_days || 0);
+  const animatedTotal = useAnimatedCounter(employeeRecord?.total_leave_days || 0);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="space-y-4 sm:space-y-6">
+        <div className="animate-fade-in">
+          <div className="h-8 w-64 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-48 bg-muted rounded animate-pulse mt-2" />
+        </div>
+        <QuickActionsSkeleton />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <LeaveBalanceSkeleton />
+          <div className="space-y-4">
+            <ChartSkeleton />
+          </div>
+        </div>
       </div>
     );
   }
-
-  const today = format(new Date(), 'd MMMM yyyy', { locale: ro });
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -78,36 +94,22 @@ const EmployeeDashboard = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-3 gap-3">
-        <Link to="/my-profile" className="group">
-          <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30 h-full">
-            <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center gap-2">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <UserCircle className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-              </div>
-              <span className="text-xs sm:text-sm font-medium text-foreground">Profilul Meu</span>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/leave-calendar" className="group">
-          <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30 h-full">
-            <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center gap-2">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
-              </div>
-              <span className="text-xs sm:text-sm font-medium text-foreground">Calendar</span>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/formulare" className="group">
-          <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30 h-full">
-            <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center gap-2">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-info/10 flex items-center justify-center group-hover:bg-info/20 transition-colors">
-                <FolderDown className="w-5 h-5 sm:w-6 sm:h-6 text-info" />
-              </div>
-              <span className="text-xs sm:text-sm font-medium text-foreground">Formulare</span>
-            </CardContent>
-          </Card>
-        </Link>
+        {[
+          { to: '/my-profile', icon: UserCircle, label: 'Profilul Meu', color: 'bg-primary/10 group-hover:bg-primary/20 text-primary' },
+          { to: '/leave-calendar', icon: Calendar, label: 'Calendar', color: 'bg-accent/10 group-hover:bg-accent/20 text-accent' },
+          { to: '/formulare', icon: FolderDown, label: 'Formulare', color: 'bg-info/10 group-hover:bg-info/20 text-info' },
+        ].map(action => (
+          <Link key={action.to} to={action.to} className="group">
+            <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5 h-full">
+              <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center gap-2">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${action.color}`}>
+                  <action.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <span className="text-xs sm:text-sm font-medium text-foreground">{action.label}</span>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -122,35 +124,38 @@ const EmployeeDashboard = () => {
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
             {employeeRecord ? (
-              <div className="space-y-4 sm:space-y-6">
-                <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                  <div className="text-center p-2.5 sm:p-5 bg-green-500/10 rounded-xl border border-green-500/20">
-                    <p className="text-xl sm:text-4xl font-bold text-green-600">{employeeRecord.remaining_leave_days}</p>
-                    <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Disponibile</p>
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                {/* Progress Ring */}
+                <ProgressRing value={leaveProgress} size={140} strokeWidth={12}>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-foreground">{animatedRemaining}</p>
+                    <p className="text-[10px] text-muted-foreground font-medium">disponibile</p>
                   </div>
-                  <div className="text-center p-2.5 sm:p-5 bg-blue-500/10 rounded-xl border border-blue-500/20">
-                    <p className="text-xl sm:text-4xl font-bold text-blue-600">{employeeRecord.used_leave_days}</p>
-                    <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Utilizate</p>
-                  </div>
-                  <div className="text-center p-2.5 sm:p-5 bg-muted rounded-xl border border-border">
-                    <p className="text-xl sm:text-4xl font-bold text-foreground">{employeeRecord.total_leave_days}</p>
-                    <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Total</p>
-                  </div>
-                </div>
+                </ProgressRing>
 
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs sm:text-sm">
-                    <span className="text-muted-foreground">Progres utilizare</span>
-                    <span className="font-medium">{Math.round(leaveProgress)}%</span>
+                {/* Stats */}
+                <div className="flex-1 space-y-4 w-full">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    <div className="text-center p-2.5 sm:p-4 bg-green-500/10 rounded-xl border border-green-500/20 hover:scale-[1.03] transition-transform">
+                      <p className="text-xl sm:text-3xl font-bold text-green-600">{animatedRemaining}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">Disponibile</p>
+                    </div>
+                    <div className="text-center p-2.5 sm:p-4 bg-blue-500/10 rounded-xl border border-blue-500/20 hover:scale-[1.03] transition-transform">
+                      <p className="text-xl sm:text-3xl font-bold text-blue-600">{animatedUsed}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">Utilizate</p>
+                    </div>
+                    <div className="text-center p-2.5 sm:p-4 bg-muted rounded-xl border border-border hover:scale-[1.03] transition-transform">
+                      <p className="text-xl sm:text-3xl font-bold text-foreground">{animatedTotal}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">Total</p>
+                    </div>
                   </div>
-                  <Progress value={leaveProgress} className="h-2 sm:h-3" />
-                </div>
 
-                <Button variant="outline" size="sm" asChild className="text-xs sm:text-sm">
-                  <Link to="/my-profile" className="flex items-center gap-1">
-                    Vezi profilul complet <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </Link>
-                </Button>
+                  <Button variant="outline" size="sm" asChild className="text-xs sm:text-sm">
+                    <Link to="/my-profile" className="flex items-center gap-1">
+                      Vezi profilul complet <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </Link>
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="text-center py-6 sm:py-8 text-muted-foreground">

@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import {
@@ -31,6 +32,8 @@ const Sidebar = () => {
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
+  const [pendingHR, setPendingHR] = useState(0);
+  const [pendingAdmin, setPendingAdmin] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -43,6 +46,20 @@ const Sidebar = () => {
         });
     }
   }, [user]);
+
+  // Fetch pending counts for badges
+  useEffect(() => {
+    if (!canManageHR && !isSuperAdmin) return;
+    const fetchCounts = async () => {
+      const [leaveRes, accountRes] = await Promise.all([
+        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).in('status', ['pending_director', 'pending_department_head']),
+        supabase.from('account_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      ]);
+      setPendingHR(leaveRes.count || 0);
+      setPendingAdmin(accountRes.count || 0);
+    };
+    fetchCounts();
+  }, [canManageHR, isSuperAdmin]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -59,12 +76,12 @@ const Sidebar = () => {
   ];
 
   const managementItems = [
-    ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
+    ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
-    ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
+    ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin }] : []),
   ];
 
-  const renderNavItem = (item: { icon: any; label: string; path: string }) => {
+  const renderNavItem = (item: { icon: any; label: string; path: string; badge?: number }) => {
     const isActive = location.pathname === item.path;
     const linkContent = (
       <Link
@@ -81,8 +98,24 @@ const Sidebar = () => {
         {isActive && (
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-sidebar-primary-foreground rounded-r-full -ml-3" />
         )}
-        <item.icon className="w-5 h-5 flex-shrink-0" />
-        {!isCollapsed && <span className="font-medium">{item.label}</span>}
+        <div className="relative">
+          <item.icon className="w-5 h-5 flex-shrink-0" />
+          {item.badge && item.badge > 0 && isCollapsed && (
+            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center animate-scale-in">
+              {item.badge > 9 ? '9+' : item.badge}
+            </span>
+          )}
+        </div>
+        {!isCollapsed && (
+          <>
+            <span className="font-medium flex-1">{item.label}</span>
+            {item.badge && item.badge > 0 && (
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-[20px] justify-center animate-scale-in">
+                {item.badge}
+              </Badge>
+            )}
+          </>
+        )}
       </Link>
     );
 

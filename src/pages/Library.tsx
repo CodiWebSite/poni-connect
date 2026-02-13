@@ -360,7 +360,7 @@ const Library = () => {
   };
 
   if (roleLoading || checkingAccess) {
-    return <MainLayout title="Bibliotecă"><div className="flex items-center justify-center h-64"><p>Se încarcă...</p></div></MainLayout>;
+    return <MainLayout title="Bibliotecă"><div className="space-y-4"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded bg-muted animate-pulse" /><div><div className="h-6 w-32 bg-muted rounded animate-pulse" /><div className="h-4 w-48 bg-muted rounded animate-pulse mt-1" /></div></div><div className="h-10 w-full bg-muted rounded animate-pulse" /><div className="space-y-2">{[1,2,3,4,5].map(i => <div key={i} className="h-12 w-full bg-muted rounded animate-pulse" />)}</div></div></MainLayout>;
   }
 
   if (!canAccess) {
