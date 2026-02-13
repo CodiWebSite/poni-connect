@@ -915,6 +915,39 @@ export type Database = {
         }
         Relationships: []
       }
+      library_borrow_history: {
+        Row: {
+          action: string
+          created_at: string
+          employee_id: string | null
+          employee_name: string | null
+          id: string
+          item_id: string
+          item_type: string
+          performed_by: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          employee_id?: string | null
+          employee_name?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          performed_by?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          employee_id?: string | null
+          employee_name?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          performed_by?: string | null
+        }
+        Relationships: []
+      }
       library_magazines: {
         Row: {
           an: number
