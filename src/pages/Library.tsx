@@ -10,9 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { BookOpen, Plus, Download, RotateCcw, UserPlus, Trash2, History, Pencil, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, Plus, Download, RotateCcw, UserPlus, Trash2, History, Pencil, Check, X, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -72,11 +71,18 @@ const Library = () => {
   const [magsPage, setMagsPage] = useState(0);
   const [magsTotal, setMagsTotal] = useState(0);
 
+  // Search filters
+  const [bookSearch, setBookSearch] = useState('');
+  const [magSearch, setMagSearch] = useState('');
+
   const [showAddBook, setShowAddBook] = useState(false);
   const [showAddMagazine, setShowAddMagazine] = useState(false);
   const [showBorrow, setShowBorrow] = useState<{ type: 'book' | 'magazine'; id: string } | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [employeeSearch, setEmployeeSearch] = useState('');
+  const [borrowDate, setBorrowDate] = useState('');
+  const [manualEmployeeName, setManualEmployeeName] = useState('');
+  const [useManualEmployee, setUseManualEmployee] = useState(false);
 
   const [newBook, setNewBook] = useState({ cota: '', inventar: '', titlu: '', autor: '' });
   const [newMagazine, setNewMagazine] = useState({ titlu: '', an: new Date().getFullYear(), volum: '', numar: '' });
@@ -114,9 +120,24 @@ const Library = () => {
       const to = from + PAGE_SIZE - 1;
       const magFrom = magsPage * PAGE_SIZE;
       const magTo = magFrom + PAGE_SIZE - 1;
+
+      // Build book query with search
+      let bookQuery = supabase.from('library_books' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false });
+      if (bookSearch.trim()) {
+        bookQuery = bookQuery.or(`titlu.ilike.%${bookSearch.trim()}%,autor.ilike.%${bookSearch.trim()}%,cota.ilike.%${bookSearch.trim()}%,inventar.ilike.%${bookSearch.trim()}%`);
+      }
+      bookQuery = bookQuery.range(from, to);
+
+      // Build magazine query with search
+      let magQuery = supabase.from('library_magazines' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false });
+      if (magSearch.trim()) {
+        magQuery = magQuery.or(`titlu.ilike.%${magSearch.trim()}%`);
+      }
+      magQuery = magQuery.range(magFrom, magTo);
+
       const [booksRes, magsRes, profilesRes] = await Promise.all([
-        supabase.from('library_books' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to),
-        supabase.from('library_magazines' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(magFrom, magTo),
+        bookQuery,
+        magQuery,
         supabase.from('employee_personal_data').select('id, first_name, last_name').eq('is_archived', false).order('last_name'),
       ]);
       if (booksRes.data) setBooks(booksRes.data as any);
@@ -127,16 +148,20 @@ const Library = () => {
       setLoadingData(false);
     };
     load();
-  }, [canAccess, booksPage, magsPage]);
+  }, [canAccess, booksPage, magsPage, bookSearch, magSearch]);
+
+  // Reset page when search changes
+  useEffect(() => { setBooksPage(0); }, [bookSearch]);
+  useEffect(() => { setMagsPage(0); }, [magSearch]);
 
   const getEmployeeName = (epdId: string | null) => {
     if (!epdId) return 'Depozit';
     const e = employees.find(emp => emp.id === epdId);
-    return e ? `${e.last_name} ${e.first_name}` : 'Necunoscut';
+    return e ? `${e.last_name} ${e.first_name}` : epdId; // fallback to ID which may be manual name
   };
 
-  const logHistory = async (itemType: string, itemId: string, action: string, employeeId?: string | null) => {
-    const empName = employeeId ? getEmployeeName(employeeId) : null;
+  const logHistory = async (itemType: string, itemId: string, action: string, employeeId?: string | null, employeeName?: string | null) => {
+    const empName = employeeName || (employeeId ? getEmployeeName(employeeId) : null);
     await supabase.from('library_borrow_history' as any).insert({
       item_type: itemType, item_id: itemId, action, employee_id: employeeId || null,
       employee_name: empName, performed_by: user?.id || null,
@@ -173,17 +198,33 @@ const Library = () => {
   };
 
   const handleBorrow = async () => {
-    if (!showBorrow || !selectedEmployee) return;
+    if (!showBorrow) return;
+    const employeeId = useManualEmployee ? null : selectedEmployee;
+    const empName = useManualEmployee ? manualEmployeeName.trim() : getEmployeeName(selectedEmployee);
+    if (!useManualEmployee && !selectedEmployee) return;
+    if (useManualEmployee && !manualEmployeeName.trim()) return;
+
     const table = showBorrow.type === 'book' ? 'library_books' : 'library_magazines';
+    const borrowDateValue = borrowDate || new Date().toISOString();
+    const borrowedByValue = useManualEmployee ? manualEmployeeName.trim() : selectedEmployee;
+
     const { error } = await supabase.from(table as any).update({
-      location_status: 'imprumutat', borrowed_by: selectedEmployee, borrowed_at: new Date().toISOString(), returned_at: null,
+      location_status: 'imprumutat', borrowed_by: borrowedByValue, borrowed_at: borrowDateValue, returned_at: null,
     } as any).eq('id', showBorrow.id);
     if (error) { toast({ title: 'Eroare', description: error.message, variant: 'destructive' }); return; }
-    await logHistory(showBorrow.type, showBorrow.id, 'borrow', selectedEmployee);
+    await logHistory(showBorrow.type, showBorrow.id, 'borrow', borrowedByValue, empName);
     toast({ title: 'Împrumutat cu succes' });
+    resetBorrowDialog();
+    refreshData();
+  };
+
+  const resetBorrowDialog = () => {
     setShowBorrow(null);
     setSelectedEmployee('');
-    refreshData();
+    setEmployeeSearch('');
+    setBorrowDate('');
+    setManualEmployeeName('');
+    setUseManualEmployee(false);
   };
 
   const handleReturn = async (type: 'book' | 'magazine', id: string, borrowedBy: string | null) => {
@@ -240,10 +281,20 @@ const Library = () => {
     const to = from + PAGE_SIZE - 1;
     const magFrom = magsPage * PAGE_SIZE;
     const magTo = magFrom + PAGE_SIZE - 1;
-    const [booksRes, magsRes] = await Promise.all([
-      supabase.from('library_books' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to),
-      supabase.from('library_magazines' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(magFrom, magTo),
-    ]);
+
+    let bookQuery = supabase.from('library_books' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    if (bookSearch.trim()) {
+      bookQuery = bookQuery.or(`titlu.ilike.%${bookSearch.trim()}%,autor.ilike.%${bookSearch.trim()}%,cota.ilike.%${bookSearch.trim()}%,inventar.ilike.%${bookSearch.trim()}%`);
+    }
+    bookQuery = bookQuery.range(from, to);
+
+    let magQuery = supabase.from('library_magazines' as any).select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    if (magSearch.trim()) {
+      magQuery = magQuery.or(`titlu.ilike.%${magSearch.trim()}%`);
+    }
+    magQuery = magQuery.range(magFrom, magTo);
+
+    const [booksRes, magsRes] = await Promise.all([bookQuery, magQuery]);
     if (booksRes.data) setBooks(booksRes.data as any);
     if (booksRes.count != null) setBooksTotal(booksRes.count);
     if (magsRes.data) setMagazines(magsRes.data as any);
@@ -308,6 +359,8 @@ const Library = () => {
     return <MainLayout title="Bibliotecă"><div className="flex items-center justify-center h-64"><p className="text-muted-foreground">Nu ai acces la această pagină.</p></div></MainLayout>;
   }
 
+  const canBorrow = useManualEmployee ? manualEmployeeName.trim().length > 0 : selectedEmployee.length > 0;
+
   return (
     <MainLayout title="Bibliotecă" description="Gestionarea cărților și revistelor">
       <div className="space-y-6">
@@ -327,9 +380,18 @@ const Library = () => {
 
           {/* === BOOKS TAB === */}
           <TabsContent value="books" className="space-y-4">
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
               <Button onClick={() => setShowAddBook(true)}><Plus className="w-4 h-4 mr-2" />Adaugă carte</Button>
               <Button variant="outline" onClick={exportBooksExcel}><Download className="w-4 h-4 mr-2" />Export Excel</Button>
+              <div className="relative flex-1 min-w-[200px] max-w-md ml-auto">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Caută carte (titlu, autor, cotă, inventar)..."
+                  className="pl-10"
+                  value={bookSearch}
+                  onChange={e => setBookSearch(e.target.value)}
+                />
+              </div>
             </div>
             {loadingData ? <p>Se încarcă...</p> : (
               <>
@@ -347,7 +409,7 @@ const Library = () => {
                     </TableHeader>
                     <TableBody>
                       {books.length === 0 ? (
-                        <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nu există cărți</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{bookSearch ? 'Niciun rezultat pentru căutare' : 'Nu există cărți'}</TableCell></TableRow>
                       ) : books.map(book => (
                         <TableRow key={book.id}>
                           {editingBook === book.id ? (
@@ -429,9 +491,18 @@ const Library = () => {
 
           {/* === MAGAZINES TAB === */}
           <TabsContent value="magazines" className="space-y-4">
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
               <Button onClick={() => setShowAddMagazine(true)}><Plus className="w-4 h-4 mr-2" />Adaugă revistă</Button>
               <Button variant="outline" onClick={exportMagazinesExcel}><Download className="w-4 h-4 mr-2" />Export Excel</Button>
+              <div className="relative flex-1 min-w-[200px] max-w-md ml-auto">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Caută revistă (titlu)..."
+                  className="pl-10"
+                  value={magSearch}
+                  onChange={e => setMagSearch(e.target.value)}
+                />
+              </div>
             </div>
             {loadingData ? <p>Se încarcă...</p> : (
               <>
@@ -449,7 +520,7 @@ const Library = () => {
                     </TableHeader>
                     <TableBody>
                       {magazines.length === 0 ? (
-                        <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nu există reviste</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{magSearch ? 'Niciun rezultat pentru căutare' : 'Nu există reviste'}</TableCell></TableRow>
                       ) : magazines.map(mag => (
                         <TableRow key={mag.id}>
                           {editingMag === mag.id ? (
@@ -560,37 +631,81 @@ const Library = () => {
       </Dialog>
 
       {/* Borrow Dialog */}
-      <Dialog open={!!showBorrow} onOpenChange={() => { setShowBorrow(null); setSelectedEmployee(''); setEmployeeSearch(''); }}>
+      <Dialog open={!!showBorrow} onOpenChange={() => resetBorrowDialog()}>
         <DialogContent>
           <DialogHeader><DialogTitle>Împrumută</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <Label>Caută și selectează angajatul</Label>
-            <Input
-              placeholder="Caută după nume..."
-              value={employeeSearch}
-              onChange={(e) => setEmployeeSearch(e.target.value)}
-            />
-            <div className="max-h-60 overflow-y-auto border rounded-md">
-              {employees
-                .filter(emp => {
-                  const fullName = `${emp.last_name} ${emp.first_name}`.toLowerCase();
-                  return fullName.includes(employeeSearch.toLowerCase());
-                })
-                .map(emp => (
-                  <button
-                    key={emp.id}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-secondary/50 transition-colors ${selectedEmployee === emp.id ? 'bg-primary/10 font-medium text-primary' : ''}`}
-                    onClick={() => setSelectedEmployee(emp.id)}
-                  >
-                    {emp.last_name} {emp.first_name}
-                  </button>
-                ))}
-              {employees.filter(emp => `${emp.last_name} ${emp.first_name}`.toLowerCase().includes(employeeSearch.toLowerCase())).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">Niciun rezultat</p>
-              )}
+          <div className="space-y-4">
+            {/* Date picker */}
+            <div>
+              <Label>Data împrumutului</Label>
+              <Input
+                type="date"
+                value={borrowDate ? borrowDate.slice(0, 10) : new Date().toISOString().slice(0, 10)}
+                onChange={e => setBorrowDate(e.target.value ? new Date(e.target.value).toISOString() : '')}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Lasă data de azi sau schimbă pentru înregistrări din urmă.</p>
             </div>
+
+            {/* Toggle manual / from list */}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={useManualEmployee ? 'outline' : 'default'}
+                onClick={() => { setUseManualEmployee(false); setManualEmployeeName(''); }}
+              >
+                Din listă
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={useManualEmployee ? 'default' : 'outline'}
+                onClick={() => { setUseManualEmployee(true); setSelectedEmployee(''); }}
+              >
+                Adaugă manual
+              </Button>
+            </div>
+
+            {useManualEmployee ? (
+              <div>
+                <Label>Nume angajat (manual)</Label>
+                <Input
+                  placeholder="Ex: Popescu Ion"
+                  value={manualEmployeeName}
+                  onChange={e => setManualEmployeeName(e.target.value)}
+                />
+              </div>
+            ) : (
+              <>
+                <Label>Caută și selectează angajatul</Label>
+                <Input
+                  placeholder="Caută după nume..."
+                  value={employeeSearch}
+                  onChange={(e) => setEmployeeSearch(e.target.value)}
+                />
+                <div className="max-h-60 overflow-y-auto border rounded-md">
+                  {employees
+                    .filter(emp => {
+                      const fullName = `${emp.last_name} ${emp.first_name}`.toLowerCase();
+                      return fullName.includes(employeeSearch.toLowerCase());
+                    })
+                    .map(emp => (
+                      <button
+                        key={emp.id}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-secondary/50 transition-colors ${selectedEmployee === emp.id ? 'bg-primary/10 font-medium text-primary' : ''}`}
+                        onClick={() => setSelectedEmployee(emp.id)}
+                      >
+                        {emp.last_name} {emp.first_name}
+                      </button>
+                    ))}
+                  {employees.filter(emp => `${emp.last_name} ${emp.first_name}`.toLowerCase().includes(employeeSearch.toLowerCase())).length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Niciun rezultat</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
-          <DialogFooter><Button onClick={handleBorrow} disabled={!selectedEmployee}>Confirmă împrumut</Button></DialogFooter>
+          <DialogFooter><Button onClick={handleBorrow} disabled={!canBorrow}>Confirmă împrumut</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
