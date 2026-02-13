@@ -7,8 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { ProgressRing } from '@/components/ui/progress-ring';
+import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { useToast } from '@/hooks/use-toast';
 import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestForm';
+import { ProfileSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { 
   User, FileText, Download, Calendar, Briefcase, Building, Phone,
   Loader2, MapPin, CreditCard, Hash, History, Mail, BadgeCheck, AlertTriangle, Camera,
@@ -250,8 +253,8 @@ const MyProfile = () => {
   if (loading) {
     return (
       <MainLayout title="Profilul Meu">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="max-w-6xl mx-auto">
+          <ProfileSkeleton />
         </div>
       </MainLayout>
     );
@@ -371,26 +374,27 @@ const MyProfile = () => {
               <CardContent>
                 {employeeRecord ? (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                      <div className="text-center p-2.5 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-                        <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{employeeRecord.remaining_leave_days}</p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Disponibile</p>
+                    <div className="flex flex-col sm:flex-row items-center gap-5">
+                      <ProgressRing value={leaveProgress} size={110} strokeWidth={10}>
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-foreground">{Math.round(leaveProgress)}%</p>
+                          <p className="text-[9px] text-muted-foreground">utilizat</p>
+                        </div>
+                      </ProgressRing>
+                      <div className="flex-1 grid grid-cols-3 gap-2 sm:gap-3 w-full">
+                        <div className="text-center p-2.5 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/20 hover:scale-[1.03] transition-transform">
+                          <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{employeeRecord.remaining_leave_days}</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Disponibile</p>
+                        </div>
+                        <div className="text-center p-2.5 sm:p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 hover:scale-[1.03] transition-transform">
+                          <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">{employeeRecord.used_leave_days}</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Utilizate</p>
+                        </div>
+                        <div className="text-center p-2.5 sm:p-4 rounded-xl bg-muted/50 border hover:scale-[1.03] transition-transform">
+                          <p className="text-2xl sm:text-3xl font-bold text-foreground">{employeeRecord.total_leave_days}</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Total</p>
+                        </div>
                       </div>
-                      <div className="text-center p-2.5 sm:p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                        <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">{employeeRecord.used_leave_days}</p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Utilizate</p>
-                      </div>
-                      <div className="text-center p-2.5 sm:p-4 rounded-xl bg-muted/50 border">
-                        <p className="text-2xl sm:text-3xl font-bold text-foreground">{employeeRecord.total_leave_days}</p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Total</p>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Progres utilizare</span>
-                        <span className="font-semibold text-foreground">{Math.round(leaveProgress)}%</span>
-                      </div>
-                      <Progress value={leaveProgress} className="h-2.5" />
                     </div>
 
                     {/* Carryover info */}

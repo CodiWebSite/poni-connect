@@ -9,6 +9,7 @@ import AdoptionTrendChart from '@/components/dashboard/AdoptionTrendChart';
 import LeaveByDepartment from '@/components/dashboard/LeaveByDepartment';
 import HRAlerts from '@/components/dashboard/HRAlerts';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
+import { StatCardSkeleton, QuickActionsSkeleton, ChartSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Users, UserCircle, Calendar, FolderDown } from 'lucide-react';
@@ -48,7 +49,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-3 gap-3 mb-6">
         {quickActions.map((action) => (
           <Link key={action.path} to={action.path} className="group">
-            <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30">
+            <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5">
               <CardContent className="p-3 sm:p-4 flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${action.color} group-hover:scale-105 transition-transform`}>
                   <action.icon className="w-5 h-5" />
