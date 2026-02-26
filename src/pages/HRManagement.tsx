@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 
 import { EmployeeImport } from '@/components/hr/EmployeeImport';
@@ -172,6 +173,7 @@ const HRManagement = () => {
     end_date: '',
     notes: '',
     leave_type: 'co',
+    deduct_from: 'auto' as 'auto' | 'carryover' | 'current',
   });
   const [manualLeaveFile, setManualLeaveFile] = useState<File | null>(null);
   const [submittingManualLeave, setSubmittingManualLeave] = useState(false);
@@ -749,14 +751,21 @@ const HRManagement = () => {
     }
 
     const numberOfDays = calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date);
-    const remainingDays = employee.total_leave_days - employee.used_leave_days;
-    
-    if (numberOfDays > remainingDays) {
-      toast({ 
-        title: 'Eroare', 
-        description: `Angajatul are doar ${remainingDays} zile disponibile.`, 
-        variant: 'destructive' 
-      });
+    const carryover = employee.carryoverDays || 0;
+    const currentRemaining = employee.total_leave_days - employee.used_leave_days;
+    const totalAvailable = currentRemaining + carryover + (employee.bonusDays || 0);
+
+    // Validate based on deduction source
+    if (manualLeaveForm.deduct_from === 'carryover' && numberOfDays > carryover) {
+      toast({ title: 'Eroare', description: `Soldul report ${new Date().getFullYear() - 1} are doar ${carryover} zile disponibile.`, variant: 'destructive' });
+      return;
+    }
+    if (manualLeaveForm.deduct_from === 'current' && numberOfDays > currentRemaining) {
+      toast({ title: 'Eroare', description: `Soldul ${new Date().getFullYear()} are doar ${currentRemaining} zile disponibile.`, variant: 'destructive' });
+      return;
+    }
+    if (numberOfDays > totalAvailable) {
+      toast({ title: 'Eroare', description: `Angajatul are doar ${totalAvailable} zile disponibile.`, variant: 'destructive' });
       return;
     }
 
@@ -803,33 +812,76 @@ const HRManagement = () => {
           manualEntry: true,
           scannedDocumentUrl: fileUrl,
           notes: manualLeaveForm.notes,
+          deductFrom: manualLeaveForm.deduct_from,
           // Store epd_id for employees without accounts
           ...(isEpdOnly ? { epd_id: epdId, employee_name: employee.full_name } : {}),
         }
       });
 
-      // Update leave balance
-      if (employee.record) {
-        const newUsedDays = employee.record.used_leave_days + numberOfDays;
+      // Calculate how many days go to carryover vs current
+      const deductFrom = manualLeaveForm.deduct_from;
+      let daysFromCarryover = 0;
+      let daysFromCurrent = 0;
+
+      if (deductFrom === 'carryover') {
+        daysFromCarryover = numberOfDays;
+      } else if (deductFrom === 'current') {
+        daysFromCurrent = numberOfDays;
+      } else {
+        // Auto: carryover first, then current
+        daysFromCarryover = Math.min(numberOfDays, carryover);
+        daysFromCurrent = numberOfDays - daysFromCarryover;
+      }
+
+      // Update carryover if applicable
+      if (daysFromCarryover > 0) {
+        const currentYear = new Date().getFullYear();
+        const { data: carryData } = await supabase
+          .from('leave_carryover')
+          .select('id, used_days, remaining_days')
+          .eq('employee_personal_data_id', employee.id)
+          .eq('from_year', currentYear - 1)
+          .eq('to_year', currentYear)
+          .maybeSingle();
+
+        if (carryData) {
+          await supabase.from('leave_carryover').update({
+            used_days: carryData.used_days + daysFromCarryover,
+            remaining_days: carryData.remaining_days - daysFromCarryover,
+          }).eq('id', carryData.id);
+        }
+      }
+
+      // Update employee_records used_leave_days (only current year days)
+      if (daysFromCurrent > 0 && employee.record) {
+        const newUsedDays = employee.record.used_leave_days + daysFromCurrent;
         await supabase
           .from('employee_records')
           .update({ used_leave_days: newUsedDays })
           .eq('id', employee.record.id);
       }
 
-      // Always update employee_personal_data
-      const newEpdUsedDays = employee.used_leave_days + numberOfDays;
-      await supabase
-        .from('employee_personal_data')
-        .update({ used_leave_days: newEpdUsedDays })
-        .eq('id', employee.id);
+      // Always update employee_personal_data used_leave_days (only current year)
+      if (daysFromCurrent > 0) {
+        const newEpdUsedDays = employee.used_leave_days + daysFromCurrent;
+        await supabase
+          .from('employee_personal_data')
+          .update({ used_leave_days: newEpdUsedDays })
+          .eq('id', employee.id);
+      }
+
+      const deductionDesc = daysFromCarryover > 0 && daysFromCurrent > 0
+        ? `${daysFromCarryover} zile din report ${new Date().getFullYear() - 1} + ${daysFromCurrent} zile din ${new Date().getFullYear()}`
+        : daysFromCarryover > 0
+        ? `${daysFromCarryover} zile din report ${new Date().getFullYear() - 1}`
+        : `${daysFromCurrent} zile din sold ${new Date().getFullYear()}`;
 
       toast({ 
         title: 'Succes', 
-        description: `Cererea de concediu a fost înregistrată. ${numberOfDays} zile deduse din sold.` 
+        description: `Cererea de concediu a fost înregistrată. ${deductionDesc}.` 
       });
 
-      setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '', leave_type: 'co' });
+      setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '', leave_type: 'co', deduct_from: 'auto' });
       setManualLeaveFile(null);
       setShowManualLeave(false);
       fetchEmployees();
@@ -1911,7 +1963,7 @@ const HRManagement = () => {
       <Dialog open={showManualLeave} onOpenChange={(open) => {
         setShowManualLeave(open);
         if (!open) {
-          setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '', leave_type: 'co' });
+          setManualLeaveForm({ employee_id: '', start_date: '', end_date: '', notes: '', leave_type: 'co', deduct_from: 'auto' });
           setManualLeaveFile(null);
         }
       }}>
@@ -1994,6 +2046,42 @@ const HRManagement = () => {
                   </span>
                   <span className="text-muted-foreground"> din {selectedManualEmployee.total_leave_days}</span>
                 </p>
+                {(selectedManualEmployee.carryoverDays || 0) > 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    ⚠ Include {selectedManualEmployee.carryoverDays} zile report {new Date().getFullYear() - 1}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Deduction source selection - only show when employee has carryover */}
+            {selectedManualEmployee && (selectedManualEmployee.carryoverDays || 0) > 0 && (
+              <div className="space-y-2">
+                <Label>Deduce din soldul *</Label>
+                <RadioGroup
+                  value={manualLeaveForm.deduct_from}
+                  onValueChange={(v) => setManualLeaveForm({ ...manualLeaveForm, deduct_from: v as 'auto' | 'carryover' | 'current' })}
+                  className="space-y-1"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="auto" id="deduct-auto" />
+                    <Label htmlFor="deduct-auto" className="text-sm font-normal cursor-pointer">
+                      Automat (mai întâi report {new Date().getFullYear() - 1}, apoi {new Date().getFullYear()})
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="carryover" id="deduct-carryover" />
+                    <Label htmlFor="deduct-carryover" className="text-sm font-normal cursor-pointer">
+                      Doar din report {new Date().getFullYear() - 1} ({selectedManualEmployee.carryoverDays} zile disponibile)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="current" id="deduct-current" />
+                    <Label htmlFor="deduct-current" className="text-sm font-normal cursor-pointer">
+                      Doar din sold {new Date().getFullYear()} ({selectedManualEmployee.total_leave_days - selectedManualEmployee.used_leave_days} zile disponibile)
+                    </Label>
+                  </div>
+                </RadioGroup>
               </div>
             )}
 
@@ -2115,20 +2203,37 @@ const HRManagement = () => {
 
             {manualLeaveForm.start_date && manualLeaveForm.end_date && (() => {
               const workingDays = calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date);
-              const remaining = selectedManualEmployee
-                ? selectedManualEmployee.total_leave_days - selectedManualEmployee.used_leave_days
-                : 0;
-              const afterBalance = remaining - workingDays;
-              const exceeds = afterBalance < 0;
+              const emp = selectedManualEmployee;
+              const carryover = emp?.carryoverDays || 0;
+              const currentRemaining = emp ? emp.total_leave_days - emp.used_leave_days : 0;
+              const totalAvailable = currentRemaining + carryover + (emp?.bonusDays || 0);
+              
+              let daysFromCarryover = 0;
+              let daysFromCurrent = 0;
+              if (manualLeaveForm.deduct_from === 'carryover') {
+                daysFromCarryover = workingDays;
+              } else if (manualLeaveForm.deduct_from === 'current') {
+                daysFromCurrent = workingDays;
+              } else {
+                daysFromCarryover = Math.min(workingDays, carryover);
+                daysFromCurrent = workingDays - daysFromCarryover;
+              }
+
+              const exceeds = manualLeaveForm.deduct_from === 'carryover'
+                ? workingDays > carryover
+                : manualLeaveForm.deduct_from === 'current'
+                ? workingDays > currentRemaining
+                : workingDays > totalAvailable;
               
               return (
                 <div className={`p-3 rounded-lg space-y-1 ${exceeds ? 'bg-destructive/10 border border-destructive/30' : 'bg-primary/10'}`}>
                   <p className="text-sm font-medium">
                     Zile lucrătoare: <span className="font-bold">{workingDays}</span>
                   </p>
-                  {selectedManualEmployee && (
-                    <p className="text-sm">
-                      Sold după înregistrare: <span className={`font-bold ${exceeds ? 'text-destructive' : 'text-primary'}`}>{afterBalance} zile</span>
+                  {emp && carryover > 0 && manualLeaveForm.deduct_from === 'auto' && (
+                    <p className="text-xs text-muted-foreground">
+                      Se vor consuma: <strong>{daysFromCarryover} zile din report {new Date().getFullYear() - 1}</strong>
+                      {daysFromCurrent > 0 && <> + <strong>{daysFromCurrent} zile din {new Date().getFullYear()}</strong></>}
                     </p>
                   )}
                   {exceeds && (
