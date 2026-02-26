@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,8 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Search, Users, ArrowRight, Building2, Clock } from 'lucide-react';
+import { Loader2, Plus, Trash2, Search, Users, ArrowRight, Building2, Clock, ChevronsUpDown, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ApproverMapping {
   id: string;
@@ -282,13 +285,64 @@ export function LeaveApproversManager() {
     );
   }
 
-  const renderPersonOption = (p: PersonOption) => (
-    <SelectItem key={p.key} value={p.key}>
-      {p.full_name} {p.department ? `(${p.department})` : ''} {p.position ? `- ${p.position}` : ''}
-      {!p.has_account ? ' 📧' : ''}
-      {mappedEmployeeKeys.has(p.user_id || p.email) ? ' ✓' : ''}
-    </SelectItem>
-  );
+  const PersonCombobox = ({ value, onSelect, placeholder, excludeKey }: { value: string; onSelect: (key: string) => void; placeholder: string; excludeKey?: string }) => {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const filtered = useMemo(() => {
+      const list = excludeKey ? persons.filter(p => p.key !== excludeKey) : persons;
+      if (!search) return list;
+      const q = search.toLowerCase();
+      return list.filter(p => p.full_name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q) || p.department?.toLowerCase().includes(q));
+    }, [search, excludeKey]);
+    const selected = persons.find(p => p.key === value);
+
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between font-normal h-10">
+            {selected ? (
+              <span className="truncate">
+                {selected.full_name} {selected.department ? `(${selected.department})` : ''}
+                {!selected.has_account ? ' 📧' : ''}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">{placeholder}</span>
+            )}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[350px] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput placeholder="Caută după nume..." value={search} onValueChange={setSearch} />
+            <CommandList>
+              <CommandEmpty>Niciun rezultat.</CommandEmpty>
+              <CommandGroup>
+                {filtered.slice(0, 50).map(p => (
+                  <CommandItem
+                    key={p.key}
+                    value={p.key}
+                    onSelect={() => { onSelect(p.key); setOpen(false); setSearch(''); }}
+                  >
+                    <Check className={cn("mr-2 h-4 w-4", value === p.key ? "opacity-100" : "opacity-0")} />
+                    <div className="flex flex-col min-w-0">
+                      <span className="truncate font-medium">
+                        {p.full_name}
+                        {!p.has_account ? ' 📧' : ''}
+                        {mappedEmployeeKeys.has(p.user_id || p.email) ? ' ✓' : ''}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {[p.department, p.position].filter(Boolean).join(' • ')}
+                      </span>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -341,12 +395,7 @@ export function LeaveApproversManager() {
                 </div>
                 <div className="space-y-2">
                   <Label>Aprobator desemnat</Label>
-                  <Select value={selectedDeptApprover} onValueChange={setSelectedDeptApprover}>
-                    <SelectTrigger><SelectValue placeholder="Selectează aprobator..." /></SelectTrigger>
-                    <SelectContent>
-                      {persons.map(renderPersonOption)}
-                    </SelectContent>
-                  </Select>
+                  <PersonCombobox value={selectedDeptApprover} onSelect={setSelectedDeptApprover} placeholder="Selectează aprobator..." />
                 </div>
                 <div className="space-y-2">
                   <Label>Notă (opțional)</Label>
@@ -414,21 +463,11 @@ export function LeaveApproversManager() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Angajat</Label>
-                  <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-                    <SelectTrigger><SelectValue placeholder="Selectează angajat..." /></SelectTrigger>
-                    <SelectContent>
-                      {persons.map(renderPersonOption)}
-                    </SelectContent>
-                  </Select>
+                  <PersonCombobox value={selectedEmployee} onSelect={setSelectedEmployee} placeholder="Selectează angajat..." />
                 </div>
                 <div className="space-y-2">
                   <Label>Aprobator desemnat</Label>
-                  <Select value={selectedApprover} onValueChange={setSelectedApprover}>
-                    <SelectTrigger><SelectValue placeholder="Selectează aprobator..." /></SelectTrigger>
-                    <SelectContent>
-                      {persons.filter(p => p.key !== selectedEmployee).map(renderPersonOption)}
-                    </SelectContent>
-                  </Select>
+                  <PersonCombobox value={selectedApprover} onSelect={setSelectedApprover} placeholder="Selectează aprobator..." excludeKey={selectedEmployee} />
                 </div>
                 <div className="space-y-2">
                   <Label>Notă (opțional)</Label>
