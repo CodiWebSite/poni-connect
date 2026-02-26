@@ -60,15 +60,23 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
     return map;
   }, [customHolidays]);
 
-  // Unique employees
+  // Unique employees with their leave types for the month
   const employees = useMemo(() => {
-    const nameSet = new Set<string>();
-    return leaves.filter(l => {
-      if (nameSet.has(l.employeeName)) return false;
-      nameSet.add(l.employeeName);
-      return true;
-    }).map(l => ({ name: l.employeeName, department: l.department }));
-  }, [leaves]);
+    const nameMap = new Map<string, { name: string; department: string | null; leaveTypes: Set<string> }>();
+    leaves.forEach(l => {
+      const leaveStart = parseISO(l.startDate);
+      const leaveEnd = parseISO(l.endDate);
+      const mStart = startOfMonth(currentMonth);
+      const mEnd = endOfMonth(currentMonth);
+      if (leaveEnd < mStart || leaveStart > mEnd) return;
+      
+      if (!nameMap.has(l.employeeName)) {
+        nameMap.set(l.employeeName, { name: l.employeeName, department: l.department, leaveTypes: new Set() });
+      }
+      nameMap.get(l.employeeName)!.leaveTypes.add(l.leaveType || 'co');
+    });
+    return Array.from(nameMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [leaves, currentMonth]);
 
   // Get leave info for a specific employee on a specific day
   const getLeaveForDay = (employeeName: string, day: Date) => {
@@ -88,6 +96,9 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
               <tr>
                 <th className="sticky left-0 z-10 bg-background border border-border px-3 py-2 text-left font-semibold text-sm min-w-[160px]">
                   ANGAJAT
+                </th>
+                <th className="sticky left-[160px] z-10 bg-background border border-border px-2 py-2 text-center font-semibold text-sm min-w-[60px] w-[60px]">
+                  TIP
                 </th>
                 {days.map((day) => {
                   const weekend = isWeekend(day);
@@ -121,6 +132,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
               {days.some(d => isPublicHoliday(d) || !!customHolidayMap[format(d, 'yyyy-MM-dd')]) && (
                 <tr>
                   <th className="sticky left-0 z-10 bg-background border border-border px-3 py-0.5"></th>
+                  <th className="sticky left-[160px] z-10 bg-background border border-border px-2 py-0.5"></th>
                   {days.map((day) => {
                     const dateStr = format(day, 'yyyy-MM-dd');
                     const pubName = getPublicHolidayName(day);
@@ -150,7 +162,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
             <tbody>
               {employees.length === 0 ? (
                 <tr>
-                  <td colSpan={days.length + 1} className="border border-border px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={days.length + 2} className="border border-border px-4 py-8 text-center text-muted-foreground">
                     Nu există concedii înregistrate în această lună.
                   </td>
                 </tr>
@@ -164,6 +176,18 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                           <div className="font-semibold text-foreground">{emp.name}</div>
                           {emp.department && <div className="text-[10px] text-muted-foreground">{emp.department}</div>}
                         </div>
+                      </div>
+                    </td>
+                    <td className="sticky left-[160px] z-10 border border-border px-1 py-1 text-center bg-inherit">
+                      <div className="flex flex-col items-center gap-0.5">
+                        {Array.from(emp.leaveTypes).map(lt => {
+                          const style = getLeaveStyle(lt);
+                          return (
+                            <span key={lt} className={cn('font-bold text-[9px] px-1 py-0.5 rounded', style.color, style.bg)}>
+                              {style.label}
+                            </span>
+                          );
+                        })}
                       </div>
                     </td>
                     {days.map((day) => {
