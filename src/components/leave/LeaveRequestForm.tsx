@@ -213,6 +213,18 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
     const selectedColleague = colleagues.find(c => c.id === replacementId);
 
+    // Lookup designated approver from leave_approvers
+    let designatedApproverId: string | null = null;
+    const { data: approverMapping } = await supabase
+      .from('leave_approvers')
+      .select('approver_user_id')
+      .eq('employee_user_id', user.id)
+      .maybeSingle();
+
+    if (approverMapping) {
+      designatedApproverId = approverMapping.approver_user_id;
+    }
+
     const { data: insertedRequest, error } = await supabase.from('leave_requests').insert({
       user_id: user.id,
       epd_id: employeeData.id,
@@ -222,46 +234,57 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       year: new Date().getFullYear(),
       replacement_name: selectedColleague?.name || '',
       replacement_position: selectedColleague?.position || '',
-      // Auto-skip director step — goes directly to dept head
       status: 'pending_department_head' as any,
       employee_signature: signature,
       employee_signed_at: new Date().toISOString(),
-      // Director auto-approved (stamp & signature provided offline)
       director_approved_at: new Date().toISOString(),
-    }).select('id, request_number').single();
+      approver_id: designatedApproverId,
+    } as any).select('id, request_number').single();
 
     if (error) {
       console.error('Error creating leave request:', error);
       toast({ title: 'Eroare', description: 'Nu s-a putut trimite cererea.', variant: 'destructive' });
     } else {
       // Notify department heads (same department) via intranet notification
-      if (employeeData.department && insertedRequest) {
+      if (insertedRequest) {
         const employeeName = `${employeeData.last_name} ${employeeData.first_name}`;
-        // Find dept heads in same department
-        const { data: deptHeadProfiles } = await supabase
-          .from('profiles')
-          .select('user_id, department')
-          .eq('department', employeeData.department);
+        
+        if (designatedApproverId) {
+          // Notify the designated approver directly
+          await supabase.from('notifications').insert({
+            user_id: designatedApproverId,
+            title: 'Cerere nouă de concediu',
+            message: `${employeeName} a depus cererea ${insertedRequest.request_number} (${workingDays} zile, ${formatDate(startDate)} - ${formatDate(endDate)}). Verifică și aprobă cererea.`,
+            type: 'warning',
+            related_type: 'leave_request',
+            related_id: insertedRequest.id,
+          });
+        } else if (employeeData.department) {
+          // Fallback: notify all dept heads in same department
+          const { data: deptHeadProfiles } = await supabase
+            .from('profiles')
+            .select('user_id, department')
+            .eq('department', employeeData.department);
 
-        if (deptHeadProfiles) {
-          for (const profile of deptHeadProfiles) {
-            // Check if this user is a dept head
-            const { data: roleData } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', profile.user_id)
-              .in('role', ['sef', 'sef_srus'])
-              .maybeSingle();
+          if (deptHeadProfiles) {
+            for (const profile of deptHeadProfiles) {
+              const { data: roleData } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', profile.user_id)
+                .in('role', ['sef', 'sef_srus'])
+                .maybeSingle();
 
-            if (roleData) {
-              await supabase.from('notifications').insert({
-                user_id: profile.user_id,
-                title: 'Cerere nouă de concediu',
-                message: `${employeeName} a depus cererea ${insertedRequest.request_number} (${workingDays} zile, ${formatDate(startDate)} - ${formatDate(endDate)}). Verifică și aprobă cererea.`,
-                type: 'warning',
-                related_type: 'leave_request',
-                related_id: insertedRequest.id,
-              });
+              if (roleData) {
+                await supabase.from('notifications').insert({
+                  user_id: profile.user_id,
+                  title: 'Cerere nouă de concediu',
+                  message: `${employeeName} a depus cererea ${insertedRequest.request_number} (${workingDays} zile, ${formatDate(startDate)} - ${formatDate(endDate)}). Verifică și aprobă cererea.`,
+                  type: 'warning',
+                  related_type: 'leave_request',
+                  related_id: insertedRequest.id,
+                });
+              }
             }
           }
         }
@@ -280,6 +303,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
           end_date: formatDate(endDate),
           working_days: workingDays,
           replacement_name: selectedColleagueForEmail?.name || '',
+          approver_user_id: designatedApproverId || null,
         },
       }).then(res => {
         if (res.error) console.warn('Email notification failed:', res.error);
