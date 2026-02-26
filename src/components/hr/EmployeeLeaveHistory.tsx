@@ -87,45 +87,50 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
     try {
       const numberOfDays = leave.details?.numberOfDays || 0;
       const leaveEpdId = leave.details?.epd_id || epdId;
+      const leaveType = (leave.details?.leaveType || leave.details?.leave_type || 'co').toLowerCase();
+      const nonDeductibleTypes = ['cfp', 'bo', 'ccc', 'ev'];
+      const isNonDeductible = nonDeductibleTypes.includes(leaveType);
 
       const { error } = await supabase.from('hr_requests').delete().eq('id', leave.id);
       if (error) throw error;
 
-      // Revert balance in employee_records if applicable
-      if (numberOfDays > 0 && employeeRecordId) {
-        const { data: record } = await supabase
-          .from('employee_records')
-          .select('id, used_leave_days')
-          .eq('id', employeeRecordId)
-          .single();
+      // Only revert balance for deductible leave types
+      if (!isNonDeductible) {
+        // Revert balance in employee_records if applicable
+        if (numberOfDays > 0 && employeeRecordId) {
+          const { data: record } = await supabase
+            .from('employee_records')
+            .select('id, used_leave_days')
+            .eq('id', employeeRecordId)
+            .single();
 
-        if (record) {
-          const newUsedDays = Math.max(0, record.used_leave_days - numberOfDays);
-          await supabase.from('employee_records').update({ used_leave_days: newUsedDays }).eq('id', record.id);
+          if (record) {
+            const newUsedDays = Math.max(0, record.used_leave_days - numberOfDays);
+            await supabase.from('employee_records').update({ used_leave_days: newUsedDays }).eq('id', record.id);
+          }
         }
-      }
 
-      // Always revert in employee_personal_data
-      if (numberOfDays > 0 && leaveEpdId) {
-        const { data: epd } = await supabase
-          .from('employee_personal_data')
-          .select('id, used_leave_days')
-          .eq('id', leaveEpdId)
-          .maybeSingle();
-        if (epd) {
-          const newUsedDays = Math.max(0, (epd.used_leave_days || 0) - numberOfDays);
-          await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
-        }
-      } else if (numberOfDays > 0 && employeeRecordId) {
-        // Fallback: find EPD by employee_record_id
-        const { data: epd } = await supabase
-          .from('employee_personal_data')
-          .select('id, used_leave_days')
-          .eq('employee_record_id', employeeRecordId)
-          .maybeSingle();
-        if (epd) {
-          const newUsedDays = Math.max(0, (epd.used_leave_days || 0) - numberOfDays);
-          await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
+        // Always revert in employee_personal_data
+        if (numberOfDays > 0 && leaveEpdId) {
+          const { data: epd } = await supabase
+            .from('employee_personal_data')
+            .select('id, used_leave_days')
+            .eq('id', leaveEpdId)
+            .maybeSingle();
+          if (epd) {
+            const newUsedDays = Math.max(0, (epd.used_leave_days || 0) - numberOfDays);
+            await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
+          }
+        } else if (numberOfDays > 0 && employeeRecordId) {
+          const { data: epd } = await supabase
+            .from('employee_personal_data')
+            .select('id, used_leave_days')
+            .eq('employee_record_id', employeeRecordId)
+            .maybeSingle();
+          if (epd) {
+            const newUsedDays = Math.max(0, (epd.used_leave_days || 0) - numberOfDays);
+            await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
+          }
         }
       }
 
@@ -143,7 +148,8 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
         });
       }
 
-      toast({ title: 'Șters', description: `Concediul a fost șters. ${numberOfDays} zile readăugate în sold.` });
+      const revertMsg = isNonDeductible ? 'Concediul a fost șters (fără impact asupra soldului).' : `Concediul a fost șters. ${numberOfDays} zile readăugate în sold.`;
+      toast({ title: 'Șters', description: revertMsg });
       fetchLeaves();
       onChanged();
     } catch (err) {
@@ -183,11 +189,21 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
                 const status = leaveStatusConfig[leave.status] || leaveStatusConfig.pending;
                 const startDate = details.startDate ? new Date(details.startDate) : null;
                 const endDate = details.endDate ? new Date(details.endDate) : null;
+                const leaveType = (details.leaveType || details.leave_type || 'co').toLowerCase();
+                const leaveTypeLabels: Record<string, { label: string; className: string }> = {
+                  co: { label: 'CO', className: 'bg-sky-500/20 text-sky-700 dark:text-sky-300' },
+                  bo: { label: 'BO', className: 'bg-rose-500/20 text-rose-700 dark:text-rose-300' },
+                  ccc: { label: 'CCC', className: 'bg-purple-500/20 text-purple-700 dark:text-purple-300' },
+                  cfp: { label: 'CFP', className: 'bg-amber-500/20 text-amber-700 dark:text-amber-300' },
+                  ev: { label: 'EV', className: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' },
+                };
+                const typeInfo = leaveTypeLabels[leaveType] || leaveTypeLabels.co;
 
                 return (
                   <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 border rounded-lg hover:bg-muted/40 transition-colors">
                     <div className="space-y-0.5 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={`text-[10px] font-bold ${typeInfo.className}`}>{typeInfo.label}</Badge>
                         <p className="font-medium text-sm">
                           {startDate && endDate
                             ? `${format(startDate, 'dd MMM', { locale: ro })} — ${format(endDate, 'dd MMM yyyy', { locale: ro })}`

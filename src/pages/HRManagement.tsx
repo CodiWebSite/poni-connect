@@ -826,18 +826,24 @@ const HRManagement = () => {
     const currentRemaining = employee.total_leave_days - employee.used_leave_days;
     const totalAvailable = currentRemaining + carryover + (employee.bonusDays || 0);
 
-    // Validate based on deduction source
-    if (manualLeaveForm.deduct_from === 'carryover' && numberOfDays > carryover) {
-      toast({ title: 'Eroare', description: `Soldul report ${new Date().getFullYear() - 1} are doar ${carryover} zile disponibile.`, variant: 'destructive' });
-      return;
-    }
-    if (manualLeaveForm.deduct_from === 'current' && numberOfDays > currentRemaining) {
-      toast({ title: 'Eroare', description: `Soldul ${new Date().getFullYear()} are doar ${currentRemaining} zile disponibile.`, variant: 'destructive' });
-      return;
-    }
-    if (numberOfDays > totalAvailable) {
-      toast({ title: 'Eroare', description: `Angajatul are doar ${totalAvailable} zile disponibile.`, variant: 'destructive' });
-      return;
+    // Types that don't deduct from leave balance
+    const nonDeductibleTypes = ['cfp', 'bo', 'ccc', 'ev'];
+    const isNonDeductible = nonDeductibleTypes.includes(manualLeaveForm.leave_type);
+
+    // Validate based on deduction source (skip for non-deductible types)
+    if (!isNonDeductible) {
+      if (manualLeaveForm.deduct_from === 'carryover' && numberOfDays > carryover) {
+        toast({ title: 'Eroare', description: `Soldul report ${new Date().getFullYear() - 1} are doar ${carryover} zile disponibile.`, variant: 'destructive' });
+        return;
+      }
+      if (manualLeaveForm.deduct_from === 'current' && numberOfDays > currentRemaining) {
+        toast({ title: 'Eroare', description: `Soldul ${new Date().getFullYear()} are doar ${currentRemaining} zile disponibile.`, variant: 'destructive' });
+        return;
+      }
+      if (numberOfDays > totalAvailable) {
+        toast({ title: 'Eroare', description: `Angajatul are doar ${totalAvailable} zile disponibile.`, variant: 'destructive' });
+        return;
+      }
     }
 
     setSubmittingManualLeave(true);
@@ -889,59 +895,86 @@ const HRManagement = () => {
         }
       });
 
-      // Calculate how many days go to carryover vs current
-      const deductFrom = manualLeaveForm.deduct_from;
-      let daysFromCarryover = 0;
-      let daysFromCurrent = 0;
+      // Skip deduction for non-deductible leave types (CFP, BO, CCC, EV)
+      if (!isNonDeductible) {
+        // Calculate how many days go to carryover vs current
+        const deductFrom = manualLeaveForm.deduct_from;
+        let daysFromCarryover = 0;
+        let daysFromCurrent = 0;
 
-      if (deductFrom === 'carryover') {
-        daysFromCarryover = numberOfDays;
-      } else if (deductFrom === 'current') {
-        daysFromCurrent = numberOfDays;
-      } else {
-        // Auto: carryover first, then current
-        daysFromCarryover = Math.min(numberOfDays, carryover);
-        daysFromCurrent = numberOfDays - daysFromCarryover;
-      }
+        if (deductFrom === 'carryover') {
+          daysFromCarryover = numberOfDays;
+        } else if (deductFrom === 'current') {
+          daysFromCurrent = numberOfDays;
+        } else {
+          // Auto: carryover first, then current
+          daysFromCarryover = Math.min(numberOfDays, carryover);
+          daysFromCurrent = numberOfDays - daysFromCarryover;
+        }
 
-      // Update carryover if applicable
-      if (daysFromCarryover > 0) {
-        const currentYear = new Date().getFullYear();
-        const { data: carryData } = await supabase
-          .from('leave_carryover')
-          .select('id, used_days, remaining_days')
-          .eq('employee_personal_data_id', employee.id)
-          .eq('from_year', currentYear - 1)
-          .eq('to_year', currentYear)
-          .maybeSingle();
+        // Update carryover if applicable
+        if (daysFromCarryover > 0) {
+          const currentYear = new Date().getFullYear();
+          const { data: carryData } = await supabase
+            .from('leave_carryover')
+            .select('id, used_days, remaining_days')
+            .eq('employee_personal_data_id', employee.id)
+            .eq('from_year', currentYear - 1)
+            .eq('to_year', currentYear)
+            .maybeSingle();
 
-        if (carryData) {
-          await supabase.from('leave_carryover').update({
-            used_days: carryData.used_days + daysFromCarryover,
-            remaining_days: carryData.remaining_days - daysFromCarryover,
-          }).eq('id', carryData.id);
+          if (carryData) {
+            await supabase.from('leave_carryover').update({
+              used_days: carryData.used_days + daysFromCarryover,
+              remaining_days: carryData.remaining_days - daysFromCarryover,
+            }).eq('id', carryData.id);
+          }
+        }
+
+        // Update employee_records used_leave_days (only current year days)
+        if (daysFromCurrent > 0 && employee.record) {
+          const newUsedDays = employee.record.used_leave_days + daysFromCurrent;
+          await supabase
+            .from('employee_records')
+            .update({ used_leave_days: newUsedDays })
+            .eq('id', employee.record.id);
+        }
+
+        // Always update employee_personal_data used_leave_days (only current year)
+        if (daysFromCurrent > 0) {
+          const newEpdUsedDays = employee.used_leave_days + daysFromCurrent;
+          await supabase
+            .from('employee_personal_data')
+            .update({ used_leave_days: newEpdUsedDays })
+            .eq('id', employee.id);
         }
       }
 
-      // Update employee_records used_leave_days (only current year days)
-      if (daysFromCurrent > 0 && employee.record) {
-        const newUsedDays = employee.record.used_leave_days + daysFromCurrent;
-        await supabase
-          .from('employee_records')
-          .update({ used_leave_days: newUsedDays })
-          .eq('id', employee.record.id);
+      const leaveTypeLabels: Record<string, string> = {
+        co: 'Concediu de odihnă',
+        bo: 'Concediu medical',
+        ccc: 'Concediu creștere copil',
+        cfp: 'Concediu fără plată',
+        ev: 'Eveniment',
+      };
+
+      const deductFrom = manualLeaveForm.deduct_from;
+      let daysFromCarryover = 0;
+      let daysFromCurrent = 0;
+      if (!isNonDeductible) {
+        if (deductFrom === 'carryover') {
+          daysFromCarryover = numberOfDays;
+        } else if (deductFrom === 'current') {
+          daysFromCurrent = numberOfDays;
+        } else {
+          daysFromCarryover = Math.min(numberOfDays, carryover);
+          daysFromCurrent = numberOfDays - daysFromCarryover;
+        }
       }
 
-      // Always update employee_personal_data used_leave_days (only current year)
-      if (daysFromCurrent > 0) {
-        const newEpdUsedDays = employee.used_leave_days + daysFromCurrent;
-        await supabase
-          .from('employee_personal_data')
-          .update({ used_leave_days: newEpdUsedDays })
-          .eq('id', employee.id);
-      }
-
-      const deductionDesc = daysFromCarryover > 0 && daysFromCurrent > 0
+      const deductionDesc = isNonDeductible
+        ? `${leaveTypeLabels[manualLeaveForm.leave_type] || manualLeaveForm.leave_type} — fără deducere din sold`
+        : daysFromCarryover > 0 && daysFromCurrent > 0
         ? `${daysFromCarryover} zile din report ${new Date().getFullYear() - 1} + ${daysFromCurrent} zile din ${new Date().getFullYear()}`
         : daysFromCarryover > 0
         ? `${daysFromCarryover} zile din report ${new Date().getFullYear() - 1}`
@@ -2382,8 +2415,17 @@ const HRManagement = () => {
               </div>
             )}
 
-            {/* Deduction source selection - only show when employee has carryover */}
-            {selectedManualEmployee && (selectedManualEmployee.carryoverDays || 0) > 0 && (
+            {/* Non-deductible leave type info */}
+            {['cfp', 'bo', 'ccc', 'ev'].includes(manualLeaveForm.leave_type) && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                  ℹ️ {manualLeaveForm.leave_type === 'cfp' ? 'Concediu fără plată — contract suspendat. ' : ''}Nu se deduce din soldul de concediu de odihnă.
+                </p>
+              </div>
+            )}
+
+            {/* Deduction source selection - only show when employee has carryover and deductible type */}
+            {selectedManualEmployee && (selectedManualEmployee.carryoverDays || 0) > 0 && !['cfp', 'bo', 'ccc', 'ev'].includes(manualLeaveForm.leave_type) && (
               <div className="space-y-2">
                 <Label>Deduce din soldul *</Label>
                 <RadioGroup
