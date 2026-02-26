@@ -175,7 +175,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       // Deduct leave days
       await deductLeaveDays(request);
 
-      // Notify employee
+      // Notify employee (in-app)
       await supabase.from('notifications').insert({
         user_id: request.user_id,
         title: 'Cerere concediu aprobată',
@@ -184,6 +184,9 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         related_type: 'leave_request',
         related_id: request.id,
       });
+
+      // Notify employee (email)
+      sendResultEmail(request, 'approved');
 
       toast({ title: 'Aprobat', description: `Cererea ${request.request_number} a fost aprobată.` });
       onUpdated();
@@ -237,6 +240,32 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     }
   };
 
+  const sendResultEmail = async (request: LeaveRequest, result: 'approved' | 'rejected', rejectionReasonText?: string) => {
+    try {
+      const { data: myProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+
+      await supabase.functions.invoke('notify-leave-result', {
+        body: {
+          employee_user_id: request.user_id,
+          employee_name: request.employee_name,
+          request_number: request.request_number,
+          start_date: format(parseISO(request.start_date), 'dd.MM.yyyy'),
+          end_date: format(parseISO(request.end_date), 'dd.MM.yyyy'),
+          working_days: request.working_days,
+          result,
+          rejection_reason: rejectionReasonText || null,
+          approver_name: myProfile?.full_name || 'Șef compartiment',
+        },
+      });
+    } catch (err) {
+      console.error('Failed to send result email:', err);
+    }
+  };
+
   const handleReject = async () => {
     if (!user || !rejectDialog) return;
     setProcessing(rejectDialog.id);
@@ -262,6 +291,9 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         related_type: 'leave_request',
         related_id: rejectDialog.id,
       });
+
+      // Notify employee (email)
+      sendResultEmail(rejectDialog, 'rejected', rejectionReason);
 
       toast({ title: 'Respins', description: `Cererea ${rejectDialog.request_number} a fost respinsă.` });
       setRejectDialog(null);
