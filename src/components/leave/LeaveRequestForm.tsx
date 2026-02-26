@@ -213,7 +213,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
     const selectedColleague = colleagues.find(c => c.id === replacementId);
 
-    // Lookup designated approver from leave_approvers
+    // Lookup designated approver: per-employee first, then per-department fallback
     let designatedApproverId: string | null = null;
     const { data: approverMapping } = await supabase
       .from('leave_approvers')
@@ -223,6 +223,16 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
     if (approverMapping) {
       designatedApproverId = approverMapping.approver_user_id;
+    } else if (employeeData.department) {
+      // Fallback: check department-level approver
+      const { data: deptApprover } = await supabase
+        .from('leave_department_approvers')
+        .select('approver_user_id')
+        .eq('department', employeeData.department)
+        .maybeSingle();
+      if (deptApprover) {
+        designatedApproverId = deptApprover.approver_user_id;
+      }
     }
 
     const { data: insertedRequest, error } = await supabase.from('leave_requests').insert({
