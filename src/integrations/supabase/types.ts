@@ -832,6 +832,33 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_department_approvers: {
+        Row: {
+          approver_user_id: string
+          created_at: string
+          created_by: string | null
+          department: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          approver_user_id: string
+          created_at?: string
+          created_by?: string | null
+          department: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          approver_user_id?: string
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
       leave_requests: {
         Row: {
           approver_id: string | null

@@ -58,13 +58,18 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
   const checkDesignatedApprover = async () => {
     if (!user) return;
-    // Check if current user is a designated approver for anyone
-    const { data } = await supabase
+    // Check if current user is a designated approver for anyone (per-employee or per-department)
+    const { data: empApprovers } = await supabase
       .from('leave_approvers')
       .select('id')
       .eq('approver_user_id', user.id)
       .limit(1);
-    setIsDesignatedApprover((data || []).length > 0);
+    const { data: deptApprovers } = await supabase
+      .from('leave_department_approvers')
+      .select('id')
+      .eq('approver_user_id', user.id)
+      .limit(1);
+    setIsDesignatedApprover((empApprovers || []).length > 0 || (deptApprovers || []).length > 0);
   };
 
   const fetchPendingRequests = async () => {
@@ -118,6 +123,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     // Filter based on approver logic:
     // 1. Requests where I'm the designated approver (approver_id = my id)
     // 2. Requests without a designated approver where I'm a dept head in the same department (fallback)
+    // 3. Requests without a designated approver where I'm the department-level approver
     if (!isSuperAdmin) {
       const { data: myProfile } = await supabase
         .from('profiles')
@@ -125,9 +131,18 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         .eq('user_id', user.id)
         .maybeSingle();
 
+      // Get departments where I'm the department-level approver
+      const { data: myDeptApprovals } = await supabase
+        .from('leave_department_approvers')
+        .select('department')
+        .eq('approver_user_id', user.id);
+      const myApproverDepts = new Set((myDeptApprovals || []).map(d => d.department.toLowerCase()));
+
       enrichedRequests = enrichedRequests.filter(r => {
         // I'm the designated approver
         if (r.approver_id === user.id) return true;
+        // No designated approver + I'm department-level approver for that dept
+        if (!r.approver_id && r.employee_department && myApproverDepts.has(r.employee_department.toLowerCase())) return true;
         // No designated approver + I'm dept head + same department (fallback)
         if (!r.approver_id && isDeptHead && myProfile?.department &&
             r.employee_department.toLowerCase() === myProfile.department.toLowerCase()) {

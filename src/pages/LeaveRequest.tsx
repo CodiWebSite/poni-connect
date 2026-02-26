@@ -23,14 +23,15 @@ const LeaveRequest = () => {
 
   useEffect(() => {
     if (user) {
-      supabase
-        .from('leave_approvers')
-        .select('id')
-        .eq('approver_user_id', user.id)
-        .limit(1)
-        .then(({ data }) => {
-          setIsDesignatedApprover((data || []).length > 0);
-        });
+      // Check both per-employee and per-department approver mappings
+      Promise.all([
+        supabase.from('leave_approvers').select('id').eq('approver_user_id', user.id).limit(1),
+        supabase.from('leave_department_approvers').select('id').eq('approver_user_id', user.id).limit(1),
+      ]).then(([empResult, deptResult]) => {
+        setIsDesignatedApprover(
+          (empResult.data || []).length > 0 || (deptResult.data || []).length > 0
+        );
+      });
     }
   }, [user]);
 
