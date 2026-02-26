@@ -200,6 +200,7 @@ const HRManagement = () => {
   const [archivedEmployees, setArchivedEmployees] = useState<EmployeeWithData[]>([]);
   const [loadingArchived, setLoadingArchived] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [archivedSearchQuery, setArchivedSearchQuery] = useState('');
   const [leaveHistoryEmployee, setLeaveHistoryEmployee] = useState<EmployeeWithData | null>(null);
   const [customHolidayDates, setCustomHolidayDates] = useState<string[]>([]);
   const [customHolidayNames, setCustomHolidayNames] = useState<Record<string, string>>({});
@@ -1088,6 +1089,16 @@ const HRManagement = () => {
     return a.full_name.localeCompare(b.full_name, 'ro');
   });
 
+  const filteredArchivedEmployees = archivedEmployees.filter(e => {
+    if (!archivedSearchQuery) return true;
+    const q = archivedSearchQuery.toLowerCase();
+    return e.full_name.toLowerCase().includes(q) ||
+      e.email.toLowerCase().includes(q) ||
+      e.department?.toLowerCase().includes(q) ||
+      e.position?.toLowerCase().includes(q) ||
+      e.archive_reason?.toLowerCase().includes(q);
+  });
+
   // Redirect if not authorized
   if (!roleLoading && !canManageHR) {
     return <Navigate to="/" replace />;
@@ -1548,6 +1559,17 @@ const HRManagement = () => {
               <CardDescription>
                 Angajați eliminați din lista activă. Datele sunt păstrate în baza de date.
               </CardDescription>
+              {archivedEmployees.length > 0 && (
+                <div className="relative max-w-sm mt-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Caută în arhivați..."
+                    className="pl-10"
+                    value={archivedSearchQuery}
+                    onChange={(e) => setArchivedSearchQuery(e.target.value)}
+                  />
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {loadingArchived ? (
@@ -1559,9 +1581,14 @@ const HRManagement = () => {
                   <Archive className="w-12 h-12 mx-auto mb-4 opacity-40" />
                   <p>Nu există angajați arhivați.</p>
                 </div>
+              ) : filteredArchivedEmployees.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Search className="w-12 h-12 mx-auto mb-4 opacity-40" />
+                  <p>Nu s-au găsit rezultate pentru „{archivedSearchQuery}"</p>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {archivedEmployees.map((employee) => (
+                  {filteredArchivedEmployees.map((employee) => (
                     <div key={employee.id} className="p-4 bg-secondary/30 rounded-lg border border-border">
                       <div className="flex flex-col sm:flex-row gap-4 items-start">
                         <div className="flex items-start gap-3 flex-1">
