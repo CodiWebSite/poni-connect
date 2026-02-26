@@ -12,7 +12,8 @@ import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
 import { StatCardSkeleton, QuickActionsSkeleton, ChartSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Users, UserCircle, Calendar, FolderDown } from 'lucide-react';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { Users, UserCircle, Calendar, FolderDown, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -24,6 +25,7 @@ const quickActions = [
 
 const Dashboard = () => {
   const { role, loading: roleLoading } = useUserRole();
+  const { settings } = useAppSettings();
   const [stats, setStats] = useState({ employees: 0 });
 
   useEffect(() => {
@@ -38,6 +40,12 @@ const Dashboard = () => {
   if (role === 'user') {
     return (
       <MainLayout title="Dashboard" description="Bine ați venit în intranetul ICMPP">
+        {settings.homepage_message && (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+            <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-foreground whitespace-pre-line">{settings.homepage_message}</p>
+          </div>
+        )}
         <EmployeeDashboard />
       </MainLayout>
     );
@@ -45,6 +53,13 @@ const Dashboard = () => {
 
   return (
     <MainLayout title="Dashboard" description="Bine ați venit în intranetul ICMPP">
+      {/* Custom homepage message */}
+      {settings.homepage_message && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+          <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-foreground whitespace-pre-line">{settings.homepage_message}</p>
+        </div>
+      )}
       {/* Quick Actions */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {quickActions.map((action) => (

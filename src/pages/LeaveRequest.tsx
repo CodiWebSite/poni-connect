@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -17,13 +17,7 @@ const LeaveRequest = () => {
   const { user, loading: authLoading } = useAuth();
   const { isSuperAdmin, role, isSef, isSefSRUS, canManageHR, loading: roleLoading } = useUserRole();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [showBeta, setShowBeta] = useState(false);
-
-  useEffect(() => {
-    supabase.from('app_settings').select('value').eq('key', 'leave_module_beta').maybeSingle()
-      .then(({ data }) => { if (data) setShowBeta(data.value === true); });
-  }, []);
-
+  const { settings } = useAppSettings();
 
   if (authLoading || roleLoading) {
     return (
@@ -45,7 +39,7 @@ const LeaveRequest = () => {
 
   return (
     <MainLayout title="Cereri Concediu de Odihnă" description="Depune și gestionează cererile de concediu">
-      {showBeta && (
+      {settings.leave_module_beta && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-300/60 bg-amber-50/70 dark:border-amber-600/40 dark:bg-amber-950/30 px-4 py-2.5">
           <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
           <p className="text-sm text-amber-800 dark:text-amber-300">
