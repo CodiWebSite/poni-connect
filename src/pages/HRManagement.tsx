@@ -1555,10 +1555,49 @@ const HRManagement = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* v2.6 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-primary text-primary-foreground">v2.6</Badge>
+                  <span className="text-sm text-muted-foreground">Februarie 2026</span>
+                </div>
+                <div className="ml-4 space-y-2 border-l-2 border-primary/20 pl-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📋 Selecție Sold la Concediu Manual</p>
+                    <p className="text-xs text-muted-foreground">
+                      La înregistrarea unui concediu manual, HR-ul poate alege sursa de deducere: automat (prioritar din report 2025, 
+                      apoi sold 2026), doar din report 2025 sau doar din sold 2026. Soldul total include acum corect: 
+                      zile cuvenite 2026 + report 2025 + bonus.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">✏️ Selecție Sold în Editare Concediu</p>
+                    <p className="text-xs text-muted-foreground">
+                      Dialogul de editare a concediilor permite acum selectarea sursei de deducere (report 2025 / sold 2026) 
+                      atunci când se modifică numărul de zile, cu recalculare automată a soldurilor.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">🔄 Consum Zile Report 2025 în Cereri Automate</p>
+                    <p className="text-xs text-muted-foreground">
+                      Cererile de concediu depuse prin sistem consumă acum corect zilele rămase din reportul 2025, 
+                      indiferent că anul curent este 2026. Zilele de report sunt prioritare la deducere.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📊 Export Excel Actualizat cu Report 2025</p>
+                    <p className="text-xs text-muted-foreground">
+                      Toate rapoartele Excel (salarizare, sold concedii, total per departament) includ acum coloanele 
+                      „Report 2025", „Sold+" și „Total Disponibil" cu formula completă: CO 2026 + Report 2025 + Bonus - Utilizate.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* v2.5 */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-primary text-primary-foreground">v2.5</Badge>
+                  <Badge variant="secondary">v2.5</Badge>
                   <span className="text-sm text-muted-foreground">Februarie 2026</span>
                 </div>
                 <div className="ml-4 space-y-2 border-l-2 border-primary/20 pl-4">
