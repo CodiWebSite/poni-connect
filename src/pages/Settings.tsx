@@ -132,18 +132,18 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="flex items-center gap-6 p-4 rounded-xl bg-muted/50">
-                <Avatar className="w-20 h-20 border-2 border-primary/20 shadow-md">
+              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 rounded-xl bg-muted/50">
+                <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-primary/20 shadow-md flex-shrink-0">
                   <AvatarImage src={profile.avatar_url} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xl font-medium">
+                  <AvatarFallback className="bg-primary/10 text-primary text-lg sm:text-xl font-medium">
                     {profile.full_name ? getInitials(profile.full_name) : 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="font-semibold text-lg">{profile.full_name || 'Nume utilizator'}</p>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+                <div className="text-center sm:text-left min-w-0">
+                  <p className="font-semibold text-base sm:text-lg truncate">{profile.full_name || 'Nume utilizator'}</p>
+                  <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
                   {profile.department && (
-                    <p className="text-xs text-muted-foreground mt-1">{profile.department} · {profile.position}</p>
+                    <p className="text-xs text-muted-foreground mt-1 truncate">{profile.department} · {profile.position}</p>
                   )}
                 </div>
               </div>
