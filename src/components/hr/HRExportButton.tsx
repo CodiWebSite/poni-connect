@@ -43,6 +43,8 @@ interface Employee {
   employment_date?: string;
   contract_type?: string | null;
   leaveHistory?: LeaveEntry[];
+  carryoverDays?: number;
+  bonusDays?: number;
   record?: {
     total_leave_days: number;
     used_leave_days: number;
@@ -88,7 +90,6 @@ const THIN_BORDER: Partial<ExcelJS.Borders> = {
 };
 
 const styleSheet = (ws: ExcelJS.Worksheet) => {
-  // Style header row
   const headerRow = ws.getRow(1);
   headerRow.eachCell((cell) => {
     cell.fill = HEADER_FILL;
@@ -98,14 +99,12 @@ const styleSheet = (ws: ExcelJS.Worksheet) => {
   });
   headerRow.height = 28;
 
-  // Style data rows
   for (let i = 2; i <= ws.rowCount; i++) {
     const row = ws.getRow(i);
     row.eachCell((cell) => {
       cell.alignment = CENTER_ALIGNMENT;
       cell.border = THIN_BORDER;
     });
-    // Zebra striping
     if (i % 2 === 0) {
       row.eachCell((cell) => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F6FA' } };
@@ -113,7 +112,6 @@ const styleSheet = (ws: ExcelJS.Worksheet) => {
     }
   }
 
-  // Auto-size columns
   ws.columns.forEach((col) => {
     let maxLen = 10;
     col.eachCell?.({ includeEmpty: false }, (cell) => {
@@ -133,6 +131,14 @@ const saveWorkbook = async (wb: ExcelJS.Workbook, filename: string) => {
   a.download = `${filename}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
+};
+
+const currentYear = new Date().getFullYear();
+const prevYear = currentYear - 1;
+
+/** Total available = current year + carryover + bonus - used */
+const totalAvailable = (e: Employee) => {
+  return (e.record?.total_leave_days ?? 21) + (e.carryoverDays || 0) + (e.bonusDays || 0) - (e.record?.used_leave_days ?? 0);
 };
 
 const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
@@ -212,9 +218,12 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         'Funcție': e.position || '-',
         'Data Angajării': e.record?.hire_date ? format(new Date(e.record.hire_date), 'dd.MM.yyyy') : '-',
         'Tip Contract': e.record?.contract_type || '-',
-        'Total Zile Concediu': e.record?.total_leave_days ?? 21,
+        [`Zile CO ${currentYear}`]: e.record?.total_leave_days ?? 21,
+        [`Report ${prevYear}`]: e.carryoverDays || 0,
+        'Sold+ (Bonus)': e.bonusDays || 0,
+        'Total Disponibil': (e.record?.total_leave_days ?? 21) + (e.carryoverDays || 0) + (e.bonusDays || 0),
         'Zile Utilizate': e.record?.used_leave_days ?? 0,
-        'Zile Rămase': e.record?.remaining_leave_days ?? (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0)
+        'Zile Rămase': totalAvailable(e),
       }));
       await exportSingleSheet(data, 'sold_concedii', 'Sold Concedii');
       toast({ title: 'Export realizat', description: `${data.length} angajați exportați.` });
@@ -294,8 +303,15 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
     return periods.join('; ') || '';
   };
 
-  const buildPayrollRow = (e: Employee, currentYear: number, includeDetails: boolean) => {
+  const buildPayrollRow = (e: Employee, year: number, includeDetails: boolean) => {
     const leaves = e.leaveHistory || [];
+    const carryover = e.carryoverDays || 0;
+    const bonus = e.bonusDays || 0;
+    const totalCO = e.record?.total_leave_days ?? 21;
+    const used = e.record?.used_leave_days ?? 0;
+    const totalDisponibil = totalCO + carryover + bonus;
+    const ramas = totalDisponibil - used;
+
     const row: Record<string, any> = includeDetails
       ? {
           'Nume': e.full_name,
@@ -305,21 +321,27 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
           'Funcție': e.position || '-',
           'Data Angajării': e.employment_date ? format(new Date(e.employment_date), 'dd.MM.yyyy') : (e.record?.hire_date ? format(new Date(e.record.hire_date), 'dd.MM.yyyy') : '-'),
           'Tip Contract': e.contract_type || e.record?.contract_type || '-',
-          'Total Zile CO': e.record?.total_leave_days ?? 21,
-          'Zile Utilizate': e.record?.used_leave_days ?? 0,
-          'Zile Rămase': (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0),
+          [`Zile CO ${year}`]: totalCO,
+          [`Report ${year - 1}`]: carryover || '',
+          'Sold+': bonus || '',
+          'Total Disponibil': totalDisponibil,
+          'Zile Utilizate': used,
+          'Zile Rămase': ramas,
         }
       : {
           'Nume': e.full_name,
           'Funcție': e.position || '-',
-          'Total Zile CO': e.record?.total_leave_days ?? 21,
-          'Zile Utilizate': e.record?.used_leave_days ?? 0,
-          'Zile Rămase': (e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0),
+          [`Zile CO ${year}`]: totalCO,
+          [`Report ${year - 1}`]: carryover || '',
+          'Sold+': bonus || '',
+          'Total Disponibil': totalDisponibil,
+          'Zile Utilizate': used,
+          'Zile Rămase': ramas,
         };
 
     for (let m = 0; m < 12; m++) {
-      const days = leaves.reduce((sum, l) => sum + getWorkingDaysInMonth(l.startDate, l.endDate, m, currentYear), 0);
-      const periods = getPeriodsInMonth(leaves, m, currentYear);
+      const days = leaves.reduce((sum, l) => sum + getWorkingDaysInMonth(l.startDate, l.endDate, m, year), 0);
+      const periods = getPeriodsInMonth(leaves, m, year);
       row[`${MONTH_NAMES[m]} - Zile`] = days || '';
       row[`${MONTH_NAMES[m]} - Perioade`] = periods;
     }
@@ -338,7 +360,6 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
   const exportPayrollReport = async () => {
     setExporting('payroll');
     try {
-      const currentYear = new Date().getFullYear();
       const wb = new ExcelJS.Workbook();
       wb.creator = 'ICMPP HR';
       wb.created = new Date();
@@ -357,9 +378,12 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         const row: Record<string, any> = {
           'Departament': dept,
           'Nr. Angajați': deptEmployees.length,
-          'Total Zile CO': deptEmployees.reduce((s, e) => s + (e.record?.total_leave_days ?? 21), 0),
+          [`Zile CO ${currentYear}`]: deptEmployees.reduce((s, e) => s + (e.record?.total_leave_days ?? 21), 0),
+          [`Report ${prevYear}`]: deptEmployees.reduce((s, e) => s + (e.carryoverDays || 0), 0),
+          'Sold+': deptEmployees.reduce((s, e) => s + (e.bonusDays || 0), 0),
+          'Total Disponibil': deptEmployees.reduce((s, e) => s + (e.record?.total_leave_days ?? 21) + (e.carryoverDays || 0) + (e.bonusDays || 0), 0),
           'Total Utilizate': deptEmployees.reduce((s, e) => s + (e.record?.used_leave_days ?? 0), 0),
-          'Total Rămase': deptEmployees.reduce((s, e) => s + ((e.record?.total_leave_days ?? 21) - (e.record?.used_leave_days ?? 0)), 0),
+          'Total Rămase': deptEmployees.reduce((s, e) => s + totalAvailable(e), 0),
         };
         for (let m = 0; m < 12; m++) {
           const monthDays = deptEmployees.reduce((sum, e) => {
