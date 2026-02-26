@@ -15,7 +15,7 @@ import { ProfileSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { 
   User, FileText, Download, Calendar, Briefcase, Building, Phone,
   Loader2, MapPin, CreditCard, Hash, History, Mail, BadgeCheck, AlertTriangle, Camera,
-  Gift, ArrowRightLeft, Scale,
+  Gift, ArrowRightLeft, Scale, ShieldCheck,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
@@ -128,6 +128,8 @@ const MyProfile = () => {
   const [loading, setLoading] = useState(true);
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [approverName, setApproverName] = useState<string | null>(null);
+  const [approverSource, setApproverSource] = useState<'individual' | 'department' | null>(null);
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
@@ -178,6 +180,45 @@ const MyProfile = () => {
         ]);
         setCarryovers((carryRes.data as LeaveCarryover[]) || []);
         setBonuses((bonusRes.data as LeaveBonus[]) || []);
+      }
+    }
+
+    // Fetch approver info
+    const { data: empApprover } = await supabase
+      .from('leave_approvers')
+      .select('approver_user_id')
+      .eq('employee_user_id', user.id)
+      .maybeSingle();
+
+    if (empApprover) {
+      const { data: ap } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', empApprover.approver_user_id)
+        .maybeSingle();
+      setApproverName(ap?.full_name || null);
+      setApproverSource('individual');
+    } else {
+      // Check department-level approver
+      const dept = profileRes.data?.department;
+      if (dept) {
+        const { data: deptApprover } = await supabase
+          .from('leave_department_approvers')
+          .select('approver_user_id')
+          .eq('department', dept)
+          .maybeSingle();
+        if (deptApprover) {
+          const { data: ap } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', deptApprover.approver_user_id)
+            .maybeSingle();
+          setApproverName(ap?.full_name || null);
+          setApproverSource('department');
+        } else {
+          setApproverName(null);
+          setApproverSource(null);
+        }
       }
     }
 
@@ -530,6 +571,31 @@ const MyProfile = () => {
 
           {/* ─── Right Column (2/5) ─── */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+
+            {/* Approver Info */}
+            {approverName && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
+                    Aprobator Concediu
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <User className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{approverName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {approverSource === 'individual' ? 'Aprobator desemnat individual' : 'Aprobator departament'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Personal Data */}
             {personalData && (
