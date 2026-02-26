@@ -319,13 +319,15 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
             <Label className="text-xs text-muted-foreground">Sold concediu disponibil</Label>
             <p className="font-medium text-primary">
               {availableDays} zile
-              <span className="text-xs text-muted-foreground ml-2">
-                ({employeeData.total_leave_days} bază + {carryoverDays} report 2025 + {bonusDays} bonus - {employeeData.used_leave_days} utilizate)
-              </span>
             </p>
+            <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+              <p>• {employeeData.total_leave_days} cuvenite {new Date().getFullYear()} − {employeeData.used_leave_days} utilizate = <strong>{employeeData.total_leave_days - employeeData.used_leave_days}</strong></p>
+              {carryoverDays > 0 && <p>• {carryoverDays} zile report {new Date().getFullYear() - 1}</p>}
+              {bonusDays > 0 && <p>• {bonusDays} zile Sold+ (suplimentar)</p>}
+            </div>
             {carryoverDays > 0 && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                ⚠ Se consumă mai întâi soldul din 2025 ({carryoverDays} zile disponibile)
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                ⚠ Se consumă mai întâi soldul din {new Date().getFullYear() - 1} ({carryoverDays} zile disponibile)
               </p>
             )}
           </div>
