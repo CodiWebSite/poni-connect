@@ -163,8 +163,24 @@ const HRManagement = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   
-  // New employee dialog
+  // New employee dialog (complete data for incomplete imports)
   const [showNewEmployee, setShowNewEmployee] = useState(false);
+
+  // Manual add employee dialog (from scratch)
+  const [showAddEmployee, setShowAddEmployee] = useState(false);
+  const [addEmployeeForm, setAddEmployeeForm] = useState({
+    first_name: '',
+    last_name: '',
+    cnp: '',
+    email: '',
+    department: '',
+    customDepartment: '',
+    position: '',
+    employment_date: '',
+    contract_type: 'nedeterminat',
+    total_leave_days: 21,
+  });
+  const [addingEmployee, setAddingEmployee] = useState(false);
   
   // Manual leave registration dialog
   const [showManualLeave, setShowManualLeave] = useState(false);
@@ -678,6 +694,59 @@ const HRManagement = () => {
     }
   };
 
+  const handleAddEmployee = async () => {
+    const dept = addEmployeeForm.department === '__custom__' 
+      ? addEmployeeForm.customDepartment.trim() 
+      : addEmployeeForm.department;
+
+    if (!addEmployeeForm.first_name.trim() || !addEmployeeForm.last_name.trim() || 
+        !addEmployeeForm.cnp.trim() || !addEmployeeForm.email.trim() || 
+        !dept || !addEmployeeForm.employment_date) {
+      toast({ title: 'Eroare', description: 'Completați toate câmpurile obligatorii.', variant: 'destructive' });
+      return;
+    }
+
+    // Validate CNP (13 digits)
+    if (!/^\d{13}$/.test(addEmployeeForm.cnp.trim())) {
+      toast({ title: 'Eroare', description: 'CNP-ul trebuie să conțină exact 13 cifre.', variant: 'destructive' });
+      return;
+    }
+
+    setAddingEmployee(true);
+
+    const { error } = await supabase.from('employee_personal_data').insert({
+      first_name: addEmployeeForm.first_name.trim(),
+      last_name: addEmployeeForm.last_name.trim(),
+      cnp: addEmployeeForm.cnp.trim(),
+      email: addEmployeeForm.email.trim().toLowerCase(),
+      department: dept,
+      position: addEmployeeForm.position.trim() || null,
+      employment_date: addEmployeeForm.employment_date,
+      contract_type: addEmployeeForm.contract_type,
+      total_leave_days: addEmployeeForm.total_leave_days,
+      used_leave_days: 0,
+    });
+
+    if (error) {
+      console.error('Error adding employee:', error);
+      const msg = error.message.includes('duplicate') 
+        ? 'Un angajat cu acest CNP sau email există deja.' 
+        : 'Nu s-a putut adăuga angajatul.';
+      toast({ title: 'Eroare', description: msg, variant: 'destructive' });
+    } else {
+      toast({ title: 'Succes', description: `${addEmployeeForm.last_name} ${addEmployeeForm.first_name} a fost adăugat(ă) cu succes.` });
+      setShowAddEmployee(false);
+      setAddEmployeeForm({
+        first_name: '', last_name: '', cnp: '', email: '',
+        department: '', customDepartment: '', position: '',
+        employment_date: '', contract_type: 'nedeterminat', total_leave_days: 21,
+      });
+      fetchEmployees();
+    }
+
+    setAddingEmployee(false);
+  };
+
   const fetchCustomHolidays = async () => {
     const { data } = await supabase.from('custom_holidays').select('holiday_date, name').order('holiday_date');
     if (data) {
@@ -949,7 +1018,11 @@ const HRManagement = () => {
     setSyncing(false);
   };
 
-  const allDepartments = [...new Set(employees.map(e => e.department).filter(Boolean) as string[])].sort();
+  // Include departments from both active and archived employees
+  const allDepartments = [...new Set([
+    ...employees.map(e => e.department).filter(Boolean) as string[],
+    ...archivedEmployees.map(e => e.department).filter(Boolean) as string[],
+  ])].sort();
 
   const renameDepartment = async () => {
     if (!renameDeptNew.trim() || !renameDeptOld) return;
@@ -1067,9 +1140,13 @@ const HRManagement = () => {
               <FilePlus2 className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Concediu Manual</span>
             </Button>
+            <Button onClick={() => setShowAddEmployee(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Adaugă Angajat</span>
+            </Button>
             {incompleteEmployees.length > 0 && (
-              <Button onClick={() => setShowNewEmployee(true)}>
-                <UserPlus className="w-4 h-4 mr-2" />
+              <Button variant="outline" onClick={() => setShowNewEmployee(true)}>
+                <Edit className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Completare Date</span>
               </Button>
             )}
@@ -2042,7 +2119,143 @@ const HRManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Manual Leave Registration Dialog */}
+      {/* Add Employee Dialog */}
+      <Dialog open={showAddEmployee} onOpenChange={setShowAddEmployee}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5" />
+              Adaugă Angajat Manual
+            </DialogTitle>
+            <DialogDescription>
+              Introduceți datele noului angajat. Câmpurile marcate cu * sunt obligatorii.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Nume *</Label>
+                <Input
+                  value={addEmployeeForm.last_name}
+                  onChange={e => setAddEmployeeForm(f => ({ ...f, last_name: e.target.value }))}
+                  placeholder="ex: POPESCU"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Prenume *</Label>
+                <Input
+                  value={addEmployeeForm.first_name}
+                  onChange={e => setAddEmployeeForm(f => ({ ...f, first_name: e.target.value }))}
+                  placeholder="ex: Maria"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>CNP *</Label>
+              <Input
+                value={addEmployeeForm.cnp}
+                onChange={e => setAddEmployeeForm(f => ({ ...f, cnp: e.target.value.replace(/\D/g, '').slice(0, 13) }))}
+                placeholder="13 cifre"
+                maxLength={13}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                value={addEmployeeForm.email}
+                onChange={e => setAddEmployeeForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="email@icmpp.ro"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Departament *</Label>
+              <Select
+                value={addEmployeeForm.department}
+                onValueChange={v => setAddEmployeeForm(f => ({ ...f, department: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selectează departamentul" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allDepartments.map(d => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                  <SelectItem value="__custom__">+ Alt departament...</SelectItem>
+                </SelectContent>
+              </Select>
+              {addEmployeeForm.department === '__custom__' && (
+                <Input
+                  value={addEmployeeForm.customDepartment}
+                  onChange={e => setAddEmployeeForm(f => ({ ...f, customDepartment: e.target.value }))}
+                  placeholder="Introduceți numele departamentului"
+                  className="mt-2"
+                />
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Funcția</Label>
+              <Input
+                value={addEmployeeForm.position}
+                onChange={e => setAddEmployeeForm(f => ({ ...f, position: e.target.value }))}
+                placeholder="ex: Medic medicina muncii"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Data angajării *</Label>
+                <Input
+                  type="date"
+                  value={addEmployeeForm.employment_date}
+                  onChange={e => setAddEmployeeForm(f => ({ ...f, employment_date: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Tip contract</Label>
+                <Select
+                  value={addEmployeeForm.contract_type}
+                  onValueChange={v => setAddEmployeeForm(f => ({ ...f, contract_type: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nedeterminat">Nedeterminat</SelectItem>
+                    <SelectItem value="determinat">Determinat</SelectItem>
+                    <SelectItem value="part_time">Part-time</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Zile concediu / an</Label>
+              <Input
+                type="number"
+                min={0}
+                max={60}
+                value={addEmployeeForm.total_leave_days}
+                onChange={e => setAddEmployeeForm(f => ({ ...f, total_leave_days: parseInt(e.target.value) || 21 }))}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddEmployee(false)}>Anulează</Button>
+            <Button onClick={handleAddEmployee} disabled={addingEmployee}>
+              {addingEmployee ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
+              Adaugă Angajat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showManualLeave} onOpenChange={(open) => {
         setShowManualLeave(open);
         if (!open) {
