@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -63,6 +65,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [downloading, setDownloading] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [downloadDialog, setDownloadDialog] = useState<LeaveRequestRow | null>(null);
+  const [selectedSrusOfficer, setSelectedSrusOfficer] = useState<string>('Cătălina Bălan');
 
   useEffect(() => {
     fetchAllRequests();
@@ -127,7 +131,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     setLoading(false);
   };
 
-  const handleDownload = async (request: LeaveRequestRow) => {
+  const handleDownload = async (request: LeaveRequestRow, srusOfficerName: string) => {
     setDownloading(request.id);
     try {
       let totalLeaveDays = 0;
@@ -156,14 +160,10 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           carryoverFromYear = carryover.from_year;
         }
 
-        // Calculate remaining
         const totalAvailable = totalLeaveDays + (carryover?.remaining_days ?? 0);
         remainingDays = totalAvailable - usedLeaveDays;
         if (remainingDays < 0) remainingDays = 0;
       }
-
-      // Determine SRUS officer name (auto-fill)
-      const srusOfficerName = 'Cătălina Bălan';
 
       await generateLeaveDocx({
         employeeName: request.employee_name,
@@ -195,6 +195,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       toast({ title: 'Eroare', description: 'Nu s-a putut genera documentul.', variant: 'destructive' });
     }
     setDownloading(null);
+    setDownloadDialog(null);
   };
 
   const handleDelete = async (id: string, requestNumber: string) => {
@@ -322,7 +323,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDownload(r)}
+                          onClick={() => { setDownloadDialog(r); setSelectedSrusOfficer('Cătălina Bălan'); }}
                           disabled={downloading === r.id}
                         >
                           {downloading === r.id ? (
@@ -353,6 +354,42 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Download Dialog - SRUS Officer Selection */}
+      <Dialog open={!!downloadDialog} onOpenChange={() => setDownloadDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Descarcă Document {downloadDialog?.request_number}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Angajat: <strong>{downloadDialog?.employee_name}</strong>
+            </p>
+            <div className="space-y-2">
+              <Label>Salariat SRUS (semnează documentul)</Label>
+              <Select value={selectedSrusOfficer} onValueChange={setSelectedSrusOfficer}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-[9999]">
+                  <SelectItem value="Cătălina Bălan">Cătălina Bălan</SelectItem>
+                  <SelectItem value="Loredana Negru">Loredana Negru</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDownloadDialog(null)}>Anulează</Button>
+            <Button
+              onClick={() => downloadDialog && handleDownload(downloadDialog, selectedSrusOfficer)}
+              disabled={downloading === downloadDialog?.id}
+            >
+              {downloading === downloadDialog?.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Download className="w-4 h-4 mr-1" />}
+              Descarcă DOCX
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
