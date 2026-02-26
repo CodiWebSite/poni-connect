@@ -185,6 +185,14 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
   const availableDays = (employeeData?.total_leave_days ?? 0) + carryoverDays + bonusDays - (employeeData?.used_leave_days ?? 0);
 
+  // Calculate how days would be deducted: 2025 carryover first, then 2026
+  const deductionBreakdown = (() => {
+    if (workingDays <= 0) return { from2025: 0, from2026: 0 };
+    const from2025 = Math.min(workingDays, carryoverDays);
+    const from2026 = workingDays - from2025;
+    return { from2025, from2026 };
+  })();
+
   const handleSubmit = async () => {
     if (!user || !employeeData || !signature || !startDate || !endDate || !replacementId) {
       toast({ title: 'Eroare', description: 'Completați toate câmpurile și semnați cererea.', variant: 'destructive' });
@@ -312,9 +320,14 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
             <p className="font-medium text-primary">
               {availableDays} zile
               <span className="text-xs text-muted-foreground ml-2">
-                ({employeeData.total_leave_days} bază + {carryoverDays} reportate + {bonusDays} bonus - {employeeData.used_leave_days} utilizate)
+                ({employeeData.total_leave_days} bază + {carryoverDays} report 2025 + {bonusDays} bonus - {employeeData.used_leave_days} utilizate)
               </span>
             </p>
+            {carryoverDays > 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                ⚠ Se consumă mai întâi soldul din 2025 ({carryoverDays} zile disponibile)
+              </p>
+            )}
           </div>
         </div>
 
@@ -344,10 +357,16 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
         {/* Working days display */}
         {workingDays > 0 && (
-          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-1">
             <p className="font-medium text-primary">
               Zile lucrătoare solicitate: <strong>{workingDays}</strong>
             </p>
+            {carryoverDays > 0 && workingDays > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Se vor consuma: <strong>{deductionBreakdown.from2025} zile din soldul 2025</strong>
+                {deductionBreakdown.from2026 > 0 && <> și <strong>{deductionBreakdown.from2026} zile din soldul 2026</strong></>}
+              </p>
+            )}
           </div>
         )}
 
