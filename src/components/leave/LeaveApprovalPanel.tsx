@@ -26,6 +26,7 @@ interface LeaveRequest {
   replacement_position: string | null;
   status: string;
   created_at: string;
+  approver_id?: string | null;
   employee_name?: string;
   employee_department?: string;
   employee_position?: string;
@@ -46,15 +47,28 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const [rejectDialog, setRejectDialog] = useState<LeaveRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [detailsDialog, setDetailsDialog] = useState<LeaveRequest | null>(null);
+  const [isDesignatedApprover, setIsDesignatedApprover] = useState(false);
 
   const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
 
   useEffect(() => {
+    checkDesignatedApprover();
     fetchPendingRequests();
-  }, [role]);
+  }, [role, user]);
+
+  const checkDesignatedApprover = async () => {
+    if (!user) return;
+    // Check if current user is a designated approver for anyone
+    const { data } = await supabase
+      .from('leave_approvers')
+      .select('id')
+      .eq('approver_user_id', user.id)
+      .limit(1);
+    setIsDesignatedApprover((data || []).length > 0);
+  };
 
   const fetchPendingRequests = async () => {
-    if (!isDeptHead) {
+    if (!user) {
       setRequests([]);
       setLoading(false);
       return;
@@ -95,24 +109,32 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
     let enrichedRequests = (data || []).map(r => ({
       ...r,
+      approver_id: (r as any).approver_id || null,
       employee_name: epdMap[r.epd_id]?.name || 'N/A',
       employee_department: epdMap[r.epd_id]?.department || '',
       employee_position: epdMap[r.epd_id]?.position || '',
     }));
 
-    // For actual dept heads (not super admin), filter to own department
-    if (!isSuperAdmin && user) {
+    // Filter based on approver logic:
+    // 1. Requests where I'm the designated approver (approver_id = my id)
+    // 2. Requests without a designated approver where I'm a dept head in the same department (fallback)
+    if (!isSuperAdmin) {
       const { data: myProfile } = await supabase
         .from('profiles')
         .select('department')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (myProfile?.department) {
-        enrichedRequests = enrichedRequests.filter(
-          r => r.employee_department.toLowerCase() === myProfile.department!.toLowerCase()
-        );
-      }
+      enrichedRequests = enrichedRequests.filter(r => {
+        // I'm the designated approver
+        if (r.approver_id === user.id) return true;
+        // No designated approver + I'm dept head + same department (fallback)
+        if (!r.approver_id && isDeptHead && myProfile?.department &&
+            r.employee_department.toLowerCase() === myProfile.department.toLowerCase()) {
+          return true;
+        }
+        return false;
+      });
     }
 
     setRequests(enrichedRequests);
@@ -236,7 +258,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     setProcessing(null);
   };
 
-  if (!isDeptHead && !loading) return null;
+  if (!isDeptHead && !isDesignatedApprover && !loading) return null;
 
   if (loading) {
     return (

@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
       end_date,
       working_days,
       replacement_name,
+      approver_user_id,
     } = await req.json();
 
     if (!department || !employee_name || !request_number) {
@@ -61,52 +62,46 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use service role to find dept heads
+    // Use service role to find recipients
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // Find profiles in same department
-    const { data: deptProfiles } = await supabaseAdmin
-      .from("profiles")
-      .select("user_id")
-      .eq("department", department);
+    const recipientEmails: string[] = [];
 
-    if (!deptProfiles || deptProfiles.length === 0) {
-      return new Response(
-        JSON.stringify({ message: "No profiles found in department" }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+    if (approver_user_id) {
+      // Send to the designated approver only
+      const { data: { user: approverUser } } = await supabaseAdmin.auth.admin.getUserById(approver_user_id);
+      if (approverUser?.email) {
+        recipientEmails.push(approverUser.email);
+      }
+    } else {
+      // Fallback: find dept heads in same department
+      const { data: deptProfiles } = await supabaseAdmin
+        .from("profiles")
+        .select("user_id")
+        .eq("department", department);
 
-    // Filter to only dept heads (sef, sef_srus)
-    const deptHeadEmails: string[] = [];
+      if (deptProfiles && deptProfiles.length > 0) {
+        for (const profile of deptProfiles) {
+          const { data: roleData } = await supabaseAdmin
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", profile.user_id)
+            .in("role", ["sef", "sef_srus"])
+            .maybeSingle();
 
-    for (const profile of deptProfiles) {
-      const { data: roleData } = await supabaseAdmin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", profile.user_id)
-        .in("role", ["sef", "sef_srus"])
-        .maybeSingle();
-
-      if (roleData) {
-        // Get email from auth.users via admin API
-        const {
-          data: { user },
-        } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
-        if (user?.email) {
-          deptHeadEmails.push(user.email);
+          if (roleData) {
+            const { data: { user: headUser } } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
+            if (headUser?.email) {
+              recipientEmails.push(headUser.email);
+            }
+          }
         }
       }
     }
 
-    if (deptHeadEmails.length === 0) {
+    if (recipientEmails.length === 0) {
       return new Response(
-        JSON.stringify({
-          message: "No department heads found for this department",
-        }),
+        JSON.stringify({ message: "No recipients found" }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -178,15 +173,15 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    // Send to all dept heads
-    for (const email of deptHeadEmails) {
+    // Send to all recipients
+    for (const email of recipientEmails) {
       await client.send({
         from: smtpFrom!,
         to: email,
         subject,
         html: htmlBody,
       });
-      console.log(`Email sent to dept head: ${email}`);
+      console.log(`Email sent to: ${email}`);
     }
 
     await client.close();
@@ -194,7 +189,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        sent_to: deptHeadEmails.length,
+        sent_to: recipientEmails.length,
       }),
       {
         status: 200,

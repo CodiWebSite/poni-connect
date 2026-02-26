@@ -727,6 +727,33 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_approvers: {
+        Row: {
+          approver_user_id: string
+          created_at: string
+          created_by: string | null
+          employee_user_id: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          approver_user_id: string
+          created_at?: string
+          created_by?: string | null
+          employee_user_id: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          approver_user_id?: string
+          created_at?: string
+          created_by?: string | null
+          employee_user_id?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
       leave_bonus: {
         Row: {
           bonus_days: number
@@ -807,6 +834,7 @@ export type Database = {
       }
       leave_requests: {
         Row: {
+          approver_id: string | null
           created_at: string
           dept_head_approved_at: string | null
           dept_head_id: string | null
@@ -833,6 +861,7 @@ export type Database = {
           year: number
         }
         Insert: {
+          approver_id?: string | null
           created_at?: string
           dept_head_approved_at?: string | null
           dept_head_id?: string | null
@@ -859,6 +888,7 @@ export type Database = {
           year?: number
         }
         Update: {
+          approver_id?: string | null
           created_at?: string
           dept_head_approved_at?: string | null
           dept_head_id?: string | null

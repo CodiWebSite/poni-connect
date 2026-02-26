@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,20 @@ const LeaveRequest = () => {
   const { isSuperAdmin, role, isSef, isSefSRUS, canManageHR, loading: roleLoading } = useUserRole();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { settings } = useAppSettings();
+  const [isDesignatedApprover, setIsDesignatedApprover] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('leave_approvers')
+        .select('id')
+        .eq('approver_user_id', user.id)
+        .limit(1)
+        .then(({ data }) => {
+          setIsDesignatedApprover((data || []).length > 0);
+        });
+    }
+  }, [user]);
 
   if (authLoading || roleLoading) {
     return (
@@ -32,10 +47,11 @@ const LeaveRequest = () => {
   if (!user) return <Navigate to="/auth" replace />;
 
   const isDeptHead = isSef || isSefSRUS || isSuperAdmin;
+  const canApprove = isDeptHead || isDesignatedApprover;
   const isHR = canManageHR;
 
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
-  const defaultTab = isDeptHead ? 'approve' : 'new';
+  const defaultTab = canApprove ? 'approve' : 'new';
 
   return (
     <MainLayout title="Cereri Concediu de Odihnă" description="Depune și gestionează cererile de concediu">
@@ -62,8 +78,8 @@ const LeaveRequest = () => {
             Cererile Mele
           </TabsTrigger>
 
-          {/* Dept heads can approve */}
-          {isDeptHead && (
+          {/* Dept heads and designated approvers can approve */}
+          {canApprove && (
             <TabsTrigger value="approve" className="gap-2">
               <CheckSquare className="w-4 h-4" />
               De Aprobat
@@ -71,7 +87,7 @@ const LeaveRequest = () => {
           )}
 
           {/* Dept heads see their approval history */}
-          {isDeptHead && (
+          {canApprove && (
             <TabsTrigger value="history" className="gap-2">
               <History className="w-4 h-4" />
               Centralizator
@@ -95,13 +111,13 @@ const LeaveRequest = () => {
           <LeaveRequestsList refreshTrigger={refreshTrigger} />
         </TabsContent>
 
-        {isDeptHead && (
+        {canApprove && (
           <TabsContent value="approve">
             <LeaveApprovalPanel onUpdated={handleRefresh} />
           </TabsContent>
         )}
 
-        {isDeptHead && (
+        {canApprove && (
           <TabsContent value="history">
             <LeaveApprovalHistory refreshTrigger={refreshTrigger} />
           </TabsContent>

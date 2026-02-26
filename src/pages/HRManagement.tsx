@@ -22,6 +22,7 @@ import { LeaveBonusManager } from '@/components/hr/LeaveBonusManager';
 import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
 import { CorrectionRequestsManager } from '@/components/hr/CorrectionRequestsManager';
 import HRExportButton from '@/components/hr/HRExportButton';
+import { LeaveApproversManager } from '@/components/hr/LeaveApproversManager';
 import { EmployeeLeaveHistory } from '@/components/hr/EmployeeLeaveHistory';
 import LeaveCalendar from '@/components/hr/LeaveCalendar';
 import { 
@@ -1043,6 +1044,10 @@ const HRManagement = () => {
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">Calendar</span>
             </TabsTrigger>
+            <TabsTrigger value="approvers" className="gap-2">
+              <UserCheck className="h-4 w-4" />
+              <span className="hidden sm:inline">Aprobatori</span>
+            </TabsTrigger>
             <TabsTrigger value="import" className="gap-2">
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">Import</span>
@@ -1535,6 +1540,11 @@ const HRManagement = () => {
           </Card>
         </TabsContent>
 
+        {/* Approvers Tab */}
+        <TabsContent value="approvers" className="space-y-6">
+          <LeaveApproversManager />
+        </TabsContent>
+
         {/* Import Tab */}
         <TabsContent value="import" className="space-y-6">
           <EmployeeImport />
@@ -1555,10 +1565,42 @@ const HRManagement = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* v2.7 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-primary text-primary-foreground">v2.7</Badge>
+                  <span className="text-sm text-muted-foreground">Februarie 2026</span>
+                </div>
+                <div className="ml-4 space-y-2 border-l-2 border-primary/20 pl-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">👥 Sistem de Aprobare Ierarhică (leave_approvers)</p>
+                    <p className="text-xs text-muted-foreground">
+                      HR-ul poate configura pentru fiecare angajat un aprobator specific de concediu. Astfel, un șef de laborator 
+                      poate avea ca aprobator șeful de compartiment, iar acesta la rândul lui alt superior. Tab-ul „Aprobatori" din 
+                      Gestiune HR permite gestionarea acestor relații.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">🔄 Rutare Automată Cereri</p>
+                    <p className="text-xs text-muted-foreground">
+                      La depunerea unei cereri de concediu, sistemul caută automat aprobatorul desemnat. Dacă există, cererea merge 
+                      direct la acel aprobator; dacă nu, se folosește comportamentul implicit (orice șef din departament).
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">📋 Tab „De Aprobat" Extins</p>
+                    <p className="text-xs text-muted-foreground">
+                      Tab-ul „De Aprobat" este acum vizibil și pentru angajații care au subordonați configurați în sistemul de 
+                      aprobare, nu doar pentru rolurile de tip „sef" sau „sef_srus".
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* v2.6 */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-primary text-primary-foreground">v2.6</Badge>
+                  <Badge variant="secondary">v2.6</Badge>
                   <span className="text-sm text-muted-foreground">Februarie 2026</span>
                 </div>
                 <div className="ml-4 space-y-2 border-l-2 border-primary/20 pl-4">
