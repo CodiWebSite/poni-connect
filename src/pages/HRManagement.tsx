@@ -1113,22 +1113,22 @@ const HRManagement = () => {
         {/* Action buttons row */}
         <div className="flex flex-wrap gap-2 justify-end">
           <Button variant="outline" size="sm" onClick={syncEmployees} disabled={syncing}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-            {syncing ? 'Sincronizare...' : 'Sincronizează'}
+            <RefreshCw className={`w-4 h-4 sm:mr-2 ${syncing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{syncing ? 'Sincronizare...' : 'Sincronizează'}</span>
           </Button>
           <HRExportButton requests={[]} employees={exportEmployees} />
           <Button variant="outline" size="sm" onClick={() => setShowManualLeave(true)}>
-            <FilePlus2 className="w-4 h-4 mr-2" />
-            Concediu Manual
+            <FilePlus2 className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Concediu Manual</span>
           </Button>
           <Button size="sm" onClick={() => setShowAddEmployee(true)}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Adaugă Angajat
+            <UserPlus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Adaugă Angajat</span>
           </Button>
           {incompleteEmployees.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => setShowNewEmployee(true)}>
-              <Edit className="w-4 h-4 mr-2" />
-              Completare Date
+              <Edit className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Completare Date</span>
             </Button>
           )}
         </div>
@@ -1178,7 +1178,7 @@ const HRManagement = () => {
               />
             </div>
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-full sm:w-[220px]">
                 <SelectValue placeholder="Departament" />
               </SelectTrigger>
               <SelectContent>

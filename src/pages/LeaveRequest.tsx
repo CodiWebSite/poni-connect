@@ -68,7 +68,7 @@ const LeaveRequest = () => {
         </div>
       )}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="flex flex-wrap h-auto gap-1">
+        <TabsList className="flex flex-wrap h-auto gap-1 p-1">
           {/* All employees can submit and see their requests */}
           <TabsTrigger value="new" className="gap-2">
             <Send className="w-4 h-4" />

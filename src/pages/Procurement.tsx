@@ -575,7 +575,7 @@ const Procurement = () => {
         {/* Main Content */}
         <Tabs defaultValue="my-requests" className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <TabsList>
+            <TabsList className="flex flex-wrap h-auto gap-1">
               <TabsTrigger value="my-requests">Referatele Mele</TabsTrigger>
               {canApprove && (
                 <TabsTrigger value="approvals">
@@ -627,7 +627,7 @@ const Procurement = () => {
                             </Badge>
                           </div>
                           <h4 className="font-medium">{request.title}</h4>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Package className="w-3 h-3" />
                               {categoryLabels[request.category]}

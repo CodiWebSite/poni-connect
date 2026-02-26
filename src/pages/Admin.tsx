@@ -174,15 +174,15 @@ const Admin = () => {
   return (
     <MainLayout title="Administrare" description="Gestionează rolurile și configurările sistemului">
       <Tabs defaultValue="roles" className="space-y-6">
-         <TabsList>
-           <TabsTrigger value="roles">Roluri</TabsTrigger>
-           <TabsTrigger value="preassign">Pre-atribuire Roluri</TabsTrigger>
-            <TabsTrigger value="create-account">Creare Cont</TabsTrigger>
-            <TabsTrigger value="account-requests">Cereri Cont</TabsTrigger>
-             <TabsTrigger value="audit">Jurnal Audit</TabsTrigger>
-             <TabsTrigger value="auth-log">Autentificări</TabsTrigger>
-              <TabsTrigger value="inventory">Inventar</TabsTrigger>
-              <TabsTrigger value="settings">Setări</TabsTrigger>
+         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+           <TabsTrigger value="roles" className="text-xs sm:text-sm">Roluri</TabsTrigger>
+           <TabsTrigger value="preassign" className="text-xs sm:text-sm">Pre-atribuire</TabsTrigger>
+           <TabsTrigger value="create-account" className="text-xs sm:text-sm">Creare Cont</TabsTrigger>
+           <TabsTrigger value="account-requests" className="text-xs sm:text-sm">Cereri Cont</TabsTrigger>
+           <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit</TabsTrigger>
+           <TabsTrigger value="auth-log" className="text-xs sm:text-sm">Autentificări</TabsTrigger>
+           <TabsTrigger value="inventory" className="text-xs sm:text-sm">Inventar</TabsTrigger>
+           <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
          </TabsList>
         <TabsContent value="roles" className="space-y-6">
           <Card>
@@ -194,10 +194,12 @@ const Admin = () => {
               <CardDescription>Setează rolurile pentru fiecare utilizator din sistem</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Caută utilizatori..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              </div>
+               <div className="flex flex-col sm:flex-row gap-3">
+                 <div className="relative flex-1">
+                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                   <Input placeholder="Caută utilizatori..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                 </div>
+               </div>
 
               {loading ? (
                 <div className="flex items-center justify-center py-12">

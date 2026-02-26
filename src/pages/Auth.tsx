@@ -378,7 +378,7 @@ const Auth = () => {
                     </button>
                   </div>
 
-                  <div className="flex justify-center rounded-lg overflow-hidden">
+                  <div className="flex justify-center rounded-lg overflow-hidden [&>div]:max-w-full">
                     <Turnstile
                       ref={loginTurnstileRef}
                       siteKey={TURNSTILE_SITE_KEY}
@@ -461,7 +461,7 @@ const Auth = () => {
                     />
                   </div>
 
-                  <div className="flex justify-center rounded-lg overflow-hidden">
+                  <div className="flex justify-center rounded-lg overflow-hidden [&>div]:max-w-full">
                     <Turnstile
                       ref={signupTurnstileRef}
                       siteKey={TURNSTILE_SITE_KEY}
