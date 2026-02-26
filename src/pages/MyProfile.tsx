@@ -379,8 +379,9 @@ const MyProfile = () => {
                   const carry2025Initial = carryover2025?.initial_days ?? 0;
                   const carry2025Used = carryover2025?.used_days ?? 0;
                   const totalBonusDays = bonuses.reduce((s, b) => s + b.bonus_days, 0);
-                  const available2026 = employeeRecord.total_leave_days + totalBonusDays - employeeRecord.used_leave_days;
-                  const totalAvailable = available2026 + carry2025Remaining;
+                  // 2026 available = cuvenite - utilizate (fără bonus)
+                  const available2026 = employeeRecord.total_leave_days - employeeRecord.used_leave_days;
+                  const totalAvailable = available2026 + carry2025Remaining + totalBonusDays;
 
                   return (
                     <div className="space-y-4">
@@ -388,10 +389,12 @@ const MyProfile = () => {
                       <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-center">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Sold Total Disponibil</p>
                         <p className="text-4xl font-bold text-primary">{totalAvailable}</p>
-                        <p className="text-xs text-muted-foreground mt-1">zile ({currentYear - 1} + {currentYear})</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {currentYear}: {available2026} + {currentYear - 1}: {carry2025Remaining}{totalBonusDays > 0 ? ` + Bonus: ${totalBonusDays}` : ''}
+                        </p>
                       </div>
 
-                      {/* Year cards side by side */}
+                      {/* Year cards */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {/* 2026 balance */}
                         <div className="p-3 rounded-xl border space-y-2">
@@ -410,9 +413,6 @@ const MyProfile = () => {
                               <p className="text-[9px] text-muted-foreground">Cuvenite</p>
                             </div>
                           </div>
-                          {totalBonusDays > 0 && (
-                            <p className="text-xs text-muted-foreground">+ {totalBonusDays} zile bonus</p>
-                          )}
                         </div>
 
                         {/* 2025 balance */}
@@ -435,15 +435,15 @@ const MyProfile = () => {
                         </div>
                       </div>
 
-                      {/* Bonus leave info */}
+                      {/* Bonus leave - separate card */}
                       {bonuses.length > 0 && (
-                        <div className="space-y-2 pt-2 border-t">
+                        <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-2">
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                            <Gift className="w-3.5 h-3.5" />
-                            Sold Suplimentar {currentYear}
+                            <Gift className="w-3.5 h-3.5 text-emerald-600" />
+                            Sold+ (Suplimentar) — {totalBonusDays} zile
                           </p>
                           {bonuses.map((b) => (
-                            <div key={b.id} className="flex items-center justify-between p-2.5 rounded-lg bg-primary/5 border border-primary/15">
+                            <div key={b.id} className="flex items-center justify-between p-2 rounded-lg bg-background/60">
                               <div>
                                 <p className="text-sm font-medium">+{b.bonus_days} zile — {b.reason}</p>
                                 {b.legal_basis && (
@@ -453,6 +453,9 @@ const MyProfile = () => {
                                   </p>
                                 )}
                               </div>
+                              <Badge variant="outline" className="text-emerald-600 border-emerald-300 text-xs">
+                                +{b.bonus_days}
+                              </Badge>
                             </div>
                           ))}
                         </div>
