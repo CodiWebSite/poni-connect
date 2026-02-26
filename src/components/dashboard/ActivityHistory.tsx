@@ -7,7 +7,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { 
   History, 
   FileText, 
-  ShoppingCart, 
   Plane, 
   Clock, 
   CheckCircle2, 
@@ -21,7 +20,7 @@ import { ro } from 'date-fns/locale';
 
 interface ActivityItem {
   id: string;
-  type: 'hr_request' | 'procurement' | 'document';
+  type: 'hr_request' | 'document';
   title: string;
   status: string;
   createdAt: string;
@@ -53,14 +52,6 @@ const ActivityHistory = () => {
         .order('created_at', { ascending: false })
         .limit(5);
 
-      // Fetch procurement requests
-      const { data: procurementData } = await supabase
-        .from('procurement_requests')
-        .select('id, title, status, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
       // Fetch uploaded documents
       const { data: documentsData } = await supabase
         .from('documents')
@@ -82,19 +73,6 @@ const ActivityHistory = () => {
             status: hr.status,
             createdAt: hr.created_at,
             details: details?.startDate as string || undefined,
-          });
-        });
-      }
-
-      // Map procurement requests
-      if (procurementData) {
-        procurementData.forEach((proc) => {
-          allActivities.push({
-            id: proc.id,
-            type: 'procurement',
-            title: proc.title,
-            status: proc.status,
-            createdAt: proc.created_at,
           });
         });
       }
@@ -139,8 +117,6 @@ const ActivityHistory = () => {
     switch (type) {
       case 'hr_request':
         return <Plane className="w-4 h-4" />;
-      case 'procurement':
-        return <ShoppingCart className="w-4 h-4" />;
       case 'document':
         return <FileText className="w-4 h-4" />;
       default:
@@ -200,8 +176,6 @@ const ActivityHistory = () => {
     switch (activity.type) {
       case 'hr_request':
         return '/my-profile';
-      case 'procurement':
-        return '/procurement';
       case 'document':
         return '/documents';
       default:
