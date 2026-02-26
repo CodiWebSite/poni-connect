@@ -913,6 +913,8 @@ const HRManagement = () => {
     employment_date: e.employment_date,
     contract_type: e.contract_type,
     leaveHistory: e.leaveHistory,
+    carryoverDays: e.carryoverDays || 0,
+    bonusDays: e.bonusDays || 0,
     record: {
       total_leave_days: e.total_leave_days,
       used_leave_days: e.used_leave_days,
