@@ -65,6 +65,7 @@ export const PersonalDataEditor = ({
   const [personalData, setPersonalData] = useState<PersonalData | null>(null);
   const [ciFile, setCiFile] = useState<File | null>(null);
   const [uploadingCi, setUploadingCi] = useState(false);
+  const [carryover2025, setCarryover2025] = useState({ id: '', initial_days: 0, used_days: 0 });
   const [form, setForm] = useState({
     email: '',
     first_name: '',
@@ -138,6 +139,22 @@ export const PersonalDataEditor = ({
         address_city: data.address_city || '',
         address_county: data.address_county || ''
       });
+
+      // Fetch 2025 carryover
+      const currentYear = new Date().getFullYear();
+      const { data: carryData } = await supabase
+        .from('leave_carryover')
+        .select('id, initial_days, used_days, remaining_days')
+        .eq('employee_personal_data_id', data.id)
+        .eq('from_year', currentYear - 1)
+        .eq('to_year', currentYear)
+        .maybeSingle();
+
+      if (carryData) {
+        setCarryover2025({ id: carryData.id, initial_days: carryData.initial_days, used_days: carryData.used_days });
+      } else {
+        setCarryover2025({ id: '', initial_days: 0, used_days: 0 });
+      }
     } else if (error) {
       console.error('Error fetching personal data:', error);
     }
@@ -308,6 +325,34 @@ export const PersonalDataEditor = ({
     if (error) {
       toast({ title: 'Eroare', description: `Nu s-au putut salva datele: ${error.message}`, variant: 'destructive' });
     } else {
+      // Save/create 2025 carryover
+      const currentYear = new Date().getFullYear();
+      if (carryover2025.id) {
+        await supabase
+          .from('leave_carryover')
+          .update({
+            initial_days: carryover2025.initial_days,
+            used_days: carryover2025.used_days,
+            remaining_days: carryover2025.initial_days - carryover2025.used_days,
+          })
+          .eq('id', carryover2025.id);
+      } else if (carryover2025.initial_days > 0) {
+        const { data: newCarry } = await supabase
+          .from('leave_carryover')
+          .insert({
+            employee_personal_data_id: personalData.id,
+            from_year: currentYear - 1,
+            to_year: currentYear,
+            initial_days: carryover2025.initial_days,
+            used_days: carryover2025.used_days,
+            remaining_days: carryover2025.initial_days - carryover2025.used_days,
+            created_by: user?.id,
+          })
+          .select('id')
+          .single();
+        if (newCarry) setCarryover2025(prev => ({ ...prev, id: newCarry.id }));
+      }
+
       // Log audit event
       if (user) {
         await supabase.rpc('log_audit_event', {
@@ -445,9 +490,11 @@ export const PersonalDataEditor = ({
                   </Select>
                 </div>
               </div>
+              {/* Current year (2026) leave */}
+              <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide pt-2">Sold Concediu {new Date().getFullYear()}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Total Zile Concediu</Label>
+                  <Label>Zile Cuvenite {new Date().getFullYear()}</Label>
                   <Input 
                     type="number"
                     value={form.total_leave_days} 
@@ -455,7 +502,7 @@ export const PersonalDataEditor = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Zile Utilizate</Label>
+                  <Label>Zile Utilizate {new Date().getFullYear()}</Label>
                   <Input 
                     type="number"
                     value={form.used_leave_days} 
@@ -465,9 +512,48 @@ export const PersonalDataEditor = ({
               </div>
               <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm">
-                  <span className="text-muted-foreground">Zile disponibile: </span>
+                  <span className="text-muted-foreground">Disponibile {new Date().getFullYear()}: </span>
                   <span className="font-bold text-primary">
                     {form.total_leave_days - form.used_leave_days}
+                  </span>
+                </p>
+              </div>
+
+              {/* Previous year (2025) carryover */}
+              <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide pt-2">Sold Reportat {new Date().getFullYear() - 1}</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Zile Reportate din {new Date().getFullYear() - 1}</Label>
+                  <Input 
+                    type="number"
+                    value={carryover2025.initial_days}
+                    onChange={(e) => setCarryover2025(prev => ({ ...prev, initial_days: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Zile Utilizate din report</Label>
+                  <Input 
+                    type="number"
+                    value={carryover2025.used_days}
+                    onChange={(e) => setCarryover2025(prev => ({ ...prev, used_days: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Disponibile din {new Date().getFullYear() - 1}: </span>
+                  <span className="font-bold text-amber-600 dark:text-amber-400">
+                    {carryover2025.initial_days - carryover2025.used_days}
+                  </span>
+                </p>
+              </div>
+
+              {/* Total summary */}
+              <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <p className="text-sm font-medium">
+                  <span className="text-muted-foreground">Sold Total Disponibil: </span>
+                  <span className="font-bold text-primary text-base">
+                    {(form.total_leave_days - form.used_leave_days) + (carryover2025.initial_days - carryover2025.used_days)} zile
                   </span>
                 </p>
               </div>

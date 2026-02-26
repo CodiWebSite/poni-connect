@@ -157,31 +157,45 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   };
 
   const deductLeaveDays = async (request: LeaveRequest) => {
-    const { data: epd } = await supabase
-      .from('employee_personal_data')
-      .select('used_leave_days, employee_record_id')
-      .eq('id', request.epd_id)
-      .maybeSingle();
+    const currentYear = new Date().getFullYear();
+    let daysToDeduct = request.working_days;
 
-    if (epd) {
-      await supabase
+    // First, try to deduct from 2025 carryover
+    const { data: carryovers } = await supabase
+      .from('leave_carryover')
+      .select('id, remaining_days, used_days')
+      .eq('employee_personal_data_id', request.epd_id)
+      .eq('to_year', currentYear)
+      .gt('remaining_days', 0);
+
+    if (carryovers && carryovers.length > 0) {
+      for (const carry of carryovers) {
+        if (daysToDeduct <= 0) break;
+        const deductFromCarry = Math.min(daysToDeduct, carry.remaining_days);
+        await supabase
+          .from('leave_carryover')
+          .update({
+            used_days: carry.used_days + deductFromCarry,
+            remaining_days: carry.remaining_days - deductFromCarry,
+          })
+          .eq('id', carry.id);
+        daysToDeduct -= deductFromCarry;
+      }
+    }
+
+    // Remaining days deduct from current year (employee_personal_data.used_leave_days)
+    if (daysToDeduct > 0) {
+      const { data: epd } = await supabase
         .from('employee_personal_data')
-        .update({ used_leave_days: (epd.used_leave_days || 0) + request.working_days })
-        .eq('id', request.epd_id);
+        .select('used_leave_days, employee_record_id')
+        .eq('id', request.epd_id)
+        .maybeSingle();
 
-      if (epd.employee_record_id) {
-        const { data: rec } = await supabase
-          .from('employee_records')
-          .select('used_leave_days')
-          .eq('id', epd.employee_record_id)
-          .maybeSingle();
-
-        if (rec) {
-          await supabase
-            .from('employee_records')
-            .update({ used_leave_days: (rec.used_leave_days || 0) + request.working_days })
-            .eq('id', epd.employee_record_id);
-        }
+      if (epd) {
+        await supabase
+          .from('employee_personal_data')
+          .update({ used_leave_days: (epd.used_leave_days || 0) + daysToDeduct })
+          .eq('id', request.epd_id);
       }
     }
   };

@@ -368,82 +368,98 @@ const MyProfile = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Calendar className="w-5 h-5 text-primary" />
-                  Sold Concediu — {new Date().getFullYear()}
+                  Sold Concediu
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {employeeRecord ? (
-                  <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row items-center gap-5">
-                      <ProgressRing value={leaveProgress} size={110} strokeWidth={10}>
-                        <div className="text-center">
-                          <p className="text-xl font-bold text-foreground">{Math.round(leaveProgress)}%</p>
-                          <p className="text-[9px] text-muted-foreground">utilizat</p>
+                {employeeRecord ? (() => {
+                  const currentYear = new Date().getFullYear();
+                  const carryover2025 = carryovers.find(c => c.from_year === currentYear - 1 && c.to_year === currentYear);
+                  const carry2025Remaining = carryover2025?.remaining_days ?? 0;
+                  const carry2025Initial = carryover2025?.initial_days ?? 0;
+                  const carry2025Used = carryover2025?.used_days ?? 0;
+                  const totalBonusDays = bonuses.reduce((s, b) => s + b.bonus_days, 0);
+                  const available2026 = employeeRecord.total_leave_days + totalBonusDays - employeeRecord.used_leave_days;
+                  const totalAvailable = available2026 + carry2025Remaining;
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Total combined */}
+                      <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-center">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Sold Total Disponibil</p>
+                        <p className="text-4xl font-bold text-primary">{totalAvailable}</p>
+                        <p className="text-xs text-muted-foreground mt-1">zile ({currentYear - 1} + {currentYear})</p>
+                      </div>
+
+                      {/* Year cards side by side */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* 2026 balance */}
+                        <div className="p-3 rounded-xl border space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sold {currentYear}</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="text-center p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                              <p className="text-lg font-bold text-green-600 dark:text-green-400">{available2026}</p>
+                              <p className="text-[9px] text-muted-foreground">Disponibile</p>
+                            </div>
+                            <div className="text-center p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{employeeRecord.used_leave_days}</p>
+                              <p className="text-[9px] text-muted-foreground">Utilizate</p>
+                            </div>
+                            <div className="text-center p-2 rounded-lg bg-muted/50 border">
+                              <p className="text-lg font-bold text-foreground">{employeeRecord.total_leave_days}</p>
+                              <p className="text-[9px] text-muted-foreground">Cuvenite</p>
+                            </div>
+                          </div>
+                          {totalBonusDays > 0 && (
+                            <p className="text-xs text-muted-foreground">+ {totalBonusDays} zile bonus</p>
+                          )}
                         </div>
-                      </ProgressRing>
-                      <div className="flex-1 grid grid-cols-3 gap-2 sm:gap-3 w-full">
-                        <div className="text-center p-2.5 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/20 hover:scale-[1.03] transition-transform">
-                          <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{employeeRecord.remaining_leave_days}</p>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Disponibile</p>
-                        </div>
-                        <div className="text-center p-2.5 sm:p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 hover:scale-[1.03] transition-transform">
-                          <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">{employeeRecord.used_leave_days}</p>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Utilizate</p>
-                        </div>
-                        <div className="text-center p-2.5 sm:p-4 rounded-xl bg-muted/50 border hover:scale-[1.03] transition-transform">
-                          <p className="text-2xl sm:text-3xl font-bold text-foreground">{employeeRecord.total_leave_days}</p>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Total</p>
+
+                        {/* 2025 balance */}
+                        <div className="p-3 rounded-xl border space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sold {currentYear - 1} (reportat)</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="text-center p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                              <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{carry2025Remaining}</p>
+                              <p className="text-[9px] text-muted-foreground">Disponibile</p>
+                            </div>
+                            <div className="text-center p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{carry2025Used}</p>
+                              <p className="text-[9px] text-muted-foreground">Utilizate</p>
+                            </div>
+                            <div className="text-center p-2 rounded-lg bg-muted/50 border">
+                              <p className="text-lg font-bold text-foreground">{carry2025Initial}</p>
+                              <p className="text-[9px] text-muted-foreground">Reportate</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Bonus leave info */}
+                      {bonuses.length > 0 && (
+                        <div className="space-y-2 pt-2 border-t">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                            <Gift className="w-3.5 h-3.5" />
+                            Sold Suplimentar {currentYear}
+                          </p>
+                          {bonuses.map((b) => (
+                            <div key={b.id} className="flex items-center justify-between p-2.5 rounded-lg bg-primary/5 border border-primary/15">
+                              <div>
+                                <p className="text-sm font-medium">+{b.bonus_days} zile — {b.reason}</p>
+                                {b.legal_basis && (
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                    <Scale className="w-3 h-3" />
+                                    {b.legal_basis}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-
-                    {/* Carryover info */}
-                    {carryovers.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                          <ArrowRightLeft className="w-3.5 h-3.5" />
-                          Concedii Reportate
-                        </p>
-                        {carryovers.map((c, i) => (
-                          <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/15">
-                            <div>
-                              <p className="text-sm font-medium">Report {c.from_year} → {c.to_year}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Inițial: {c.initial_days} • Utilizate: {c.used_days} • Rămase: {c.remaining_days}
-                              </p>
-                            </div>
-                            <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
-                              {c.remaining_days} zile
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Bonus leave info */}
-                    {bonuses.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                          <Gift className="w-3.5 h-3.5" />
-                          Sold Suplimentar {new Date().getFullYear()}
-                        </p>
-                        {bonuses.map((b) => (
-                          <div key={b.id} className="flex items-center justify-between p-2.5 rounded-lg bg-primary/5 border border-primary/15">
-                            <div>
-                              <p className="text-sm font-medium">+{b.bonus_days} zile — {b.reason}</p>
-                              {b.legal_basis && (
-                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                  <Scale className="w-3 h-3" />
-                                  {b.legal_basis}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
+                  );
+                })() : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
                     <p className="text-sm">Nu există date despre concediu.</p>
