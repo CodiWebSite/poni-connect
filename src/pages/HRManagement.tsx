@@ -2007,7 +2007,7 @@ const HRManagement = () => {
                   </div>
                   {employees.map((emp) => {
                     const empValue = emp.hasAccount ? emp.user_id! : `epd:${emp.id}`;
-                    const remaining = emp.total_leave_days - emp.used_leave_days;
+                    const remaining = emp.total_leave_days + (emp.carryoverDays || 0) + (emp.bonusDays || 0) - emp.used_leave_days;
                     return (
                       <SelectItem 
                         key={empValue} 
@@ -2042,10 +2042,14 @@ const HRManagement = () => {
                 <p className="text-sm">
                   <span className="text-muted-foreground">Sold concediu: </span>
                   <span className="font-bold text-primary">
-                    {selectedManualEmployee.total_leave_days - selectedManualEmployee.used_leave_days} zile disponibile
+                    {remainingLeave(selectedManualEmployee)} zile disponibile
                   </span>
-                  <span className="text-muted-foreground"> din {selectedManualEmployee.total_leave_days}</span>
                 </p>
+                <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                  <p>• {selectedManualEmployee.total_leave_days} cuvenite {new Date().getFullYear()} − {selectedManualEmployee.used_leave_days} utilizate = <strong>{selectedManualEmployee.total_leave_days - selectedManualEmployee.used_leave_days}</strong></p>
+                  {(selectedManualEmployee.carryoverDays || 0) > 0 && <p>• {selectedManualEmployee.carryoverDays} zile report {new Date().getFullYear() - 1}</p>}
+                  {(selectedManualEmployee.bonusDays || 0) > 0 && <p>• {selectedManualEmployee.bonusDays} zile Sold+</p>}
+                </div>
                 {(selectedManualEmployee.carryoverDays || 0) > 0 && (
                   <p className="text-xs text-amber-600 dark:text-amber-400">
                     ⚠ Include {selectedManualEmployee.carryoverDays} zile report {new Date().getFullYear() - 1}
