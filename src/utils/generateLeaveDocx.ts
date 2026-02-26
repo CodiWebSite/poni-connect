@@ -32,6 +32,7 @@ interface LeaveDocxParams {
   carryoverDays?: number;
   carryoverFromYear?: number;
   srusOfficerName?: string;
+  approvalDate?: string; // dd.MM.yyyy - date when dept head approved
 }
 
 async function fetchImageAsUint8Array(url: string): Promise<Uint8Array> {
@@ -75,6 +76,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
     totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear, srusOfficerName,
+    approvalDate,
   } = params;
 
   const formattedStartDate = formatDate(startDate);
@@ -170,6 +172,14 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           spacing: { after: 0 },
           children: [t('Șef compartiment', { bold: true })],
         }),
+
+        // Approval date (if approved)
+        ...(approvalDate ? [
+          new Paragraph({
+            spacing: { after: 0 },
+            children: [t(`Data: ${approvalDate}`, { size: SIZE_SMALL })],
+          }),
+        ] : []),
 
         // Signature line for department head
         new Paragraph({

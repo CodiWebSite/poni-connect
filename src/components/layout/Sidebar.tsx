@@ -49,17 +49,22 @@ const Sidebar = () => {
 
   // Fetch pending counts for badges
   useEffect(() => {
-    if (!canManageHR && !isSuperAdmin) return;
+    if (!canManageHR && !isSuperAdmin && !isSef && !isSefSRUS) return;
     const fetchCounts = async () => {
-      const [leaveRes, accountRes] = await Promise.all([
-        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).in('status', ['pending_director', 'pending_department_head']),
-        supabase.from('account_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-      ]);
-      setPendingHR(leaveRes.count || 0);
-      setPendingAdmin(accountRes.count || 0);
+      // Leave requests badge - for dept heads and HR
+      if (canManageHR || isSef || isSefSRUS) {
+        const { count } = await supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending_department_head' as any);
+        setPendingHR(count || 0);
+      }
+
+      // Account requests badge - for super admin only
+      if (isSuperAdmin) {
+        const { count } = await supabase.from('account_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+        setPendingAdmin(count || 0);
+      }
     };
     fetchCounts();
-  }, [canManageHR, isSuperAdmin]);
+  }, [canManageHR, isSuperAdmin, isSef, isSefSRUS]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -71,7 +76,7 @@ const Sidebar = () => {
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
-    ...(isSuperAdmin ? [{ icon: FileText, label: 'Cerere Concediu', path: '/leave-request' }] : []),
+    { icon: FileText, label: 'Cerere Concediu', path: '/leave-request', badge: (isSef || isSefSRUS || isSuperAdmin) ? pendingHR : undefined },
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
   ];
 
