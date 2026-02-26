@@ -1099,59 +1099,60 @@ const HRManagement = () => {
   return (
     <MainLayout title="Gestiune HR" description="Administrare date angajați - Confidențial">
       <Tabs defaultValue="employees" className="space-y-6">
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <TabsList>
-            <TabsTrigger value="employees" className="gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Angajați</span>
-            </TabsTrigger>
-            <TabsTrigger value="corrections" className="gap-2">
-              <MessageSquare className="h-4 w-4" />
-              <span className="hidden sm:inline">Cereri Corecție</span>
-            </TabsTrigger>
-            <TabsTrigger value="archived" className="gap-2">
-              <Archive className="h-4 w-4" />
-              <span className="hidden sm:inline">Arhivați</span>
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Calendar</span>
-            </TabsTrigger>
-            <TabsTrigger value="approvers" className="gap-2">
-              <UserCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Aprobatori</span>
-            </TabsTrigger>
-            <TabsTrigger value="import" className="gap-2">
-              <Upload className="h-4 w-4" />
-              <span className="hidden sm:inline">Import</span>
-            </TabsTrigger>
-            <TabsTrigger value="changelog" className="gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Modificări</span>
-            </TabsTrigger>
-          </TabsList>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={syncEmployees} disabled={syncing}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{syncing ? 'Sincronizare...' : 'Sincronizează'}</span>
+        {/* Action buttons row */}
+        <div className="flex flex-wrap gap-2 justify-end">
+          <Button variant="outline" size="sm" onClick={syncEmployees} disabled={syncing}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Sincronizare...' : 'Sincronizează'}
+          </Button>
+          <HRExportButton requests={[]} employees={exportEmployees} />
+          <Button variant="outline" size="sm" onClick={() => setShowManualLeave(true)}>
+            <FilePlus2 className="w-4 h-4 mr-2" />
+            Concediu Manual
+          </Button>
+          <Button size="sm" onClick={() => setShowAddEmployee(true)}>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Adaugă Angajat
+          </Button>
+          {incompleteEmployees.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => setShowNewEmployee(true)}>
+              <Edit className="w-4 h-4 mr-2" />
+              Completare Date
             </Button>
-            <HRExportButton requests={[]} employees={exportEmployees} />
-            <Button variant="outline" onClick={() => setShowManualLeave(true)}>
-              <FilePlus2 className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Concediu Manual</span>
-            </Button>
-            <Button onClick={() => setShowAddEmployee(true)}>
-              <UserPlus className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Adaugă Angajat</span>
-            </Button>
-            {incompleteEmployees.length > 0 && (
-              <Button variant="outline" onClick={() => setShowNewEmployee(true)}>
-                <Edit className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Completare Date</span>
-              </Button>
-            )}
-          </div>
+          )}
         </div>
+
+        {/* Tabs navigation */}
+        <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="employees" className="gap-2">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Angajați</span>
+          </TabsTrigger>
+          <TabsTrigger value="corrections" className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">Cereri Corecție</span>
+          </TabsTrigger>
+          <TabsTrigger value="archived" className="gap-2">
+            <Archive className="h-4 w-4" />
+            <span className="hidden sm:inline">Arhivați</span>
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            <span className="hidden sm:inline">Calendar</span>
+          </TabsTrigger>
+          <TabsTrigger value="approvers" className="gap-2">
+            <UserCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">Aprobatori</span>
+          </TabsTrigger>
+          <TabsTrigger value="import" className="gap-2">
+            <Upload className="h-4 w-4" />
+            <span className="hidden sm:inline">Import</span>
+          </TabsTrigger>
+          <TabsTrigger value="changelog" className="gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Modificări</span>
+          </TabsTrigger>
+        </TabsList>
 
         {/* Employees Tab */}
         <TabsContent value="employees" className="space-y-6">
