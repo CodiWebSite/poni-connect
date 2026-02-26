@@ -875,6 +875,7 @@ export type Database = {
           dept_head_approved_at: string | null
           dept_head_id: string | null
           dept_head_notes: string | null
+          dept_head_signature: string | null
           director_approved_at: string | null
           director_id: string | null
           director_notes: string | null
@@ -902,6 +903,7 @@ export type Database = {
           dept_head_approved_at?: string | null
           dept_head_id?: string | null
           dept_head_notes?: string | null
+          dept_head_signature?: string | null
           director_approved_at?: string | null
           director_id?: string | null
           director_notes?: string | null
@@ -929,6 +931,7 @@ export type Database = {
           dept_head_approved_at?: string | null
           dept_head_id?: string | null
           dept_head_notes?: string | null
+          dept_head_signature?: string | null
           director_approved_at?: string | null
           director_id?: string | null
           director_notes?: string | null

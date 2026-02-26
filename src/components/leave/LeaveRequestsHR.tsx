@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Search, Loader2, FileText, Filter, Trash2 } from 'lucide-react';
+import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { generateLeaveDocx } from '@/utils/generateLeaveDocx';
@@ -28,7 +29,12 @@ interface LeaveRequestRow {
   employee_position: string;
   director_approved_at: string | null;
   dept_head_approved_at: string | null;
+  dept_head_id: string | null;
+  dept_head_name?: string;
   rejection_reason: string | null;
+  dept_head_signature?: string | null;
+  employee_signature?: string | null;
+  epd_id?: string;
 }
 
 const statusLabels: Record<string, string> = {
@@ -95,25 +101,40 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       });
     }
 
+    // Get approver names
+    const deptHeadIds = [...new Set((data || []).map(r => r.dept_head_id).filter(Boolean))];
+    let approverMap: Record<string, string> = {};
+    if (deptHeadIds.length > 0) {
+      const { data: approverProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', deptHeadIds);
+      (approverProfiles || []).forEach(p => {
+        approverMap[p.user_id] = p.full_name;
+      });
+    }
+
     setRequests(
       (data || []).map(r => ({
         ...r,
         employee_name: epdMap[r.epd_id]?.name || 'N/A',
         employee_department: epdMap[r.epd_id]?.department || '',
         employee_position: epdMap[r.epd_id]?.position || '',
+        dept_head_name: r.dept_head_id ? approverMap[r.dept_head_id] || '' : '',
+        dept_head_signature: (r as any).dept_head_signature || null,
       }))
     );
     setLoading(false);
   };
 
-  const handleDownload = async (request: LeaveRequestRow & { epd_id?: string; employee_signature?: string | null; end_date: string }) => {
+  const handleDownload = async (request: LeaveRequestRow) => {
     setDownloading(request.id);
     try {
-      // Get leave balance data
       let totalLeaveDays = 0;
       let usedLeaveDays = 0;
       let carryoverDays = 0;
       let carryoverFromYear: number | undefined;
+      let remainingDays = 0;
 
       if (request.epd_id) {
         const { data: epd } = await supabase
@@ -126,7 +147,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
         const { data: carryover } = await supabase
           .from('leave_carryover')
-          .select('initial_days, from_year')
+          .select('initial_days, remaining_days, from_year')
           .eq('employee_personal_data_id', request.epd_id)
           .eq('to_year', request.year)
           .maybeSingle();
@@ -134,7 +155,15 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           carryoverDays = carryover.initial_days;
           carryoverFromYear = carryover.from_year;
         }
+
+        // Calculate remaining
+        const totalAvailable = totalLeaveDays + (carryover?.remaining_days ?? 0);
+        remainingDays = totalAvailable - usedLeaveDays;
+        if (remainingDays < 0) remainingDays = 0;
       }
+
+      // Determine SRUS officer name (auto-fill)
+      const srusOfficerName = 'Cătălina Bălan';
 
       await generateLeaveDocx({
         employeeName: request.employee_name,
@@ -154,7 +183,11 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         usedLeaveDays,
         carryoverDays,
         carryoverFromYear,
+        srusOfficerName,
         approvalDate: request.dept_head_approved_at ? format(parseISO(request.dept_head_approved_at), 'dd.MM.yyyy') : undefined,
+        deptHeadSignature: request.dept_head_signature,
+        deptHeadName: request.dept_head_name,
+        remainingDays,
       });
       toast({ title: 'Descărcat', description: `Document ${request.request_number} generat cu succes.` });
     } catch (err) {
@@ -202,7 +235,6 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Filters */}
         <div className="flex flex-col md:flex-row gap-3 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -240,6 +272,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                   <TableHead>Perioada</TableHead>
                   <TableHead>Zile</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Aprobat de</TableHead>
                   <TableHead>Acțiuni</TableHead>
                 </TableRow>
               </TableHeader>
@@ -257,6 +290,32 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                       <Badge className={`text-xs ${statusColors[r.status] || ''}`}>
                         {statusLabels[r.status] || r.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {r.status === 'approved' && r.dept_head_name ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1 text-sm text-green-700 dark:text-green-400">
+                                <UserCheck className="w-3.5 h-3.5" />
+                                <span className="truncate max-w-[120px]">{r.dept_head_name}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Aprobat de: {r.dept_head_name}</p>
+                              {r.dept_head_approved_at && (
+                                <p className="text-xs text-muted-foreground">
+                                  Data: {format(parseISO(r.dept_head_approved_at), 'dd.MM.yyyy HH:mm', { locale: ro })}
+                                </p>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : r.status === 'rejected' ? (
+                        <span className="text-xs text-muted-foreground">Respinsă</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">

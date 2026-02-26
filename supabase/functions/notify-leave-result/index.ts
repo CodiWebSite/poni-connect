@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify caller
     const supabaseAuth = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -46,9 +45,10 @@ Deno.serve(async (req) => {
       start_date,
       end_date,
       working_days,
-      result, // 'approved' or 'rejected'
+      result,
       rejection_reason,
       approver_name,
+      notify_hr,
     } = await req.json();
 
     if (!employee_user_id || !request_number || !result) {
@@ -58,8 +58,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get employee email
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    // Get employee email
     const { data: { user: empUser } } = await supabaseAdmin.auth.admin.getUserById(employee_user_id);
 
     if (!empUser?.email) {
@@ -139,14 +140,85 @@ Deno.serve(async (req) => {
       </div>
     `;
 
+    // Send to employee
     await transporter.sendMail({
       from: fromAddress,
       to: empUser.email,
       subject,
       html: htmlBody,
     });
-
     console.log(`Leave result email sent to: ${empUser.email} (${result})`);
+
+    // If approved and notify_hr flag is set, also send email to HR staff
+    if (notify_hr && isApproved) {
+      try {
+        const { data: hrRoles } = await supabaseAdmin
+          .from("user_roles")
+          .select("user_id")
+          .in("role", ["hr", "sef_srus"]);
+
+        const hrEmails: string[] = [];
+        if (hrRoles) {
+          for (const hr of hrRoles) {
+            const { data: { user: hrUser } } = await supabaseAdmin.auth.admin.getUserById(hr.user_id);
+            if (hrUser?.email) {
+              hrEmails.push(hrUser.email);
+            }
+          }
+        }
+
+        if (hrEmails.length > 0) {
+          const hrSubject = `📋 Cerere concediu aprobată — ${employee_name} (${request_number})`;
+          const hrHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #1a365d; border-bottom: 2px solid #38a169; padding-bottom: 10px;">
+                Cerere de Concediu Aprobată — De Centralizat
+              </h2>
+              <p>Bună ziua,</p>
+              <p>Cererea de concediu a angajatului <strong>${employee_name}</strong> a fost aprobată de <strong>${approver_name || "Șef compartiment"}</strong>.</p>
+              <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+                <tr style="background: #ebf8ff;">
+                  <td style="padding: 8px 12px; border: 1px solid #bee3f8; font-weight: bold;">Nr. cerere</td>
+                  <td style="padding: 8px 12px; border: 1px solid #bee3f8;">${request_number}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 12px; border: 1px solid #bee3f8; font-weight: bold;">Angajat</td>
+                  <td style="padding: 8px 12px; border: 1px solid #bee3f8;">${employee_name}</td>
+                </tr>
+                <tr style="background: #ebf8ff;">
+                  <td style="padding: 8px 12px; border: 1px solid #bee3f8; font-weight: bold;">Perioada</td>
+                  <td style="padding: 8px 12px; border: 1px solid #bee3f8;">${start_date} — ${end_date}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 12px; border: 1px solid #bee3f8; font-weight: bold;">Zile lucrătoare</td>
+                  <td style="padding: 8px 12px; border: 1px solid #bee3f8;">${working_days}</td>
+                </tr>
+                <tr style="background: #f0fff4;">
+                  <td style="padding: 8px 12px; border: 1px solid #c6f6d5; font-weight: bold;">Aprobat de</td>
+                  <td style="padding: 8px 12px; border: 1px solid #c6f6d5; color: #38a169; font-weight: bold;">${approver_name || "Șef compartiment"}</td>
+                </tr>
+              </table>
+              <p>Vă rugăm să centralizați această cerere în evidența concediilor.</p>
+              <p style="color: #718096; font-size: 12px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+                Acest email a fost trimis automat de sistemul Intranet ICMPP. Nu răspundeți la acest mesaj.
+              </p>
+            </div>
+          `;
+
+          for (const hrEmail of hrEmails) {
+            await transporter.sendMail({
+              from: fromAddress,
+              to: hrEmail,
+              subject: hrSubject,
+              html: hrHtml,
+            });
+            console.log(`HR notification email sent to: ${hrEmail}`);
+          }
+        }
+      } catch (hrErr) {
+        console.error("Failed to send HR notification emails:", hrErr);
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, sent_to: empUser.email }),

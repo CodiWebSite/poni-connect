@@ -33,6 +33,9 @@ interface LeaveDocxParams {
   carryoverFromYear?: number;
   srusOfficerName?: string;
   approvalDate?: string; // dd.MM.yyyy - date when dept head approved
+  deptHeadSignature?: string | null;
+  deptHeadName?: string;
+  remainingDays?: number;
 }
 
 async function fetchImageAsUint8Array(url: string): Promise<Uint8Array> {
@@ -70,35 +73,43 @@ function underlinedField(value: string | undefined | null, fallback: string): Te
   return [new TextRun({ text: fallback, size: SIZE, font: FONT })];
 }
 
+function parseSignatureData(signature: string | null | undefined): Promise<Uint8Array | null> {
+  if (!signature) return Promise.resolve(null);
+  try {
+    if (signature.startsWith('data:')) {
+      return Promise.resolve(base64ToUint8Array(signature));
+    }
+    return fetchImageAsUint8Array(signature);
+  } catch {
+    return Promise.resolve(null);
+  }
+}
+
 export async function generateLeaveDocx(params: LeaveDocxParams) {
   const {
     employeeName, employeePosition, department, workingDays, year,
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
     totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear, srusOfficerName,
-    approvalDate,
+    approvalDate, deptHeadSignature, deptHeadName, remainingDays,
   } = params;
 
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = endDate ? formatDate(endDate) : '';
 
-  // Fetch logo
+  // Fetch logo and signatures in parallel
   let logoData: Uint8Array;
   try { logoData = await fetchImageAsUint8Array('/logo_doc.jpg'); } catch { logoData = new Uint8Array(0); }
 
-  // Parse signature
-  let signatureData: Uint8Array | null = null;
-  if (employeeSignature) {
-    try {
-      signatureData = employeeSignature.startsWith('data:')
-        ? base64ToUint8Array(employeeSignature)
-        : await fetchImageAsUint8Array(employeeSignature);
-    } catch { signatureData = null; }
-  }
+  const [signatureData, deptHeadSigData] = await Promise.all([
+    parseSignatureData(employeeSignature),
+    parseSignatureData(deptHeadSignature),
+  ]);
 
   const totalDays = totalLeaveDays ?? 0;
   const carryover = carryoverDays ?? 0;
   const totalAvailable = totalDays + carryover;
+  const remaining = remainingDays ?? 0;
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
@@ -173,7 +184,13 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           children: [t('Șef compartiment', { bold: true })],
         }),
 
-        // Approval date (if approved)
+        // Dept head name & approval date
+        ...(deptHeadName ? [
+          new Paragraph({
+            spacing: { after: 0 },
+            children: [t(deptHeadName, { bold: true, size: SIZE_SMALL })],
+          }),
+        ] : []),
         ...(approvalDate ? [
           new Paragraph({
             spacing: { after: 0 },
@@ -181,10 +198,12 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           }),
         ] : []),
 
-        // Signature line for department head
+        // Dept head signature or line
         new Paragraph({
           spacing: { after: 300 },
-          children: [t('________________')],
+          children: deptHeadSigData ? [
+            new ImageRun({ data: deptHeadSigData, transformation: { width: 120, height: 45 }, type: 'png' }),
+          ] : [t('________________')],
         }),
 
         // ══════ TITLE ══════
@@ -201,7 +220,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           children: [t('Doamnă/Domnule Director,', { italics: true })],
         }),
 
-        // ══════ BODY: Subsemnatul/a, _name_, _position_ în cadrul _department_ ══════
+        // ══════ BODY ══════
         new Paragraph({
           spacing: { after: 0, line: 360 },
           children: [
@@ -221,7 +240,6 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           ],
         }),
 
-        // vă rog ... zile de concediu de odihnă aferente
         new Paragraph({
           spacing: { after: 0, line: 360 },
           children: [
@@ -231,7 +249,6 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           ],
         }),
 
-        // anului __year__, începând cu data de __period__.
         new Paragraph({
           spacing: { after: 200, line: 360 },
           children: [
@@ -244,7 +261,6 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         }),
 
         // ══════ REPLACEMENT ══════
-        // În această perioadă voi fi înlocuit/ă de dl./d-na __name__, __position__.
         new Paragraph({
           spacing: { after: 0, line: 360 },
           children: [
@@ -262,7 +278,6 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         }),
 
         // ══════ CLOSING ══════
-        // Cu mulțumiri,                    __name__
         new Paragraph({
           spacing: { before: 100, after: 100 },
           tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
@@ -290,7 +305,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           ],
         }),
 
-        // ══════ SRUS SECTION (right-indented block) ══════
+        // ══════ SRUS SECTION ══════
         empty(400),
 
         new Paragraph({
@@ -328,11 +343,21 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           ],
         }),
         new Paragraph({
-          spacing: { after: 100 },
+          spacing: { after: 50 },
           indent: { left: convertMillimetersToTwip(80) },
           children: [
             t(carryoverFromYear ? `${carryoverFromYear}` : '_______', { bold: !!carryoverFromYear, size: 22 }),
             t('.', { size: 22 }),
+          ],
+        }),
+        // Remaining balance line
+        new Paragraph({
+          spacing: { after: 100 },
+          indent: { left: convertMillimetersToTwip(80) },
+          children: [
+            t('Sold rămas: ', { size: 22 }),
+            t(remaining > 0 ? `${remaining}` : '______', { bold: remaining > 0, size: 22 }),
+            t(` zile (an ${year}).`, { size: 22 }),
           ],
         }),
         empty(50),
