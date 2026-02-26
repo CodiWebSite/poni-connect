@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,8 +48,12 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [deductFrom, setDeductFrom] = useState<'auto' | 'carryover' | 'current'>('auto');
   const [customHolidayDates, setCustomHolidayDates] = useState<string[]>([]);
   const [customHolidayNames, setCustomHolidayNames] = useState<Record<string, string>>({});
+  const [carryoverDays, setCarryoverDays] = useState(0);
+  const [carryoverRecord, setCarryoverRecord] = useState<{ id: string; used_days: number; remaining_days: number } | null>(null);
+  const [currentBalance, setCurrentBalance] = useState(0);
 
   useEffect(() => {
     const fetchHolidays = async () => {
@@ -60,7 +65,10 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
         setCustomHolidayNames(names);
       }
     };
-    if (open) fetchHolidays();
+    if (open) {
+      fetchHolidays();
+      fetchCarryoverData();
+    }
   }, [open]);
 
   useEffect(() => {
@@ -68,8 +76,57 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
       setStartDate(leave.details.startDate || '');
       setEndDate(leave.details.endDate || '');
       setNotes(leave.details.notes || '');
+      setDeductFrom(leave.details.deductFrom || 'auto');
     }
   }, [leave]);
+
+  const fetchCarryoverData = async () => {
+    const resolvedEpdId = leave?.details?.epd_id || epdId;
+    if (!resolvedEpdId) {
+      // Try to get epdId from employeeRecordId
+      if (employeeRecordId) {
+        const { data: epd } = await supabase
+          .from('employee_personal_data')
+          .select('id, total_leave_days, used_leave_days')
+          .eq('employee_record_id', employeeRecordId)
+          .maybeSingle();
+        if (epd) {
+          await loadCarryover(epd.id);
+          setCurrentBalance((epd.total_leave_days || 21) - (epd.used_leave_days || 0));
+        }
+      }
+      return;
+    }
+
+    const { data: epd } = await supabase
+      .from('employee_personal_data')
+      .select('id, total_leave_days, used_leave_days')
+      .eq('id', resolvedEpdId)
+      .maybeSingle();
+    if (epd) {
+      await loadCarryover(epd.id);
+      setCurrentBalance((epd.total_leave_days || 21) - (epd.used_leave_days || 0));
+    }
+  };
+
+  const loadCarryover = async (empEpdId: string) => {
+    const currentYear = new Date().getFullYear();
+    const { data } = await supabase
+      .from('leave_carryover')
+      .select('id, used_days, remaining_days')
+      .eq('employee_personal_data_id', empEpdId)
+      .eq('from_year', currentYear - 1)
+      .eq('to_year', currentYear)
+      .maybeSingle();
+
+    if (data) {
+      setCarryoverDays(data.remaining_days);
+      setCarryoverRecord(data);
+    } else {
+      setCarryoverDays(0);
+      setCarryoverRecord(null);
+    }
+  };
 
   const oldDays = leave?.details?.numberOfDays || 0;
   const newDays = startDate && endDate ? calculateWorkingDays(startDate, endDate, customHolidayDates) : 0;
@@ -112,6 +169,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
         endDate,
         numberOfDays: newDays,
         notes,
+        deductFrom,
         lastEditedBy: user.id,
         lastEditedAt: new Date().toISOString(),
       };
@@ -125,8 +183,34 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
 
       // Adjust leave balance if days changed
       if (daysDiff !== 0) {
-        // Update employee_records if available
-        if (employeeRecordId) {
+        // Calculate how to distribute the diff based on deductFrom
+        let diffCarryover = 0;
+        let diffCurrent = 0;
+
+        if (deductFrom === 'carryover') {
+          diffCarryover = daysDiff;
+        } else if (deductFrom === 'current') {
+          diffCurrent = daysDiff;
+        } else {
+          // Auto: for increases, take from carryover first; for decreases, return to current first
+          if (daysDiff > 0) {
+            diffCarryover = Math.min(daysDiff, carryoverDays);
+            diffCurrent = daysDiff - diffCarryover;
+          } else {
+            diffCurrent = daysDiff; // Return to current year
+          }
+        }
+
+        // Update carryover if needed
+        if (diffCarryover !== 0 && carryoverRecord) {
+          await supabase.from('leave_carryover').update({
+            used_days: carryoverRecord.used_days + diffCarryover,
+            remaining_days: carryoverRecord.remaining_days - diffCarryover,
+          }).eq('id', carryoverRecord.id);
+        }
+
+        // Update employee_records if available (only current year portion)
+        if (diffCurrent !== 0 && employeeRecordId) {
           const { data: record } = await supabase
             .from('employee_records')
             .select('id, used_leave_days')
@@ -134,7 +218,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
             .single();
 
           if (record) {
-            const newUsedDays = Math.max(0, record.used_leave_days + daysDiff);
+            const newUsedDays = Math.max(0, record.used_leave_days + diffCurrent);
             await supabase.from('employee_records').update({ used_leave_days: newUsedDays }).eq('id', record.id);
 
             const { data: epd } = await supabase
@@ -148,17 +232,19 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
           }
         }
 
-        // Update EPD directly for employees without accounts
-        const leaveEpdId = leave.details?.epd_id || epdId;
-        if (leaveEpdId && !employeeRecordId) {
-          const { data: epd } = await supabase
-            .from('employee_personal_data')
-            .select('id, used_leave_days')
-            .eq('id', leaveEpdId)
-            .maybeSingle();
-          if (epd) {
-            const newUsedDays = Math.max(0, (epd.used_leave_days || 0) + daysDiff);
-            await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
+        // Update EPD directly for employees without accounts (only current year portion)
+        if (diffCurrent !== 0) {
+          const leaveEpdId = leave.details?.epd_id || epdId;
+          if (leaveEpdId && !employeeRecordId) {
+            const { data: epd } = await supabase
+              .from('employee_personal_data')
+              .select('id, used_leave_days')
+              .eq('id', leaveEpdId)
+              .maybeSingle();
+            if (epd) {
+              const newUsedDays = Math.max(0, (epd.used_leave_days || 0) + diffCurrent);
+              await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
+            }
           }
         }
       }
@@ -175,6 +261,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
           old_days: oldDays,
           new_days: newDays,
           days_diff: daysDiff,
+          deduct_from: deductFrom,
         }
       });
 
@@ -259,7 +346,36 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
             );
           })()}
 
-
+          {/* Deduction source selection - only show when carryover exists */}
+          {carryoverDays > 0 && daysDiff !== 0 && (
+            <div className="space-y-2">
+              <Label>Deduce diferența din *</Label>
+              <RadioGroup
+                value={deductFrom}
+                onValueChange={(v) => setDeductFrom(v as 'auto' | 'carryover' | 'current')}
+                className="space-y-1"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="auto" id="edit-deduct-auto" />
+                  <Label htmlFor="edit-deduct-auto" className="text-sm font-normal cursor-pointer">
+                    Automat (mai întâi report {new Date().getFullYear() - 1}, apoi {new Date().getFullYear()})
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="carryover" id="edit-deduct-carryover" />
+                  <Label htmlFor="edit-deduct-carryover" className="text-sm font-normal cursor-pointer">
+                    Doar din report {new Date().getFullYear() - 1} ({carryoverDays} zile disponibile)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="current" id="edit-deduct-current" />
+                  <Label htmlFor="edit-deduct-current" className="text-sm font-normal cursor-pointer">
+                    Doar din sold {new Date().getFullYear()} ({currentBalance} zile disponibile)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Observații (opțional)</Label>
