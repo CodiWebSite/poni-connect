@@ -1,89 +1,62 @@
 
-# Plan: Modul Biblioteca cu rol BIBLIOTECAR
 
-## Rezumat
-Se creaza un modul complet de biblioteca cu rol dedicat `bibliotecar`, doua tabele (carti si reviste), pagina cu doua tab-uri, posibilitate de imprumut catre angajati si export Excel.
+## Plan: Sistem de aprobare ierarhică pe departament cu mapare directă aprobator
 
----
+### Problema
+Rolurile actuale (`sef`, `sef_srus`) sunt generice — nu definesc cine aprobă pe cine. Un șef de laborator nu-și poate aproba singur concediul; trebuie să-i fie desemnat un aprobator specific (ex: șeful de compartiment).
 
-## 1. Baza de date - Migrari SQL
+### Soluție: Tabel `leave_approvers`
 
-### 1.1 Adaugare rol `bibliotecar` in enum-ul `app_role`
-```sql
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'bibliotecar';
+Un tabel simplu care mapează fiecare angajat la aprobatorul său direct pentru concedii. HR/Super Admin configurează aceste relații.
+
+```text
+┌─────────────────────────────────────────────┐
+│  leave_approvers                            │
+├─────────────────────────────────────────────┤
+│  id              uuid PK                    │
+│  employee_user_id uuid UNIQUE → profiles    │
+│  approver_user_id uuid → profiles           │
+│  created_by       uuid                      │
+│  created_at       timestamptz               │
+│  notes            text (opțional)           │
+└─────────────────────────────────────────────┘
+
+Exemplu:
+  Angajat Ion (user)      → Aprobator: Șef Lab Popescu
+  Șef Lab Popescu (sef)   → Aprobator: Șef Compartiment Ionescu  
+  Șef Compartiment Ionescu → Aprobator: Director (auto-aprobare existentă)
 ```
 
-### 1.2 Tabel `library_books` (Carti)
-Coloane: id, cota, inventar, titlu, autor, location_status (depozit/imprumutat), borrowed_by (referinta la profiles.user_id), borrowed_at, returned_at, created_at, updated_at.
+### Flux la depunere cerere
 
-### 1.3 Tabel `library_magazines` (Reviste)
-Coloane: id, titlu, an, volum, numar, location_status, borrowed_by, borrowed_at, returned_at, created_at, updated_at.
+1. La submit, se caută `leave_approvers` pentru `user_id` curent
+2. Dacă există aprobator definit → cererea merge la acel aprobator specific
+3. Dacă NU există → fallback la comportamentul actual (orice `sef`/`sef_srus` din departament)
+4. Directorul rămâne auto-aprobat (fără schimbări)
 
-### 1.4 Politici RLS
-- SELECT/INSERT/UPDATE/DELETE permise doar utilizatorilor cu rol `bibliotecar` sau `super_admin` (folosind functia `has_role` existenta).
+### Flux la aprobare
 
-### 1.5 Functie helper
-```sql
-CREATE FUNCTION can_manage_library(_user_id uuid) ...
--- verifica daca rolul e bibliotecar sau super_admin
-```
+Tab-ul "De Aprobat" afișează cererile unde utilizatorul curent este aprobatorul desemnat (din `leave_approvers`) SAU unde e șef generic și cererea nu are aprobator specific.
 
----
+### Modificări
 
-## 2. Frontend - Hook useUserRole
+**Migrare SQL:**
+- Creare tabel `leave_approvers` cu RLS (HR + super_admin pot gestiona)
+- Coloană nouă `approver_id` pe `leave_requests` pentru a stoca aprobatorul desemnat
 
-Se adauga:
-- `bibliotecar` in tipul `AppRole`
-- `isBibliotecar` flag
-- `canManageLibrary` flag (bibliotecar sau super_admin)
+**Fișiere modificate:**
+- `src/pages/HRManagement.tsx` — Tab nou "Aprobatori" cu interfață de configurare: selectează angajat → selectează aprobator din lista de profili
+- `src/components/leave/LeaveRequestForm.tsx` — La submit, lookup în `leave_approvers` și setează `approver_id`
+- `src/components/leave/LeaveApprovalPanel.tsx` — Filtrare cereri: afișează unde `approver_id = auth.uid()` SAU (fără approver_id + fallback departament)
+- `src/pages/LeaveRequest.tsx` — Tab "De Aprobat" vizibil și pentru utilizatori care au subordonați în `leave_approvers` (nu doar roluri `sef`)
+- `supabase/functions/notify-leave-email/index.ts` — Trimite email la aprobatorul specific dacă există, altfel fallback la șefii departamentului
 
----
+**Changelog:**
+- Actualizare v2.7 în tab-ul Modificări
 
-## 3. Frontend - Pagina Biblioteca
+### Avantaje
+- Flexibil: orice ierarhie, orice departament
+- Nu necesită roluri noi per departament
+- HR configurează ușor cine aprobă pe cine
+- Backward-compatible: dacă nu e configurat, funcționează ca înainte
 
-### Fisier nou: `src/pages/Library.tsx`
-- Doua tab-uri: **Carti** si **Reviste**
-- Fiecare tab are un tabel cu coloanele cerute
-- Buton "Adauga carte" / "Adauga revista" care deschide un dialog cu formular
-- Coloana "Locatie actuala" afiseaza "Depozit" sau numele angajatului
-- Buton "Imprumuta" pe fiecare rand - deschide un select cu angajatii din profiles
-- Buton "Returneaza" cand e imprumutat
-- Buton "Export Excel" care genereaza un fisier .xlsx cu toate datele (carti sau reviste, incluzand cine a imprumutat si cand)
-
----
-
-## 4. Navigare
-
-### Sidebar.tsx
-- Se adauga item "Biblioteca" (icon: `BookOpen`) vizibil doar pentru `isBibliotecar` sau `isSuperAdmin`
-
-### App.tsx
-- Ruta noua: `/library` -> componenta `Library`
-
-### handle_new_user (trigger existent)
-- Rolul `bibliotecar` va fi automat mapat la label "Bibliotecar" in notificarea de bun-venit (se actualizeaza functia)
-
----
-
-## 5. Export Excel
-
-Se foloseste biblioteca `exceljs` (deja instalata) pentru a genera:
-- **Raport Carti**: toate cartile cu cota, inventar, titlu, autor, locatie, imprumutat la, data imprumut
-- **Raport Reviste**: toate revistele cu titlu, an, volum, numar, locatie, imprumutat la, data imprumut
-
----
-
-## Fisiere modificate
-- `src/hooks/useUserRole.tsx` - adaugare `bibliotecar`
-- `src/components/layout/Sidebar.tsx` - link Biblioteca
-- `src/App.tsx` - ruta `/library`
-
-## Fisiere noi
-- `src/pages/Library.tsx` - pagina principala cu tab-uri, CRUD, imprumut si export
-
-## Migrari baza de date
-- Adaugare valoare enum `bibliotecar`
-- Creare tabele `library_books` si `library_magazines`
-- RLS policies
-- Functie `can_manage_library`
-- Update trigger `handle_new_user` pentru label bibliotecar
