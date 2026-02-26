@@ -10,6 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { Calendar, Loader2, Send, AlertTriangle } from 'lucide-react';
 import { format, eachDayOfInterval, parseISO, isWeekend } from 'date-fns';
+
+function formatDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-');
+  return `${d}.${m}.${y}`;
+}
 import { ro } from 'date-fns/locale';
 import { isPublicHoliday, isDayOff } from '@/utils/romanianHolidays';
 
@@ -200,7 +205,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
     const selectedColleague = colleagues.find(c => c.id === replacementId);
 
-    const { error } = await supabase.from('leave_requests').insert({
+    const { data: insertedRequest, error } = await supabase.from('leave_requests').insert({
       user_id: user.id,
       epd_id: employeeData.id,
       start_date: startDate,
@@ -209,16 +214,52 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       year: new Date().getFullYear(),
       replacement_name: selectedColleague?.name || '',
       replacement_position: selectedColleague?.position || '',
-      status: 'pending_director' as any,
+      // Auto-skip director step — goes directly to dept head
+      status: 'pending_department_head' as any,
       employee_signature: signature,
       employee_signed_at: new Date().toISOString(),
-    });
+      // Director auto-approved (stamp & signature provided offline)
+      director_approved_at: new Date().toISOString(),
+    }).select('id, request_number').single();
 
     if (error) {
       console.error('Error creating leave request:', error);
       toast({ title: 'Eroare', description: 'Nu s-a putut trimite cererea.', variant: 'destructive' });
     } else {
-      toast({ title: 'Cerere trimisă', description: 'Cererea de concediu a fost trimisă pentru aprobare.' });
+      // Notify department heads (same department) via intranet notification
+      if (employeeData.department && insertedRequest) {
+        const employeeName = `${employeeData.last_name} ${employeeData.first_name}`;
+        // Find dept heads in same department
+        const { data: deptHeadProfiles } = await supabase
+          .from('profiles')
+          .select('user_id, department')
+          .eq('department', employeeData.department);
+
+        if (deptHeadProfiles) {
+          for (const profile of deptHeadProfiles) {
+            // Check if this user is a dept head
+            const { data: roleData } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', profile.user_id)
+              .in('role', ['sef', 'sef_srus'])
+              .maybeSingle();
+
+            if (roleData) {
+              await supabase.from('notifications').insert({
+                user_id: profile.user_id,
+                title: 'Cerere nouă de concediu',
+                message: `${employeeName} a depus cererea ${insertedRequest.request_number} (${workingDays} zile, ${formatDate(startDate)} - ${formatDate(endDate)}). Verifică și aprobă cererea.`,
+                type: 'warning',
+                related_type: 'leave_request',
+                related_id: insertedRequest.id,
+              });
+            }
+          }
+        }
+      }
+
+      toast({ title: 'Cerere trimisă', description: 'Cererea de concediu a fost trimisă la șeful de compartiment pentru aprobare.' });
       onSubmitted();
     }
 

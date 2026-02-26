@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Loader2, Eye, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Eye } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -33,12 +33,11 @@ interface LeaveRequest {
 
 interface LeaveApprovalPanelProps {
   onUpdated: () => void;
-  debugPerspective?: 'director' | 'sef';
 }
 
-export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprovalPanelProps) {
+export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const { user } = useAuth();
-  const { role } = useUserRole();
+  const { role, isSuperAdmin } = useUserRole();
   const { toast } = useToast();
 
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
@@ -48,21 +47,14 @@ export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprova
   const [rejectionReason, setRejectionReason] = useState('');
   const [detailsDialog, setDetailsDialog] = useState<LeaveRequest | null>(null);
 
-  // Use debug perspective if provided, otherwise use actual role
-  const isDirector = debugPerspective === 'director' || role === 'director_institut' || role === 'director_adjunct';
-  const isDeptHead = debugPerspective === 'sef' || role === 'sef' || role === 'sef_srus';
-  const relevantStatus = debugPerspective === 'director' ? 'pending_director' 
-    : debugPerspective === 'sef' ? 'pending_department_head'
-    : isDirector ? 'pending_director' 
-    : isDeptHead ? 'pending_department_head' 
-    : null;
+  const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
 
   useEffect(() => {
     fetchPendingRequests();
-  }, [role, debugPerspective]);
+  }, [role]);
 
   const fetchPendingRequests = async () => {
-    if (!relevantStatus) {
+    if (!isDeptHead) {
       setRequests([]);
       setLoading(false);
       return;
@@ -73,7 +65,7 @@ export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprova
     const { data, error } = await supabase
       .from('leave_requests')
       .select('*')
-      .eq('status', relevantStatus as any)
+      .eq('status', 'pending_department_head' as any)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -108,8 +100,8 @@ export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprova
       employee_position: epdMap[r.epd_id]?.position || '',
     }));
 
-    // For dept heads (non-debug), filter to show only requests from their own department
-    if (isDeptHead && !debugPerspective && user) {
+    // For actual dept heads (not super admin), filter to own department
+    if (!isSuperAdmin && user) {
       const { data: myProfile } = await supabase
         .from('profiles')
         .select('department')
@@ -131,38 +123,26 @@ export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprova
     if (!user) return;
     setProcessing(request.id);
 
-    const updateData: Record<string, any> = {};
-
-    if (isDirector) {
-      updateData.status = 'pending_department_head';
-      updateData.director_id = user.id;
-      updateData.director_approved_at = new Date().toISOString();
-    } else if (isDeptHead) {
-      updateData.status = 'approved';
-      updateData.dept_head_id = user.id;
-      updateData.dept_head_approved_at = new Date().toISOString();
-    }
-
     const { error } = await supabase
       .from('leave_requests')
-      .update(updateData)
+      .update({
+        status: 'approved' as any,
+        dept_head_id: user.id,
+        dept_head_approved_at: new Date().toISOString(),
+      })
       .eq('id', request.id);
 
     if (error) {
       toast({ title: 'Eroare', description: 'Nu s-a putut aproba cererea.', variant: 'destructive' });
     } else {
-      // If fully approved (dept head approved), deduct leave days
-      if (isDeptHead) {
-        await deductLeaveDays(request);
-      }
+      // Deduct leave days
+      await deductLeaveDays(request);
 
-      // Send notification to employee
+      // Notify employee
       await supabase.from('notifications').insert({
         user_id: request.user_id,
-        title: isDeptHead ? 'Cerere concediu aprobată' : 'Cerere concediu aprobată de Director',
-        message: isDeptHead
-          ? `Cererea de concediu ${request.request_number} a fost aprobată complet.`
-          : `Cererea de concediu ${request.request_number} a fost aprobată de director și trimisă la șeful de compartiment.`,
+        title: 'Cerere concediu aprobată',
+        message: `Cererea de concediu ${request.request_number} a fost aprobată de șeful de compartiment.`,
         type: 'success',
         related_type: 'leave_request',
         related_id: request.id,
@@ -177,7 +157,6 @@ export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprova
   };
 
   const deductLeaveDays = async (request: LeaveRequest) => {
-    // Update employee_personal_data
     const { data: epd } = await supabase
       .from('employee_personal_data')
       .select('used_leave_days, employee_record_id')
@@ -190,7 +169,6 @@ export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprova
         .update({ used_leave_days: (epd.used_leave_days || 0) + request.working_days })
         .eq('id', request.epd_id);
 
-      // Also update employee_records if linked
       if (epd.employee_record_id) {
         const { data: rec } = await supabase
           .from('employee_records')
@@ -244,9 +222,7 @@ export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprova
     setProcessing(null);
   };
 
-  if (!relevantStatus && !loading) {
-    return null;
-  }
+  if (!isDeptHead && !loading) return null;
 
   if (loading) {
     return (
@@ -290,11 +266,7 @@ export function LeaveApprovalPanel({ onUpdated, debugPerspective }: LeaveApprova
                 </div>
 
                 <div className="flex gap-2 flex-shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDetailsDialog(request)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setDetailsDialog(request)}>
                     <Eye className="w-4 h-4 mr-1" />
                     Detalii
                   </Button>
