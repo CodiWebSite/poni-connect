@@ -2573,6 +2573,7 @@ const HRManagement = () => {
 
             {manualLeaveForm.start_date && manualLeaveForm.end_date && (() => {
               const workingDays = calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date);
+              const isNonDeductible = ['cfp', 'bo', 'ccc', 'ev'].includes(manualLeaveForm.leave_type);
               const emp = selectedManualEmployee;
               const carryover = emp?.carryoverDays || 0;
               const currentRemaining = emp ? emp.total_leave_days - emp.used_leave_days : 0;
@@ -2580,27 +2581,31 @@ const HRManagement = () => {
               
               let daysFromCarryover = 0;
               let daysFromCurrent = 0;
-              if (manualLeaveForm.deduct_from === 'carryover') {
-                daysFromCarryover = workingDays;
-              } else if (manualLeaveForm.deduct_from === 'current') {
-                daysFromCurrent = workingDays;
-              } else {
-                daysFromCarryover = Math.min(workingDays, carryover);
-                daysFromCurrent = workingDays - daysFromCarryover;
+              if (!isNonDeductible) {
+                if (manualLeaveForm.deduct_from === 'carryover') {
+                  daysFromCarryover = workingDays;
+                } else if (manualLeaveForm.deduct_from === 'current') {
+                  daysFromCurrent = workingDays;
+                } else {
+                  daysFromCarryover = Math.min(workingDays, carryover);
+                  daysFromCurrent = workingDays - daysFromCarryover;
+                }
               }
 
-              const exceeds = manualLeaveForm.deduct_from === 'carryover'
-                ? workingDays > carryover
-                : manualLeaveForm.deduct_from === 'current'
-                ? workingDays > currentRemaining
-                : workingDays > totalAvailable;
+              const exceeds = !isNonDeductible && (
+                manualLeaveForm.deduct_from === 'carryover'
+                  ? workingDays > carryover
+                  : manualLeaveForm.deduct_from === 'current'
+                  ? workingDays > currentRemaining
+                  : workingDays > totalAvailable
+              );
               
               return (
                 <div className={`p-3 rounded-lg space-y-1 ${exceeds ? 'bg-destructive/10 border border-destructive/30' : 'bg-primary/10'}`}>
                   <p className="text-sm font-medium">
                     Zile lucrătoare: <span className="font-bold">{workingDays}</span>
                   </p>
-                  {emp && carryover > 0 && manualLeaveForm.deduct_from === 'auto' && (
+                  {!isNonDeductible && emp && carryover > 0 && manualLeaveForm.deduct_from === 'auto' && (
                     <p className="text-xs text-muted-foreground">
                       Se vor consuma: <strong>{daysFromCarryover} zile din report {new Date().getFullYear() - 1}</strong>
                       {daysFromCurrent > 0 && <> + <strong>{daysFromCurrent} zile din {new Date().getFullYear()}</strong></>}
