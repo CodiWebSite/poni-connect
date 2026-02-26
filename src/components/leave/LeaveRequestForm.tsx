@@ -268,6 +268,24 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       }
 
       toast({ title: 'Cerere trimisă', description: 'Cererea de concediu a fost trimisă la șeful de compartiment pentru aprobare.' });
+
+      // Trimite email către șeful de departament (non-blocking)
+      const selectedColleagueForEmail = colleagues.find(c => c.id === replacementId);
+      supabase.functions.invoke('notify-leave-email', {
+        body: {
+          employee_name: `${employeeData.last_name} ${employeeData.first_name}`,
+          department: employeeData.department,
+          request_number: insertedRequest.request_number,
+          start_date: formatDate(startDate),
+          end_date: formatDate(endDate),
+          working_days: workingDays,
+          replacement_name: selectedColleagueForEmail?.name || '',
+        },
+      }).then(res => {
+        if (res.error) console.warn('Email notification failed:', res.error);
+        else console.log('Email notification sent successfully');
+      }).catch(err => console.warn('Email notification error:', err));
+
       onSubmitted();
     }
 
