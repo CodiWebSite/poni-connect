@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import nodemailer from "npm:nodemailer@6.9.10";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,10 +111,11 @@ Deno.serve(async (req) => {
 
     // SMTP config
     const smtpHost = Deno.env.get("SMTP_HOST");
-    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "465");
+    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
     const smtpUser = Deno.env.get("SMTP_USER");
     const smtpPass = Deno.env.get("SMTP_PASS");
-    const smtpFrom = Deno.env.get("SMTP_FROM") || smtpUser;
+    const smtpFrom = Deno.env.get("SMTP_FROM") || "";
+    const fromAddress = smtpFrom.includes("@") ? smtpFrom : `"${smtpFrom}" <${smtpUser}>`;
 
     if (!smtpHost || !smtpUser || !smtpPass) {
       console.error("SMTP credentials not configured");
@@ -127,16 +128,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Connect to SMTP
-    const client = new SMTPClient({
-      connection: {
-        hostname: smtpHost,
-        port: smtpPort,
-        tls: smtpPort === 465,
-        auth: {
-          username: smtpUser,
-          password: smtpPass,
-        },
+    // Connect to SMTP using nodemailer
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
       },
     });
 
@@ -175,16 +174,14 @@ Deno.serve(async (req) => {
 
     // Send to all recipients
     for (const email of recipientEmails) {
-      await client.send({
-        from: smtpFrom!,
+      await transporter.sendMail({
+        from: fromAddress,
         to: email,
         subject,
         html: htmlBody,
       });
       console.log(`Email sent to: ${email}`);
     }
-
-    await client.close();
 
     return new Response(
       JSON.stringify({

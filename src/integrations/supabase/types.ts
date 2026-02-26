@@ -729,26 +729,32 @@ export type Database = {
       }
       leave_approvers: {
         Row: {
-          approver_user_id: string
+          approver_email: string | null
+          approver_user_id: string | null
           created_at: string
           created_by: string | null
-          employee_user_id: string
+          employee_email: string | null
+          employee_user_id: string | null
           id: string
           notes: string | null
         }
         Insert: {
-          approver_user_id: string
+          approver_email?: string | null
+          approver_user_id?: string | null
           created_at?: string
           created_by?: string | null
-          employee_user_id: string
+          employee_email?: string | null
+          employee_user_id?: string | null
           id?: string
           notes?: string | null
         }
         Update: {
-          approver_user_id?: string
+          approver_email?: string | null
+          approver_user_id?: string | null
           created_at?: string
           created_by?: string | null
-          employee_user_id?: string
+          employee_email?: string | null
+          employee_user_id?: string | null
           id?: string
           notes?: string | null
         }
@@ -834,7 +840,8 @@ export type Database = {
       }
       leave_department_approvers: {
         Row: {
-          approver_user_id: string
+          approver_email: string | null
+          approver_user_id: string | null
           created_at: string
           created_by: string | null
           department: string
@@ -842,7 +849,8 @@ export type Database = {
           notes: string | null
         }
         Insert: {
-          approver_user_id: string
+          approver_email?: string | null
+          approver_user_id?: string | null
           created_at?: string
           created_by?: string | null
           department: string
@@ -850,7 +858,8 @@ export type Database = {
           notes?: string | null
         }
         Update: {
-          approver_user_id?: string
+          approver_email?: string | null
+          approver_user_id?: string | null
           created_at?: string
           created_by?: string | null
           department?: string
