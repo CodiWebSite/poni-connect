@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +17,13 @@ const LeaveRequest = () => {
   const { user, loading: authLoading } = useAuth();
   const { isSuperAdmin, role, isSef, isSefSRUS, canManageHR, loading: roleLoading } = useUserRole();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showBeta, setShowBeta] = useState(false);
+
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'leave_module_beta').maybeSingle()
+      .then(({ data }) => { if (data) setShowBeta(data.value === true); });
+  }, []);
+
 
   if (authLoading || roleLoading) {
     return (
@@ -37,16 +45,17 @@ const LeaveRequest = () => {
 
   return (
     <MainLayout title="Cereri Concediu de Odihnă" description="Depune și gestionează cererile de concediu">
-      {/* Beta banner */}
-      <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-300/60 bg-amber-50/70 dark:border-amber-600/40 dark:bg-amber-950/30 px-4 py-2.5">
-        <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-        <p className="text-sm text-amber-800 dark:text-amber-300">
-          <strong>Beta</strong> — Modulul de cereri de concediu este în faza de testare. Dacă întâmpinați probleme, contactați departamentul IT.
-        </p>
-        <Badge variant="outline" className="ml-auto text-[10px] border-amber-400 text-amber-600 dark:text-amber-400 flex-shrink-0">
-          v0.9
-        </Badge>
-      </div>
+      {showBeta && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-300/60 bg-amber-50/70 dark:border-amber-600/40 dark:bg-amber-950/30 px-4 py-2.5">
+          <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            <strong>Beta</strong> — Modulul de cereri de concediu este în faza de testare. Dacă întâmpinați probleme, contactați departamentul IT.
+          </p>
+          <Badge variant="outline" className="ml-auto text-[10px] border-amber-400 text-amber-600 dark:text-amber-400 flex-shrink-0">
+            v0.9
+          </Badge>
+        </div>
+      )}
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-1">
           {/* All employees can submit and see their requests */}
