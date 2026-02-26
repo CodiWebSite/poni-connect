@@ -20,6 +20,7 @@ import ManualAccountCreate from '@/components/admin/ManualAccountCreate';
 import AccountRequestsPanel from '@/components/admin/AccountRequestsPanel';
 import AuthLoginLog from '@/components/admin/AuthLoginLog';
 import EquipmentRegistry from '@/components/admin/EquipmentRegistry';
+import AppSettingsPanel from '@/components/admin/AppSettingsPanel';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -180,7 +181,8 @@ const Admin = () => {
             <TabsTrigger value="account-requests">Cereri Cont</TabsTrigger>
              <TabsTrigger value="audit">Jurnal Audit</TabsTrigger>
              <TabsTrigger value="auth-log">Autentificări</TabsTrigger>
-             <TabsTrigger value="inventory">Inventar</TabsTrigger>
+              <TabsTrigger value="inventory">Inventar</TabsTrigger>
+              <TabsTrigger value="settings">Setări</TabsTrigger>
          </TabsList>
         <TabsContent value="roles" className="space-y-6">
           <Card>
@@ -265,6 +267,9 @@ const Admin = () => {
         </TabsContent>
         <TabsContent value="inventory">
           <EquipmentRegistry />
+        </TabsContent>
+        <TabsContent value="settings">
+          <AppSettingsPanel />
         </TabsContent>
       </Tabs>
 
