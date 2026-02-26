@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, Loader2, Eye } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { SignaturePad } from '@/components/shared/SignaturePad';
 
 interface LeaveRequest {
   id: string;
@@ -48,6 +49,8 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const [rejectionReason, setRejectionReason] = useState('');
   const [detailsDialog, setDetailsDialog] = useState<LeaveRequest | null>(null);
   const [isDesignatedApprover, setIsDesignatedApprover] = useState(false);
+  const [approveDialog, setApproveDialog] = useState<LeaveRequest | null>(null);
+  const [approverSignature, setApproverSignature] = useState<string | null>(null);
 
   const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
 
@@ -58,7 +61,6 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
   const checkDesignatedApprover = async () => {
     if (!user) return;
-    // Check if current user is a designated approver for anyone (per-employee or per-department)
     const { data: empApprovers } = await supabase
       .from('leave_approvers')
       .select('id')
@@ -93,7 +95,6 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       return;
     }
 
-    // Enrich with employee names
     const epdIds = [...new Set((data || []).map(r => r.epd_id).filter(Boolean))];
     let epdMap: Record<string, { name: string; department: string; position: string }> = {};
 
@@ -120,10 +121,6 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       employee_position: epdMap[r.epd_id]?.position || '',
     }));
 
-    // Filter based on approver logic:
-    // 1. Requests where I'm the designated approver (approver_id = my id)
-    // 2. Requests without a designated approver where I'm a dept head in the same department (fallback)
-    // 3. Requests without a designated approver where I'm the department-level approver
     if (!isSuperAdmin) {
       const { data: myProfile } = await supabase
         .from('profiles')
@@ -131,7 +128,6 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      // Get departments where I'm the department-level approver
       const { data: myDeptApprovals } = await supabase
         .from('leave_department_approvers')
         .select('department')
@@ -139,11 +135,8 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       const myApproverDepts = new Set((myDeptApprovals || []).map(d => d.department.toLowerCase()));
 
       enrichedRequests = enrichedRequests.filter(r => {
-        // I'm the designated approver
         if (r.approver_id === user.id) return true;
-        // No designated approver + I'm department-level approver for that dept
         if (!r.approver_id && r.employee_department && myApproverDepts.has(r.employee_department.toLowerCase())) return true;
-        // No designated approver + I'm dept head + same department (fallback)
         if (!r.approver_id && isDeptHead && myProfile?.department &&
             r.employee_department.toLowerCase() === myProfile.department.toLowerCase()) {
           return true;
@@ -156,39 +149,48 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     setLoading(false);
   };
 
-  const handleApprove = async (request: LeaveRequest) => {
-    if (!user) return;
-    setProcessing(request.id);
+  const handleApproveWithSignature = async () => {
+    if (!user || !approveDialog) return;
+    if (!approverSignature) {
+      toast({ title: 'Semnătură necesară', description: 'Vă rugăm să semnați înainte de aprobare.', variant: 'destructive' });
+      return;
+    }
+    
+    setProcessing(approveDialog.id);
+    const now = new Date().toISOString();
 
     const { error } = await supabase
       .from('leave_requests')
       .update({
         status: 'approved' as any,
         dept_head_id: user.id,
-        dept_head_approved_at: new Date().toISOString(),
-      })
-      .eq('id', request.id);
+        dept_head_approved_at: now,
+        dept_head_signature: approverSignature,
+      } as any)
+      .eq('id', approveDialog.id);
 
     if (error) {
       toast({ title: 'Eroare', description: 'Nu s-a putut aproba cererea.', variant: 'destructive' });
     } else {
-      // Deduct leave days
-      await deductLeaveDays(request);
+      await deductLeaveDays(approveDialog);
 
-      // Notify employee (in-app)
       await supabase.from('notifications').insert({
-        user_id: request.user_id,
+        user_id: approveDialog.user_id,
         title: 'Cerere concediu aprobată',
-        message: `Cererea de concediu ${request.request_number} a fost aprobată de șeful de compartiment.`,
+        message: `Cererea de concediu ${approveDialog.request_number} a fost aprobată de șeful de compartiment.`,
         type: 'success',
         related_type: 'leave_request',
-        related_id: request.id,
+        related_id: approveDialog.id,
       });
 
-      // Notify employee (email)
-      sendResultEmail(request, 'approved');
+      sendResultEmail(approveDialog, 'approved');
 
-      toast({ title: 'Aprobat', description: `Cererea ${request.request_number} a fost aprobată.` });
+      // Notify HR staff
+      notifyHRApproval(approveDialog);
+
+      toast({ title: 'Aprobat', description: `Cererea ${approveDialog.request_number} a fost aprobată.` });
+      setApproveDialog(null);
+      setApproverSignature(null);
       onUpdated();
       fetchPendingRequests();
     }
@@ -196,11 +198,57 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     setProcessing(null);
   };
 
+  const notifyHRApproval = async (request: LeaveRequest) => {
+    try {
+      const { data: myProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+
+      // Send in-app notifications to HR/SRUS staff
+      const { data: hrRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('role', ['hr', 'sef_srus', 'super_admin'] as any);
+
+      if (hrRoles) {
+        for (const hr of hrRoles) {
+          if (hr.user_id === user!.id) continue; // Don't notify yourself
+          await supabase.from('notifications').insert({
+            user_id: hr.user_id,
+            title: 'Cerere concediu aprobată de șef',
+            message: `${request.employee_name} — cererea ${request.request_number} a fost aprobată de ${myProfile?.full_name || 'Șef compartiment'}.`,
+            type: 'info',
+            related_type: 'leave_request',
+            related_id: request.id,
+          });
+        }
+      }
+
+      // Send email to HR via edge function
+      await supabase.functions.invoke('notify-leave-result', {
+        body: {
+          employee_user_id: request.user_id,
+          employee_name: request.employee_name,
+          request_number: request.request_number,
+          start_date: format(parseISO(request.start_date), 'dd.MM.yyyy'),
+          end_date: format(parseISO(request.end_date), 'dd.MM.yyyy'),
+          working_days: request.working_days,
+          result: 'approved',
+          approver_name: myProfile?.full_name || 'Șef compartiment',
+          notify_hr: true,
+        },
+      });
+    } catch (err) {
+      console.error('Failed to notify HR:', err);
+    }
+  };
+
   const deductLeaveDays = async (request: LeaveRequest) => {
     const currentYear = new Date().getFullYear();
     let daysToDeduct = request.working_days;
 
-    // First, try to deduct from 2025 carryover
     const { data: carryovers } = await supabase
       .from('leave_carryover')
       .select('id, remaining_days, used_days')
@@ -223,7 +271,6 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       }
     }
 
-    // Remaining days deduct from current year (employee_personal_data.used_leave_days)
     if (daysToDeduct > 0) {
       const { data: epd } = await supabase
         .from('employee_personal_data')
@@ -292,7 +339,6 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         related_id: rejectDialog.id,
       });
 
-      // Notify employee (email)
       sendResultEmail(rejectDialog, 'rejected', rejectionReason);
 
       toast({ title: 'Respins', description: `Cererea ${rejectDialog.request_number} a fost respinsă.` });
@@ -356,15 +402,11 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
                   <Button
                     variant="default"
                     size="sm"
-                    onClick={() => handleApprove(request)}
+                    onClick={() => { setApproveDialog(request); setApproverSignature(null); }}
                     disabled={processing === request.id}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    {processing === request.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                    )}
+                    <CheckCircle className="w-4 h-4 mr-1" />
                     Aprobă
                   </Button>
                   <Button
@@ -382,6 +424,38 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
           </Card>
         ))}
       </div>
+
+      {/* Approve Dialog with Signature */}
+      <Dialog open={!!approveDialog} onOpenChange={() => { setApproveDialog(null); setApproverSignature(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Aprobă Cererea {approveDialog?.request_number}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Angajat: <strong>{approveDialog?.employee_name}</strong><br />
+              Perioada: {approveDialog && format(parseISO(approveDialog.start_date), 'dd.MM.yyyy')} – {approveDialog && format(parseISO(approveDialog.end_date), 'dd.MM.yyyy')}<br />
+              Zile: <strong>{approveDialog?.working_days}</strong>
+            </p>
+            <SignaturePad
+              onSave={(sig) => setApproverSignature(sig)}
+              existingSignature={approverSignature}
+              label="Semnătura Șef Compartiment"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setApproveDialog(null); setApproverSignature(null); }}>Anulează</Button>
+            <Button 
+              onClick={handleApproveWithSignature} 
+              disabled={processing === approveDialog?.id || !approverSignature}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {processing === approveDialog?.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+              Semnează și Aprobă
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Reject Dialog */}
       <Dialog open={!!rejectDialog} onOpenChange={() => setRejectDialog(null)}>
