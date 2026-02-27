@@ -730,6 +730,42 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_approval_delegates: {
+        Row: {
+          created_at: string
+          delegate_user_id: string
+          delegator_user_id: string
+          department: string | null
+          end_date: string
+          id: string
+          is_active: boolean
+          reason: string | null
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          delegate_user_id: string
+          delegator_user_id: string
+          department?: string | null
+          end_date: string
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          delegate_user_id?: string
+          delegator_user_id?: string
+          department?: string | null
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          start_date?: string
+        }
+        Relationships: []
+      }
       leave_approvers: {
         Row: {
           approver_email: string | null
