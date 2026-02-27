@@ -17,13 +17,11 @@ interface EmployeePayload {
   total_leave_days?: number;
   used_leave_days?: number;
   employment_date?: string;
-  // CI fields
   ci_series?: string | null;
   ci_number?: string | null;
   ci_issued_by?: string | null;
   ci_issued_date?: string | null;
   ci_expiry_date?: string | null;
-  // Address fields
   address_street?: string | null;
   address_number?: string | null;
   address_block?: string | null;
@@ -33,6 +31,59 @@ interface EmployeePayload {
   address_county?: string | null;
 }
 
+/** Fields safe to update on re-import (never includes leave balances) */
+function buildUpdatePayload(record: ReturnType<typeof normalizeRecord>) {
+  return {
+    first_name: record.first_name,
+    last_name: record.last_name,
+    department: record.department,
+    position: record.position,
+    grade: record.grade,
+    contract_type: record.contract_type,
+    employment_date: record.employment_date,
+    ci_series: record.ci_series,
+    ci_number: record.ci_number,
+    ci_issued_by: record.ci_issued_by,
+    ci_issued_date: record.ci_issued_date,
+    ci_expiry_date: record.ci_expiry_date,
+    address_street: record.address_street,
+    address_number: record.address_number,
+    address_block: record.address_block,
+    address_floor: record.address_floor,
+    address_apartment: record.address_apartment,
+    address_city: record.address_city,
+    address_county: record.address_county,
+  };
+}
+
+function normalizeRecord(record: EmployeePayload) {
+  return {
+    email: record.email.toLowerCase(),
+    first_name: record.first_name,
+    last_name: record.last_name,
+    cnp: record.cnp,
+    department: record.department || null,
+    position: record.position || null,
+    grade: record.grade || null,
+    contract_type: record.contract_type || 'nedeterminat',
+    total_leave_days: record.total_leave_days ?? 21,
+    used_leave_days: record.used_leave_days ?? 0,
+    employment_date: record.employment_date || new Date().toISOString().split('T')[0],
+    ci_series: record.ci_series || null,
+    ci_number: record.ci_number || null,
+    ci_issued_by: record.ci_issued_by || null,
+    ci_issued_date: record.ci_issued_date || null,
+    ci_expiry_date: record.ci_expiry_date || null,
+    address_street: record.address_street || null,
+    address_number: record.address_number || null,
+    address_block: record.address_block || null,
+    address_floor: record.address_floor || null,
+    address_apartment: record.address_apartment || null,
+    address_city: record.address_city || null,
+    address_county: record.address_county || null,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -40,9 +91,7 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Missing authorization header");
-    }
+    if (!authHeader) throw new Error("Missing authorization header");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -52,46 +101,34 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
     
-    // Verify user has HR permissions
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !user) {
-      throw new Error("Unauthorized");
-    }
+    if (userError || !user) throw new Error("Unauthorized");
     
     const { data: canManage, error: roleError } = await supabaseAdmin.rpc('can_manage_hr', { 
       _user_id: user.id 
     });
-    
-    if (roleError || !canManage) {
-      throw new Error("Insufficient permissions. Only HR personnel can import employees.");
-    }
+    if (roleError || !canManage) throw new Error("Insufficient permissions.");
     
     const body = await req.json();
     
-    // Support both new JSON format and legacy CSV format
+    // Parse records from payload
     let records: EmployeePayload[] = [];
     
     if (body.employees && Array.isArray(body.employees)) {
-      // New JSON array format
       records = body.employees.filter((emp: EmployeePayload) => 
         emp.email && emp.cnp && emp.first_name && emp.last_name
       );
     } else if (body.csvContent) {
-      // Legacy CSV format - parse it
       const lines = body.csvContent.trim().split('\n');
       const headers = lines[0].split(';');
-      
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(';');
         if (values.length < headers.length) continue;
-        
         const record: Record<string, string> = {};
         headers.forEach((header: string, index: number) => {
           record[header.trim()] = values[index]?.trim() || '';
         });
-        
         if (!record.email || !record.cnp || !record.first_name || !record.last_name) continue;
-        
         records.push({
           email: record.email,
           first_name: record.first_name,
@@ -106,211 +143,112 @@ Deno.serve(async (req) => {
         } as EmployeePayload);
       }
     } else {
-      throw new Error("No employee data provided. Send either 'employees' (JSON array) or 'csvContent'.");
+      throw new Error("No employee data provided.");
     }
     
-    console.log(`Processing ${records.length} employee records`);
+    if (records.length === 0) throw new Error("No valid employee records found.");
     
-    if (records.length === 0) {
-      throw new Error("No valid employee records found in the provided data.");
-    }
-    
-    // Transform records for insertion and deduplicate by CNP
-    const employeeMap = new Map<string, typeof records[0]>();
+    // Deduplicate by CNP
+    const employeeMap = new Map<string, EmployeePayload>();
     for (const record of records) {
-      // Keep last occurrence (overwrite duplicates)
       employeeMap.set(record.cnp, record);
     }
-    
-    const employeeData = Array.from(employeeMap.values()).map(record => ({
-      email: record.email.toLowerCase(),
-      first_name: record.first_name,
-      last_name: record.last_name,
-      cnp: record.cnp,
-      department: record.department || null,
-      position: record.position || null,
-      grade: record.grade || null,
-      contract_type: record.contract_type || 'nedeterminat',
-      total_leave_days: record.total_leave_days ?? 21,
-      used_leave_days: record.used_leave_days ?? 0,
-      employment_date: record.employment_date || new Date().toISOString().split('T')[0],
-      // CI fields
-      ci_series: record.ci_series || null,
-      ci_number: record.ci_number || null,
-      ci_issued_by: record.ci_issued_by || null,
-      ci_issued_date: record.ci_issued_date || null,
-      ci_expiry_date: record.ci_expiry_date || null,
-      // Address fields
-      address_street: record.address_street || null,
-      address_number: record.address_number || null,
-      address_block: record.address_block || null,
-      address_floor: record.address_floor || null,
-      address_apartment: record.address_apartment || null,
-      address_city: record.address_city || null,
-      address_county: record.address_county || null,
-    }));
+    const employeeData = Array.from(employeeMap.values()).map(normalizeRecord);
     
     console.log(`Deduplicated: ${records.length} -> ${employeeData.length} unique CNPs`);
     
-    // Filter out archived employees before upserting
+    // ── Identify existing vs new employees ──
     const cnpList = employeeData.map(e => e.cnp);
-    const { data: archivedRecords } = await supabaseAdmin
+    
+    // Fetch all existing records by CNP (including archived status)
+    const { data: existingRecords } = await supabaseAdmin
       .from('employee_personal_data')
-      .select('cnp')
-      .in('cnp', cnpList)
-      .eq('is_archived', true);
+      .select('cnp, is_archived')
+      .in('cnp', cnpList);
     
-    const archivedCnps = new Set((archivedRecords || []).map((r: any) => r.cnp));
-    const activeEmployeeData = employeeData.filter(e => !archivedCnps.has(e.cnp));
-    const skippedArchived = employeeData.length - activeEmployeeData.length;
-    
-    if (skippedArchived > 0) {
-      console.log(`Skipped ${skippedArchived} archived employees`);
+    const existingCnpMap = new Map<string, boolean>();
+    for (const r of (existingRecords || [])) {
+      existingCnpMap.set(r.cnp, r.is_archived);
     }
     
-    console.log(`Processing ${activeEmployeeData.length} active employee records (${skippedArchived} archived skipped)`);
+    const newEmployees = employeeData.filter(e => !existingCnpMap.has(e.cnp));
+    const existingActive = employeeData.filter(e => existingCnpMap.has(e.cnp) && !existingCnpMap.get(e.cnp));
+    const skippedArchived = employeeData.filter(e => existingCnpMap.get(e.cnp) === true).length;
     
-    // Insert in batches of 50, with individual fallback for failed batches
-    const batchSize = 50;
+    console.log(`New: ${newEmployees.length}, Existing active: ${existingActive.length}, Archived (skipped): ${skippedArchived}`);
+    
     let inserted = 0;
+    let updated = 0;
     let skipped = skippedArchived;
     const errors: string[] = [];
     
-    for (let i = 0; i < activeEmployeeData.length; i += batchSize) {
-      const batch = activeEmployeeData.slice(i, i + batchSize);
-      
-      // Try batch upsert by cnp first
-      const { data, error } = await supabaseAdmin
-        .from('employee_personal_data')
-        .upsert(batch, { 
-          onConflict: 'cnp',
-          ignoreDuplicates: false 
-        })
-        .select('id');
-      
-      if (error) {
-        console.log(`Batch ${Math.floor(i/batchSize) + 1} failed on cnp upsert, trying individual records...`);
+    // ── INSERT new employees (with leave data) ──
+    if (newEmployees.length > 0) {
+      const batchSize = 50;
+      for (let i = 0; i < newEmployees.length; i += batchSize) {
+        const batch = newEmployees.slice(i, i + batchSize);
+        const { data, error } = await supabaseAdmin
+          .from('employee_personal_data')
+          .insert(batch)
+          .select('id');
         
-        // Process each record individually when batch fails
-        for (const record of batch) {
-          // First try: upsert by CNP
-          const { error: err1 } = await supabaseAdmin
-            .from('employee_personal_data')
-            .upsert(record, { onConflict: 'cnp', ignoreDuplicates: false })
-            .select('id');
-          
-          if (!err1) {
-            inserted++;
-            continue;
-          }
-          
-          // CNP upsert failed - likely email conflict. 
-          // Find and update the existing record by email, then retry
-          console.log(`Individual cnp upsert failed for ${record.email}: ${err1.message}`);
-          
-          // Try: update existing record matching this email with new data
-          const { data: existing } = await supabaseAdmin
-            .from('employee_personal_data')
-            .select('id, cnp')
-            .eq('email', record.email)
-            .maybeSingle();
-          
-          if (existing) {
-            // Update the existing email record with new CNP and data
-            const { error: updateErr } = await supabaseAdmin
+        if (error) {
+          console.log(`Batch insert failed, trying individually...`);
+          for (const record of batch) {
+            const { error: err } = await supabaseAdmin
               .from('employee_personal_data')
-              .update({
-                cnp: record.cnp,
-                first_name: record.first_name,
-                last_name: record.last_name,
-                department: record.department,
-                position: record.position,
-                grade: record.grade,
-                contract_type: record.contract_type,
-                total_leave_days: record.total_leave_days,
-                used_leave_days: record.used_leave_days,
-                employment_date: record.employment_date,
-                ci_series: record.ci_series,
-                ci_number: record.ci_number,
-                ci_issued_by: record.ci_issued_by,
-                ci_issued_date: record.ci_issued_date,
-                ci_expiry_date: record.ci_expiry_date,
-                address_street: record.address_street,
-                address_number: record.address_number,
-                address_block: record.address_block,
-                address_floor: record.address_floor,
-                address_apartment: record.address_apartment,
-                address_city: record.address_city,
-                address_county: record.address_county,
-              })
-              .eq('id', existing.id);
-            
-            if (!updateErr) {
+              .insert(record)
+              .select('id');
+            if (!err) {
               inserted++;
-              continue;
+            } else {
+              console.error(`Insert failed for ${record.email}: ${err.message}`);
+              errors.push(`${record.first_name} ${record.last_name} (${record.email}): ${err.message}`);
+              skipped++;
             }
-            console.error(`Update by email failed for ${record.email}:`, updateErr.message);
           }
-          
-          // Try: find by CNP and update email
-          const { data: existingByCnp } = await supabaseAdmin
-            .from('employee_personal_data')
-            .select('id, email')
-            .eq('cnp', record.cnp)
-            .maybeSingle();
-          
-          if (existingByCnp) {
-            const { error: updateErr2 } = await supabaseAdmin
-              .from('employee_personal_data')
-              .update({
-                email: record.email,
-                first_name: record.first_name,
-                last_name: record.last_name,
-                department: record.department,
-                position: record.position,
-                grade: record.grade,
-                contract_type: record.contract_type,
-                total_leave_days: record.total_leave_days,
-                used_leave_days: record.used_leave_days,
-                employment_date: record.employment_date,
-                ci_series: record.ci_series,
-                ci_number: record.ci_number,
-                ci_issued_by: record.ci_issued_by,
-                ci_issued_date: record.ci_issued_date,
-                ci_expiry_date: record.ci_expiry_date,
-                address_street: record.address_street,
-                address_number: record.address_number,
-                address_block: record.address_block,
-                address_floor: record.address_floor,
-                address_apartment: record.address_apartment,
-                address_city: record.address_city,
-                address_county: record.address_county,
-              })
-              .eq('id', existingByCnp.id);
-            
-            if (!updateErr2) {
-              inserted++;
-              continue;
-            }
-            console.error(`Update by cnp failed for ${record.cnp}:`, updateErr2.message);
-          }
-          
-          // All strategies failed
-          errors.push(`${record.first_name} ${record.last_name} (${record.email}): nu s-a putut importa`);
-          skipped++;
+        } else {
+          inserted += data?.length || 0;
         }
-      } else {
-        inserted += data?.length || 0;
       }
     }
     
-    // SYNC employee_records with the imported data
-    // The UI reads from employee_records, so we must keep it in sync
-    console.log("Syncing employee_records with imported data...");
+    // ── UPDATE existing active employees (WITHOUT leave data) ──
+    for (const record of existingActive) {
+      const updateData = buildUpdatePayload(record);
+      
+      // Try update by CNP
+      const { error: updateErr } = await supabaseAdmin
+        .from('employee_personal_data')
+        .update(updateData)
+        .eq('cnp', record.cnp)
+        .eq('is_archived', false);
+      
+      if (!updateErr) {
+        updated++;
+      } else {
+        // Fallback: try updating email too if CNP conflict
+        const { error: updateErr2 } = await supabaseAdmin
+          .from('employee_personal_data')
+          .update({ ...updateData, email: record.email })
+          .eq('cnp', record.cnp)
+          .eq('is_archived', false);
+        
+        if (!updateErr2) {
+          updated++;
+        } else {
+          console.error(`Update failed for ${record.email}: ${updateErr2.message}`);
+          errors.push(`${record.first_name} ${record.last_name}: actualizare eșuată`);
+          skipped++;
+        }
+      }
+    }
+    
+    // ── SYNC employee_records for NEW employees only ──
+    console.log("Syncing employee_records for new employees...");
     let syncedRecords = 0;
     
-    for (const record of activeEmployeeData) {
-      // Find the employee_personal_data entry to get the employee_record_id
+    for (const record of newEmployees) {
       const { data: epd } = await supabaseAdmin
         .from('employee_personal_data')
         .select('employee_record_id')
@@ -318,7 +256,6 @@ Deno.serve(async (req) => {
         .maybeSingle();
       
       if (epd?.employee_record_id) {
-        // Update the linked employee_records entry
         const { error: syncErr } = await supabaseAdmin
           .from('employee_records')
           .update({
@@ -329,19 +266,14 @@ Deno.serve(async (req) => {
           })
           .eq('id', epd.employee_record_id);
         
-        if (!syncErr) {
-          syncedRecords++;
-        } else {
-          console.log(`Failed to sync employee_record for ${record.email}: ${syncErr.message}`);
-        }
+        if (!syncErr) syncedRecords++;
       }
     }
     
     console.log(`Synced ${syncedRecords} employee_records entries`);
     
-    // Also sync profiles with department and position data
-    for (const record of activeEmployeeData) {
-      // Find user by email in auth
+    // ── Sync profiles with department/position for all active employees ──
+    for (const record of [...newEmployees, ...existingActive]) {
       const { data: epd } = await supabaseAdmin
         .from('employee_personal_data')
         .select('employee_record_id')
@@ -349,7 +281,6 @@ Deno.serve(async (req) => {
         .maybeSingle();
       
       if (epd?.employee_record_id) {
-        // Get user_id from employee_records
         const { data: er } = await supabaseAdmin
           .from('employee_records')
           .select('user_id')
@@ -373,11 +304,12 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         imported: inserted,
+        updated: updated,
         synced_records: syncedRecords,
         skipped: skipped,
         total: records.length,
         errors: errors.length > 0 ? errors : undefined,
-        message: `Importați ${inserted} din ${records.length} angajați. ${syncedRecords} dosare sincronizate.`
+        message: `${inserted} angajați noi importați, ${updated} actualizați (fără modificarea concediilor). ${skippedArchived} arhivați ignorați.`
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
