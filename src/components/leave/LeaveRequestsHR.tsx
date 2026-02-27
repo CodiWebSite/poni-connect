@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useDemoMode } from '@/contexts/DemoModeContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +64,7 @@ interface LeaveRequestsHRProps {
 
 export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const { toast } = useToast();
+  const { isDemo } = useDemoMode();
   const [requests, setRequests] = useState<LeaveRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,10 +82,11 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const fetchAllRequests = async () => {
     setLoading(true);
 
-    const { data, error } = await supabase
+    const baseQuery = supabase
       .from('leave_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
+    
+    const { data, error } = await (baseQuery as any).eq('is_demo', isDemo).order('created_at', { ascending: false }) as { data: any[] | null; error: any };
 
     if (error) {
       console.error('Error fetching leave requests:', error);

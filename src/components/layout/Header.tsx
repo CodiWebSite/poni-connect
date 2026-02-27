@@ -10,6 +10,8 @@ import { useTheme } from 'next-themes';
 import { useLocation, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useDemoMode } from '@/contexts/DemoModeContext';
+import { FlaskConical, X } from 'lucide-react';
 
 const routeLabels: Record<string, string> = {
   '/': 'Dashboard',
@@ -30,6 +32,7 @@ interface HeaderProps {
 const Header = ({ title, description }: HeaderProps) => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { isDemo, toggleDemo } = useDemoMode();
   const location = useLocation();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -52,6 +55,7 @@ const Header = ({ title, description }: HeaderProps) => {
   const breadcrumbLabel = routeLabels[currentRoute];
 
   return (
+    <>
     <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border px-4 md:px-6 py-3 md:py-4">
       <div className="flex items-center justify-between gap-2 md:gap-4">
         <div className="flex items-center gap-3">
@@ -97,6 +101,17 @@ const Header = ({ title, description }: HeaderProps) => {
         </div>
       </div>
     </header>
+    {isDemo && (
+      <div className="sticky top-[57px] z-39 bg-amber-500/90 backdrop-blur-sm text-amber-950 px-4 py-2 flex items-center justify-center gap-3 text-sm font-medium">
+        <FlaskConical className="w-4 h-4" />
+        <span>MOD DEMO ACTIV — Acțiunile nu afectează datele reale</span>
+        <Button variant="ghost" size="sm" onClick={toggleDemo} className="h-6 px-2 text-amber-950 hover:bg-amber-600/30">
+          <X className="w-3 h-3 mr-1" />
+          Dezactivează
+        </Button>
+      </div>
+    )}
+    </>
   );
 };
 

@@ -9,6 +9,7 @@ import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { generateLeaveDocx } from '@/utils/generateLeaveDocx';
+import { useDemoMode } from '@/contexts/DemoModeContext';
 
 const statusLabels: Record<string, string> = {
   draft: 'Ciornă',
@@ -31,22 +32,25 @@ interface LeaveRequestsListProps {
 export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isDemo } = useDemoMode();
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) fetchMyRequests();
-  }, [user, refreshTrigger]);
+  }, [user, refreshTrigger, isDemo]);
 
   const fetchMyRequests = async () => {
     if (!user) return;
     setLoading(true);
 
-    const { data } = await supabase
+    const query = supabase
       .from('leave_requests')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
+    
+    const { data } = await (query as any).eq('is_demo', isDemo);
 
     setRequests(data || []);
     setLoading(false);
@@ -139,9 +143,12 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-muted-foreground" />
                   <span className="font-mono text-sm">{r.request_number}</span>
-                  <Badge className={`text-xs ${statusColors[r.status] || ''}`}>
-                    {statusLabels[r.status] || r.status}
-                  </Badge>
+                   <Badge className={`text-xs ${statusColors[r.status] || ''}`}>
+                     {statusLabels[r.status] || r.status}
+                   </Badge>
+                   {(r as any).is_demo && (
+                     <Badge className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">DEMO</Badge>
+                   )}
                 </div>
                 <p className="text-sm">
                   <strong>{r.working_days} zile</strong> • {format(parseISO(r.start_date), 'dd MMM yyyy', { locale: ro })} – {format(parseISO(r.end_date), 'dd MMM yyyy', { locale: ro })}
