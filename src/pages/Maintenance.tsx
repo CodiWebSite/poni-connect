@@ -49,7 +49,7 @@ const TimeUnit = ({ value, label }: { value: number; label: string }) => (
 );
 
 const Maintenance = () => {
-  const { settings } = useAppSettings();
+  const { settings, loading: settingsLoading } = useAppSettings();
   const { timeLeft, expired } = useCountdown(settings.maintenance_eta);
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState(30);
@@ -59,21 +59,24 @@ const Maintenance = () => {
   const [subMessage, setSubMessage] = useState('');
 
   const [maintenanceEnded, setMaintenanceEnded] = useState(false);
-  const [wasInMaintenance, setWasInMaintenance] = useState(true);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
-  // Auto-redirect when maintenance is turned off (realtime)
+  // Track when initial settings have loaded
   useEffect(() => {
-    if (wasInMaintenance && !settings.maintenance_mode) {
+    if (!settingsLoading && !initialLoaded) {
+      setInitialLoaded(true);
+    }
+  }, [settingsLoading, initialLoaded]);
+
+  // Auto-redirect when maintenance is turned off (only after initial load)
+  useEffect(() => {
+    if (initialLoaded && !settings.maintenance_mode) {
       setMaintenanceEnded(true);
-      // Show celebration briefly then redirect
       setTimeout(() => {
         navigate('/', { replace: true });
       }, 3000);
     }
-    if (settings.maintenance_mode) {
-      setWasInMaintenance(true);
-    }
-  }, [settings.maintenance_mode, navigate, wasInMaintenance]);
+  }, [settings.maintenance_mode, navigate, initialLoaded]);
 
   // Auto-refresh countdown every 30s
   useEffect(() => {
