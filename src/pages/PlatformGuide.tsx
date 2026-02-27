@@ -10,6 +10,10 @@ import {
   ClipboardList, Shield, Users, BookOpen, Bell, Home, Search, Moon,
   Eye, Download, History, UserCheck, AlertTriangle, HelpCircle,
 } from 'lucide-react';
+import {
+  SidebarMockup, HeaderMockup, DashboardMockup, ProfileMockup,
+  LeaveRequestMockup, LeaveCalendarMockup, FormsMockup, ApprovalMockup,
+} from '@/components/guide/PageMockups';
 
 const GuideSection = ({ icon: Icon, title, children, badge }: { icon: any; title: string; children: React.ReactNode; badge?: string }) => (
   <AccordionItem value={title} className="border rounded-lg px-4 mb-3">
@@ -112,6 +116,8 @@ const PlatformGuide = () => {
                 <InfoBox title="💡 Sfat: Colapsarea meniului">
                   <p>Apăsați săgeata din colțul din dreapta-sus al sidebar-ului pentru a-l restrânge (va afișa doar iconițele). Apăsați din nou pentru a-l extinde.</p>
                 </InfoBox>
+
+                <SidebarMockup />
               </GuideSection>
 
               {/* ─── HEADER ─── */}
@@ -135,9 +141,9 @@ const PlatformGuide = () => {
                     <div><strong>Avatar</strong> – în dreapta sus, apăsați pe avatar pentru a accesa rapid profilul.</div>
                   </div>
                 </div>
-              </GuideSection>
 
-              {/* ─── DASHBOARD ─── */}
+                <HeaderMockup />
+              </GuideSection>
               <GuideSection icon={Home} title="Dashboard – Pagina principală">
                 <p className="mb-2">Dashboard-ul afișează informații utile la prima vedere:</p>
                 <div className="space-y-2">
@@ -158,9 +164,9 @@ const PlatformGuide = () => {
                 <InfoBox title="💡 Sfat: Mesajul de pe Dashboard">
                   <p>Dacă administratorul a setat un mesaj special (anunț important), acesta apare într-o bandă albastră în partea de sus a paginii.</p>
                 </InfoBox>
-              </GuideSection>
 
-              {/* ─── PROFIL DETALIAT ─── */}
+                <DashboardMockup />
+              </GuideSection>
               <GuideSection icon={UserCircle} title="Profilul Meu – Toate detaliile pas cu pas">
                 <p className="mb-3 font-medium text-foreground">Pagina de profil conține mai multe secțiuni:</p>
                 
@@ -230,9 +236,9 @@ const PlatformGuide = () => {
                   <p>• Completați câmpul care trebuie corectat, valoarea corectă și un motiv.</p>
                   <p>• Cererea ajunge la HR care o va analiza și aplica.</p>
                 </div>
-              </GuideSection>
 
-              {/* ─── CERERE CONCEDIU DETALIAT ─── */}
+                <ProfileMockup />
+              </GuideSection>
               <GuideSection icon={FileText} title="Cerere de Concediu – Ghid detaliat">
                 <p className="mb-3 font-medium text-foreground">Pagina are mai multe tab-uri (file) în partea de sus:</p>
 
@@ -267,6 +273,8 @@ const PlatformGuide = () => {
                 <InfoBox title="💡 Sfat: Descărcare cerere aprobată">
                   <p>După aprobarea completă, butonul „Descarcă DOCX" generează un document oficial cu datele cererii, semnătura dvs., a șefului și a directorului.</p>
                 </InfoBox>
+
+                <LeaveRequestMockup />
               </GuideSection>
 
               {/* ─── CALENDAR CONCEDII DETALIAT ─── */}
@@ -322,9 +330,9 @@ const PlatformGuide = () => {
                   <p>• Butonul <strong>„Azi"</strong> vă duce înapoi la luna curentă.</p>
                   <p>• În partea de sus, un card albastru arată <strong>cine este în concediu azi</strong>.</p>
                 </div>
-              </GuideSection>
 
-              {/* ─── FORMULARE DETALIAT ─── */}
+                <LeaveCalendarMockup />
+              </GuideSection>
               <GuideSection icon={FolderDown} title="Formulare și Modele – Ce conține fiecare categorie">
                 <p className="mb-2">Formularele sunt organizate pe categorii:</p>
                 <div className="space-y-3">
@@ -355,6 +363,8 @@ const PlatformGuide = () => {
                 <InfoBox title="💡 Sfat">
                   <p>Apăsați pe orice formular din listă pentru a-l descărca automat. Formatele disponibile: .doc, .docx, .xlsx, .pdf.</p>
                 </InfoBox>
+
+                <FormsMockup />
               </GuideSection>
 
               {/* ─── SETĂRI DETALIAT ─── */}
@@ -436,6 +446,8 @@ const PlatformGuide = () => {
                   <InfoBox title="⚠️ Important">
                     <p>Semnătura electronică este <strong>obligatorie</strong> pentru aprobare. Desenați semnătura cu mouse-ul sau pe ecranul tactil. Butonul „Șterge" permite reluarea semnăturii.</p>
                   </InfoBox>
+
+                  <ApprovalMockup />
                 </GuideSection>
 
                 <GuideSection icon={History} title={'Tab „Centralizator" – Istoricul aprobărilor'}>
