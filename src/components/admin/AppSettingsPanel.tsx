@@ -8,12 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, Save } from 'lucide-react';
+import { Settings, Loader2, Save, Clock, X } from 'lucide-react';
 
 interface SettingsState {
   leave_module_beta: boolean;
   maintenance_mode: boolean;
   homepage_message: string;
+  maintenance_eta: string;
 }
 
 const AppSettingsPanel = () => {
@@ -23,6 +24,7 @@ const AppSettingsPanel = () => {
     leave_module_beta: true,
     maintenance_mode: false,
     homepage_message: '',
+    maintenance_eta: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -37,6 +39,7 @@ const AppSettingsPanel = () => {
           leave_module_beta: map.leave_module_beta === true,
           maintenance_mode: map.maintenance_mode === true,
           homepage_message: typeof map.homepage_message === 'string' ? map.homepage_message : '',
+          maintenance_eta: typeof map.maintenance_eta === 'string' ? map.maintenance_eta : '',
         });
       }
       setLoading(false);
@@ -68,6 +71,16 @@ const AppSettingsPanel = () => {
     await updateSetting('homepage_message', settings.homepage_message);
   };
 
+  const saveEta = async () => {
+    const val = settings.maintenance_eta ? settings.maintenance_eta : null;
+    await updateSetting('maintenance_eta', val);
+  };
+
+  const clearEta = async () => {
+    setSettings(prev => ({ ...prev, maintenance_eta: '' }));
+    await updateSetting('maintenance_eta', null);
+  };
+
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
 
   return (
@@ -97,6 +110,37 @@ const AppSettingsPanel = () => {
           </div>
           <Switch id="maintenance" checked={settings.maintenance_mode} onCheckedChange={(c) => toggleSetting('maintenance_mode', c)} disabled={saving === 'maintenance_mode'} />
         </div>
+
+        {/* Maintenance ETA */}
+        {settings.maintenance_mode && (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="maintenance-eta" className="text-base font-medium flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                Timp estimat de revenire
+              </Label>
+              <p className="text-sm text-muted-foreground">Setează data și ora estimativă de finalizare a mentenanței. Se va afișa un countdown pe pagina de mentenanță.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                id="maintenance-eta"
+                type="datetime-local"
+                value={settings.maintenance_eta}
+                onChange={(e) => setSettings(prev => ({ ...prev, maintenance_eta: e.target.value }))}
+                className="max-w-xs"
+              />
+              <Button size="sm" onClick={saveEta} disabled={saving === 'maintenance_eta'}>
+                {saving === 'maintenance_eta' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                Salvează
+              </Button>
+              {settings.maintenance_eta && (
+                <Button size="sm" variant="ghost" onClick={clearEta} disabled={saving === 'maintenance_eta'}>
+                  <X className="w-4 h-4 mr-1" /> Șterge
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Custom homepage message */}
         <div className="rounded-lg border p-4 space-y-3">
