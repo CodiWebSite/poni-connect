@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Wrench, Mail, Phone, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Wrench, Mail, Phone, RefreshCw, CheckCircle2, Bell, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { useAppSettings } from '@/hooks/useAppSettings';
 
 function useCountdown(targetDate: string | null) {
@@ -53,6 +54,9 @@ const Maintenance = () => {
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState(30);
   const [checking, setChecking] = useState(false);
+  const [subEmail, setSubEmail] = useState('');
+  const [subStatus, setSubStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [subMessage, setSubMessage] = useState('');
 
   const [maintenanceEnded, setMaintenanceEnded] = useState(false);
   const [wasInMaintenance, setWasInMaintenance] = useState(true);
@@ -93,6 +97,32 @@ const Maintenance = () => {
     // Settings update automatically via realtime, just show visual feedback
     setTimeout(() => setChecking(false), 1500);
   }, []);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subEmail || !subEmail.endsWith('@icmpp.ro')) {
+      setSubStatus('error');
+      setSubMessage('Folosiți adresa de email @icmpp.ro');
+      return;
+    }
+    setSubStatus('loading');
+    const { error } = await supabase
+      .from('maintenance_subscribers' as any)
+      .insert({ email: subEmail.toLowerCase().trim() } as any);
+    
+    if (error) {
+      if (error.code === '23505') {
+        setSubStatus('success');
+        setSubMessage('Sunteți deja abonat — vă vom anunța!');
+      } else {
+        setSubStatus('error');
+        setSubMessage('Eroare la abonare. Încercați din nou.');
+      }
+    } else {
+      setSubStatus('success');
+      setSubMessage('Vă vom notifica pe email când platforma revine! ✉️');
+    }
+  };
 
   if (maintenanceEnded) {
     return (
@@ -210,6 +240,44 @@ const Maintenance = () => {
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Email subscription */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/15 rounded-xl p-5 shadow-xl">
+          {subStatus === 'success' ? (
+            <div className="flex items-center gap-2 justify-center text-green-300">
+              <CheckCircle2 className="w-5 h-5" />
+              <p className="text-sm font-medium">{subMessage}</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubscribe} className="space-y-3">
+              <div className="flex items-center gap-2 justify-center text-white/90">
+                <Bell className="w-4 h-4" />
+                <p className="text-sm font-medium">Primiți notificare pe email când revenim</p>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="nume@icmpp.ro"
+                  value={subEmail}
+                  onChange={(e) => { setSubEmail(e.target.value); setSubStatus('idle'); }}
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={subStatus === 'loading'}
+                  className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {subStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  Abonează-mă
+                </button>
+              </div>
+              {subStatus === 'error' && (
+                <p className="text-xs text-red-300 text-center">{subMessage}</p>
+              )}
+            </form>
+          )}
         </div>
 
         {/* Auto-refresh indicator */}

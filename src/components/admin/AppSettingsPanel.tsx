@@ -63,8 +63,27 @@ const AppSettingsPanel = () => {
   };
 
   const toggleSetting = async (key: keyof SettingsState, checked: boolean) => {
+    const wasMaintenance = settings.maintenance_mode;
     setSettings(prev => ({ ...prev, [key]: checked }));
     await updateSetting(key, checked);
+
+    // When maintenance is turned OFF, notify email subscribers
+    if (key === 'maintenance_mode' && wasMaintenance && !checked) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const res = await supabase.functions.invoke('notify-maintenance-end', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const sent = res.data?.sent || 0;
+          if (sent > 0) {
+            toast({ title: 'Notificări trimise', description: `${sent} abonat(ți) au fost notificați pe email.` });
+          }
+        }
+      } catch (e) {
+        console.error('Failed to notify maintenance subscribers:', e);
+      }
+    }
   };
 
   const saveMessage = async () => {
