@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -36,6 +37,7 @@ interface LeaveRequestRow {
   rejection_reason: string | null;
   dept_head_signature?: string | null;
   employee_signature?: string | null;
+  avatar_url?: string | null;
   epd_id?: string;
 }
 
@@ -118,6 +120,60 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       });
     }
 
+    // Get avatar URLs via employee_records -> profiles
+    const recordIds = [...new Set(Object.values(epdMap).map((_, i) => epdIds[i]).filter(Boolean))];
+    let avatarMap: Record<string, string> = {};
+    if (epdIds.length > 0) {
+      const { data: recordsData } = await supabase
+        .from('employee_records')
+        .select('id, user_id')
+        .in('id', (data || []).map(r => r.epd_id).filter(Boolean).map(epdId => {
+          // We need employee_record_id from EPD, not epd_id directly
+          return epdId;
+        }));
+      
+      // Get employee_record_ids from EPD
+      const { data: epdWithRecords } = await supabase
+        .from('employee_personal_data')
+        .select('id, employee_record_id')
+        .in('id', epdIds);
+      
+      const epdToRecordId: Record<string, string> = {};
+      (epdWithRecords || []).forEach(e => {
+        if (e.employee_record_id) epdToRecordId[e.id] = e.employee_record_id;
+      });
+
+      const recordIdsForAvatar = [...new Set(Object.values(epdToRecordId))];
+      if (recordIdsForAvatar.length > 0) {
+        const { data: records } = await supabase
+          .from('employee_records')
+          .select('id, user_id')
+          .in('id', recordIdsForAvatar);
+        
+        const recordToUserId: Record<string, string> = {};
+        (records || []).forEach(r => { recordToUserId[r.id] = r.user_id; });
+
+        const userIdsForAvatar = [...new Set(Object.values(recordToUserId))];
+        if (userIdsForAvatar.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('user_id, avatar_url')
+            .in('user_id', userIdsForAvatar);
+          
+          const userToAvatar: Record<string, string> = {};
+          (profilesData || []).forEach(p => { if (p.avatar_url) userToAvatar[p.user_id] = p.avatar_url; });
+
+          // Map EPD id -> avatar_url
+          Object.entries(epdToRecordId).forEach(([epdId, recordId]) => {
+            const userId = recordToUserId[recordId];
+            if (userId && userToAvatar[userId]) {
+              avatarMap[epdId] = userToAvatar[userId];
+            }
+          });
+        }
+      }
+    }
+
     setRequests(
       (data || []).map(r => ({
         ...r,
@@ -126,6 +182,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         employee_position: epdMap[r.epd_id]?.position || '',
         dept_head_name: r.dept_head_id ? approverMap[r.dept_head_id] || '' : '',
         dept_head_signature: (r as any).dept_head_signature || null,
+        avatar_url: r.epd_id ? avatarMap[r.epd_id] || null : null,
       }))
     );
     setLoading(false);
@@ -281,7 +338,17 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                 {filtered.map(r => (
                   <TableRow key={r.id}>
                     <TableCell className="font-mono text-xs">{r.request_number}</TableCell>
-                    <TableCell className="font-medium">{r.employee_name}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-7 h-7 flex-shrink-0">
+                          {r.avatar_url && <AvatarImage src={r.avatar_url} alt={r.employee_name} />}
+                          <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                            {r.employee_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{r.employee_name}</span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-sm">{r.employee_department}</TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
                       {format(parseISO(r.start_date), 'dd.MM.yy')} – {format(parseISO(r.end_date), 'dd.MM.yy')}
