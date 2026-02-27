@@ -581,7 +581,6 @@ export const PersonalDataEditor = ({
                   <Input 
                     value={form.ci_series} 
                     onChange={(e) => updateForm('ci_series', e.target.value.toUpperCase())}
-                    maxLength={2}
                     className="uppercase"
                   />
                 </div>
@@ -590,7 +589,6 @@ export const PersonalDataEditor = ({
                   <Input 
                     value={form.ci_number} 
                     onChange={(e) => updateForm('ci_number', e.target.value)}
-                    maxLength={6}
                   />
                 </div>
               </div>
