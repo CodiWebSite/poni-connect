@@ -35,18 +35,41 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   // Allow auth routes always
   if (location.pathname.startsWith('/auth')) return <>{children}</>;
 
-  // Wait for data
-  if (settingsLoading || (user && roleLoading)) return <>{children}</>;
+  // Wait for settings to load before making any maintenance decision
+  if (settingsLoading) return <>{children}</>;
 
-  // Redirect non-admins to maintenance page (allow super_admin, admin, hr, sef_srus)
-  const canBypassMaintenance = isSuperAdmin || role === 'admin' || role === 'hr' || role === 'sef_srus';
-  if (settings.maintenance_mode && !canBypassMaintenance && location.pathname !== '/maintenance') {
-    return <Navigate to="/maintenance" replace />;
+  // If maintenance is off, redirect away from maintenance page and proceed normally
+  if (!settings.maintenance_mode) {
+    if (location.pathname === '/maintenance') {
+      return <Navigate to="/" replace />;
+    }
+    return <>{children}</>;
   }
 
-  // If maintenance is off, redirect away from maintenance page
-  if (!settings.maintenance_mode && location.pathname === '/maintenance') {
-    return <Navigate to="/" replace />;
+  // Maintenance IS on from here
+  // If user is logged in but role is still loading, show a loading spinner
+  // instead of incorrectly redirecting admins to maintenance
+  if (user && roleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Se verifică accesul...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Role is loaded (or user is not logged in) — check bypass
+  const canBypassMaintenance = isSuperAdmin || role === 'admin' || role === 'hr' || role === 'sef_srus';
+  
+  if (canBypassMaintenance) {
+    return <>{children}</>;
+  }
+
+  // Non-privileged user during maintenance → force maintenance page
+  if (location.pathname !== '/maintenance') {
+    return <Navigate to="/maintenance" replace />;
   }
 
   return <>{children}</>;
