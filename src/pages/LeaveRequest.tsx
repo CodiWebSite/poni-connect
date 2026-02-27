@@ -14,6 +14,7 @@ import { LeaveRequestsHR } from '@/components/leave/LeaveRequestsHR';
 import { LeaveRequestsList } from '@/components/leave/LeaveRequestsList';
 import { LeaveApprovalDelegate } from '@/components/leave/LeaveApprovalDelegate';
 import { FileText, CheckSquare, ClipboardList, Send, History, FlaskConical, UserCheck } from 'lucide-react';
+import ContextualHelp from '@/components/shared/ContextualHelp';
 
 const LeaveRequest = () => {
   const { user, loading: authLoading } = useAuth();
@@ -71,7 +72,7 @@ const LeaveRequest = () => {
   const defaultTab = canApprove ? 'approve' : 'new';
 
   return (
-    <MainLayout title="Cereri Concediu de Odihnă" description="Depune și gestionează cererile de concediu">
+    <MainLayout title="Cereri Concediu de Odihnă" description={<span className="inline-flex items-center gap-1">Depune și gestionează cererile de concediu <ContextualHelp title="Cerere de Concediu" content="Completați formularul, semnați electronic și trimiteți cererea." steps={['Completați perioada și înlocuitorul', 'Semnați cererea electronic', 'Așteptați aprobarea: Șef → Director']} /></span>}>
       {settings.leave_module_beta && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-300/60 bg-amber-50/70 dark:border-amber-600/40 dark:bg-amber-950/30 px-4 py-2.5">
           <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />

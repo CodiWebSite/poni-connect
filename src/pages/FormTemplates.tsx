@@ -2,6 +2,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, FileText, FileSpreadsheet, File } from 'lucide-react';
+import ContextualHelp from '@/components/shared/ContextualHelp';
 
 interface Template {
   name: string;
@@ -41,7 +42,7 @@ const categories = [...new Set(templates.map(t => t.category))];
 
 export default function FormTemplates() {
   return (
-    <MainLayout title="Formulare și Modele" description="Descărcați modelele de formulare necesare activității instituționale.">
+    <MainLayout title="Formulare și Modele" description={<span className="inline-flex items-center gap-1">Descărcați modelele de formulare necesare activității instituționale <ContextualHelp title="Formulare" content="Apăsați pe orice formular pentru a-l descărca. Completați-l și depuneți-l conform procedurii." /></span>}>
       <div className="space-y-6">
 
         {categories.map(category => (

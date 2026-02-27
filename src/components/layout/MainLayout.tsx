@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import MobileNav from './MobileNav';
 import PageTransition from './PageTransition';
+import OnboardingTour from '@/components/onboarding/OnboardingTour';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { cn } from '@/lib/utils';
@@ -11,7 +12,7 @@ import { AlertTriangle } from 'lucide-react';
 interface MainLayoutProps {
   children: ReactNode;
   title: string;
-  description?: string;
+  description?: ReactNode;
 }
 
 const MainLayout = ({ children, title, description }: MainLayoutProps) => {
@@ -20,6 +21,7 @@ const MainLayout = ({ children, title, description }: MainLayoutProps) => {
 
   return (
     <div className="min-h-screen bg-background">
+      <OnboardingTour />
       {/* Desktop Sidebar - hidden on mobile */}
       <div className="hidden md:block">
         <Sidebar />

@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -23,7 +24,7 @@ const routeLabels: Record<string, string> = {
 
 interface HeaderProps {
   title: string;
-  description?: string;
+  description?: ReactNode;
 }
 
 const Header = ({ title, description }: HeaderProps) => {

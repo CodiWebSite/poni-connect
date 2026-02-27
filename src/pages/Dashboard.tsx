@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { Users, UserCircle, Calendar, FolderDown, Info } from 'lucide-react';
+import ContextualHelp from '@/components/shared/ContextualHelp';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -39,7 +40,7 @@ const Dashboard = () => {
 
   if (role === 'user') {
     return (
-      <MainLayout title="Dashboard" description="Bine ați venit în intranetul ICMPP">
+      <MainLayout title="Dashboard" description={<span className="inline-flex items-center gap-1">Bine ați venit în intranetul ICMPP <ContextualHelp title="Dashboard" content="Aceasta este pagina principală a platformei. De aici accesați rapid profilul, calendarul de concedii și formulare." /></span>}>
         {settings.homepage_message && (
           <div className="mb-4 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
             <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -52,7 +53,7 @@ const Dashboard = () => {
   }
 
   return (
-    <MainLayout title="Dashboard" description="Bine ați venit în intranetul ICMPP">
+    <MainLayout title="Dashboard" description={<span className="inline-flex items-center gap-1">Bine ați venit în intranetul ICMPP <ContextualHelp title="Dashboard" content="Aceasta este pagina principală. Vedeți statisticile generale, alertele HR și calendarul personal." /></span>}>
       {/* Custom homepage message */}
       {settings.homepage_message && (
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">

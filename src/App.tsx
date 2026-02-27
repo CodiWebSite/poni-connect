@@ -22,6 +22,7 @@ import FormTemplates from "./pages/FormTemplates";
 import NotFound from "./pages/NotFound";
 import Library from "./pages/Library";
 import Maintenance from "./pages/Maintenance";
+import PlatformGuide from "./pages/PlatformGuide";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,7 @@ const App = () => (
                 <Route path="/formulare" element={<FormTemplates />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/library" element={<Library />} />
+                <Route path="/ghid" element={<PlatformGuide />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
