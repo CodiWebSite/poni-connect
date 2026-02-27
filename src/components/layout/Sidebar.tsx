@@ -21,6 +21,7 @@ import {
   FileText,
   FolderDown,
   BookOpen,
+  HelpCircle,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -78,6 +79,7 @@ const Sidebar = () => {
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request', badge: (isSef || isSefSRUS || isSuperAdmin) ? pendingHR : undefined },
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
+    { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 
   const managementItems = [

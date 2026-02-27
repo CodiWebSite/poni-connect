@@ -9,8 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
-import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check } from 'lucide-react';
+import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import OnboardingTour from '@/components/onboarding/OnboardingTour';
 
 interface Profile {
   full_name: string;
@@ -63,6 +64,7 @@ const Settings = () => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [profile, setProfile] = useState<Profile>({
     full_name: '',
     department: '',
@@ -245,6 +247,24 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+        {/* Restart Tour Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Ajutor</CardTitle>
+            <CardDescription>Tour-ul de prezentare al platformei</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="gap-2" onClick={() => setShowTour(true)}>
+              <RotateCcw className="w-4 h-4" />
+              Reia tour-ul de prezentare
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Repornește ghidul interactiv pas cu pas care prezintă funcționalitățile platformei.
+            </p>
+          </CardContent>
+        </Card>
+
+        {showTour && <OnboardingTour forceShow onClose={() => setShowTour(false)} />}
       </div>
     </MainLayout>
   );
