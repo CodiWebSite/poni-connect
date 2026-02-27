@@ -188,6 +188,7 @@ const MyProfile = () => {
 
     // Fetch approver info — check by user_id first, then by email
     let foundApproverId: string | null = null;
+    let foundApproverEmail: string | null = null;
     let foundApproverSource: 'individual' | 'department' | null = null;
 
     const { data: empApprover } = await supabase
@@ -196,8 +197,9 @@ const MyProfile = () => {
       .eq('employee_user_id', user.id)
       .maybeSingle();
 
-    if (empApprover?.approver_user_id) {
+    if (empApprover?.approver_user_id || empApprover?.approver_email) {
       foundApproverId = empApprover.approver_user_id;
+      foundApproverEmail = empApprover.approver_email;
       foundApproverSource = 'individual';
     } else if (!empApprover && user.email) {
       // Fallback: check by employee email (for pre-assigned mappings not yet resolved)
@@ -206,23 +208,25 @@ const MyProfile = () => {
         .select('approver_user_id, approver_email')
         .eq('employee_email', user.email.toLowerCase())
         .maybeSingle();
-      if (empApproverByEmail?.approver_user_id) {
+      if (empApproverByEmail?.approver_user_id || empApproverByEmail?.approver_email) {
         foundApproverId = empApproverByEmail.approver_user_id;
+        foundApproverEmail = empApproverByEmail.approver_email;
         foundApproverSource = 'individual';
       }
     }
 
     // If no individual approver, check department-level
-    if (!foundApproverId) {
+    if (!foundApproverId && !foundApproverEmail) {
       const dept = profileRes.data?.department;
       if (dept) {
         const { data: deptApprover } = await supabase
           .from('leave_department_approvers')
-          .select('approver_user_id')
+          .select('approver_user_id, approver_email')
           .eq('department', dept)
           .maybeSingle();
-        if (deptApprover?.approver_user_id) {
+        if (deptApprover?.approver_user_id || deptApprover?.approver_email) {
           foundApproverId = deptApprover.approver_user_id;
+          foundApproverEmail = deptApprover.approver_email;
           foundApproverSource = 'department';
         }
       }
@@ -234,7 +238,7 @@ const MyProfile = () => {
         .select('full_name')
         .eq('user_id', foundApproverId)
         .maybeSingle();
-      setApproverName(ap?.full_name || null);
+      setApproverName(ap?.full_name || foundApproverEmail || 'Necunoscut');
       setApproverSource(foundApproverSource);
 
       // Check if approver has an active delegate right now
@@ -261,6 +265,12 @@ const MyProfile = () => {
         setDelegateName(null);
         setDelegatePeriod(null);
       }
+    } else if (foundApproverEmail) {
+      // Approver has email but no account yet
+      setApproverName(foundApproverEmail);
+      setApproverSource(foundApproverSource);
+      setDelegateName(null);
+      setDelegatePeriod(null);
     } else {
       setApproverName(null);
       setApproverSource(null);
