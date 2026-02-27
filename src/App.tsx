@@ -37,9 +37,9 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   // Wait for data
   if (settingsLoading || (user && roleLoading)) return <>{children}</>;
 
-  // Redirect non-admins to maintenance page (allow super_admin and admin)
-  const isAdmin = isSuperAdmin || role === 'admin';
-  if (settings.maintenance_mode && !isAdmin && location.pathname !== '/maintenance') {
+  // Redirect non-admins to maintenance page (allow super_admin, admin, hr, sef_srus)
+  const canBypassMaintenance = isSuperAdmin || role === 'admin' || role === 'hr' || role === 'sef_srus';
+  if (settings.maintenance_mode && !canBypassMaintenance && location.pathname !== '/maintenance') {
     return <Navigate to="/maintenance" replace />;
   }
 
