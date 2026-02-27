@@ -1,122 +1,86 @@
 
 
-# Plan: Sistem Complet de Instruire și Ghidare
+## Plan: Mod Demo pentru Platforma ICMPP
 
-Combinăm toate cele 4 opțiuni într-un sistem integrat de ajutor pentru utilizatori.
+### Concept
 
----
+Un **Mod Demo** activabil din sidebar care permite utilizatorilor sa exerseze toate fluxurile platformei (cereri concediu, etc.) fara ca actiunile sa afecteze datele reale. Datele demo se salveaza separat si se sterg periodic.
 
-## 1. Tour Interactiv la Prima Autentificare (Onboarding)
-
-**Ce se creează:**
-- Tabel `user_onboarding` (user_id, tour_completed, completed_at) pentru a ține evidența cine a parcurs tour-ul
-- Componentă `OnboardingTour` care apare ca un overlay modal pas-cu-pas
-- 6-8 pași care evidențiază: sidebar-ul, profilul, cerere concediu, calendar concedii, formulare, setări
-- Fiecare pas are titlu, descriere, și o săgeată/highlight spre elementul vizat
-- Butoane "Următorul", "Înapoi", "Sari peste tour"
-- La final, marchează tour-ul ca completat în baza de date
-- Buton în Setări pentru a relua tour-ul oricând
-
-**Pașii tour-ului:**
-1. Bun venit pe platforma ICMPP
-2. Sidebar-ul - navigare principală
-3. Profilul Meu - datele tale personale
-4. Cerere Concediu - cum trimiți o cerere
-5. Calendar Concedii - vezi concediile echipei
-6. Formulare - descarcă documente utile
-7. Setări - personalizează experiența
-8. Ghid Platformă - ajutor permanent disponibil
-
----
-
-## 2. Pagină "Ghid Platformă" (/ghid)
-
-**Ce se creează:**
-- Pagina `src/pages/PlatformGuide.tsx` accesibilă din sidebar (iconiță BookOpen/HelpCircle)
-- Secțiuni cu acordeoane organizate pe roluri:
-
-**Pentru toți angajații:**
-- Cum îmi completez profilul
-- Cum fac cerere de concediu (pas cu pas)
-- Cum descarc formulare
-- Cum văd calendarul de concedii
-- Cum schimb tema (dark/light)
-
-**Pentru șefi de laborator:**
-- Cum aprob/resping concedii
-- Cum văd cererile echipei
-
-**Pentru HR:**
-- Gestiune angajați
-- Import date
-- Export rapoarte
-
-**Pentru administratori:**
-- Setări platformă
-- Gestionare conturi și roluri
-
-Fiecare secțiune cu pași numerotați și explicații clare.
-
----
-
-## 3. Help Contextual (butoane ?)
-
-**Ce se creează:**
-- Componentă reutilizabilă `ContextualHelp` - un buton mic `?` care deschide un popover/dialog cu explicații
-- Se plasează pe paginile principale:
-  - Dashboard: explicație generală
-  - Profilul Meu: cum se editează datele
-  - Cerere Concediu: fluxul de aprobare
-  - Calendar Concedii: cum se interpretează culorile
-  - Formulare: cum se descarcă și completează
-  - HR Management: instrucțiuni de gestiune
-- Textele sunt hardcodate în română, specifice fiecărei pagini
-
----
-
-## 4. Materiale Descărcabile
-
-**Ce se creează:**
-- Pe pagina Ghid Platformă, secțiune cu butoane de descărcare
-- Generare PDF cu `docx` sau link către un PDF static din `/public/templates/`
-- Se creează un fișier `/public/templates/Ghid_Platforma_ICMPP.pdf` placeholder
-- Alternativ, secțiunea de pe pagina ghid poate fi printată direct din browser (buton "Printează ghidul")
-
----
-
-## Structura fișierelor noi
+### Arhitectura
 
 ```text
-src/
-├── components/
-│   ├── onboarding/
-│   │   └── OnboardingTour.tsx          # Tour interactiv pas-cu-pas
-│   └── shared/
-│       └── ContextualHelp.tsx          # Buton ? reutilizabil
-├── pages/
-│   └── PlatformGuide.tsx               # Pagina Ghid Platformă
+┌─────────────────────────────────────────┐
+│           DemoModeContext               │
+│  ┌─────────┐  ┌──────────────────────┐  │
+│  │ isDemo  │  │ toggleDemo()         │  │
+│  │ boolean │  │ activare/dezactivare │  │
+│  └─────────┘  └──────────────────────┘  │
+└─────────────────────────────────────────┘
+         │
+         ▼
+┌──────────────────┐    ┌──────────────────┐
+│  Sidebar toggle  │    │  Banner global   │
+│  (buton Demo)    │    │  "MOD DEMO ACTIV"│
+└──────────────────┘    └──────────────────┘
+         │
+         ▼
+┌──────────────────────────────────────────┐
+│  Formulare (LeaveRequestForm, etc.)      │
+│  if (isDemo) → insert cu is_demo=true   │
+│  Liste → filtrare dupa is_demo          │
+└──────────────────────────────────────────┘
 ```
 
-## Modificări la fișiere existente
+### Implementare pas cu pas
 
-- `App.tsx` - adaugă ruta `/ghid`
-- `Sidebar.tsx` - adaugă link "Ghid Platformă" în meniul principal
-- `MainLayout.tsx` - integrează `OnboardingTour`
-- `src/pages/Dashboard.tsx` - adaugă `ContextualHelp`
-- `src/pages/MyProfile.tsx` - adaugă `ContextualHelp`
-- `src/pages/LeaveRequest.tsx` - adaugă `ContextualHelp`
-- `src/pages/LeaveCalendar.tsx` - adaugă `ContextualHelp`
-- `src/pages/FormTemplates.tsx` - adaugă `ContextualHelp`
-- `src/pages/Settings.tsx` - buton "Reia tour-ul"
-- Migrare DB: tabel `user_onboarding`
+**1. Migratie baza de date**
+- Adaug coloana `is_demo BOOLEAN DEFAULT false` pe tabela `leave_requests` (si pe alte tabele viitoare daca se extinde)
+- Aceasta coloana separa datele reale de cele demo
 
----
+**2. Context React: `DemoModeContext`**
+- Noul fisier `src/contexts/DemoModeContext.tsx`
+- State `isDemo` persistat in `localStorage` (se pastreaza la refresh)
+- Functie `toggleDemo()` si valoarea `isDemo` expuse prin hook `useDemoMode()`
 
-## Detalii tehnice
+**3. Toggle in Sidebar**
+- Buton nou in footer-ul sidebar-ului (langa "Deconectare")
+- Icon `FlaskConical` + label "Mod Demo" cu un Switch
+- Cand sidebar e collapsed, tooltip cu starea
 
-- Tour-ul folosește CSS highlights (box-shadow overlay) fără dependențe externe
-- Starea tour-ului se persistă în `user_onboarding` cu RLS policy (utilizatorul vede doar propria înregistrare)
-- `ContextualHelp` e un `Popover` cu text și link opțional spre pagina de ghid
-- Pagina ghid filtrează secțiunile pe baza rolului utilizatorului (useUserRole)
-- Buton "Printează" pe pagina ghid folosește `window.print()` cu CSS `@media print`
+**4. Banner global in Header**
+- Cand `isDemo` e activ, se afiseaza un banner portocaliu/galben fix sub header: "MOD DEMO ACTIV — Actiunile nu afecteaza datele reale"
+- Buton rapid "Dezactiveaza" in banner
+
+**5. Modificari LeaveRequestForm**
+- La submit, daca `isDemo === true`, se seteaza `is_demo: true` in obiectul inserat in `leave_requests`
+- Toast de succes cu mentiunea "[DEMO]"
+- Se genereaza automat o aprobare fictiva dupa 2 secunde (simulare flux)
+
+**6. Modificari liste si query-uri**
+- `LeaveRequestsList` → filtreaza `.eq('is_demo', isDemo)` — in mod normal vede doar cererile reale, in mod demo vede doar pe cele demo
+- `LeaveApprovalPanel` → la fel, afiseaza doar cereri demo cand e in demo mode
+- `LeaveCalendar` → exclude `is_demo = true` din vizualizare
+
+**7. Curatare automata date demo**
+- Se adauga o functie backend (Edge Function sau cron) care sterge periodic (zilnic) randurile cu `is_demo = true` mai vechi de 24h
+- Alternativ, un buton "Sterge datele demo" in interfata
+
+**8. Indicatori vizuali suplimentari**
+- In listele de cereri, randurile demo au un badge "[DEMO]" si fundal diferit
+- Pe formularele din mod demo, un mic banner informativ: "Aceasta cerere este de exercitiu"
+
+### Fisiere afectate
+
+| Fisier | Modificare |
+|--------|-----------|
+| `src/contexts/DemoModeContext.tsx` | **NOU** — context + provider + hook |
+| `src/App.tsx` | Wrap cu `DemoModeProvider` |
+| `src/components/layout/Sidebar.tsx` | Toggle Mod Demo in footer |
+| `src/components/layout/Header.tsx` | Banner "MOD DEMO ACTIV" |
+| `src/components/leave/LeaveRequestForm.tsx` | Insert cu `is_demo` flag |
+| `src/components/leave/LeaveRequestsList.tsx` | Filtrare dupa `is_demo` |
+| `src/components/leave/LeaveApprovalPanel.tsx` | Filtrare dupa `is_demo` |
+| `src/components/leave/LeaveApprovalHistory.tsx` | Filtrare dupa `is_demo` |
+| `src/components/leave/LeaveRequestsHR.tsx` | Filtrare dupa `is_demo` |
+| Migratie SQL | Coloana `is_demo` pe `leave_requests` |
 
