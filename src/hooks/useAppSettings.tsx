@@ -5,12 +5,14 @@ interface AppSettings {
   leave_module_beta: boolean;
   maintenance_mode: boolean;
   homepage_message: string;
+  maintenance_eta: string | null;
 }
 
 const defaults: AppSettings = {
   leave_module_beta: true,
   maintenance_mode: false,
   homepage_message: '',
+  maintenance_eta: null,
 };
 
 function parseSettings(data: { key: string; value: any }[]): AppSettings {
@@ -20,6 +22,7 @@ function parseSettings(data: { key: string; value: any }[]): AppSettings {
     leave_module_beta: map.leave_module_beta === true,
     maintenance_mode: map.maintenance_mode === true,
     homepage_message: typeof map.homepage_message === 'string' ? map.homepage_message : '',
+    maintenance_eta: typeof map.maintenance_eta === 'string' ? map.maintenance_eta : null,
   };
 }
 
