@@ -38,6 +38,7 @@ interface Employee {
   email?: string;
   department: string | null;
   position: string | null;
+  grade?: string | null;
   hasAccount?: boolean;
   cnp?: string;
   employment_date?: string;
@@ -216,6 +217,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         'Nume Complet': e.full_name,
         'Departament': e.department || '-',
         'Funcție': e.position || '-',
+        'Grad/Treaptă': e.grade || '-',
         'Data Angajării': e.record?.hire_date ? format(new Date(e.record.hire_date), 'dd.MM.yyyy') : '-',
         'Tip Contract': e.record?.contract_type || '-',
         [`Zile CO ${currentYear}`]: e.record?.total_leave_days ?? 21,
@@ -240,6 +242,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         'Email': e.email || '-',
         'Departament': e.department || '-',
         'Funcție': e.position || '-',
+        'Grad/Treaptă': e.grade || '-',
         'Data Angajării': e.record?.hire_date ? format(new Date(e.record.hire_date), 'dd.MM.yyyy') : '-',
         'Tip Contract': e.record?.contract_type || '-',
         'Cont Activ': e.hasAccount ? 'Da' : 'Nu'
@@ -319,6 +322,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
           'Email': e.email || '-',
           'Departament': e.department || '-',
           'Funcție': e.position || '-',
+          'Grad/Treaptă': e.grade || '-',
           'Data Angajării': e.employment_date ? format(new Date(e.employment_date), 'dd.MM.yyyy') : (e.record?.hire_date ? format(new Date(e.record.hire_date), 'dd.MM.yyyy') : '-'),
           'Tip Contract': e.contract_type || e.record?.contract_type || '-',
           [`Zile CO ${year}`]: totalCO,

@@ -67,6 +67,7 @@ interface PersonalData {
   employment_date: string;
   department: string | null;
   position: string | null;
+  grade: string | null;
 }
 
 interface LeaveHistoryItem {
@@ -347,7 +348,9 @@ const MyProfile = () => {
                   {profile?.full_name || 'N/A'}
                 </h1>
                 {position && (
-                  <p className="text-sm sm:text-base text-muted-foreground font-medium">{position}</p>
+                  <p className="text-sm sm:text-base text-muted-foreground font-medium">
+                    {position}{personalData?.grade ? ` ${personalData.grade}` : ''}
+                  </p>
                 )}
                 <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start pt-1">
                   <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">

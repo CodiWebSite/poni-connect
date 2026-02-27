@@ -437,6 +437,7 @@ export type Database = {
           employee_record_id: string | null
           employment_date: string
           first_name: string
+          grade: string | null
           id: string
           is_archived: boolean
           last_name: string
@@ -473,6 +474,7 @@ export type Database = {
           employee_record_id?: string | null
           employment_date: string
           first_name: string
+          grade?: string | null
           id?: string
           is_archived?: boolean
           last_name: string
@@ -509,6 +511,7 @@ export type Database = {
           employee_record_id?: string | null
           employment_date?: string
           first_name?: string
+          grade?: string | null
           id?: string
           is_archived?: boolean
           last_name?: string

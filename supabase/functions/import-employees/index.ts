@@ -12,6 +12,7 @@ interface EmployeePayload {
   cnp: string;
   department?: string;
   position?: string;
+  grade?: string | null;
   contract_type?: string;
   total_leave_days?: number;
   used_leave_days?: number;
@@ -128,6 +129,7 @@ Deno.serve(async (req) => {
       cnp: record.cnp,
       department: record.department || null,
       position: record.position || null,
+      grade: record.grade || null,
       contract_type: record.contract_type || 'nedeterminat',
       total_leave_days: record.total_leave_days ?? 21,
       used_leave_days: record.used_leave_days ?? 0,
@@ -150,14 +152,32 @@ Deno.serve(async (req) => {
     
     console.log(`Deduplicated: ${records.length} -> ${employeeData.length} unique CNPs`);
     
+    // Filter out archived employees before upserting
+    const cnpList = employeeData.map(e => e.cnp);
+    const { data: archivedRecords } = await supabaseAdmin
+      .from('employee_personal_data')
+      .select('cnp')
+      .in('cnp', cnpList)
+      .eq('is_archived', true);
+    
+    const archivedCnps = new Set((archivedRecords || []).map((r: any) => r.cnp));
+    const activeEmployeeData = employeeData.filter(e => !archivedCnps.has(e.cnp));
+    const skippedArchived = employeeData.length - activeEmployeeData.length;
+    
+    if (skippedArchived > 0) {
+      console.log(`Skipped ${skippedArchived} archived employees`);
+    }
+    
+    console.log(`Processing ${activeEmployeeData.length} active employee records (${skippedArchived} archived skipped)`);
+    
     // Insert in batches of 50, with individual fallback for failed batches
     const batchSize = 50;
     let inserted = 0;
-    let skipped = 0;
+    let skipped = skippedArchived;
     const errors: string[] = [];
     
-    for (let i = 0; i < employeeData.length; i += batchSize) {
-      const batch = employeeData.slice(i, i + batchSize);
+    for (let i = 0; i < activeEmployeeData.length; i += batchSize) {
+      const batch = activeEmployeeData.slice(i, i + batchSize);
       
       // Try batch upsert by cnp first
       const { data, error } = await supabaseAdmin
@@ -205,6 +225,7 @@ Deno.serve(async (req) => {
                 last_name: record.last_name,
                 department: record.department,
                 position: record.position,
+                grade: record.grade,
                 contract_type: record.contract_type,
                 total_leave_days: record.total_leave_days,
                 used_leave_days: record.used_leave_days,
@@ -247,6 +268,7 @@ Deno.serve(async (req) => {
                 last_name: record.last_name,
                 department: record.department,
                 position: record.position,
+                grade: record.grade,
                 contract_type: record.contract_type,
                 total_leave_days: record.total_leave_days,
                 used_leave_days: record.used_leave_days,
@@ -287,7 +309,7 @@ Deno.serve(async (req) => {
     console.log("Syncing employee_records with imported data...");
     let syncedRecords = 0;
     
-    for (const record of employeeData) {
+    for (const record of activeEmployeeData) {
       // Find the employee_personal_data entry to get the employee_record_id
       const { data: epd } = await supabaseAdmin
         .from('employee_personal_data')
@@ -318,7 +340,7 @@ Deno.serve(async (req) => {
     console.log(`Synced ${syncedRecords} employee_records entries`);
     
     // Also sync profiles with department and position data
-    for (const record of employeeData) {
+    for (const record of activeEmployeeData) {
       // Find user by email in auth
       const { data: epd } = await supabaseAdmin
         .from('employee_personal_data')

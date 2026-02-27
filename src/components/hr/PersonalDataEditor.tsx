@@ -73,6 +73,7 @@ export const PersonalDataEditor = ({
     cnp: '',
     department: '',
     position: '',
+    grade: '',
     contract_type: 'nedeterminat',
     total_leave_days: 21,
     used_leave_days: 0,
@@ -122,6 +123,7 @@ export const PersonalDataEditor = ({
         cnp: data.cnp || '',
         department: data.department || '',
         position: data.position || '',
+        grade: (data as any).grade || '',
         contract_type: data.contract_type || 'nedeterminat',
         total_leave_days: data.total_leave_days ?? 21,
         used_leave_days: data.used_leave_days ?? 0,
@@ -302,6 +304,7 @@ export const PersonalDataEditor = ({
         cnp: form.cnp.trim(),
         department: form.department || null,
         position: form.position || null,
+        grade: form.grade || null,
         contract_type: form.contract_type || 'nedeterminat',
         total_leave_days: form.total_leave_days,
         used_leave_days: form.used_leave_days,
@@ -459,9 +462,17 @@ export const PersonalDataEditor = ({
                 <div className="space-y-2">
                   <Label>Funcție</Label>
                   <Input 
-                    placeholder="ex: CS III"
+                    placeholder="ex: CS, IDT"
                     value={form.position} 
                     onChange={(e) => updateForm('position', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Grad / Treaptă</Label>
+                  <Input 
+                    placeholder="ex: I, II, III"
+                    value={form.grade} 
+                    onChange={(e) => updateForm('grade', e.target.value)}
                   />
                 </div>
               </div>

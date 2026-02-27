@@ -90,6 +90,7 @@ interface EmployeeWithData {
   cnp: string;
   department: string | null;
   position: string | null;
+  grade: string | null;
   total_leave_days: number;
   used_leave_days: number;
   employment_date: string;
@@ -146,6 +147,7 @@ const HRManagement = () => {
   const [editForm, setEditForm] = useState({
     department: '',
     position: '',
+    grade: '',
     hire_date: '',
     contract_type: 'nedeterminat',
     total_leave_days: 21,
@@ -384,6 +386,7 @@ const HRManagement = () => {
         cnp: pd.cnp,
         department: pd.department,
         position: pd.position,
+        grade: (pd as any).grade || null,
         total_leave_days: record?.total_leave_days ?? pd.total_leave_days ?? 21,
         used_leave_days: record?.used_leave_days ?? pd.used_leave_days ?? 0,
         employment_date: pd.employment_date,
@@ -439,6 +442,7 @@ const HRManagement = () => {
       cnp: pd.cnp,
       department: pd.department,
       position: pd.position,
+      grade: (pd as any).grade || null,
       total_leave_days: pd.total_leave_days ?? 21,
       used_leave_days: pd.used_leave_days ?? 0,
       employment_date: pd.employment_date,
@@ -496,6 +500,7 @@ const HRManagement = () => {
     setEditForm({
       department: employee.department || '',
       position: employee.position || '',
+      grade: employee.grade || '',
       hire_date: employee.record?.hire_date || employee.employment_date || '',
       contract_type: employee.record?.contract_type || employee.contract_type || 'nedeterminat',
       total_leave_days: employee.total_leave_days,
@@ -514,6 +519,7 @@ const HRManagement = () => {
       .update({
         department: editForm.department || null,
         position: editForm.position || null,
+        grade: editForm.grade || null,
         employment_date: editForm.hire_date || editingEmployee.employment_date,
         contract_type: editForm.contract_type,
         total_leave_days: editForm.total_leave_days,
@@ -1961,9 +1967,17 @@ const HRManagement = () => {
               <div className="space-y-2">
                 <Label>Funcție</Label>
                 <Input
-                  placeholder="ex: Cercetător Științific"
+                  placeholder="ex: CS, IDT"
                   value={editForm.position}
                   onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Grad / Treaptă</Label>
+                <Input
+                  placeholder="ex: I, II, III"
+                  value={editForm.grade}
+                  onChange={(e) => setEditForm({ ...editForm, grade: e.target.value })}
                 />
               </div>
             </div>
