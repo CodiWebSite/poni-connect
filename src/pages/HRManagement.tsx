@@ -897,8 +897,9 @@ const HRManagement = () => {
           scannedDocumentUrl: fileUrl,
           notes: manualLeaveForm.notes,
           deductFrom: manualLeaveForm.deduct_from,
-          // Store epd_id for employees without accounts
-          ...(isEpdOnly ? { epd_id: epdId, employee_name: employee.full_name } : {}),
+          // Always store epd_id and employee_name for consistent history lookup
+          epd_id: epdId || employee.id,
+          employee_name: employee.full_name,
         }
       });
 
