@@ -30,6 +30,7 @@ interface LeaveEntry {
   endDate: string;
   numberOfDays: number;
   leaveType?: string;
+  avatarUrl?: string | null;
 }
 
 const LeaveCalendar = () => {
@@ -88,14 +89,26 @@ const LeaveCalendar = () => {
       .from('hr_requests').select('user_id, details, status')
       .eq('request_type', 'concediu').eq('status', 'approved');
 
-    const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department');
+    const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department, avatar_url');
     const { data: epdData } = await supabase
-      .from('employee_personal_data').select('id, first_name, last_name, department').eq('is_archived', false);
+      .from('employee_personal_data').select('id, first_name, last_name, department, employee_record_id').eq('is_archived', false);
+    const { data: records } = await supabase.from('employee_records').select('id, user_id');
 
-    const profileMap: Record<string, { name: string; department: string | null }> = {};
-    (profiles || []).forEach(p => { profileMap[p.user_id] = { name: p.full_name, department: p.department }; });
-    const epdMap: Record<string, { name: string; department: string | null }> = {};
-    (epdData || []).forEach(e => { epdMap[e.id] = { name: `${e.last_name} ${e.first_name}`, department: e.department }; });
+    const profileMap: Record<string, { name: string; department: string | null; avatarUrl: string | null }> = {};
+    (profiles || []).forEach(p => { profileMap[p.user_id] = { name: p.full_name, department: p.department, avatarUrl: p.avatar_url }; });
+    
+    // Build record->user mapping for EPD avatar lookup
+    const recordUserMap: Record<string, string> = {};
+    (records || []).forEach(r => { recordUserMap[r.id] = r.user_id; });
+
+    const epdMap: Record<string, { name: string; department: string | null; avatarUrl: string | null }> = {};
+    (epdData || []).forEach(e => {
+      const userId = e.employee_record_id ? recordUserMap[e.employee_record_id] : null;
+      const avatar = userId ? profileMap[userId]?.avatarUrl || null : null;
+      epdMap[e.id] = { name: `${e.last_name} ${e.first_name}`, department: e.department, avatarUrl: avatar };
+    });
+
+    
 
     const entries: LeaveEntry[] = [];
     (allLeaves || []).forEach((lr: any) => {
@@ -105,10 +118,10 @@ const LeaveCalendar = () => {
       const leaveEnd = parseISO(d.endDate);
       if (leaveEnd < monthStart || leaveStart > monthEnd) return;
 
-      let empInfo: { name: string; department: string | null } | undefined;
+      let empInfo: { name: string; department: string | null; avatarUrl?: string | null } | undefined;
       if (d.epd_id && epdMap[d.epd_id]) empInfo = epdMap[d.epd_id];
       else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
-      else if (d.employee_name) empInfo = { name: d.employee_name, department: null };
+      else if (d.employee_name) empInfo = { name: d.employee_name, department: null, avatarUrl: null };
 
       if (empInfo) {
         entries.push({
@@ -118,6 +131,7 @@ const LeaveCalendar = () => {
           endDate: d.endDate,
           numberOfDays: d.numberOfDays || 0,
           leaveType: d.leaveType || d.leave_type || 'co',
+          avatarUrl: empInfo.avatarUrl || null,
         });
       }
     });

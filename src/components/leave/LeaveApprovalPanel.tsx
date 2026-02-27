@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, Loader2, Eye } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { SignaturePad } from '@/components/shared/SignaturePad';
@@ -31,6 +32,7 @@ interface LeaveRequest {
   employee_name?: string;
   employee_department?: string;
   employee_position?: string;
+  employee_avatar_url?: string | null;
 }
 
 interface LeaveApprovalPanelProps {
@@ -96,19 +98,36 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     }
 
     const epdIds = [...new Set((data || []).map(r => r.epd_id).filter(Boolean))];
-    let epdMap: Record<string, { name: string; department: string; position: string }> = {};
+    let epdMap: Record<string, { name: string; department: string; position: string; avatarUrl: string | null }> = {};
 
     if (epdIds.length > 0) {
       const { data: epdData } = await supabase
         .from('employee_personal_data')
-        .select('id, first_name, last_name, department, position')
+        .select('id, first_name, last_name, department, position, employee_record_id')
         .in('id', epdIds);
+
+      // Get avatar URLs: record_id -> user_id -> profile.avatar_url
+      const recordIds = [...new Set((epdData || []).map(e => e.employee_record_id).filter(Boolean))] as string[];
+      const recordAvatarMap: Record<string, string> = {};
+      if (recordIds.length > 0) {
+        const { data: recordsData } = await supabase
+          .from('employee_records').select('id, user_id').in('id', recordIds);
+        const userIds = (recordsData || []).map(r => r.user_id);
+        if (userIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles').select('user_id, avatar_url').in('user_id', userIds);
+          const userAvatarMap: Record<string, string> = {};
+          (profilesData || []).forEach(p => { if (p.avatar_url) userAvatarMap[p.user_id] = p.avatar_url; });
+          (recordsData || []).forEach(r => { if (userAvatarMap[r.user_id]) recordAvatarMap[r.id] = userAvatarMap[r.user_id]; });
+        }
+      }
 
       (epdData || []).forEach(e => {
         epdMap[e.id] = {
           name: `${e.last_name} ${e.first_name}`,
           department: e.department || '',
           position: e.position || '',
+          avatarUrl: e.employee_record_id ? recordAvatarMap[e.employee_record_id] || null : null,
         };
       });
     }
@@ -119,6 +138,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       employee_name: epdMap[r.epd_id]?.name || 'N/A',
       employee_department: epdMap[r.epd_id]?.department || '',
       employee_position: epdMap[r.epd_id]?.position || '',
+      employee_avatar_url: epdMap[r.epd_id]?.avatarUrl || null,
     }));
 
     if (!isSuperAdmin) {
@@ -378,7 +398,14 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
           <Card key={request.id} className="border-l-4 border-l-warning">
             <CardContent className="pt-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1">
+                <div className="flex items-start gap-3">
+                  <Avatar className="w-10 h-10 flex-shrink-0 mt-0.5">
+                    {request.employee_avatar_url && <AvatarImage src={request.employee_avatar_url} alt={request.employee_name} />}
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      {(request.employee_name || '').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{request.employee_name}</span>
                     <Badge variant="outline" className="text-xs">{request.request_number}</Badge>
@@ -392,6 +419,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
                   <p className="text-sm text-muted-foreground">
                     Înlocuitor: {request.replacement_name}
                   </p>
+                  </div>
                 </div>
 
                 <div className="flex gap-2 flex-shrink-0">
