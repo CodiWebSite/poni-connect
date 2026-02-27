@@ -21,6 +21,7 @@ const LeaveRequest = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { settings } = useAppSettings();
   const [isDesignatedApprover, setIsDesignatedApprover] = useState(false);
+  const [isActiveDelegate, setIsActiveDelegate] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -33,6 +34,20 @@ const LeaveRequest = () => {
           (empResult.data || []).length > 0 || (deptResult.data || []).length > 0
         );
       });
+
+      // Check if user is an active delegate right now
+      const today = new Date().toISOString().split('T')[0];
+      supabase
+        .from('leave_approval_delegates' as any)
+        .select('id')
+        .eq('delegate_user_id', user.id)
+        .eq('is_active', true)
+        .lte('start_date', today)
+        .gte('end_date', today)
+        .limit(1)
+        .then(({ data }) => {
+          setIsActiveDelegate((data || []).length > 0);
+        });
     }
   }, [user]);
 
@@ -49,7 +64,7 @@ const LeaveRequest = () => {
   if (!user) return <Navigate to="/auth" replace />;
 
   const isDeptHead = isSef || isSefSRUS || isSuperAdmin;
-  const canApprove = isDeptHead || isDesignatedApprover;
+  const canApprove = isDeptHead || isDesignatedApprover || isActiveDelegate;
   const isHR = canManageHR;
 
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
