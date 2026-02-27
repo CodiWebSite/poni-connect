@@ -1,19 +1,58 @@
-import MainLayout from '@/components/layout/MainLayout';
-import { AlertTriangle } from 'lucide-react';
+import { Wrench, Mail, Phone } from 'lucide-react';
 
 const Maintenance = () => {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="max-w-md text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-8 h-8 text-destructive" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-indigo-50 dark:from-slate-900 dark:via-background dark:to-slate-800 flex items-center justify-center p-4">
+      <div className="max-w-lg text-center space-y-6">
+        {/* Logo institut */}
+        <div className="flex justify-center">
+          <img 
+            src="/logo-icmpp.png" 
+            alt="Logo ICMPP" 
+            className="h-20 w-auto opacity-90"
+          />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Platforma este în mentenanță</h1>
-        <p className="text-muted-foreground">
-          Se efectuează lucrări de întreținere. Vă rugăm să reveniți mai târziu.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Dacă aveți nevoie urgentă, contactați departamentul IT.
+
+        {/* Animated wrench icon */}
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-pulse">
+          <Wrench className="w-10 h-10 text-primary" />
+        </div>
+
+        <div className="space-y-3">
+          <h1 className="text-3xl font-bold text-foreground">
+            Revenim în curând! 🔧
+          </h1>
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            Platforma intranet este momentan în proces de actualizare pentru a vă oferi o experiență mai bună.
+          </p>
+        </div>
+
+        {/* Friendly card */}
+        <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-6 space-y-4 shadow-sm">
+          <p className="text-sm text-muted-foreground">
+            Lucrăm la îmbunătățiri importante. Timpul estimat de indisponibilitate este scurt — vă rugăm să reveniți în câteva minute.
+          </p>
+          
+          <div className="h-px bg-border" />
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Aveți nevoie urgentă de asistență?</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Mail className="w-4 h-4 text-primary" />
+                Departamentul IT
+              </span>
+              <span className="hidden sm:inline text-border">•</span>
+              <span className="flex items-center gap-1.5">
+                <Phone className="w-4 h-4 text-primary" />
+                Interior 123
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground/60">
+          Institutul de Chimie Macromoleculară „Petru Poni" — Iași
         </p>
       </div>
     </div>
