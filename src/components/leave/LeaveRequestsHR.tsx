@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck } from 'lucide-react';
+import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck, FileSpreadsheet } from 'lucide-react';
+import ExcelJS from 'exceljs';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { generateLeaveDocx } from '@/utils/generateLeaveDocx';
@@ -70,6 +71,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [downloadDialog, setDownloadDialog] = useState<LeaveRequestRow | null>(null);
   const [selectedSrusOfficer, setSelectedSrusOfficer] = useState<string>('Cătălina Bălan');
+  const [exportingXls, setExportingXls] = useState(false);
 
   useEffect(() => {
     fetchAllRequests();
@@ -280,6 +282,70 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     return matchesSearch && matchesStatus;
   });
 
+  const handleExportExcel = async () => {
+    setExportingXls(true);
+    try {
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'ICMPP HR';
+      const ws = wb.addWorksheet('Cereri Concediu');
+      ws.columns = [
+        { header: 'Nr. Cerere', key: 'nr', width: 18 },
+        { header: 'Angajat', key: 'name', width: 25 },
+        { header: 'Departament', key: 'dept', width: 22 },
+        { header: 'Funcție', key: 'position', width: 22 },
+        { header: 'Grad/Treaptă', key: 'grade', width: 16 },
+        { header: 'Perioada', key: 'period', width: 22 },
+        { header: 'Zile', key: 'days', width: 8 },
+        { header: 'An', key: 'year', width: 8 },
+        { header: 'Înlocuitor', key: 'replacement', width: 22 },
+        { header: 'Status', key: 'status', width: 18 },
+        { header: 'Aprobat de', key: 'approver', width: 22 },
+        { header: 'Data aprobării', key: 'approvalDate', width: 16 },
+        { header: 'Data depunerii', key: 'createdAt', width: 16 },
+      ];
+      const sMap: Record<string, string> = { draft: 'Ciornă', pending_department_head: 'Așteptare Șef', approved: 'Aprobată', rejected: 'Respinsă' };
+      filtered.forEach(r => {
+        ws.addRow({
+          nr: r.request_number, name: r.employee_name, dept: r.employee_department,
+          position: r.employee_position, grade: r.employee_grade || '-',
+          period: `${format(parseISO(r.start_date), 'dd.MM.yyyy')} – ${format(parseISO(r.end_date), 'dd.MM.yyyy')}`,
+          days: r.working_days, year: r.year, replacement: r.replacement_name,
+          status: sMap[r.status] || r.status, approver: r.dept_head_name || '-',
+          approvalDate: r.dept_head_approved_at ? format(parseISO(r.dept_head_approved_at), 'dd.MM.yyyy') : '-',
+          createdAt: format(parseISO(r.created_at), 'dd.MM.yyyy'),
+        });
+      });
+      const hr = ws.getRow(1);
+      hr.height = 28;
+      hr.eachCell(c => {
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+        c.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      });
+      for (let i = 2; i <= ws.rowCount; i++) {
+        ws.getRow(i).eachCell(c => {
+          c.alignment = { horizontal: 'center', vertical: 'middle' };
+          c.border = { top: { style: 'thin', color: { argb: 'FFB0B0B0' } }, bottom: { style: 'thin', color: { argb: 'FFB0B0B0' } }, left: { style: 'thin', color: { argb: 'FFB0B0B0' } }, right: { style: 'thin', color: { argb: 'FFB0B0B0' } } };
+          if (i % 2 === 0) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F6FA' } };
+        });
+      }
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cereri_concediu_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: 'Export realizat', description: `${filtered.length} cereri exportate în Excel.` });
+    } catch (err) {
+      console.error('Export error:', err);
+      toast({ title: 'Eroare', description: 'Nu s-a putut genera fișierul Excel.', variant: 'destructive' });
+    }
+    setExportingXls(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -290,11 +356,15 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="flex items-center gap-2">
           <FileText className="w-5 h-5" />
           Centralizare Cereri Concediu ({filtered.length})
         </CardTitle>
+        <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={exportingXls || filtered.length === 0}>
+          {exportingXls ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
+          Export Excel
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col md:flex-row gap-3 mb-4">
