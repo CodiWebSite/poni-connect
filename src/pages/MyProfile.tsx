@@ -131,6 +131,8 @@ const MyProfile = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [approverName, setApproverName] = useState<string | null>(null);
   const [approverSource, setApproverSource] = useState<'individual' | 'department' | null>(null);
+  const [delegateName, setDelegateName] = useState<string | null>(null);
+  const [delegatePeriod, setDelegatePeriod] = useState<string | null>(null);
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
@@ -184,23 +186,34 @@ const MyProfile = () => {
       }
     }
 
-    // Fetch approver info
+    // Fetch approver info — check by user_id first, then by email
+    let foundApproverId: string | null = null;
+    let foundApproverSource: 'individual' | 'department' | null = null;
+
     const { data: empApprover } = await supabase
       .from('leave_approvers')
-      .select('approver_user_id')
+      .select('approver_user_id, approver_email')
       .eq('employee_user_id', user.id)
       .maybeSingle();
 
-    if (empApprover) {
-      const { data: ap } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', empApprover.approver_user_id)
+    if (empApprover?.approver_user_id) {
+      foundApproverId = empApprover.approver_user_id;
+      foundApproverSource = 'individual';
+    } else if (!empApprover && user.email) {
+      // Fallback: check by employee email (for pre-assigned mappings not yet resolved)
+      const { data: empApproverByEmail } = await supabase
+        .from('leave_approvers')
+        .select('approver_user_id, approver_email')
+        .eq('employee_email', user.email.toLowerCase())
         .maybeSingle();
-      setApproverName(ap?.full_name || null);
-      setApproverSource('individual');
-    } else {
-      // Check department-level approver
+      if (empApproverByEmail?.approver_user_id) {
+        foundApproverId = empApproverByEmail.approver_user_id;
+        foundApproverSource = 'individual';
+      }
+    }
+
+    // If no individual approver, check department-level
+    if (!foundApproverId) {
       const dept = profileRes.data?.department;
       if (dept) {
         const { data: deptApprover } = await supabase
@@ -208,19 +221,51 @@ const MyProfile = () => {
           .select('approver_user_id')
           .eq('department', dept)
           .maybeSingle();
-        if (deptApprover) {
-          const { data: ap } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('user_id', deptApprover.approver_user_id)
-            .maybeSingle();
-          setApproverName(ap?.full_name || null);
-          setApproverSource('department');
-        } else {
-          setApproverName(null);
-          setApproverSource(null);
+        if (deptApprover?.approver_user_id) {
+          foundApproverId = deptApprover.approver_user_id;
+          foundApproverSource = 'department';
         }
       }
+    }
+
+    if (foundApproverId) {
+      const { data: ap } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', foundApproverId)
+        .maybeSingle();
+      setApproverName(ap?.full_name || null);
+      setApproverSource(foundApproverSource);
+
+      // Check if approver has an active delegate right now
+      const today = new Date().toISOString().split('T')[0];
+      const { data: activeDelegate } = await supabase
+        .from('leave_approval_delegates' as any)
+        .select('delegate_user_id, start_date, end_date')
+        .eq('delegator_user_id', foundApproverId)
+        .eq('is_active', true)
+        .lte('start_date', today)
+        .gte('end_date', today)
+        .limit(1);
+
+      if (activeDelegate && activeDelegate.length > 0) {
+        const del = activeDelegate[0] as any;
+        const { data: delProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', del.delegate_user_id)
+          .maybeSingle();
+        setDelegateName(delProfile?.full_name || null);
+        setDelegatePeriod(`${format(new Date(del.start_date), 'dd.MM.yyyy')} – ${format(new Date(del.end_date), 'dd.MM.yyyy')}`);
+      } else {
+        setDelegateName(null);
+        setDelegatePeriod(null);
+      }
+    } else {
+      setApproverName(null);
+      setApproverSource(null);
+      setDelegateName(null);
+      setDelegatePeriod(null);
     }
 
     setLoading(false);
@@ -576,7 +621,7 @@ const MyProfile = () => {
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
 
             {/* Approver Info */}
-            {approverName && (
+             {approverName && (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -584,7 +629,7 @@ const MyProfile = () => {
                     Aprobator Concediu
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <User className="w-5 h-5 text-primary" />
@@ -596,6 +641,18 @@ const MyProfile = () => {
                       </p>
                     </div>
                   </div>
+                  {delegateName && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
+                        <ArrowRightLeft className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{delegateName}</p>
+                        <p className="text-xs text-muted-foreground">Înlocuitor temporar</p>
+                        {delegatePeriod && <p className="text-xs text-amber-600 dark:text-amber-400">{delegatePeriod}</p>}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
