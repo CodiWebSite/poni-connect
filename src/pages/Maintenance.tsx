@@ -234,14 +234,15 @@ const Maintenance = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-sm text-white/80">
               <span className="flex items-center gap-1.5">
                 <Mail className="w-4 h-4 text-white/90" />
-                Departamentul IT
+                condrea.codrin@icmpp.ro
               </span>
               <span className="hidden sm:inline text-white/30">•</span>
               <span className="flex items-center gap-1.5">
                 <Phone className="w-4 h-4 text-white/90" />
-                Interior 123
+                Interior 330
               </span>
             </div>
+            <p className="text-xs text-white/60 mt-1">Departamentul IT (Codrin)</p>
           </div>
         </div>
 
