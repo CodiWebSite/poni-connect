@@ -89,26 +89,20 @@ Deno.serve(async (req) => {
         </tr>
         <tr>
           <td style="padding:12px 16px;background:#f7fafc;border-bottom:1px solid #e2e8f0;">
-            <strong style="color:#2b6cb0;">📢 Anunțuri și evenimente</strong>
-            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Rămâneți la curent cu noutățile și evenimentele din institut.</p>
+            <strong style="color:#2b6cb0;">📢 Anunțuri interne</strong>
+            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Rămâneți la curent cu noutățile și comunicările interne ale institutului.</p>
           </td>
         </tr>
         <tr>
           <td style="padding:12px 16px;background:#ebf8ff;border-bottom:1px solid #bee3f8;">
-            <strong style="color:#2b6cb0;">📖 Bibliotecă digitală</strong>
-            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Consultați și împrumutați cărți și reviste din biblioteca institutului.</p>
+            <strong style="color:#2b6cb0;">👤 Profilul Meu</strong>
+            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Vizualizați datele personale, istoricul concediilor și soldul disponibil.</p>
           </td>
         </tr>
         <tr>
-          <td style="padding:12px 16px;background:#f7fafc;border-bottom:1px solid #e2e8f0;">
-            <strong style="color:#2b6cb0;">🛒 Referate de necesitate</strong>
-            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Creați și urmăriți referate de achiziții cu flux complet de aprobare (șef dept. → achiziții → director → CFP).</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:12px 16px;background:#ebf8ff;border-radius:0 0 8px 8px;">
-            <strong style="color:#2b6cb0;">🤖 Asistent AI</strong>
-            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Un asistent inteligent care vă ajută cu informații și răspunsuri rapide despre procedurile institutului.</p>
+          <td style="padding:12px 16px;background:#f7fafc;border-radius:0 0 8px 8px;">
+            <strong style="color:#2b6cb0;">🔔 Notificări în timp real</strong>
+            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Primiți notificări instant pe platformă și pe email când o cerere este aprobată sau necesită atenție.</p>
           </td>
         </tr>
       </table>
