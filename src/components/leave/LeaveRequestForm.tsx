@@ -328,6 +328,21 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
       // Trimite email către șeful de departament (non-blocking)
       const selectedColleagueForEmail = colleagues.find(c => c.id === replacementId);
+      
+      // Collect delegate user IDs for email notifications
+      let delegateUserIds: string[] = [];
+      if (designatedApproverId) {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: activeDels } = await supabase
+          .from('leave_approval_delegates' as any)
+          .select('delegate_user_id')
+          .eq('delegator_user_id', designatedApproverId)
+          .eq('is_active', true)
+          .lte('start_date', today)
+          .gte('end_date', today);
+        delegateUserIds = (activeDels || []).map((d: any) => d.delegate_user_id);
+      }
+
       supabase.functions.invoke('notify-leave-email', {
         body: {
           employee_name: `${employeeData.last_name} ${employeeData.first_name}`,
@@ -338,6 +353,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
           working_days: workingDays,
           replacement_name: selectedColleagueForEmail?.name || '',
           approver_user_id: designatedApproverId || null,
+          delegate_user_ids: delegateUserIds,
         },
       }).then(res => {
         if (res.error) console.warn('Email notification failed:', res.error);

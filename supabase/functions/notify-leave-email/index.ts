@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
       working_days,
       replacement_name,
       approver_user_id,
+      delegate_user_ids,
     } = await req.json();
 
     if (!department || !employee_name || !request_number) {
@@ -66,9 +67,10 @@ Deno.serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     const recipientEmails: string[] = [];
+    const delegateEmails: string[] = [];
 
     if (approver_user_id) {
-      // Send to the designated approver only
+      // Send to the designated approver
       const { data: { user: approverUser } } = await supabaseAdmin.auth.admin.getUserById(approver_user_id);
       if (approverUser?.email) {
         recipientEmails.push(approverUser.email);
@@ -99,7 +101,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (recipientEmails.length === 0) {
+    // Collect delegate emails
+    if (delegate_user_ids && Array.isArray(delegate_user_ids)) {
+      for (const delId of delegate_user_ids) {
+        const { data: { user: delUser } } = await supabaseAdmin.auth.admin.getUserById(delId);
+        if (delUser?.email) {
+          delegateEmails.push(delUser.email);
+        }
+      }
+    }
+
+    if (recipientEmails.length === 0 && delegateEmails.length === 0) {
       return new Response(
         JSON.stringify({ message: "No recipients found" }),
         {
@@ -139,9 +151,13 @@ Deno.serve(async (req) => {
       },
     });
 
-    const subject = `Cerere concediu nouă — ${employee_name} (${request_number})`;
-    const htmlBody = `
+    const buildHtmlBody = (isDelegate: boolean) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        ${isDelegate ? `
+        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px;">
+          <strong style="color: #92400e;">⚡ Acțiune necesară:</strong>
+          <span style="color: #92400e;"> Sunteți înlocuitor activ pentru aprobarea cererilor de concediu. Vă rugăm să procesați această cerere.</span>
+        </div>` : ''}
         <h2 style="color: #1a365d; border-bottom: 2px solid #3182ce; padding-bottom: 10px;">
           Cerere de Concediu de Odihnă
         </h2>
@@ -172,21 +188,38 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    // Send to all recipients
+    let totalSent = 0;
+
+    // Send to approver(s) — informative email
+    const approverSubject = `Cerere concediu nouă — ${employee_name} (${request_number})`;
     for (const email of recipientEmails) {
       await transporter.sendMail({
         from: fromAddress,
         to: email,
-        subject,
-        html: htmlBody,
+        subject: approverSubject,
+        html: buildHtmlBody(false),
       });
-      console.log(`Email sent to: ${email}`);
+      console.log(`Email sent to approver: ${email}`);
+      totalSent++;
+    }
+
+    // Send to delegate(s) — priority email with action banner
+    const delegateSubject = `⚡ [PRIORITAR] Cerere concediu — ${employee_name} (${request_number})`;
+    for (const email of delegateEmails) {
+      await transporter.sendMail({
+        from: fromAddress,
+        to: email,
+        subject: delegateSubject,
+        html: buildHtmlBody(true),
+      });
+      console.log(`Priority email sent to delegate: ${email}`);
+      totalSent++;
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        sent_to: recipientEmails.length,
+        sent_to: totalSent,
       }),
       {
         status: 200,
