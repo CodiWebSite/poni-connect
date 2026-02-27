@@ -1,0 +1,1 @@
+ALTER TABLE public.employee_personal_data ADD COLUMN IF NOT EXISTS grade text;

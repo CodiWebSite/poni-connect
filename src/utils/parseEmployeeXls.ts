@@ -6,6 +6,7 @@ export interface ParsedEmployee {
   fullName: string;
   cnp: string;
   position: string;
+  grade: string;
   department: string;
   totalLeaveDays: number;
   usedLeaveDays: number;
@@ -186,7 +187,7 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; columns: Rec
         foundCNP = true;
       } else if (val.includes('functia') || val.includes('functie')) {
         columns['function'] = c;
-      } else if (val.includes('grad') || val.includes('treapta')) {
+      } else if ((val.includes('grad') || val.includes('treapta')) && !val.includes('gradati')) {
         columns['grade'] = c;
       } else if (isTotalLeaveHeader(val)) {
         columns['totalLeave'] = c;
@@ -399,8 +400,9 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
       
       const { firstName, lastName } = splitName(fullName);
       
-      // Get position (function + grade)
+      // Get position (function) and grade separately
       let position = '';
+      let grade = '';
       if (columns['function'] !== undefined) {
         const funcCell = sheet[XLSX.utils.encode_cell({ r, c: columns['function'] })];
         if (funcCell) position = String(funcCell.v || '').trim();
@@ -408,8 +410,7 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
       if (columns['grade'] !== undefined) {
         const gradeCell = sheet[XLSX.utils.encode_cell({ r, c: columns['grade'] })];
         if (gradeCell) {
-          const grade = String(gradeCell.v || '').trim();
-          if (grade) position = position ? `${position} ${grade}` : grade;
+          grade = String(gradeCell.v || '').trim();
         }
       }
       
@@ -471,6 +472,7 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
         fullName,
         cnp,
         position,
+        grade,
         department,
         totalLeaveDays,
         usedLeaveDays,

@@ -182,6 +182,7 @@ export const EmployeeImport = () => {
         cnp: emp.cnp,
         department: emp.department,
         position: emp.position,
+        grade: emp.grade || null,
         contract_type: 'nedeterminat',
         total_leave_days: emp.totalLeaveDays,
         used_leave_days: emp.usedLeaveDays,
@@ -400,6 +401,7 @@ export const EmployeeImport = () => {
                     <TableHead>Nume complet</TableHead>
                     <TableHead>CNP</TableHead>
                     <TableHead>Funcție</TableHead>
+                    <TableHead>Grad</TableHead>
                     <TableHead className="w-[250px]">Email</TableHead>
                     <TableHead className="text-center">Zile CO</TableHead>
                     <TableHead className="text-center">Folosite</TableHead>
@@ -415,6 +417,7 @@ export const EmployeeImport = () => {
                       <TableCell className="font-medium text-sm">{emp.fullName}</TableCell>
                       <TableCell className="font-mono text-xs">{emp.cnp}</TableCell>
                       <TableCell className="text-xs">{emp.position || '-'}</TableCell>
+                      <TableCell className="text-xs">{emp.grade || '-'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Input
