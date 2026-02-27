@@ -16,6 +16,7 @@ import { saveAs } from 'file-saver';
 interface LeaveDocxParams {
   employeeName: string;
   employeePosition: string;
+  employeeGrade?: string;
   department: string;
   workingDays: number;
   year: number;
@@ -87,7 +88,7 @@ function parseSignatureData(signature: string | null | undefined): Promise<Uint8
 
 export async function generateLeaveDocx(params: LeaveDocxParams) {
   const {
-    employeeName, employeePosition, department, workingDays, year,
+    employeeName, employeePosition, employeeGrade, department, workingDays, year,
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
     totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear, srusOfficerName,
@@ -134,25 +135,28 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         },
       },
       children: [
-        // ══════ HEADER: Logo + Institution ══════
+        // ══════ HEADER: Logo + Institution (aligned with table) ══════
+        ...(logoData.length > 0 ? [
+          new Paragraph({
+            spacing: { after: 0 },
+            children: [
+              new ImageRun({ data: logoData, transformation: { width: 50, height: 50 }, type: 'jpg' }),
+            ],
+          }),
+        ] : []),
         new Paragraph({
           spacing: { after: 0 },
-          children: [
-            ...(logoData.length > 0 ? [
-              new ImageRun({ data: logoData, transformation: { width: 55, height: 55 }, type: 'jpg' }),
-              t('   '),
-            ] : []),
-            t('ACADEMIA ROMÂNĂ', { bold: true, size: 22 }),
-          ],
+          alignment: AlignmentType.CENTER,
+          children: [t('ACADEMIA ROMÂNĂ', { bold: true, size: 22 })],
         }),
         new Paragraph({
           spacing: { after: 0 },
-          indent: { left: convertMillimetersToTwip(18) },
+          alignment: AlignmentType.CENTER,
           children: [t('INSTITUTUL DE CHIMIE MACROMOLECULARĂ "PETRU PONI"', { bold: true, size: SIZE_HEADER })],
         }),
         new Paragraph({
           spacing: { after: 200 },
-          indent: { left: convertMillimetersToTwip(18) },
+          alignment: AlignmentType.CENTER,
           children: [t('Aleea Grigore Ghica Vodă, nr. 41A, 700487 IAȘI, ROMANIA', { size: SIZE_SMALL })],
         }),
 
@@ -184,27 +188,29 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           children: [t('Șef compartiment', { bold: true })],
         }),
 
-        // Dept head name & approval date
+        // Dept head name
         ...(deptHeadName ? [
           new Paragraph({
             spacing: { after: 0 },
             children: [t(deptHeadName, { bold: true, size: SIZE_SMALL })],
           }),
         ] : []),
-        ...(approvalDate ? [
-          new Paragraph({
-            spacing: { after: 0 },
-            children: [t(`Data: ${approvalDate}`, { size: SIZE_SMALL })],
-          }),
-        ] : []),
 
         // Dept head signature or line
         new Paragraph({
-          spacing: { after: 300 },
+          spacing: { after: 0 },
           children: deptHeadSigData ? [
             new ImageRun({ data: deptHeadSigData, transformation: { width: 120, height: 45 }, type: 'png' }),
           ] : [t('________________')],
         }),
+        ...(approvalDate ? [
+          new Paragraph({
+            spacing: { after: 300 },
+            children: [t(`Data: ${approvalDate}`, { size: SIZE_SMALL })],
+          }),
+        ] : [
+          new Paragraph({ spacing: { after: 300 }, children: [] }),
+        ]),
 
         // ══════ TITLE ══════
         new Paragraph({
@@ -228,7 +234,8 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
             ...underlinedField(employeeName, '_____________________________'),
             t(', '),
             ...underlinedField(employeePosition, '________________________'),
-            t(' în'),
+            ...(employeeGrade ? [t(', gradul/treapta '), ...underlinedField(employeeGrade, '')] : []),
+            t(', în'),
           ],
         }),
         new Paragraph({
