@@ -4,6 +4,7 @@ import { ro } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { isPublicHoliday, getPublicHolidayName } from '@/utils/romanianHolidays';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface CustomHoliday {
   id: string;
@@ -18,6 +19,7 @@ interface LeaveEntry {
   endDate: string;
   numberOfDays: number;
   leaveType?: string;
+  avatarUrl?: string | null;
 }
 
 interface LeaveCalendarTableProps {
@@ -62,7 +64,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
 
   // Unique employees with their leave types for the month
   const employees = useMemo(() => {
-    const nameMap = new Map<string, { name: string; department: string | null; leaveTypes: Set<string> }>();
+    const nameMap = new Map<string, { name: string; department: string | null; leaveTypes: Set<string>; avatarUrl: string | null }>();
     leaves.forEach(l => {
       const leaveStart = parseISO(l.startDate);
       const leaveEnd = parseISO(l.endDate);
@@ -71,9 +73,13 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
       if (leaveEnd < mStart || leaveStart > mEnd) return;
       
       if (!nameMap.has(l.employeeName)) {
-        nameMap.set(l.employeeName, { name: l.employeeName, department: l.department, leaveTypes: new Set() });
+        nameMap.set(l.employeeName, { name: l.employeeName, department: l.department, leaveTypes: new Set(), avatarUrl: l.avatarUrl || null });
       }
       nameMap.get(l.employeeName)!.leaveTypes.add(l.leaveType || 'co');
+      // Update avatar if we get one
+      if (l.avatarUrl && !nameMap.get(l.employeeName)!.avatarUrl) {
+        nameMap.get(l.employeeName)!.avatarUrl = l.avatarUrl;
+      }
     });
     return Array.from(nameMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [leaves, currentMonth]);
@@ -94,10 +100,10 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
             <thead>
               {/* Day numbers row */}
               <tr>
-                <th className="sticky left-0 z-10 bg-background border border-border px-3 py-2 text-left font-semibold text-sm min-w-[160px]">
+                <th className="sticky left-0 z-10 bg-background border border-border px-3 py-2 text-left font-semibold text-sm min-w-[190px]">
                   ANGAJAT
                 </th>
-                <th className="sticky left-[160px] z-10 bg-background border border-border px-2 py-2 text-center font-semibold text-sm min-w-[60px] w-[60px]">
+                <th className="sticky left-[190px] z-10 bg-background border border-border px-2 py-2 text-center font-semibold text-sm min-w-[60px] w-[60px]">
                   TIP
                 </th>
                 {days.map((day) => {
@@ -132,7 +138,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
               {days.some(d => isPublicHoliday(d) || !!customHolidayMap[format(d, 'yyyy-MM-dd')]) && (
                 <tr>
                   <th className="sticky left-0 z-10 bg-background border border-border px-3 py-0.5"></th>
-                  <th className="sticky left-[160px] z-10 bg-background border border-border px-2 py-0.5"></th>
+                  <th className="sticky left-[190px] z-10 bg-background border border-border px-2 py-0.5"></th>
                   {days.map((day) => {
                     const dateStr = format(day, 'yyyy-MM-dd');
                     const pubName = getPublicHolidayName(day);
@@ -172,13 +178,19 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                     <td className="sticky left-0 z-10 border border-border px-3 py-2 font-medium text-xs whitespace-nowrap bg-inherit">
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground text-[10px] w-4">{idx + 1}</span>
+                        <Avatar className="w-6 h-6 flex-shrink-0">
+                          {emp.avatarUrl && <AvatarImage src={emp.avatarUrl} alt={emp.name} />}
+                          <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                            {emp.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
                         <div>
                           <div className="font-semibold text-foreground">{emp.name}</div>
                           {emp.department && <div className="text-[10px] text-muted-foreground">{emp.department}</div>}
                         </div>
                       </div>
                     </td>
-                    <td className="sticky left-[160px] z-10 border border-border px-1 py-1 text-center bg-inherit">
+                    <td className="sticky left-[190px] z-10 border border-border px-1 py-1 text-center bg-inherit">
                       <div className="flex flex-col items-center gap-0.5">
                         {Array.from(emp.leaveTypes).map(lt => {
                           const style = getLeaveStyle(lt);
