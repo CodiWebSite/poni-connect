@@ -68,7 +68,7 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
     // Get employee data for the docx
     const { data: epd } = await supabase
       .from('employee_personal_data')
-      .select('first_name, last_name, department, position, total_leave_days, used_leave_days')
+      .select('first_name, last_name, department, position, grade, total_leave_days, used_leave_days')
       .eq('id', request.epd_id)
       .maybeSingle();
 
@@ -91,6 +91,7 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
     await generateLeaveDocx({
       employeeName: epd ? `${epd.last_name} ${epd.first_name}` : '',
       employeePosition: epd?.position || '',
+      employeeGrade: epd?.grade || undefined,
       department: epd?.department || '',
       workingDays: request.working_days,
       year: request.year,

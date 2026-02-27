@@ -30,6 +30,7 @@ interface LeaveRequestRow {
   employee_name: string;
   employee_department: string;
   employee_position: string;
+  employee_grade: string;
   director_approved_at: string | null;
   dept_head_approved_at: string | null;
   dept_head_id: string | null;
@@ -90,12 +91,12 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
     // Enrich with employee data
     const epdIds = [...new Set((data || []).map(r => r.epd_id).filter(Boolean))];
-    let epdMap: Record<string, { name: string; department: string; position: string }> = {};
+    let epdMap: Record<string, { name: string; department: string; position: string; grade: string }> = {};
 
     if (epdIds.length > 0) {
       const { data: epdData } = await supabase
         .from('employee_personal_data')
-        .select('id, first_name, last_name, department, position')
+        .select('id, first_name, last_name, department, position, grade')
         .in('id', epdIds);
 
       (epdData || []).forEach(e => {
@@ -103,6 +104,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           name: `${e.last_name} ${e.first_name}`,
           department: e.department || '',
           position: e.position || '',
+          grade: e.grade || '',
         };
       });
     }
@@ -180,6 +182,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         employee_name: epdMap[r.epd_id]?.name || 'N/A',
         employee_department: epdMap[r.epd_id]?.department || '',
         employee_position: epdMap[r.epd_id]?.position || '',
+        employee_grade: epdMap[r.epd_id]?.grade || '',
         dept_head_name: r.dept_head_id ? approverMap[r.dept_head_id] || '' : '',
         dept_head_signature: (r as any).dept_head_signature || null,
         avatar_url: r.epd_id ? avatarMap[r.epd_id] || null : null,
@@ -225,6 +228,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       await generateLeaveDocx({
         employeeName: request.employee_name,
         employeePosition: request.employee_position,
+        employeeGrade: request.employee_grade || undefined,
         department: request.employee_department,
         workingDays: request.working_days,
         year: request.year,
