@@ -331,6 +331,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                   <TableHead>Nr.</TableHead>
                   <TableHead>Angajat</TableHead>
                   <TableHead>Departament</TableHead>
+                  <TableHead>Funcție / Grad</TableHead>
                   <TableHead>Perioada</TableHead>
                   <TableHead>Zile</TableHead>
                   <TableHead>Status</TableHead>
@@ -354,6 +355,12 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{r.employee_department}</TableCell>
+                    <TableCell className="text-sm">
+                      <div>
+                        {r.employee_position && <span>{r.employee_position}</span>}
+                        {r.employee_grade && <span className="text-xs text-muted-foreground block">{r.employee_grade}</span>}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
                       {format(parseISO(r.start_date), 'dd.MM.yy')} – {format(parseISO(r.end_date), 'dd.MM.yy')}
                     </TableCell>
