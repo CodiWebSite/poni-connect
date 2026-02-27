@@ -258,17 +258,41 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       // Notify department heads (same department) via intranet notification
       if (insertedRequest) {
         const employeeName = `${employeeData.last_name} ${employeeData.first_name}`;
+        const notifMsg = `${employeeName} a depus cererea ${insertedRequest.request_number} (${workingDays} zile, ${formatDate(startDate)} - ${formatDate(endDate)}). Verifică și aprobă cererea.`;
         
         if (designatedApproverId) {
           // Notify the designated approver directly
           await supabase.from('notifications').insert({
             user_id: designatedApproverId,
             title: 'Cerere nouă de concediu',
-            message: `${employeeName} a depus cererea ${insertedRequest.request_number} (${workingDays} zile, ${formatDate(startDate)} - ${formatDate(endDate)}). Verifică și aprobă cererea.`,
+            message: notifMsg,
             type: 'warning',
             related_type: 'leave_request',
             related_id: insertedRequest.id,
           });
+
+          // Also notify active delegate if the approver has one
+          const today = new Date().toISOString().split('T')[0];
+          const { data: activeDelegates } = await supabase
+            .from('leave_approval_delegates' as any)
+            .select('delegate_user_id')
+            .eq('delegator_user_id', designatedApproverId)
+            .eq('is_active', true)
+            .lte('start_date', today)
+            .gte('end_date', today);
+
+          if (activeDelegates && activeDelegates.length > 0) {
+            for (const del of activeDelegates) {
+              await supabase.from('notifications').insert({
+                user_id: (del as any).delegate_user_id,
+                title: 'Cerere nouă de concediu (înlocuitor)',
+                message: `[Ca înlocuitor] ${notifMsg}`,
+                type: 'warning',
+                related_type: 'leave_request',
+                related_id: insertedRequest.id,
+              });
+            }
+          }
         } else if (employeeData.department) {
           // Fallback: notify all dept heads in same department
           const { data: deptHeadProfiles } = await supabase
@@ -289,7 +313,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
                 await supabase.from('notifications').insert({
                   user_id: profile.user_id,
                   title: 'Cerere nouă de concediu',
-                  message: `${employeeName} a depus cererea ${insertedRequest.request_number} (${workingDays} zile, ${formatDate(startDate)} - ${formatDate(endDate)}). Verifică și aprobă cererea.`,
+                  message: notifMsg,
                   type: 'warning',
                   related_type: 'leave_request',
                   related_id: insertedRequest.id,

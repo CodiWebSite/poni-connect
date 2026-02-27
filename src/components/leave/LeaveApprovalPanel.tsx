@@ -154,13 +154,33 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         .eq('approver_user_id', user.id);
       const myApproverDepts = new Set((myDeptApprovals || []).map(d => d.department.toLowerCase()));
 
+      // Check if user is an active delegate for any approver
+      const today = new Date().toISOString().split('T')[0];
+      const { data: activeDelegations } = await supabase
+        .from('leave_approval_delegates' as any)
+        .select('delegator_user_id, department')
+        .eq('delegate_user_id', user.id)
+        .eq('is_active', true)
+        .lte('start_date', today)
+        .gte('end_date', today);
+
+      const delegatedApproverIds = new Set((activeDelegations || []).map((d: any) => d.delegator_user_id));
+      const delegatedDepts = new Set((activeDelegations || []).map((d: any) => (d.department || '').toLowerCase()).filter(Boolean));
+
       enrichedRequests = enrichedRequests.filter(r => {
+        // Direct approver assignment
         if (r.approver_id === user.id) return true;
+        // Department-level approver
         if (!r.approver_id && r.employee_department && myApproverDepts.has(r.employee_department.toLowerCase())) return true;
+        // Generic dept head
         if (!r.approver_id && isDeptHead && myProfile?.department &&
             r.employee_department.toLowerCase() === myProfile.department.toLowerCase()) {
           return true;
         }
+        // Delegated: the request's approver is someone who delegated to me
+        if (r.approver_id && delegatedApproverIds.has(r.approver_id)) return true;
+        // Delegated: department match for non-assigned requests
+        if (!r.approver_id && r.employee_department && delegatedDepts.has(r.employee_department.toLowerCase())) return true;
         return false;
       });
     }

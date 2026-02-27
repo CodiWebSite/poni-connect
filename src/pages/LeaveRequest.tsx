@@ -12,7 +12,8 @@ import { LeaveApprovalPanel } from '@/components/leave/LeaveApprovalPanel';
 import { LeaveApprovalHistory } from '@/components/leave/LeaveApprovalHistory';
 import { LeaveRequestsHR } from '@/components/leave/LeaveRequestsHR';
 import { LeaveRequestsList } from '@/components/leave/LeaveRequestsList';
-import { FileText, CheckSquare, ClipboardList, Send, History, FlaskConical } from 'lucide-react';
+import { LeaveApprovalDelegate } from '@/components/leave/LeaveApprovalDelegate';
+import { FileText, CheckSquare, ClipboardList, Send, History, FlaskConical, UserCheck } from 'lucide-react';
 
 const LeaveRequest = () => {
   const { user, loading: authLoading } = useAuth();
@@ -95,6 +96,14 @@ const LeaveRequest = () => {
             </TabsTrigger>
           )}
 
+          {/* Approvers can set a temporary delegate */}
+          {canApprove && (
+            <TabsTrigger value="delegate" className="gap-2">
+              <UserCheck className="w-4 h-4" />
+              Înlocuitor
+            </TabsTrigger>
+          )}
+
           {/* HR sees all requests */}
           {isHR && (
             <TabsTrigger value="hr" className="gap-2">
@@ -121,6 +130,12 @@ const LeaveRequest = () => {
         {canApprove && (
           <TabsContent value="history">
             <LeaveApprovalHistory refreshTrigger={refreshTrigger} />
+          </TabsContent>
+        )}
+
+        {canApprove && (
+          <TabsContent value="delegate">
+            <LeaveApprovalDelegate />
           </TabsContent>
         )}
 
