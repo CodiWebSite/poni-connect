@@ -413,6 +413,15 @@ export function parseEmployeeWorkbook(workbook: XLSX.WorkBook): ParsedEmployee[]
           grade = String(gradeCell.v || '').trim();
         }
       }
+      // If no separate grade column found, try to extract grade from the function value
+      // Common patterns: "CS I", "IDT II", "CS III", "ACS", "IDT I" etc.
+      if (!grade && position) {
+        const gradeMatch = position.match(/\s+(I{1,3}|IV|V)$/i);
+        if (gradeMatch) {
+          grade = gradeMatch[1].toUpperCase();
+          position = position.substring(0, position.length - gradeMatch[0].length).trim();
+        }
+      }
       
       // Get total leave days
       let totalLeaveDays = 21;
