@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { isPublicHoliday, getPublicHolidayName } from '@/utils/romanianHolidays';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DepartmentLeave {
@@ -20,6 +21,7 @@ interface DepartmentLeave {
   endDate: string;
   leaveType?: string;
   isCurrentUser: boolean;
+  avatarUrl?: string | null;
 }
 
 const LEAVE_TYPE_MAP: Record<string, { label: string; color: string; bg: string; bgSolid: string }> = {
@@ -80,13 +82,22 @@ const LeaveCalendar = () => {
     // Also fetch approved leave_requests
     const { data: leaveReqs } = await supabase.from('leave_requests').select('user_id, epd_id, start_date, end_date, status').eq('status', 'approved' as any);
 
-    const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department');
-    const { data: epdData } = await supabase.from('employee_personal_data').select('id, first_name, last_name, department').eq('is_archived', false);
+    const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department, avatar_url');
+    const { data: epdData } = await supabase.from('employee_personal_data').select('id, first_name, last_name, department, employee_record_id').eq('is_archived', false);
+    const { data: records } = await supabase.from('employee_records').select('id, user_id');
 
-    const profileMap: Record<string, { name: string; department: string | null }> = {};
-    (profiles || []).forEach(p => { profileMap[p.user_id] = { name: p.full_name, department: p.department }; });
-    const epdMap: Record<string, { name: string; department: string | null }> = {};
-    (epdData || []).forEach(e => { epdMap[e.id] = { name: `${e.last_name} ${e.first_name}`, department: e.department }; });
+    const profileMap: Record<string, { name: string; department: string | null; avatarUrl: string | null }> = {};
+    (profiles || []).forEach(p => { profileMap[p.user_id] = { name: p.full_name, department: p.department, avatarUrl: p.avatar_url }; });
+
+    const recordUserMap: Record<string, string> = {};
+    (records || []).forEach(r => { recordUserMap[r.id] = r.user_id; });
+
+    const epdMap: Record<string, { name: string; department: string | null; avatarUrl: string | null }> = {};
+    (epdData || []).forEach(e => {
+      const userId = e.employee_record_id ? recordUserMap[e.employee_record_id] : null;
+      const avatar = userId ? profileMap[userId]?.avatarUrl || null : null;
+      epdMap[e.id] = { name: `${e.last_name} ${e.first_name}`, department: e.department, avatarUrl: avatar };
+    });
 
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
@@ -101,16 +112,16 @@ const LeaveCalendar = () => {
       const leaveEnd = parseISO(d.endDate);
       if (leaveEnd < monthStart || leaveStart > monthEnd) return;
 
-      let empInfo: { name: string; department: string | null } | undefined;
+      let empInfo: { name: string; department: string | null; avatarUrl?: string | null } | undefined;
       if (d.epd_id && epdMap[d.epd_id]) empInfo = epdMap[d.epd_id];
       else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
-      else if (d.employee_name) empInfo = { name: d.employee_name, department: null };
+      else if (d.employee_name) empInfo = { name: d.employee_name, department: null, avatarUrl: null };
       if (!empInfo) return;
 
       // If leave was submitted for another employee (epd_id), it's not the current user's leave
       const isCurrentUser = lr.user_id === user.id && !d.epd_id;
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
-        entries.push({ employeeName: empInfo.name, startDate: d.startDate, endDate: d.endDate, leaveType: d.leaveType || d.leave_type || 'co', isCurrentUser });
+        entries.push({ employeeName: empInfo.name, startDate: d.startDate, endDate: d.endDate, leaveType: d.leaveType || d.leave_type || 'co', isCurrentUser, avatarUrl: empInfo.avatarUrl || null });
       }
     });
 
@@ -121,7 +132,7 @@ const LeaveCalendar = () => {
       const leaveEnd = parseISO(lr.end_date);
       if (leaveEnd < monthStart || leaveStart > monthEnd) return;
 
-      let empInfo: { name: string; department: string | null } | undefined;
+      let empInfo: { name: string; department: string | null; avatarUrl?: string | null } | undefined;
       if (lr.epd_id && epdMap[lr.epd_id]) empInfo = epdMap[lr.epd_id];
       else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
       if (!empInfo) return;
@@ -132,7 +143,7 @@ const LeaveCalendar = () => {
 
       const isCurrentUser = lr.user_id === user.id && !lr.epd_id;
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
-        entries.push({ employeeName: empInfo.name, startDate: lr.start_date, endDate: lr.end_date, leaveType: 'co', isCurrentUser });
+        entries.push({ employeeName: empInfo.name, startDate: lr.start_date, endDate: lr.end_date, leaveType: 'co', isCurrentUser, avatarUrl: empInfo.avatarUrl || null });
       }
     });
 
@@ -242,6 +253,12 @@ const LeaveCalendar = () => {
                   <Card key={emp.employeeName} className={cn(emp.isCurrentUser && 'border-primary/30 bg-primary/5')}>
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2 mb-2">
+                        <Avatar className="w-7 h-7 flex-shrink-0">
+                          {emp.avatarUrl && <AvatarImage src={emp.avatarUrl} alt={emp.employeeName} />}
+                          <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                            {emp.employeeName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
                         {emp.isCurrentUser && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
                         <p className={cn('font-medium text-sm', emp.isCurrentUser ? 'text-primary font-bold' : 'text-foreground')}>
                           {emp.employeeName}
@@ -335,6 +352,12 @@ const LeaveCalendar = () => {
                           <tr key={emp.employeeName} className={cn('transition-colors hover:bg-muted/30', emp.isCurrentUser && 'bg-primary/5 hover:bg-primary/10')}>
                             <td className={cn('sticky left-0 z-10 border border-border px-4 py-2.5 whitespace-nowrap bg-inherit', emp.isCurrentUser ? 'font-bold text-primary' : 'font-medium text-foreground')}>
                               <div className="flex items-center gap-2">
+                                <Avatar className="w-6 h-6 flex-shrink-0">
+                                  {emp.avatarUrl && <AvatarImage src={emp.avatarUrl} alt={emp.employeeName} />}
+                                  <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                                    {emp.employeeName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                  </AvatarFallback>
+                                </Avatar>
                                 {emp.isCurrentUser && <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />}
                                 <span>{emp.employeeName}</span>
                               </div>
