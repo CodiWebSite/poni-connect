@@ -51,7 +51,8 @@ Deno.serve(async (req) => {
     
     <!-- Header -->
     <div style="background:linear-gradient(135deg,#1a365d 0%,#2b6cb0 100%);padding:40px 32px;text-align:center;">
-      <h1 style="color:#ffffff;font-size:28px;margin:0 0 8px;">🏛️ Intranet ICMPP</h1>
+      <img src="https://poni-connect-hub.lovable.app/logo-icmpp.png" alt="ICMPP Logo" style="width:80px;height:auto;margin-bottom:16px;border-radius:12px;box-shadow:0 2px 12px rgba(255,255,255,0.2);" />
+      <h1 style="color:#ffffff;font-size:28px;margin:0 0 8px;">Intranet ICMPP</h1>
       <p style="color:#bee3f8;font-size:16px;margin:0;">Platforma digitală a Institutului de Chimie Macromoleculară</p>
     </div>
 
