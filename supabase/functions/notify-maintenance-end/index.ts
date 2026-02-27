@@ -56,7 +56,8 @@ Deno.serve(async (req) => {
     const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
     const smtpUser = Deno.env.get("SMTP_USER");
     const smtpPass = Deno.env.get("SMTP_PASS");
-    const smtpFrom = Deno.env.get("SMTP_FROM") || smtpUser;
+    const smtpFrom = Deno.env.get("SMTP_FROM") || "";
+    const fromAddress = smtpFrom.includes("@") ? smtpFrom : `"${smtpFrom || 'ICMPP Intranet'}" <${smtpUser}>`;
 
     if (!smtpHost || !smtpUser || !smtpPass) {
       return new Response(
@@ -112,7 +113,7 @@ Deno.serve(async (req) => {
       const batch = emails.slice(i, i + batchSize);
       try {
         await transporter.sendMail({
-          from: `"ICMPP Intranet" <${smtpFrom}>`,
+          from: fromAddress,
           bcc: batch,
           subject: "✅ Platforma ICMPP este din nou online!",
           html: htmlBody,
