@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 
@@ -112,6 +112,7 @@ interface EmployeeWithData {
   leaveHistory?: { startDate: string; endDate: string; numberOfDays: number }[];
   carryoverDays?: number;
   bonusDays?: number;
+  avatar_url?: string | null;
 }
 
 const documentTypes = [
@@ -362,18 +363,17 @@ const HRManagement = () => {
       bonusMap[b.employee_personal_data_id] = (bonusMap[b.employee_personal_data_id] || 0) + b.bonus_days;
     });
 
-    // Fetch updater names
-    const updaterIds = [...new Set((personalData || []).map((pd: any) => pd.last_updated_by).filter(Boolean))];
-    let updaterNames: Record<string, string> = {};
-    if (updaterIds.length > 0) {
-      const { data: updaterProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', updaterIds);
-      if (updaterProfiles) {
-        updaterProfiles.forEach(p => { updaterNames[p.user_id] = p.full_name; });
-      }
-    }
+    // Fetch all profiles (for updater names and avatar URLs)
+    const { data: allProfiles } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, avatar_url');
+
+    const updaterNames: Record<string, string> = {};
+    const avatarMap: Record<string, string> = {};
+    (allProfiles || []).forEach(p => {
+      updaterNames[p.user_id] = p.full_name;
+      if (p.avatar_url) avatarMap[p.user_id] = p.avatar_url;
+    });
 
     const employeesWithData: EmployeeWithData[] = personalData?.map(pd => {
       const record = records?.find(r => r.id === pd.employee_record_id);
@@ -405,6 +405,7 @@ const HRManagement = () => {
         ].sort((a, b) => (b.startDate || '').localeCompare(a.startDate || '')),
         carryoverDays: carryoverMap[pd.id] || 0,
         bonusDays: bonusMap[pd.id] || 0,
+        avatar_url: record?.user_id ? avatarMap[record.user_id] || null : null,
       };
     }) || [];
 
@@ -1349,6 +1350,7 @@ const HRManagement = () => {
                         {/* Employee Info */}
                         <div className="flex items-start gap-3 flex-1">
                           <Avatar className="w-12 h-12 flex-shrink-0">
+                            {employee.avatar_url && <AvatarImage src={employee.avatar_url} alt={employee.full_name} />}
                             <AvatarFallback className="bg-primary/10 text-primary">
                               {getInitials(employee.full_name)}
                             </AvatarFallback>
@@ -1632,6 +1634,7 @@ const HRManagement = () => {
                       <div className="flex flex-col sm:flex-row gap-4 items-start">
                         <div className="flex items-start gap-3 flex-1">
                           <Avatar className="w-12 h-12 flex-shrink-0">
+                            {employee.avatar_url && <AvatarImage src={employee.avatar_url} alt={employee.full_name} />}
                             <AvatarFallback className="bg-muted text-muted-foreground">
                               {getInitials(employee.full_name)}
                             </AvatarFallback>
