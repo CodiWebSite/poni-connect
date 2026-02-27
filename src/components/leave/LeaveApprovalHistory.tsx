@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useDemoMode } from '@/contexts/DemoModeContext';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, History } from 'lucide-react';
@@ -44,6 +45,7 @@ interface LeaveApprovalHistoryProps {
 export function LeaveApprovalHistory({ refreshTrigger }: LeaveApprovalHistoryProps) {
   const { user } = useAuth();
   const { isSuperAdmin } = useUserRole();
+  const { isDemo } = useDemoMode();
   const [requests, setRequests] = useState<ApprovedRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,18 +58,19 @@ export function LeaveApprovalHistory({ refreshTrigger }: LeaveApprovalHistoryPro
     setLoading(true);
 
     // Get requests where this user (or any dept head for super admin) approved or rejected
-    let query = supabase
+    const baseQuery = supabase
       .from('leave_requests')
       .select('*')
-      .in('status', ['approved', 'rejected'] as any[])
-      .order('dept_head_approved_at', { ascending: false, nullsFirst: false });
+      .in('status', ['approved', 'rejected'] as any[]);
+    
+    let query = (baseQuery as any).eq('is_demo', isDemo).order('dept_head_approved_at', { ascending: false, nullsFirst: false });
 
     if (!isSuperAdmin) {
       // Only show requests approved/rejected by this user
       query = query.or(`dept_head_id.eq.${user.id},rejected_by.eq.${user.id}`);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await query as { data: any[] | null; error: any };
 
     if (error) {
       console.error('Error fetching approval history:', error);

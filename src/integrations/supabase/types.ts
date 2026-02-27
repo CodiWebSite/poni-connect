@@ -923,6 +923,7 @@ export type Database = {
           end_date: string
           epd_id: string | null
           id: string
+          is_demo: boolean
           rejected_at: string | null
           rejected_by: string | null
           rejection_reason: string | null
@@ -951,6 +952,7 @@ export type Database = {
           end_date: string
           epd_id?: string | null
           id?: string
+          is_demo?: boolean
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
@@ -979,6 +981,7 @@ export type Database = {
           end_date?: string
           epd_id?: string | null
           id?: string
+          is_demo?: boolean
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null

@@ -22,8 +22,11 @@ import {
   FolderDown,
   BookOpen,
   HelpCircle,
+  FlaskConical,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Switch } from '@/components/ui/switch';
+import { useDemoMode } from '@/contexts/DemoModeContext';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -31,6 +34,7 @@ const Sidebar = () => {
   const { user, signOut } = useAuth();
   const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary } = useUserRole();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
+  const { isDemo, toggleDemo } = useDemoMode();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
   const [pendingHR, setPendingHR] = useState(0);
@@ -224,7 +228,36 @@ const Sidebar = () => {
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-sidebar-border">
+      <div className="p-3 border-t border-sidebar-border space-y-2">
+        {/* Demo Mode Toggle */}
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <button
+              onClick={toggleDemo}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm",
+                isDemo
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                isCollapsed && "justify-center px-0"
+              )}
+            >
+              <FlaskConical className={cn("w-5 h-5 flex-shrink-0", isDemo && "text-amber-400")} />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 text-left font-medium">Mod Demo</span>
+                  <Switch checked={isDemo} onCheckedChange={toggleDemo} className="pointer-events-none" />
+                </>
+              )}
+            </button>
+          </TooltipTrigger>
+          {isCollapsed && (
+            <TooltipContent side="right" className="font-medium">
+              Mod Demo {isDemo ? '(Activ)' : '(Inactiv)'}
+            </TooltipContent>
+          )}
+        </Tooltip>
+
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <Button

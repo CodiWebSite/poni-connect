@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useDemoMode } from '@/contexts/DemoModeContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ interface LeaveRequestFormProps {
 export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isDemo } = useDemoMode();
 
   const [employeeData, setEmployeeData] = useState<EmployeeData | null>(null);
   const [colleagues, setColleagues] = useState<ColleagueOption[]>([]);
@@ -249,14 +251,15 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       employee_signed_at: new Date().toISOString(),
       director_approved_at: new Date().toISOString(),
       approver_id: designatedApproverId,
+      is_demo: isDemo,
     } as any).select('id, request_number').single();
 
     if (error) {
       console.error('Error creating leave request:', error);
       toast({ title: 'Eroare', description: 'Nu s-a putut trimite cererea.', variant: 'destructive' });
     } else {
-      // Notify department heads (same department) via intranet notification
-      if (insertedRequest) {
+      // Skip notifications and emails in demo mode
+      if (!isDemo && insertedRequest) {
         const employeeName = `${employeeData.last_name} ${employeeData.first_name}`;
         const notifMsg = `${employeeName} a depus cererea ${insertedRequest.request_number} (${workingDays} zile, ${formatDate(startDate)} - ${formatDate(endDate)}). Verifică și aprobă cererea.`;
         
@@ -324,41 +327,41 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         }
       }
 
-      toast({ title: 'Cerere trimisă', description: 'Cererea de concediu a fost trimisă la șeful de compartiment pentru aprobare.' });
+      toast({ title: isDemo ? '[DEMO] Cerere trimisă' : 'Cerere trimisă', description: isDemo ? 'Cererea demo a fost creată cu succes. Nu afectează datele reale.' : 'Cererea de concediu a fost trimisă la șeful de compartiment pentru aprobare.' });
 
-      // Trimite email către șeful de departament (non-blocking)
-      const selectedColleagueForEmail = colleagues.find(c => c.id === replacementId);
-      
-      // Collect delegate user IDs for email notifications
-      let delegateUserIds: string[] = [];
-      if (designatedApproverId) {
-        const today = new Date().toISOString().split('T')[0];
-        const { data: activeDels } = await supabase
-          .from('leave_approval_delegates' as any)
-          .select('delegate_user_id')
-          .eq('delegator_user_id', designatedApproverId)
-          .eq('is_active', true)
-          .lte('start_date', today)
-          .gte('end_date', today);
-        delegateUserIds = (activeDels || []).map((d: any) => d.delegate_user_id);
+      // Trimite email doar în modul real (non-demo)
+      if (!isDemo) {
+        const selectedColleagueForEmail = colleagues.find(c => c.id === replacementId);
+        let delegateUserIds: string[] = [];
+        if (designatedApproverId) {
+          const today = new Date().toISOString().split('T')[0];
+          const { data: activeDels } = await supabase
+            .from('leave_approval_delegates' as any)
+            .select('delegate_user_id')
+            .eq('delegator_user_id', designatedApproverId)
+            .eq('is_active', true)
+            .lte('start_date', today)
+            .gte('end_date', today);
+          delegateUserIds = (activeDels || []).map((d: any) => d.delegate_user_id);
+        }
+
+        supabase.functions.invoke('notify-leave-email', {
+          body: {
+            employee_name: `${employeeData.last_name} ${employeeData.first_name}`,
+            department: employeeData.department,
+            request_number: insertedRequest!.request_number,
+            start_date: formatDate(startDate),
+            end_date: formatDate(endDate),
+            working_days: workingDays,
+            replacement_name: selectedColleagueForEmail?.name || '',
+            approver_user_id: designatedApproverId || null,
+            delegate_user_ids: delegateUserIds,
+          },
+        }).then(res => {
+          if (res.error) console.warn('Email notification failed:', res.error);
+          else console.log('Email notification sent successfully');
+        }).catch(err => console.warn('Email notification error:', err));
       }
-
-      supabase.functions.invoke('notify-leave-email', {
-        body: {
-          employee_name: `${employeeData.last_name} ${employeeData.first_name}`,
-          department: employeeData.department,
-          request_number: insertedRequest.request_number,
-          start_date: formatDate(startDate),
-          end_date: formatDate(endDate),
-          working_days: workingDays,
-          replacement_name: selectedColleagueForEmail?.name || '',
-          approver_user_id: designatedApproverId || null,
-          delegate_user_ids: delegateUserIds,
-        },
-      }).then(res => {
-        if (res.error) console.warn('Email notification failed:', res.error);
-        else console.log('Email notification sent successfully');
-      }).catch(err => console.warn('Email notification error:', err));
 
       onSubmitted();
     }
@@ -393,6 +396,12 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {isDemo && (
+          <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm flex items-center gap-2">
+            <Calendar className="w-4 h-4 flex-shrink-0" />
+            Această cerere este de exercițiu (Mod Demo). Nu va afecta soldul real de concediu.
+          </div>
+        )}
         {/* Auto-filled info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg bg-muted/50 border border-border">
           <div>

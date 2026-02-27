@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import { useDemoMode } from '@/contexts/DemoModeContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +44,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const { user } = useAuth();
   const { role, isSuperAdmin } = useUserRole();
   const { toast } = useToast();
+  const { isDemo } = useDemoMode();
 
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,11 +87,12 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
     setLoading(true);
 
-    const { data, error } = await supabase
+    const baseQuery = supabase
       .from('leave_requests')
       .select('*')
-      .eq('status', 'pending_department_head' as any)
-      .order('created_at', { ascending: true });
+      .eq('status', 'pending_department_head' as any);
+    
+    const { data, error } = await (baseQuery as any).eq('is_demo', isDemo).order('created_at', { ascending: true }) as { data: any[] | null; error: any };
 
     if (error) {
       console.error('Error fetching pending requests:', error);
