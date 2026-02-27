@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
 
       <!-- CTA Button -->
       <div style="text-align:center;margin:32px 0;">
-        <a href="https://poni-connect-hub.lovable.app/auth" 
+        <a href="https://intranet.icmpp.ro" 
            style="display:inline-block;background:linear-gradient(135deg,#2b6cb0,#3182ce);color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold;box-shadow:0 4px 12px rgba(49,130,206,0.3);">
           🚀 Accesează Platforma
         </a>
