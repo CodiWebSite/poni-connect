@@ -39,10 +39,10 @@ function useCountdown(targetDate: string | null) {
 
 const TimeUnit = ({ value, label }: { value: number; label: string }) => (
   <div className="flex flex-col items-center">
-    <div className="bg-card border border-border rounded-lg w-16 h-16 flex items-center justify-center shadow-sm">
-      <span className="text-2xl font-bold text-foreground tabular-nums">{String(value).padStart(2, '0')}</span>
+    <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-lg w-16 h-16 flex items-center justify-center shadow-lg">
+      <span className="text-2xl font-bold text-white tabular-nums">{String(value).padStart(2, '0')}</span>
     </div>
-    <span className="text-xs text-muted-foreground mt-1.5 uppercase tracking-wider">{label}</span>
+    <span className="text-xs text-white/80 mt-1.5 uppercase tracking-wider">{label}</span>
   </div>
 );
 
@@ -51,27 +51,38 @@ const Maintenance = () => {
   const { timeLeft, expired } = useCountdown(settings.maintenance_eta);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-indigo-50 dark:from-slate-900 dark:via-background dark:to-slate-800 flex items-center justify-center p-4">
-      <div className="max-w-lg text-center space-y-6">
+    <div
+      className="min-h-screen relative flex items-center justify-center p-4"
+      style={{
+        backgroundImage: 'url(/images/icmpp-building.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+
+      <div className="relative z-10 max-w-lg text-center space-y-6">
         {/* Logo institut */}
         <div className="flex justify-center">
           <img 
             src="/logo-icmpp.png" 
             alt="Logo ICMPP" 
-            className="h-20 w-auto opacity-90"
+            className="h-20 w-auto brightness-110 drop-shadow-lg"
           />
         </div>
 
         {/* Animated wrench icon */}
-        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-pulse">
-          <Wrench className="w-10 h-10 text-primary" />
+        <div className="w-20 h-20 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center mx-auto animate-pulse">
+          <Wrench className="w-10 h-10 text-white" />
         </div>
 
         <div className="space-y-3">
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className="text-3xl font-bold text-white drop-shadow-lg">
             Revenim în curând! 🔧
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed">
+          <p className="text-lg text-white/90 leading-relaxed drop-shadow">
             Platforma intranet este momentan în proces de actualizare pentru a vă oferi o experiență mai bună.
           </p>
         </div>
@@ -79,7 +90,7 @@ const Maintenance = () => {
         {/* Countdown timer */}
         {timeLeft && (
           <div className="space-y-3">
-            <p className="text-sm font-medium text-muted-foreground">Timp estimat de revenire:</p>
+            <p className="text-sm font-medium text-white/80">Timp estimat de revenire:</p>
             <div className="flex items-center justify-center gap-3">
               {timeLeft.days > 0 && <TimeUnit value={timeLeft.days} label="zile" />}
               <TimeUnit value={timeLeft.hours} label="ore" />
@@ -90,38 +101,38 @@ const Maintenance = () => {
         )}
 
         {expired && (
-          <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
-            <p className="text-sm text-primary font-medium">
+          <div className="bg-white/15 backdrop-blur-md border border-white/20 rounded-lg px-4 py-3">
+            <p className="text-sm text-white font-medium">
               Lucrările ar fi trebuit să se termine — reîncărcați pagina sau reveniți în câteva minute.
             </p>
           </div>
         )}
 
         {/* Friendly card */}
-        <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-6 space-y-4 shadow-sm">
-          <p className="text-sm text-muted-foreground">
+        <div className="bg-black/40 backdrop-blur-md border border-white/15 rounded-xl p-6 space-y-4 shadow-xl">
+          <p className="text-sm text-white/85">
             Lucrăm la îmbunătățiri importante. Vă rugăm să reveniți{!timeLeft && !expired ? ' în câteva minute' : ''}.
           </p>
           
-          <div className="h-px bg-border" />
+          <div className="h-px bg-white/20" />
 
           <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Aveți nevoie urgentă de asistență?</p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-sm text-muted-foreground">
+            <p className="text-sm font-medium text-white">Aveți nevoie urgentă de asistență?</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-sm text-white/80">
               <span className="flex items-center gap-1.5">
-                <Mail className="w-4 h-4 text-primary" />
+                <Mail className="w-4 h-4 text-white/90" />
                 Departamentul IT
               </span>
-              <span className="hidden sm:inline text-border">•</span>
+              <span className="hidden sm:inline text-white/30">•</span>
               <span className="flex items-center gap-1.5">
-                <Phone className="w-4 h-4 text-primary" />
+                <Phone className="w-4 h-4 text-white/90" />
                 Interior 123
               </span>
             </div>
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground/60">
+        <p className="text-xs text-white/50">
           Institutul de Chimie Macromoleculară „Petru Poni" — Iași
         </p>
       </div>
