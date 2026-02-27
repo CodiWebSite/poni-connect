@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Wrench, Mail, Phone, RefreshCw } from 'lucide-react';
+import { Wrench, Mail, Phone, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '@/hooks/useAppSettings';
 
@@ -54,12 +54,22 @@ const Maintenance = () => {
   const [countdown, setCountdown] = useState(30);
   const [checking, setChecking] = useState(false);
 
+  const [maintenanceEnded, setMaintenanceEnded] = useState(false);
+  const [wasInMaintenance, setWasInMaintenance] = useState(true);
+
   // Auto-redirect when maintenance is turned off (realtime)
   useEffect(() => {
-    if (!settings.maintenance_mode) {
-      navigate('/', { replace: true });
+    if (wasInMaintenance && !settings.maintenance_mode) {
+      setMaintenanceEnded(true);
+      // Show celebration briefly then redirect
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 3000);
     }
-  }, [settings.maintenance_mode, navigate]);
+    if (settings.maintenance_mode) {
+      setWasInMaintenance(true);
+    }
+  }, [settings.maintenance_mode, navigate, wasInMaintenance]);
 
   // Auto-refresh countdown every 30s
   useEffect(() => {
@@ -83,6 +93,43 @@ const Maintenance = () => {
     // Settings update automatically via realtime, just show visual feedback
     setTimeout(() => setChecking(false), 1500);
   }, []);
+
+  if (maintenanceEnded) {
+    return (
+      <div
+        className="min-h-screen relative flex items-center justify-center p-4"
+        style={{
+          backgroundImage: 'url(/images/icmpp-building.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+        <div className="relative z-10 text-center space-y-6 animate-in fade-in zoom-in duration-500">
+          <div className="w-24 h-24 rounded-full bg-green-500/20 backdrop-blur-md flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-14 h-14 text-green-400" />
+          </div>
+          <h1 className="text-3xl font-bold text-white drop-shadow-lg">
+            Platforma este din nou online! 🎉
+          </h1>
+          <p className="text-lg text-white/90">
+            Vă redirecționăm automat în câteva secunde...
+          </p>
+          <div className="w-48 h-1.5 bg-white/20 rounded-full mx-auto overflow-hidden">
+            <div className="h-full bg-green-400 rounded-full animate-[progress_3s_linear]" 
+                 style={{ animation: 'progress 3s linear forwards' }} />
+          </div>
+        </div>
+        <style>{`
+          @keyframes progress {
+            from { width: 0%; }
+            to { width: 100%; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-screen relative flex items-center justify-center p-4"
