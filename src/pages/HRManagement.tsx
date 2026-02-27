@@ -131,6 +131,7 @@ const HRManagement = () => {
   const { toast } = useToast();
   
   const [employees, setEmployees] = useState<EmployeeWithData[]>([]);
+  const [hrRequests, setHrRequests] = useState<any[]>([]);
   const [departmentHeadEmails, setDepartmentHeadEmails] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -319,12 +320,17 @@ const HRManagement = () => {
       .from('employee_documents')
       .select('*');
 
-    // Fetch all approved leave requests for all employees
-    const { data: allLeaves } = await supabase
+    // Fetch all HR requests for export
+    const { data: allHrRequests } = await supabase
       .from('hr_requests')
-      .select('user_id, details, status')
-      .eq('request_type', 'concediu')
-      .eq('status', 'approved');
+      .select('*');
+
+    setHrRequests(allHrRequests || []);
+
+    // Filter approved leave requests for leave history calculation
+    const allLeaves = (allHrRequests || []).filter(
+      (r: any) => r.request_type === 'concediu' && r.status === 'approved'
+    );
 
     // Build leave lookup maps: by user_id and by epd_id
     const leavesByUserId: Record<string, { startDate: string; endDate: string; numberOfDays: number }[]> = {};
@@ -1157,7 +1163,7 @@ const HRManagement = () => {
             <RefreshCw className={`w-4 h-4 sm:mr-2 ${syncing ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">{syncing ? 'Sincronizare...' : 'Sincronizează'}</span>
           </Button>
-          <HRExportButton requests={[]} employees={exportEmployees} />
+          <HRExportButton requests={hrRequests} employees={exportEmployees} />
           <Button variant="outline" size="sm" onClick={() => setShowManualLeave(true)}>
             <FilePlus2 className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Concediu Manual</span>
