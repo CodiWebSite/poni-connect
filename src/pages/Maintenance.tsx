@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Wrench, Mail, Phone } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Wrench, Mail, Phone, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '@/hooks/useAppSettings';
 
 function useCountdown(targetDate: string | null) {
@@ -49,7 +50,39 @@ const TimeUnit = ({ value, label }: { value: number; label: string }) => (
 const Maintenance = () => {
   const { settings } = useAppSettings();
   const { timeLeft, expired } = useCountdown(settings.maintenance_eta);
+  const navigate = useNavigate();
+  const [countdown, setCountdown] = useState(30);
+  const [checking, setChecking] = useState(false);
 
+  // Auto-redirect when maintenance is turned off (realtime)
+  useEffect(() => {
+    if (!settings.maintenance_mode) {
+      navigate('/', { replace: true });
+    }
+  }, [settings.maintenance_mode, navigate]);
+
+  // Auto-refresh countdown every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          // Trigger a visual check pulse
+          setChecking(true);
+          setTimeout(() => setChecking(false), 1500);
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const manualCheck = useCallback(() => {
+    setChecking(true);
+    setCountdown(30);
+    // Settings update automatically via realtime, just show visual feedback
+    setTimeout(() => setChecking(false), 1500);
+  }, []);
   return (
     <div
       className="min-h-screen relative flex items-center justify-center p-4"
@@ -131,6 +164,15 @@ const Maintenance = () => {
             </div>
           </div>
         </div>
+
+        {/* Auto-refresh indicator */}
+        <button
+          onClick={manualCheck}
+          className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white/90 transition-colors mx-auto"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${checking ? 'animate-spin' : ''}`} />
+          {checking ? 'Se verifică...' : `Verificare automată în ${countdown}s`}
+        </button>
 
         <p className="text-xs text-white/50">
           Institutul de Chimie Macromoleculară „Petru Poni" — Iași
