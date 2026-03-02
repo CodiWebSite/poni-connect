@@ -24,6 +24,7 @@ import NotFound from "./pages/NotFound";
 import Library from "./pages/Library";
 import Maintenance from "./pages/Maintenance";
 import PlatformGuide from "./pages/PlatformGuide";
+import Salarizare from "./pages/Salarizare";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,7 @@ const App = () => (
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/library" element={<Library />} />
                 <Route path="/ghid" element={<PlatformGuide />} />
+                <Route path="/salarizare" element={<Salarizare />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

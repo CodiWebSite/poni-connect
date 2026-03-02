@@ -1544,6 +1544,7 @@ export type Database = {
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
       can_manage_library: { Args: { _user_id: string }; Returns: boolean }
       can_manage_procurement: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_salarizare: { Args: { _user_id: string }; Returns: boolean }
       can_manage_secretariat: { Args: { _user_id: string }; Returns: boolean }
       can_view_sensitive_profile_data: {
         Args: { _profile_user_id: string; _viewer_id: string }

@@ -23,6 +23,7 @@ import {
   BookOpen,
   HelpCircle,
   FlaskConical,
+  Banknote,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -32,7 +33,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare } = useUserRole();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
   const { isDemo, toggleDemo } = useDemoMode();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -88,6 +89,7 @@ const Sidebar = () => {
 
   const managementItems = [
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR }] : []),
+    ...(isSalarizare ? [{ icon: Banknote, label: 'Salarizare', path: '/salarizare' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin }] : []),
   ];
