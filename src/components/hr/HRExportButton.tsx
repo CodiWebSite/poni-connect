@@ -429,11 +429,6 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Rapoarte disponibile</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={exportPayrollReport}>
-          <Banknote className="w-4 h-4 mr-2" />
-          Raport salarizare (CO/lună)
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={exportLeaveRequests}>
           <Calendar className="w-4 h-4 mr-2" />
           Cereri de concediu

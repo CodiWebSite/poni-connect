@@ -1,0 +1,343 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
+import MainLayout from '@/components/layout/MainLayout';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Download, Loader2, Banknote, CalendarDays } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import { format, startOfMonth, endOfMonth, subMonths, eachDayOfInterval, isWeekend } from 'date-fns';
+import { ro } from 'date-fns/locale';
+
+const MONTH_NAMES_RO = [
+  'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
+  'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'
+];
+
+const HEADER_FILL: ExcelJS.FillPattern = {
+  type: 'pattern',
+  pattern: 'solid',
+  fgColor: { argb: 'FF1F4E79' },
+};
+
+const HEADER_FONT: Partial<ExcelJS.Font> = {
+  bold: true,
+  color: { argb: 'FFFFFFFF' },
+  size: 11,
+};
+
+const BORDER_THIN: Partial<ExcelJS.Borders> = {
+  top: { style: 'thin' },
+  left: { style: 'thin' },
+  bottom: { style: 'thin' },
+  right: { style: 'thin' },
+};
+
+interface EmployeeData {
+  id: string;
+  first_name: string;
+  last_name: string;
+  department: string | null;
+  position: string | null;
+}
+
+interface LeaveRequest {
+  start_date: string;
+  end_date: string;
+  working_days: number;
+  epd_id: string | null;
+  user_id: string;
+  status: string;
+}
+
+function getWorkingDaysInRange(start: Date, end: Date, monthStart: Date, monthEnd: Date): { days: number; period: string } {
+  const effectiveStart = start < monthStart ? monthStart : start;
+  const effectiveEnd = end > monthEnd ? monthEnd : end;
+  
+  if (effectiveStart > effectiveEnd) return { days: 0, period: '' };
+  
+  const allDays = eachDayOfInterval({ start: effectiveStart, end: effectiveEnd });
+  const workingDays = allDays.filter(d => !isWeekend(d)).length;
+  
+  return {
+    days: workingDays,
+    period: `${format(effectiveStart, 'dd.MM')}-${format(effectiveEnd, 'dd.MM')}`,
+  };
+}
+
+function addMonthSheet(
+  wb: ExcelJS.Workbook,
+  sheetName: string,
+  employees: EmployeeData[],
+  leaveRequests: LeaveRequest[],
+  monthStart: Date,
+  monthEnd: Date
+) {
+  const ws = wb.addWorksheet(sheetName);
+
+  // Header
+  const headers = ['Nr', 'Nume', 'Departament', 'Funcție', 'Zile CO', 'Perioade'];
+  const headerRow = ws.addRow(headers);
+  headerRow.eachCell((cell) => {
+    cell.fill = HEADER_FILL;
+    cell.font = HEADER_FONT;
+    cell.border = BORDER_THIN;
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // Sort employees A-Z by last_name + first_name
+  const sorted = [...employees].sort((a, b) => {
+    const nameA = `${a.last_name} ${a.first_name}`.toLowerCase();
+    const nameB = `${b.last_name} ${b.first_name}`.toLowerCase();
+    return nameA.localeCompare(nameB, 'ro');
+  });
+
+  sorted.forEach((emp, idx) => {
+    // Find approved leave requests for this employee in this month
+    const empLeaves = leaveRequests.filter(lr => lr.epd_id === emp.id);
+    
+    let totalDays = 0;
+    const periods: string[] = [];
+
+    empLeaves.forEach(lr => {
+      const lrStart = new Date(lr.start_date);
+      const lrEnd = new Date(lr.end_date);
+      const result = getWorkingDaysInRange(lrStart, lrEnd, monthStart, monthEnd);
+      if (result.days > 0) {
+        totalDays += result.days;
+        periods.push(result.period);
+      }
+    });
+
+    const row = ws.addRow([
+      idx + 1,
+      `${emp.last_name} ${emp.first_name}`,
+      emp.department || '',
+      emp.position || '',
+      totalDays,
+      periods.join(', '),
+    ]);
+
+    row.eachCell((cell) => {
+      cell.border = BORDER_THIN;
+      cell.alignment = { vertical: 'middle' };
+    });
+
+    // Zebra striping
+    if (idx % 2 === 1) {
+      row.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+      });
+    }
+  });
+
+  // Column widths
+  ws.getColumn(1).width = 6;
+  ws.getColumn(2).width = 30;
+  ws.getColumn(3).width = 22;
+  ws.getColumn(4).width = 22;
+  ws.getColumn(5).width = 10;
+  ws.getColumn(6).width = 35;
+}
+
+const Salarizare = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isSalarizare, loading: roleLoading } = useUserRole();
+  const [exporting, setExporting] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!roleLoading && !isSalarizare) {
+      navigate('/');
+    }
+  }, [roleLoading, isSalarizare, navigate]);
+
+  if (roleLoading) {
+    return (
+      <MainLayout title="Salarizare">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!isSalarizare) return null;
+
+  const fetchData = async () => {
+    const [{ data: employees }, { data: leaveReqs }] = await Promise.all([
+      supabase.from('employee_personal_data').select('id, first_name, last_name, department, position').eq('is_archived', false),
+      supabase.from('leave_requests').select('start_date, end_date, working_days, epd_id, user_id, status').eq('status', 'approved' as any).eq('is_demo', false),
+    ]);
+
+    return {
+      employees: (employees || []) as EmployeeData[],
+      leaveRequests: (leaveReqs || []) as unknown as LeaveRequest[],
+    };
+  };
+
+  const exportPreviousMonth = async () => {
+    setExporting('prev');
+    try {
+      const { employees, leaveRequests } = await fetchData();
+      const now = new Date();
+      const prevMonth = subMonths(now, 1);
+      const monthStart = startOfMonth(prevMonth);
+      const monthEnd = endOfMonth(prevMonth);
+      const sheetName = `${MONTH_NAMES_RO[prevMonth.getMonth()]} ${prevMonth.getFullYear()}`;
+
+      const wb = new ExcelJS.Workbook();
+      addMonthSheet(wb, sheetName, employees, leaveRequests, monthStart, monthEnd);
+
+      const buf = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buf]), `Salarizare_${sheetName.replace(' ', '_')}.xlsx`);
+      toast.success(`Export "${sheetName}" generat cu succes!`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Eroare la generarea exportului');
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const exportYear = async (year: number) => {
+    setExporting(String(year));
+    try {
+      const { employees, leaveRequests } = await fetchData();
+      const wb = new ExcelJS.Workbook();
+
+      for (let m = 0; m < 12; m++) {
+        const monthStart = new Date(year, m, 1);
+        const monthEnd = endOfMonth(monthStart);
+        const sheetName = `${MONTH_NAMES_RO[m]} ${year}`;
+        addMonthSheet(wb, sheetName, employees, leaveRequests, monthStart, monthEnd);
+      }
+
+      const buf = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buf]), `Concedii_${year}.xlsx`);
+      toast.success(`Export concedii ${year} generat cu succes!`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Eroare la generarea exportului');
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  return (
+    <MainLayout title="Salarizare">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Banknote className="w-7 h-7 text-primary" />
+            Salarizare
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Export rapoarte concedii pentru departamentul de salarizare
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {/* Luna precedentă */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CalendarDays className="w-5 h-5" />
+                Luna Precedentă
+              </CardTitle>
+              <CardDescription>
+                {(() => {
+                  const prev = subMonths(new Date(), 1);
+                  return `${MONTH_NAMES_RO[prev.getMonth()]} ${prev.getFullYear()}`;
+                })()}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Export cu toți angajații și zilele de concediu din luna precedentă.
+              </p>
+              <Button
+                onClick={exportPreviousMonth}
+                disabled={!!exporting}
+                className="w-full"
+              >
+                {exporting === 'prev' ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                Export XLSX
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Concedii 2025 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CalendarDays className="w-5 h-5" />
+                Concedii 2025
+              </CardTitle>
+              <CardDescription>
+                12 foi lunare (Ianuarie – Decembrie 2025)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Export complet cu angajații și concediile pe fiecare lună din 2025.
+              </p>
+              <Button
+                onClick={() => exportYear(2025)}
+                disabled={!!exporting}
+                className="w-full"
+              >
+                {exporting === '2025' ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                Export XLSX
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Concedii 2026 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CalendarDays className="w-5 h-5" />
+                Concedii 2026
+              </CardTitle>
+              <CardDescription>
+                12 foi lunare (Ianuarie – Decembrie 2026)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Export complet cu angajații și concediile pe fiecare lună din 2026.
+              </p>
+              <Button
+                onClick={() => exportYear(2026)}
+                disabled={!!exporting}
+                className="w-full"
+              >
+                {exporting === '2026' ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                Export XLSX
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </MainLayout>
+  );
+};
+
+export default Salarizare;
