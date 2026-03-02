@@ -1,86 +1,114 @@
 
 
-## Plan: Mod Demo pentru Platforma ICMPP
+## Plan: Modul Salarizare -- Rol dedicat cu acces exclusiv
 
-### Concept
+### Rezumat
 
-Un **Mod Demo** activabil din sidebar care permite utilizatorilor sa exerseze toate fluxurile platformei (cereri concediu, etc.) fara ca actiunile sa afecteze datele reale. Datele demo se salveaza separat si se sterg periodic.
+Se creează un rol nou `salarizare` in baza de date, o pagina dedicata `/salarizare` vizibila DOAR pentru utilizatorii cu acest rol (nu si super_admin), si se scoate optiunea "Raport salarizare" din HRExportButton.
 
-### Arhitectura
+### 1. Migrare SQL
 
-```text
-┌─────────────────────────────────────────┐
-│           DemoModeContext               │
-│  ┌─────────┐  ┌──────────────────────┐  │
-│  │ isDemo  │  │ toggleDemo()         │  │
-│  │ boolean │  │ activare/dezactivare │  │
-│  └─────────┘  └──────────────────────┘  │
-└─────────────────────────────────────────┘
-         │
-         ▼
-┌──────────────────┐    ┌──────────────────┐
-│  Sidebar toggle  │    │  Banner global   │
-│  (buton Demo)    │    │  "MOD DEMO ACTIV"│
-└──────────────────┘    └──────────────────┘
-         │
-         ▼
-┌──────────────────────────────────────────┐
-│  Formulare (LeaveRequestForm, etc.)      │
-│  if (isDemo) → insert cu is_demo=true   │
-│  Liste → filtrare dupa is_demo          │
-└──────────────────────────────────────────┘
+```sql
+-- Adaugare rol nou
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'salarizare';
+
+-- Functie de verificare
+CREATE OR REPLACE FUNCTION public.can_manage_salarizare(_user_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = 'salarizare'
+  )
+$$;
+
+-- RLS: rolul salarizare poate citi employee_personal_data
+CREATE POLICY "Salarizare can view EPD"
+ON public.employee_personal_data FOR SELECT
+TO authenticated
+USING (can_manage_salarizare(auth.uid()));
+
+-- RLS: rolul salarizare poate citi leave_requests
+CREATE POLICY "Salarizare can view leave requests"
+ON public.leave_requests FOR SELECT
+TO authenticated
+USING (can_manage_salarizare(auth.uid()));
+
+-- RLS: rolul salarizare poate citi employee_records
+CREATE POLICY "Salarizare can view employee records"
+ON public.employee_records FOR SELECT
+TO authenticated
+USING (can_manage_salarizare(auth.uid()));
+
+-- RLS: rolul salarizare poate citi leave_carryover
+CREATE POLICY "Salarizare can view leave carryover"
+ON public.leave_carryover FOR SELECT
+TO authenticated
+USING (can_manage_salarizare(auth.uid()));
+
+-- RLS: rolul salarizare poate citi leave_bonus
+CREATE POLICY "Salarizare can view leave bonus"
+ON public.leave_bonus FOR SELECT
+TO authenticated
+USING (can_manage_salarizare(auth.uid()));
+
+-- RLS: rolul salarizare poate citi profiles
+CREATE POLICY "Salarizare can view profiles"
+ON public.profiles FOR SELECT
+TO authenticated
+USING (can_manage_salarizare(auth.uid()));
 ```
 
-### Implementare pas cu pas
+Update `handle_new_user` -- adaugare label "Salarizare" in CASE.
 
-**1. Migratie baza de date**
-- Adaug coloana `is_demo BOOLEAN DEFAULT false` pe tabela `leave_requests` (si pe alte tabele viitoare daca se extinde)
-- Aceasta coloana separa datele reale de cele demo
+### 2. Modificari cod
 
-**2. Context React: `DemoModeContext`**
-- Noul fisier `src/contexts/DemoModeContext.tsx`
-- State `isDemo` persistat in `localStorage` (se pastreaza la refresh)
-- Functie `toggleDemo()` si valoarea `isDemo` expuse prin hook `useDemoMode()`
+**`src/hooks/useUserRole.tsx`**
+- Adaugare `'salarizare'` in lista de roluri valide
+- Export `isSalarizare` computed property
 
-**3. Toggle in Sidebar**
-- Buton nou in footer-ul sidebar-ului (langa "Deconectare")
-- Icon `FlaskConical` + label "Mod Demo" cu un Switch
-- Cand sidebar e collapsed, tooltip cu starea
+**`src/components/layout/Sidebar.tsx`**
+- Adaugare intrare `Salarizare` cu icon `Banknote`, vizibila DOAR daca `isSalarizare` (nu si super_admin)
+- Plasare in sectiunea de management
 
-**4. Banner global in Header**
-- Cand `isDemo` e activ, se afiseaza un banner portocaliu/galben fix sub header: "MOD DEMO ACTIV — Actiunile nu afecteaza datele reale"
-- Buton rapid "Dezactiveaza" in banner
+**`src/components/layout/MobileNav.tsx`**
+- Aceeasi intrare pentru mobile
 
-**5. Modificari LeaveRequestForm**
-- La submit, daca `isDemo === true`, se seteaza `is_demo: true` in obiectul inserat in `leave_requests`
-- Toast de succes cu mentiunea "[DEMO]"
-- Se genereaza automat o aprobare fictiva dupa 2 secunde (simulare flux)
+**`src/App.tsx`**
+- Adaugare ruta `/salarizare` -> `Salarizare`
 
-**6. Modificari liste si query-uri**
-- `LeaveRequestsList` → filtreaza `.eq('is_demo', isDemo)` — in mod normal vede doar cererile reale, in mod demo vede doar pe cele demo
-- `LeaveApprovalPanel` → la fel, afiseaza doar cereri demo cand e in demo mode
-- `LeaveCalendar` → exclude `is_demo = true` din vizualizare
+**`src/pages/Salarizare.tsx`** (NOU)
+- Verificare rol: daca nu e `salarizare`, redirect la `/`
+- UI cu 3 butoane de export XLSX:
+  1. **Luna precedenta** -- un sheet cu angajatii A-Z si concediile din luna precedenta (zile + perioade)
+  2. **Concedii 2025** -- 12 sheet-uri (Ian-Dec 2025), fiecare cu angajatii si concediile lunii respective
+  3. **Concedii 2026** -- 12 sheet-uri (Ian-Dec 2026), fiecare cu angajatii si concediile lunii respective
+- Datele se iau din `employee_personal_data` + `leave_requests` (approved) + `leave_carryover` + `leave_bonus`
+- Se reutilizeaza logica de stil Excel din HRExportButton (HEADER_FILL, styleSheet, etc.)
 
-**7. Curatare automata date demo**
-- Se adauga o functie backend (Edge Function sau cron) care sterge periodic (zilnic) randurile cu `is_demo = true` mai vechi de 24h
-- Alternativ, un buton "Sterge datele demo" in interfata
+**`src/components/hr/HRExportButton.tsx`**
+- Scoatere optiunea "Raport salarizare (CO/luna)" din dropdown (liniile 432-435)
 
-**8. Indicatori vizuali suplimentari**
-- In listele de cereri, randurile demo au un badge "[DEMO]" si fundal diferit
-- Pe formularele din mod demo, un mic banner informativ: "Aceasta cerere este de exercitiu"
+### 3. Structura XLSX
 
-### Fisiere afectate
+```text
+Export "Luna precedenta (Feb 2026)":
+Sheet: "Feb 2026"
+| Nr | Nume        | Dept   | Functie | Zile CO | Perioade    |
 
-| Fisier | Modificare |
-|--------|-----------|
-| `src/contexts/DemoModeContext.tsx` | **NOU** — context + provider + hook |
-| `src/App.tsx` | Wrap cu `DemoModeProvider` |
-| `src/components/layout/Sidebar.tsx` | Toggle Mod Demo in footer |
-| `src/components/layout/Header.tsx` | Banner "MOD DEMO ACTIV" |
-| `src/components/leave/LeaveRequestForm.tsx` | Insert cu `is_demo` flag |
-| `src/components/leave/LeaveRequestsList.tsx` | Filtrare dupa `is_demo` |
-| `src/components/leave/LeaveApprovalPanel.tsx` | Filtrare dupa `is_demo` |
-| `src/components/leave/LeaveApprovalHistory.tsx` | Filtrare dupa `is_demo` |
-| `src/components/leave/LeaveRequestsHR.tsx` | Filtrare dupa `is_demo` |
-| Migratie SQL | Coloana `is_demo` pe `leave_requests` |
+Export "Concedii 2025":
+Sheet: "Ianuarie 2025" ... "Decembrie 2025" (12 sheets)
+| Nr | Nume        | Dept   | Functie | Zile CO | Perioade    |
+
+Export "Concedii 2026":  
+Sheet: "Ianuarie 2026" ... "Decembrie 2026" (12 sheets)
+| Nr | Nume        | Dept   | Functie | Zile CO | Perioade    |
+```
+
+### 4. Fișiere afectate
+
+- **Nou**: `src/pages/Salarizare.tsx`
+- **Modificat**: `src/hooks/useUserRole.tsx`, `src/components/layout/Sidebar.tsx`, `src/components/layout/MobileNav.tsx`, `src/App.tsx`, `src/components/hr/HRExportButton.tsx`
+- **Migrare DB**: rol + functie + 6 politici RLS + update handle_new_user
 
