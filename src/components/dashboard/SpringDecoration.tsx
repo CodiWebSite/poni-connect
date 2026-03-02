@@ -2,77 +2,81 @@ import { useEffect, useState } from 'react';
 
 const SpringDecoration = () => {
   const [visible, setVisible] = useState(false);
-  
+
   useEffect(() => {
     const now = new Date();
-    // Show only in March
-    if (now.getMonth() === 2) {
-      setVisible(true);
-    }
+    if (now.getMonth() === 2) setVisible(true);
   }, []);
 
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 pointer-events-none select-none animate-fade-in">
-      <div className="relative w-28 h-32">
-        {/* Mărțișor string */}
-        <svg viewBox="0 0 120 140" className="w-full h-full drop-shadow-lg" aria-label="Mărțișor decorativ de 1 Martie">
-          {/* Twisted red-white cord */}
-          <path
-            d="M60 5 Q65 30 55 55 Q50 70 58 90 Q62 100 56 115"
-            fill="none"
-            stroke="hsl(0, 75%, 50%)"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-          <path
-            d="M60 5 Q55 30 65 55 Q70 70 62 90 Q58 100 64 115"
-            fill="none"
-            stroke="white"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-          
-          {/* Red circle */}
-          <circle cx="48" cy="118" r="10" fill="hsl(0, 75%, 50%)" stroke="hsl(0, 60%, 40%)" strokeWidth="1.5" />
-          <circle cx="48" cy="115" r="3" fill="hsl(0, 70%, 65%)" opacity="0.6" />
-          
-          {/* White circle */}
-          <circle cx="72" cy="118" r="10" fill="white" stroke="hsl(0, 0%, 80%)" strokeWidth="1.5" />
-          <circle cx="72" cy="115" r="3" fill="hsl(0, 0%, 95%)" opacity="0.8" />
+    <div className="relative mb-4 overflow-hidden rounded-xl border border-red-200/60 dark:border-red-900/30 bg-gradient-to-r from-red-50/80 via-white to-red-50/80 dark:from-red-950/20 dark:via-background dark:to-red-950/20 px-5 py-3">
+      {/* Floating petals background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(6)].map((_, i) => (
+          <span
+            key={i}
+            className="absolute text-red-300/30 dark:text-red-400/15 animate-pulse"
+            style={{
+              left: `${10 + i * 16}%`,
+              top: `${15 + (i % 3) * 25}%`,
+              fontSize: `${10 + (i % 3) * 4}px`,
+              animationDelay: `${i * 0.4}s`,
+              animationDuration: `${2 + (i % 2)}s`,
+            }}
+          >
+            ✿
+          </span>
+        ))}
+      </div>
 
-          {/* Ghiocel (snowdrop flower) */}
-          <g transform="translate(20, 0)">
-            {/* Stem */}
-            <path d="M18 45 Q20 30 22 15" fill="none" stroke="hsl(130, 50%, 40%)" strokeWidth="2" strokeLinecap="round" />
-            {/* Leaf */}
-            <path d="M18 40 Q10 35 14 28" fill="none" stroke="hsl(130, 50%, 40%)" strokeWidth="1.5" strokeLinecap="round" />
-            {/* Drooping stem */}
-            <path d="M22 15 Q28 8 32 12" fill="none" stroke="hsl(130, 45%, 45%)" strokeWidth="1.5" strokeLinecap="round" />
-            {/* Petals */}
-            <ellipse cx="35" cy="14" rx="5" ry="3" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.5" transform="rotate(20, 35, 14)" />
-            <ellipse cx="34" cy="11" rx="4.5" ry="2.5" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.5" transform="rotate(-10, 34, 11)" />
-            <ellipse cx="36" cy="17" rx="4.5" ry="2.5" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.5" transform="rotate(40, 36, 17)" />
-            {/* Green tip */}
-            <ellipse cx="38" cy="14" rx="2" ry="1.5" fill="hsl(130, 50%, 55%)" transform="rotate(20, 38, 14)" />
-          </g>
+      <div className="relative flex items-center gap-4">
+        {/* Mărțișor icon */}
+        <div className="flex-shrink-0">
+          <svg viewBox="0 0 64 80" className="w-10 h-12 drop-shadow-sm" aria-hidden="true">
+            {/* Twisted cord */}
+            <path d="M32 2 Q35 18 29 32 Q27 38 30 48" fill="none" stroke="hsl(0, 72%, 50%)" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M32 2 Q29 18 35 32 Q37 38 34 48" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            {/* Red bead */}
+            <circle cx="24" cy="58" r="9" fill="hsl(0, 72%, 50%)" />
+            <circle cx="22" cy="55" r="3" fill="hsl(0, 72%, 65%)" opacity="0.5" />
+            {/* White bead */}
+            <circle cx="40" cy="58" r="9" fill="white" stroke="hsl(0, 0%, 85%)" strokeWidth="1" />
+            <circle cx="38" cy="55" r="3" fill="hsl(0, 0%, 96%)" opacity="0.7" />
+            {/* Bow */}
+            <path d="M28 48 Q32 44 36 48" fill="none" stroke="hsl(0, 72%, 50%)" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </div>
 
-          {/* Second ghiocel */}
-          <g transform="translate(62, -5) scale(0.85)">
-            <path d="M18 45 Q16 30 15 18" fill="none" stroke="hsl(130, 50%, 40%)" strokeWidth="2" strokeLinecap="round" />
-            <path d="M17 38 Q24 33 20 27" fill="none" stroke="hsl(130, 50%, 40%)" strokeWidth="1.5" strokeLinecap="round" />
-            <path d="M15 18 Q10 10 6 14" fill="none" stroke="hsl(130, 45%, 45%)" strokeWidth="1.5" strokeLinecap="round" />
-            <ellipse cx="3" cy="16" rx="5" ry="3" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.5" transform="rotate(-20, 3, 16)" />
-            <ellipse cx="4" cy="13" rx="4.5" ry="2.5" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.5" transform="rotate(10, 4, 13)" />
-            <ellipse cx="2" cy="19" rx="4.5" ry="2.5" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.5" transform="rotate(-40, 2, 19)" />
-            <ellipse cx="0" cy="16" rx="2" ry="1.5" fill="hsl(130, 50%, 55%)" transform="rotate(-20, 0, 16)" />
-          </g>
-        </svg>
+        {/* Text */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+            🌸 1 Martie — Bine ați venit în primăvară!
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Vă dorim un mărțișor plin de bucurie, sănătate și realizări frumoase!
+          </p>
+        </div>
 
-        {/* Label */}
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap">
-          <span className="text-[10px] font-medium text-muted-foreground/70 italic">1 Martie</span>
+        {/* Ghiocei */}
+        <div className="flex-shrink-0 hidden sm:block">
+          <svg viewBox="0 0 50 60" className="w-10 h-12" aria-hidden="true">
+            {/* Stem 1 */}
+            <path d="M20 55 Q22 35 24 20" fill="none" stroke="hsl(130, 50%, 45%)" strokeWidth="2" strokeLinecap="round" />
+            <path d="M22 42 Q15 38 18 30" fill="none" stroke="hsl(130, 50%, 45%)" strokeWidth="1.5" strokeLinecap="round" />
+            {/* Flower 1 */}
+            <path d="M24 20 Q30 12 34 16" fill="none" stroke="hsl(130, 45%, 50%)" strokeWidth="1.5" strokeLinecap="round" />
+            <ellipse cx="37" cy="17" rx="5" ry="2.5" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.5" transform="rotate(15, 37, 17)" />
+            <ellipse cx="36" cy="14" rx="4.5" ry="2" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.5" transform="rotate(-5, 36, 14)" />
+            <ellipse cx="38" cy="20" rx="4.5" ry="2" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.5" transform="rotate(35, 38, 20)" />
+            <ellipse cx="40" cy="17" rx="2" ry="1.2" fill="hsl(130, 50%, 55%)" transform="rotate(15, 40, 17)" />
+            {/* Stem 2 */}
+            <path d="M30 55 Q28 38 26 25" fill="none" stroke="hsl(130, 50%, 40%)" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+            <path d="M26 25 Q20 18 16 22" fill="none" stroke="hsl(130, 45%, 50%)" strokeWidth="1.2" strokeLinecap="round" opacity="0.7" />
+            <ellipse cx="13" cy="23" rx="4" ry="2" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.4" transform="rotate(-20, 13, 23)" opacity="0.7" />
+            <ellipse cx="14" cy="20.5" rx="3.5" ry="1.8" fill="white" stroke="hsl(130, 20%, 85%)" strokeWidth="0.4" transform="rotate(5, 14, 20.5)" opacity="0.7" />
+          </svg>
         </div>
       </div>
     </div>
