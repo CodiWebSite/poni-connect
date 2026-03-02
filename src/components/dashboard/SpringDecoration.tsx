@@ -52,10 +52,7 @@ const SpringDecoration = () => {
         {/* Text */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-            🌸 1 Martie — Bine ați venit în primăvară!
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Vă dorim un mărțișor plin de bucurie, sănătate și realizări frumoase!
+            🌸 O primăvară frumoasă!
           </p>
         </div>
 
