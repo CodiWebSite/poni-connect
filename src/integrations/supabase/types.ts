@@ -1604,6 +1604,7 @@ export type Database = {
         | "director_adjunct"
         | "secretar_stiintific"
         | "bibliotecar"
+        | "salarizare"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
       document_direction: "incoming" | "outgoing"
       hr_request_status: "pending" | "approved" | "rejected"
@@ -1774,6 +1775,7 @@ export const Constants = {
         "director_adjunct",
         "secretar_stiintific",
         "bibliotecar",
+        "salarizare",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
       document_direction: ["incoming", "outgoing"],
