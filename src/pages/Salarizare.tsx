@@ -43,6 +43,7 @@ interface EmployeeData {
   last_name: string;
   department: string | null;
   position: string | null;
+  employee_record_id: string | null;
 }
 
 interface LeaveRecord {
@@ -80,7 +81,7 @@ function addMonthSheet(
   const ws = wb.addWorksheet(sheetName);
 
   // Header
-  const headers = ['Nr', 'Nume', 'Departament', 'Funcție', 'Zile CO', 'Perioade'];
+  const headers = ['Nr', 'Nume', 'Departament', 'Funcție', 'Tip', 'Zile', 'Perioade'];
   const headerRow = ws.addRow(headers);
   headerRow.eachCell((cell) => {
     cell.fill = HEADER_FILL;
@@ -96,41 +97,74 @@ function addMonthSheet(
     return nameA.localeCompare(nameB, 'ro');
   });
 
+  const leaveTypeLabels: Record<string, string> = {
+    co: 'CO',
+    ccc: 'CCC',
+    cfp: 'CFP',
+    cm: 'CM',
+  };
+
   sorted.forEach((emp, idx) => {
-    // Find approved leave requests for this employee in this month
+    // Find all leave records for this employee in this month
     const empLeaves = leaveRecords.filter(lr => lr.epd_id === emp.id);
     
-    let totalDays = 0;
-    const periods: string[] = [];
+    // Group by leave type
+    const byType: Record<string, { days: number; periods: string[] }> = {};
 
     empLeaves.forEach(lr => {
       const lrStart = new Date(lr.start_date);
       const lrEnd = new Date(lr.end_date);
       const result = getWorkingDaysInRange(lrStart, lrEnd, monthStart, monthEnd);
       if (result.days > 0) {
-        totalDays += result.days;
-        periods.push(result.period);
+        const type = lr.leave_type || 'co';
+        if (!byType[type]) byType[type] = { days: 0, periods: [] };
+        byType[type].days += result.days;
+        byType[type].periods.push(result.period);
       }
     });
 
-    const row = ws.addRow([
-      idx + 1,
-      `${emp.last_name} ${emp.first_name}`,
-      emp.department || '',
-      emp.position || '',
-      totalDays,
-      periods.join(', '),
-    ]);
-
-    row.eachCell((cell) => {
-      cell.border = BORDER_THIN;
-      cell.alignment = { vertical: 'middle' };
-    });
-
-    // Zebra striping
-    if (idx % 2 === 1) {
+    const types = Object.keys(byType);
+    if (types.length === 0) {
+      // No leave - single row
+      const row = ws.addRow([
+        idx + 1,
+        `${emp.last_name} ${emp.first_name}`,
+        emp.department || '',
+        emp.position || '',
+        '',
+        0,
+        '',
+      ]);
       row.eachCell((cell) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+        cell.border = BORDER_THIN;
+        cell.alignment = { vertical: 'middle' };
+      });
+      if (idx % 2 === 1) {
+        row.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+        });
+      }
+    } else {
+      types.forEach((type, typeIdx) => {
+        const info = byType[type];
+        const row = ws.addRow([
+          typeIdx === 0 ? idx + 1 : '',
+          typeIdx === 0 ? `${emp.last_name} ${emp.first_name}` : '',
+          typeIdx === 0 ? (emp.department || '') : '',
+          typeIdx === 0 ? (emp.position || '') : '',
+          leaveTypeLabels[type] || type.toUpperCase(),
+          info.days,
+          info.periods.join(', '),
+        ]);
+        row.eachCell((cell) => {
+          cell.border = BORDER_THIN;
+          cell.alignment = { vertical: 'middle' };
+        });
+        if (idx % 2 === 1) {
+          row.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+          });
+        }
       });
     }
   });
@@ -140,8 +174,9 @@ function addMonthSheet(
   ws.getColumn(2).width = 30;
   ws.getColumn(3).width = 22;
   ws.getColumn(4).width = 22;
-  ws.getColumn(5).width = 10;
-  ws.getColumn(6).width = 35;
+  ws.getColumn(5).width = 8;
+  ws.getColumn(6).width = 10;
+  ws.getColumn(7).width = 35;
 }
 
 const Salarizare = () => {
@@ -169,25 +204,37 @@ const Salarizare = () => {
   if (!isSalarizare) return null;
 
   const fetchData = async () => {
-    const [{ data: employees }, { data: hrReqs }] = await Promise.all([
-      supabase.from('employee_personal_data').select('id, first_name, last_name, department, position').eq('is_archived', false),
+    const [{ data: employees }, { data: hrReqs }, { data: empRecords }] = await Promise.all([
+      supabase.from('employee_personal_data').select('id, first_name, last_name, department, position, employee_record_id').eq('is_archived', false),
       supabase.from('hr_requests').select('*').eq('request_type', 'concediu' as any).eq('status', 'approved' as any),
+      supabase.from('employee_records').select('id, user_id'),
     ]);
+
+    // Build user_id -> epd_id mapping via employee_records
+    const userIdToEpdId: Record<string, string> = {};
+    (employees || []).forEach((emp: any) => {
+      if (emp.employee_record_id) {
+        const rec = (empRecords || []).find((r: any) => r.id === emp.employee_record_id);
+        if (rec) {
+          userIdToEpdId[rec.user_id] = emp.id;
+        }
+      }
+    });
 
     // Transform hr_requests into LeaveRecord format
     const leaveRecords: LeaveRecord[] = (hrReqs || []).map((hr: any) => {
       const details = hr.details || {};
-      // Only include CO (concediu de odihna) type leaves
-      if (details.leaveType && details.leaveType !== 'co') return null;
+      // Resolve epd_id: from details, or via user_id mapping
+      const resolvedEpdId = details.epd_id || userIdToEpdId[hr.user_id] || null;
       return {
         start_date: details.startDate || '',
         end_date: details.endDate || '',
         working_days: details.numberOfDays || 0,
-        epd_id: details.epd_id || null,
+        epd_id: resolvedEpdId,
         user_id: hr.user_id,
         leave_type: details.leaveType || 'co',
       };
-    }).filter(Boolean) as LeaveRecord[];
+    });
 
     // Also fetch from leave_requests table (formal workflow)
     const { data: formalLeaves } = await supabase
@@ -201,7 +248,7 @@ const Salarizare = () => {
         start_date: lr.start_date,
         end_date: lr.end_date,
         working_days: lr.working_days,
-        epd_id: lr.epd_id,
+        epd_id: lr.epd_id || userIdToEpdId[lr.user_id] || null,
         user_id: lr.user_id,
         leave_type: 'co',
       });
