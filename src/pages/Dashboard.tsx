@@ -15,6 +15,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { Users, UserCircle, Calendar, FolderDown, Info } from 'lucide-react';
 import ContextualHelp from '@/components/shared/ContextualHelp';
+import SpringDecoration from '@/components/dashboard/SpringDecoration';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -54,6 +55,7 @@ const Dashboard = () => {
 
   return (
     <MainLayout title="Dashboard" description={<span className="inline-flex items-center gap-1">Bine ați venit în intranetul ICMPP <ContextualHelp title="Dashboard" content="Aceasta este pagina principală. Vedeți statisticile generale, alertele HR și calendarul personal." /></span>}>
+      <SpringDecoration />
       {/* Custom homepage message */}
       {settings.homepage_message && (
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">

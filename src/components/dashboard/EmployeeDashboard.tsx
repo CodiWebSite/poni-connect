@@ -11,6 +11,7 @@ import ActivityHistory from './ActivityHistory';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { QuickActionsSkeleton, LeaveBalanceSkeleton, ChartSkeleton } from './DashboardSkeleton';
+import SpringDecoration from './SpringDecoration';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -82,6 +83,7 @@ const EmployeeDashboard = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <SpringDecoration />
       {/* Welcome with contextual greeting */}
       <div className="animate-fade-in">
         <h2 className="text-lg sm:text-2xl font-display font-bold text-foreground">
