@@ -45,13 +45,13 @@ interface EmployeeData {
   position: string | null;
 }
 
-interface LeaveRequest {
+interface LeaveRecord {
   start_date: string;
   end_date: string;
   working_days: number;
   epd_id: string | null;
   user_id: string;
-  status: string;
+  leave_type: string;
 }
 
 function getWorkingDaysInRange(start: Date, end: Date, monthStart: Date, monthEnd: Date): { days: number; period: string } {
@@ -73,7 +73,7 @@ function addMonthSheet(
   wb: ExcelJS.Workbook,
   sheetName: string,
   employees: EmployeeData[],
-  leaveRequests: LeaveRequest[],
+  leaveRecords: LeaveRecord[],
   monthStart: Date,
   monthEnd: Date
 ) {
@@ -98,7 +98,7 @@ function addMonthSheet(
 
   sorted.forEach((emp, idx) => {
     // Find approved leave requests for this employee in this month
-    const empLeaves = leaveRequests.filter(lr => lr.epd_id === emp.id);
+    const empLeaves = leaveRecords.filter(lr => lr.epd_id === emp.id);
     
     let totalDays = 0;
     const periods: string[] = [];
@@ -169,21 +169,54 @@ const Salarizare = () => {
   if (!isSalarizare) return null;
 
   const fetchData = async () => {
-    const [{ data: employees }, { data: leaveReqs }] = await Promise.all([
+    const [{ data: employees }, { data: hrReqs }] = await Promise.all([
       supabase.from('employee_personal_data').select('id, first_name, last_name, department, position').eq('is_archived', false),
-      supabase.from('leave_requests').select('start_date, end_date, working_days, epd_id, user_id, status').eq('status', 'approved' as any).eq('is_demo', false),
+      supabase.from('hr_requests').select('*').eq('request_type', 'concediu' as any).eq('status', 'approved' as any),
     ]);
+
+    // Transform hr_requests into LeaveRecord format
+    const leaveRecords: LeaveRecord[] = (hrReqs || []).map((hr: any) => {
+      const details = hr.details || {};
+      // Only include CO (concediu de odihna) type leaves
+      if (details.leaveType && details.leaveType !== 'co') return null;
+      return {
+        start_date: details.startDate || '',
+        end_date: details.endDate || '',
+        working_days: details.numberOfDays || 0,
+        epd_id: details.epd_id || null,
+        user_id: hr.user_id,
+        leave_type: details.leaveType || 'co',
+      };
+    }).filter(Boolean) as LeaveRecord[];
+
+    // Also fetch from leave_requests table (formal workflow)
+    const { data: formalLeaves } = await supabase
+      .from('leave_requests')
+      .select('start_date, end_date, working_days, epd_id, user_id, status')
+      .eq('status', 'approved' as any)
+      .eq('is_demo', false);
+
+    (formalLeaves || []).forEach((lr: any) => {
+      leaveRecords.push({
+        start_date: lr.start_date,
+        end_date: lr.end_date,
+        working_days: lr.working_days,
+        epd_id: lr.epd_id,
+        user_id: lr.user_id,
+        leave_type: 'co',
+      });
+    });
 
     return {
       employees: (employees || []) as EmployeeData[],
-      leaveRequests: (leaveReqs || []) as unknown as LeaveRequest[],
+      leaveRecords,
     };
   };
 
   const exportPreviousMonth = async () => {
     setExporting('prev');
     try {
-      const { employees, leaveRequests } = await fetchData();
+      const { employees, leaveRecords } = await fetchData();
       const now = new Date();
       const prevMonth = subMonths(now, 1);
       const monthStart = startOfMonth(prevMonth);
@@ -191,7 +224,7 @@ const Salarizare = () => {
       const sheetName = `${MONTH_NAMES_RO[prevMonth.getMonth()]} ${prevMonth.getFullYear()}`;
 
       const wb = new ExcelJS.Workbook();
-      addMonthSheet(wb, sheetName, employees, leaveRequests, monthStart, monthEnd);
+      addMonthSheet(wb, sheetName, employees, leaveRecords, monthStart, monthEnd);
 
       const buf = await wb.xlsx.writeBuffer();
       saveAs(new Blob([buf]), `Salarizare_${sheetName.replace(' ', '_')}.xlsx`);
@@ -207,14 +240,14 @@ const Salarizare = () => {
   const exportYear = async (year: number) => {
     setExporting(String(year));
     try {
-      const { employees, leaveRequests } = await fetchData();
+      const { employees, leaveRecords } = await fetchData();
       const wb = new ExcelJS.Workbook();
 
       for (let m = 0; m < 12; m++) {
         const monthStart = new Date(year, m, 1);
         const monthEnd = endOfMonth(monthStart);
         const sheetName = `${MONTH_NAMES_RO[m]} ${year}`;
-        addMonthSheet(wb, sheetName, employees, leaveRequests, monthStart, monthEnd);
+        addMonthSheet(wb, sheetName, employees, leaveRecords, monthStart, monthEnd);
       }
 
       const buf = await wb.xlsx.writeBuffer();
