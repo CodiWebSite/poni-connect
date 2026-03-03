@@ -23,3 +23,11 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = false
   [functions.verify-turnstile]
     verify_jwt = false
+  [functions.cleanup-audit-logs]
+    verify_jwt = false
+  [functions.notify-leave-email]
+    verify_jwt = true
+  [functions.notify-maintenance-end]
+    verify_jwt = true
+  [functions.send-promo-email]
+    verify_jwt = true

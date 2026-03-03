@@ -176,6 +176,36 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_logs: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          performed_by: string | null
+          size_info: string | null
+          status: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          size_info?: string | null
+          status?: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          size_info?: string | null
+          status?: string
+          type?: string
+        }
+        Relationships: []
+      }
       custom_holidays: {
         Row: {
           created_at: string
@@ -1290,6 +1320,45 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      system_incidents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          resolved_at: string | null
+          severity: string
+          started_at: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          started_at?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          started_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
