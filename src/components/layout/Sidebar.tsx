@@ -34,7 +34,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare } = useUserRole();
+  const { role, isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare } = useUserRole();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
   const { isDemo, toggleDemo } = useDemoMode();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -233,7 +233,8 @@ const Sidebar = () => {
 
       {/* Footer */}
       <div className="p-3 border-t border-sidebar-border space-y-2">
-        {/* Demo Mode Toggle */}
+        {/* Demo Mode Toggle - hidden for regular employees */}
+        {role && role !== 'user' && (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <button
@@ -261,6 +262,7 @@ const Sidebar = () => {
             </TooltipContent>
           )}
         </Tooltip>
+        )}
 
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
