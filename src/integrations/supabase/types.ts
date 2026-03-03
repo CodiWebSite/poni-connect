@@ -1605,6 +1605,10 @@ export type Database = {
         | "secretar_stiintific"
         | "bibliotecar"
         | "salarizare"
+        | "achizitii"
+        | "contabilitate"
+        | "oficiu_juridic"
+        | "compartiment_comunicare"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
       document_direction: "incoming" | "outgoing"
       hr_request_status: "pending" | "approved" | "rejected"
@@ -1776,6 +1780,10 @@ export const Constants = {
         "secretar_stiintific",
         "bibliotecar",
         "salarizare",
+        "achizitii",
+        "contabilitate",
+        "oficiu_juridic",
+        "compartiment_comunicare",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
       document_direction: ["incoming", "outgoing"],
