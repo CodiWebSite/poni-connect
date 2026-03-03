@@ -97,8 +97,17 @@ const HRAlerts = () => {
           message: suspendedReasons[userId] || 'Contract suspendat',
         });
         // Don't show leave limit alerts for suspended employees
+      } else if (total === 0 && used === 0) {
+        // Employees with 0/0 — likely suspended contract or not configured
+        result.push({
+          id: `suspended-${e.id}`,
+          type: 'contract_suspended',
+          severity: 'info',
+          employeeName: name,
+          message: 'Contract suspendat / sold neconfigurat',
+        });
       } else {
-        // Leave limit alert (only for active employees)
+        // Leave limit alert (only for active employees with actual leave days)
         if (remaining <= 0) {
           result.push({
             id: `leave-${e.id}`,
