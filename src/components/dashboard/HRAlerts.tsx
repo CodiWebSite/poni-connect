@@ -43,8 +43,8 @@ const HRAlerts = () => {
       .eq('request_type', 'concediu')
       .eq('status', 'approved');
 
-    // Build a set of user_ids with active non-deductible leaves
-    const suspendedUserIds = new Set<string>();
+    // Build a set of epd_ids with active non-deductible leaves
+    const suspendedEpdIds = new Set<string>();
     const suspendedReasons: Record<string, string> = {};
     
     const leaveTypeLabels: Record<string, string> = {
@@ -60,10 +60,11 @@ const HRAlerts = () => {
       if (['cfp', 'bo', 'ccc', 'ev'].includes(leaveType)) {
         const startDate = details?.startDate || details?.start_date || '';
         const endDate = details?.endDate || details?.end_date || '';
+        const epdId = details?.epd_id || '';
         // Check if the leave period covers today
-        if (startDate && endDate && startDate <= today && endDate >= today) {
-          suspendedUserIds.add(hr.user_id);
-          suspendedReasons[hr.user_id] = leaveTypeLabels[leaveType] || leaveType;
+        if (startDate && endDate && startDate <= today && endDate >= today && epdId) {
+          suspendedEpdIds.add(epdId);
+          suspendedReasons[epdId] = leaveTypeLabels[leaveType] || leaveType;
         }
       }
     });
@@ -87,14 +88,14 @@ const HRAlerts = () => {
       const used = rec?.used ?? e.used_leave_days ?? 0;
       const remaining = total - used;
 
-      // Check if employee has an active non-deductible leave (suspended contract)
-      if (userId && suspendedUserIds.has(userId)) {
+      // Check if employee has an active non-deductible leave (suspended contract) — match by epd_id
+      if (suspendedEpdIds.has(e.id)) {
         result.push({
           id: `suspended-${e.id}`,
           type: 'contract_suspended',
           severity: 'info',
           employeeName: name,
-          message: suspendedReasons[userId] || 'Contract suspendat',
+          message: suspendedReasons[e.id] || 'Contract suspendat',
         });
         // Don't show leave limit alerts for suspended employees
       } else if (total === 0 && used === 0) {
