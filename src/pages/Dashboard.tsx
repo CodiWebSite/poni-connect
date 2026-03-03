@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
+import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncements';
 import StatCard from '@/components/dashboard/StatCard';
 import PersonalCalendarWidget from '@/components/dashboard/PersonalCalendarWidget';
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
@@ -48,6 +49,7 @@ const Dashboard = () => {
             <p className="text-sm text-foreground whitespace-pre-line">{settings.homepage_message}</p>
           </div>
         )}
+        <DashboardAnnouncements />
         <EmployeeDashboard />
       </MainLayout>
     );
@@ -63,6 +65,10 @@ const Dashboard = () => {
           <p className="text-sm text-foreground whitespace-pre-line">{settings.homepage_message}</p>
         </div>
       )}
+      {/* Announcements */}
+      <div className="mb-6">
+        <DashboardAnnouncements />
+      </div>
       {/* Quick Actions */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {quickActions.map((action) => (
