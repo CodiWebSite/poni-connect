@@ -192,9 +192,12 @@ const Auth = () => {
     
     if (error) {
       if (error.message.includes('already registered')) {
-        toast.error('Acest email este deja înregistrat');
+        toast.error('Acest email este deja înregistrat. Încearcă să te autentifici sau folosește „Ai uitat parola?".');
+      } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+        toast.error('Prea multe încercări. Așteaptă câteva minute sau solicită ajutor folosind butonul de mai jos.', { duration: 8000 });
+        setShowAccountHelp(true);
       } else {
-        toast.error('Eroare la înregistrare. Încercați din nou.');
+        toast.error('Eroare la înregistrare. Dacă problema persistă, solicită ajutor pentru crearea contului.');
       }
       signupTurnstileRef.current?.reset();
       setSignupToken(null);
@@ -222,9 +225,15 @@ const Auth = () => {
     });
 
     if (error) {
-      toast.error('Eroare la trimiterea emailului. Încercați din nou.');
+      if (error.message.includes('rate limit') || error.message.includes('429')) {
+        toast.error('Prea multe încercări de resetare. Așteaptă câteva minute sau solicită ajutor de la administrator.', { duration: 8000 });
+        setShowForgotPassword(false);
+        setShowAccountHelp(true);
+      } else {
+        toast.error('Eroare la trimiterea emailului. Încercați din nou.');
+      }
     } else {
-      toast.success('Email de resetare trimis! Verifică-ți căsuța de email.');
+      toast.success('Email de resetare trimis! Verifică-ți căsuța de email (inclusiv folderul Spam).');
     }
 
     setIsLoading(false);
