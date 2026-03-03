@@ -81,14 +81,14 @@ Deno.serve(async (req) => {
       checks.storage = { status: "error", latency_ms: Date.now() - storageStart, details: e.message };
     }
 
-    // 4. Edge Functions (self-check — if we're running, it works)
+    // 4. Edge Functions (self-check)
     checks.edge_functions = {
       status: "ok",
       latency_ms: 0,
       details: "Edge Functions runtime OK (self-check)",
     };
 
-    // 5. Realtime / API endpoint check
+    // 5. REST API endpoint check
     const realtimeStart = Date.now();
     try {
       const resp = await fetch(`${supabaseUrl}/rest/v1/`, {
@@ -108,12 +108,25 @@ Deno.serve(async (req) => {
 
     const allOk = Object.values(checks).every((c) => c.status === "ok");
 
+    const result = {
+      overall: allOk ? "healthy" : "degraded",
+      checked_at: new Date().toISOString(),
+      checks,
+    };
+
+    // Save to health_check_logs for historical chart
+    await supabase.from("health_check_logs").insert({
+      checked_at: result.checked_at,
+      overall: result.overall,
+      checks: checks,
+    });
+
+    // Cleanup logs older than 7 days
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from("health_check_logs").delete().lt("checked_at", sevenDaysAgo);
+
     return new Response(
-      JSON.stringify({
-        overall: allOk ? "healthy" : "degraded",
-        checked_at: new Date().toISOString(),
-        checks,
-      }),
+      JSON.stringify(result),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

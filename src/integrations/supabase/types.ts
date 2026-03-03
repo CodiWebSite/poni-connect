@@ -604,6 +604,27 @@ export type Database = {
         }
         Relationships: []
       }
+      health_check_logs: {
+        Row: {
+          checked_at: string
+          checks: Json
+          id: string
+          overall: string
+        }
+        Insert: {
+          checked_at?: string
+          checks?: Json
+          id?: string
+          overall?: string
+        }
+        Update: {
+          checked_at?: string
+          checks?: Json
+          id?: string
+          overall?: string
+        }
+        Relationships: []
+      }
       hr_requests: {
         Row: {
           approver_id: string | null
