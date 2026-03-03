@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,7 +20,8 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import {
   Shield, Database, Activity, FileDown, Loader2, Plus, CheckCircle2,
-  AlertTriangle, AlertCircle, Info, Clock, Trash2, RefreshCw, Settings2, Download
+  AlertTriangle, AlertCircle, Info, Clock, Trash2, RefreshCw, Settings2, Download,
+  Wifi, WifiOff, Server, HardDrive, Lock, Zap, Heart
 } from 'lucide-react';
 
 // ==================== TYPES ====================
@@ -47,12 +48,133 @@ interface SystemIncident {
   created_at: string;
 }
 
+interface HealthCheck {
+  status: string;
+  latency_ms: number;
+  details?: string;
+}
+
+interface HealthResult {
+  overall: string;
+  checked_at: string;
+  checks: Record<string, HealthCheck>;
+}
+
+// ==================== HEALTH CHECK TAB ====================
+
+function HealthCheckTab() {
+  const [health, setHealth] = useState<HealthResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [lastCheck, setLastCheck] = useState<string | null>(null);
+
+  const runHealthCheck = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('health-check');
+      if (error) throw error;
+      setHealth(data as HealthResult);
+      setLastCheck(new Date().toISOString());
+    } catch {
+      toast.error('Eroare la verificarea stării');
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { runHealthCheck(); }, [runHealthCheck]);
+
+  const serviceLabels: Record<string, { label: string; icon: typeof Server }> = {
+    database: { label: 'Bază de date', icon: Database },
+    auth: { label: 'Autentificare', icon: Lock },
+    storage: { label: 'Stocare fișiere', icon: HardDrive },
+    edge_functions: { label: 'Funcții Backend', icon: Zap },
+    rest_api: { label: 'REST API', icon: Server },
+  };
+
+  const statusConfig = (s: string) => {
+    if (s === 'ok') return { color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-900/30', label: 'Operațional', icon: CheckCircle2 };
+    if (s === 'warning') return { color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-900/30', label: 'Avertizare', icon: AlertTriangle };
+    return { color: 'text-destructive', bg: 'bg-red-100 dark:bg-red-900/30', label: 'Eroare', icon: AlertCircle };
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Overall status */}
+      <Card className={health?.overall === 'healthy' ? 'border-emerald-200 dark:border-emerald-800' : 'border-amber-200 dark:border-amber-800'}>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              {loading ? (
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              ) : health?.overall === 'healthy' ? (
+                <Heart className="w-8 h-8 text-emerald-500 fill-emerald-500" />
+              ) : (
+                <AlertTriangle className="w-8 h-8 text-amber-500" />
+              )}
+              <div>
+                <h3 className="text-lg font-semibold">
+                  {loading ? 'Se verifică...' : health?.overall === 'healthy' ? 'Toate serviciile sunt operaționale' : 'Unele servicii au probleme'}
+                </h3>
+                {lastCheck && (
+                  <p className="text-sm text-muted-foreground">
+                    Ultima verificare: {format(new Date(lastCheck), 'dd MMM yyyy, HH:mm:ss', { locale: ro })}
+                  </p>
+                )}
+              </div>
+            </div>
+            <Button variant="outline" onClick={runHealthCheck} disabled={loading}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Verifică acum
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Individual services */}
+      {health && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Object.entries(health.checks).map(([key, check]) => {
+            const service = serviceLabels[key] || { label: key, icon: Server };
+            const SvcIcon = service.icon;
+            const st = statusConfig(check.status);
+            const StIcon = st.icon;
+            return (
+              <Card key={key}>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-lg ${st.bg}`}>
+                      <SvcIcon className={`w-5 h-5 ${st.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{service.label}</span>
+                        <StIcon className={`w-4 h-4 ${st.color}`} />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline" className="text-xs">{st.label}</Badge>
+                        {check.latency_ms > 0 && (
+                          <span className="text-xs text-muted-foreground">{check.latency_ms}ms</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ==================== BACKUP TAB ====================
 
 function BackupTab({ userId }: { userId: string }) {
   const [logs, setLogs] = useState<BackupLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ type: 'backup', status: 'success', size_info: '', notes: '' });
 
@@ -68,6 +190,25 @@ function BackupTab({ userId }: { userId: string }) {
   };
 
   useEffect(() => { fetchLogs(); }, []);
+
+  const handleBackup = async () => {
+    setBackingUp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('backup-data');
+      if (error) throw error;
+
+      // data is already the JSON object, save it
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      saveAs(blob, `backup_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.json`);
+
+      toast.success(`Backup creat: ${data?.metadata?.total_rows || 0} rânduri din ${data?.metadata?.tables_count || 0} tabele`);
+      fetchLogs(); // refresh log list
+    } catch (err: any) {
+      toast.error('Eroare la crearea backup-ului: ' + (err?.message || 'Necunoscută'));
+    }
+    setBackingUp(false);
+  };
 
   const handleAdd = async () => {
     setAdding(true);
@@ -92,6 +233,7 @@ function BackupTab({ userId }: { userId: string }) {
   const statusIcon = (s: string) => {
     if (s === 'success') return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
     if (s === 'failure') return <AlertCircle className="w-4 h-4 text-destructive" />;
+    if (s === 'partial') return <AlertTriangle className="w-4 h-4 text-amber-500" />;
     return <Clock className="w-4 h-4 text-amber-500" />;
   };
 
@@ -99,33 +241,49 @@ function BackupTab({ userId }: { userId: string }) {
     const colors: Record<string, string> = {
       success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
       failure: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+      partial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
       in_progress: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     };
-    const labels: Record<string, string> = { success: 'Succes', failure: 'Eșuat', in_progress: 'În curs' };
+    const labels: Record<string, string> = { success: 'Succes', failure: 'Eșuat', partial: 'Parțial', in_progress: 'În curs' };
     return <Badge className={colors[s] || 'bg-muted text-muted-foreground'}>{labels[s] || s}</Badge>;
   };
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <CardTitle className="flex items-center gap-2"><Database className="w-5 h-5 text-primary" />Backup & Restore</CardTitle>
-            <CardDescription>Jurnal backup-uri și teste de restaurare</CardDescription>
+            <CardDescription>Creează backup complet al platformei sau înregistrează teste de restaurare</CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button onClick={handleBackup} disabled={backingUp} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {backingUp ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Se creează...</> : <><Download className="w-4 h-4 mr-2" />Backup Complet</>}
+            </Button>
             <Button variant="outline" size="sm" onClick={fetchLogs}><RefreshCw className="w-4 h-4 mr-1" />Reîncarcă</Button>
-            <Button size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-1" />Înregistrare</Button>
+            <Button variant="outline" size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-1" />Manual</Button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
+        {backingUp && (
+          <div className="mb-4 p-4 rounded-lg border border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <div>
+                <p className="font-medium text-sm">Se exportă toate datele platformei...</p>
+                <p className="text-xs text-muted-foreground">Aceasta poate dura câteva secunde, în funcție de volumul de date.</p>
+              </div>
+            </div>
+          </div>
+        )}
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : logs.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Database className="w-12 h-12 mx-auto mb-4 opacity-40" />
             <p>Nicio înregistrare de backup</p>
+            <p className="text-sm mt-1">Apasă „Backup Complet" pentru a crea primul backup.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -154,8 +312,8 @@ function BackupTab({ userId }: { userId: string }) {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Înregistrare Backup/Restore</DialogTitle>
-            <DialogDescription>Adaugă o intrare în jurnalul de backup</DialogDescription>
+            <DialogTitle>Înregistrare Manuală Backup/Restore</DialogTitle>
+            <DialogDescription>Adaugă o intrare manuală în jurnalul de backup (pt. backup-uri externe, teste DR)</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -279,7 +437,6 @@ function StatusTab({ userId }: { userId: string }) {
     resolved: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   };
 
-  // Compute uptime stats
   const activeIncidents = incidents.filter(i => i.status !== 'resolved');
   const resolvedThisMonth = incidents.filter(i => {
     if (i.status !== 'resolved' || !i.resolved_at) return false;
@@ -290,7 +447,6 @@ function StatusTab({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Quick status */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6 text-center">
@@ -444,12 +600,10 @@ function AuditExportTab() {
   const [oldestEntry, setOldestEntry] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load retention setting
     supabase.from('app_settings').select('value').eq('key', 'audit_retention_days').maybeSingle()
       .then(({ data }) => {
         if (data?.value) setRetentionDays(String(data.value));
       });
-    // Load audit stats
     supabase.from('audit_logs').select('id', { count: 'exact', head: true })
       .then(({ count }) => setAuditCount(count));
     supabase.from('audit_logs').select('created_at').order('created_at', { ascending: true }).limit(1)
@@ -482,7 +636,6 @@ function AuditExportTab() {
         { header: 'Detalii', key: 'details', width: 60 },
       ];
 
-      // Style header
       const headerRow = ws.getRow(1);
       headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
       headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
@@ -532,7 +685,6 @@ function AuditExportTab() {
       const { data, error } = await supabase.functions.invoke('cleanup-audit-logs');
       if (error) throw error;
       toast.success(`Curățare completă: ${data?.deleted_count || 0} intrări șterse`);
-      // Refresh stats
       supabase.from('audit_logs').select('id', { count: 'exact', head: true })
         .then(({ count }) => setAuditCount(count));
     } catch {
@@ -543,7 +695,6 @@ function AuditExportTab() {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6 text-center">
@@ -567,7 +718,6 @@ function AuditExportTab() {
         </Card>
       </div>
 
-      {/* Export */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><FileDown className="w-5 h-5 text-primary" />Export Audit Logs</CardTitle>
@@ -580,7 +730,6 @@ function AuditExportTab() {
         </CardContent>
       </Card>
 
-      {/* Retention */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" />Retenție & Curățare</CardTitle>
@@ -618,13 +767,17 @@ const SystemStatus = () => {
   if (role && !isSuperAdmin) return <Navigate to="/" replace />;
 
   return (
-    <MainLayout title="Stare Sistem" description="Backup, status și audit">
-      <Tabs defaultValue="backup" className="space-y-6">
+    <MainLayout title="Stare Sistem" description="Sănătate servicii, backup complet și audit">
+      <Tabs defaultValue="health" className="space-y-6">
         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="health" className="text-xs sm:text-sm">Stare Rețea</TabsTrigger>
           <TabsTrigger value="backup" className="text-xs sm:text-sm">Backup & DR</TabsTrigger>
-          <TabsTrigger value="status" className="text-xs sm:text-sm">Status & Incidente</TabsTrigger>
+          <TabsTrigger value="status" className="text-xs sm:text-sm">Incidente</TabsTrigger>
           <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit Export</TabsTrigger>
         </TabsList>
+        <TabsContent value="health">
+          <HealthCheckTab />
+        </TabsContent>
         <TabsContent value="backup">
           {user && <BackupTab userId={user.id} />}
         </TabsContent>
