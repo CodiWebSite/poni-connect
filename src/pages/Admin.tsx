@@ -21,6 +21,7 @@ import AccountRequestsPanel from '@/components/admin/AccountRequestsPanel';
 import AuthLoginLog from '@/components/admin/AuthLoginLog';
 import EquipmentRegistry from '@/components/admin/EquipmentRegistry';
 import AppSettingsPanel from '@/components/admin/AppSettingsPanel';
+import InvitePlatformPanel from '@/components/admin/InvitePlatformPanel';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -194,7 +195,8 @@ const Admin = () => {
            <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit</TabsTrigger>
            <TabsTrigger value="auth-log" className="text-xs sm:text-sm">Autentificări</TabsTrigger>
            <TabsTrigger value="inventory" className="text-xs sm:text-sm">Inventar</TabsTrigger>
-           <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
+            <TabsTrigger value="invitations" className="text-xs sm:text-sm">Invitații</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
          </TabsList>
         <TabsContent value="roles" className="space-y-6">
           <Card>
@@ -281,6 +283,9 @@ const Admin = () => {
         </TabsContent>
         <TabsContent value="inventory">
           <EquipmentRegistry />
+        </TabsContent>
+        <TabsContent value="invitations">
+          <InvitePlatformPanel />
         </TabsContent>
         <TabsContent value="settings">
           <AppSettingsPanel />
