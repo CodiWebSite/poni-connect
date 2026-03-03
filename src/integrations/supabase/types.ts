@@ -55,31 +55,37 @@ export type Database = {
       }
       announcements: {
         Row: {
+          attachments: Json | null
           author_id: string | null
           content: string
           created_at: string
           id: string
           is_pinned: boolean | null
+          links: Json | null
           priority: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          attachments?: Json | null
           author_id?: string | null
           content: string
           created_at?: string
           id?: string
           is_pinned?: boolean | null
+          links?: Json | null
           priority?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          attachments?: Json | null
           author_id?: string | null
           content?: string
           created_at?: string
           id?: string
           is_pinned?: boolean | null
+          links?: Json | null
           priority?: string | null
           title?: string
           updated_at?: string
