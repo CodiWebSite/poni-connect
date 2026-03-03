@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -21,7 +23,7 @@ import { saveAs } from 'file-saver';
 import {
   Shield, Database, Activity, FileDown, Loader2, Plus, CheckCircle2,
   AlertTriangle, AlertCircle, Info, Clock, Trash2, RefreshCw, Settings2, Download,
-  Wifi, WifiOff, Server, HardDrive, Lock, Zap, Heart
+  Wifi, WifiOff, Server, HardDrive, Lock, Zap, Heart, TrendingUp
 } from 'lucide-react';
 
 // ==================== TYPES ====================
@@ -66,6 +68,8 @@ function HealthCheckTab() {
   const [health, setHealth] = useState<HealthResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastCheck, setLastCheck] = useState<string | null>(null);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
   const runHealthCheck = useCallback(async () => {
     setLoading(true);
@@ -74,13 +78,48 @@ function HealthCheckTab() {
       if (error) throw error;
       setHealth(data as HealthResult);
       setLastCheck(new Date().toISOString());
+      // Refresh history after new check
+      fetchHistory();
     } catch {
       toast.error('Eroare la verificarea stării');
     }
     setLoading(false);
   }, []);
 
-  useEffect(() => { runHealthCheck(); }, [runHealthCheck]);
+  const fetchHistory = useCallback(async () => {
+    setLoadingHistory(true);
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await supabase
+      .from('health_check_logs')
+      .select('checked_at, checks')
+      .gte('checked_at', since)
+      .order('checked_at', { ascending: true })
+      .limit(200);
+    
+    if (data) {
+      const chartData = data.map((row: any) => {
+        const checks = row.checks as Record<string, { latency_ms: number }>;
+        return {
+          time: format(new Date(row.checked_at), 'HH:mm'),
+          database: checks.database?.latency_ms || 0,
+          auth: checks.auth?.latency_ms || 0,
+          storage: checks.storage?.latency_ms || 0,
+          rest_api: checks.rest_api?.latency_ms || 0,
+        };
+      });
+      setHistoryData(chartData);
+    }
+    setLoadingHistory(false);
+  }, []);
+
+  useEffect(() => { runHealthCheck(); fetchHistory(); }, []);
+
+  const chartConfig = {
+    database: { label: 'Bază de date', color: 'hsl(var(--primary))' },
+    auth: { label: 'Autentificare', color: 'hsl(142, 76%, 36%)' },
+    storage: { label: 'Stocare', color: 'hsl(38, 92%, 50%)' },
+    rest_api: { label: 'REST API', color: 'hsl(262, 83%, 58%)' },
+  };
 
   const serviceLabels: Record<string, { label: string; icon: typeof Server }> = {
     database: { label: 'Bază de date', icon: Database },
@@ -164,6 +203,51 @@ function HealthCheckTab() {
           })}
         </div>
       )}
+
+      {/* Latency History Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            Istoric Latențe (ultimele 24h)
+          </CardTitle>
+          <CardDescription>
+            Evoluția timpului de răspuns al serviciilor. Fiecare punct = o verificare.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingHistory ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+          ) : historyData.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-40" />
+              <p>Nu există date istorice încă</p>
+              <p className="text-sm mt-1">Apasă „Verifică acum" pentru a genera primul punct de date.</p>
+            </div>
+          ) : (
+            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+              <LineChart data={historyData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                <XAxis dataKey="time" className="text-xs" tick={{ fontSize: 11 }} />
+                <YAxis unit="ms" className="text-xs" tick={{ fontSize: 11 }} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="database" stroke="var(--color-database)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="auth" stroke="var(--color-auth)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="storage" stroke="var(--color-storage)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="rest_api" stroke="var(--color-rest_api)" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ChartContainer>
+          )}
+          <div className="flex flex-wrap gap-4 mt-4 justify-center">
+            {Object.entries(chartConfig).map(([key, cfg]) => (
+              <div key={key} className="flex items-center gap-2 text-xs">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cfg.color }} />
+                <span className="text-muted-foreground">{cfg.label}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

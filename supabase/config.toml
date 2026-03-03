@@ -32,6 +32,6 @@ project_id = "erghywhqrxmwqptusbxd"
   [functions.send-promo-email]
     verify_jwt = true
   [functions.backup-data]
-    verify_jwt = true
+    verify_jwt = false
   [functions.health-check]
     verify_jwt = true
