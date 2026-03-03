@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
-import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw } from 'lucide-react';
+import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw, Lock, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import OnboardingTour from '@/components/onboarding/OnboardingTour';
 
@@ -65,6 +65,11 @@ const Settings = () => {
   const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: '', newPass: '', confirm: '' });
   const [profile, setProfile] = useState<Profile>({
     full_name: '',
     department: '',
@@ -122,6 +127,46 @@ const Settings = () => {
 
   const getInitials = (name: string) =>
     name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    if (passwordData.newPass !== passwordData.confirm) {
+      toast.error('Parolele noi nu coincid');
+      return;
+    }
+    if (passwordData.newPass.length < 6) {
+      toast.error('Parola nouă trebuie să aibă cel puțin 6 caractere');
+      return;
+    }
+
+    setPasswordLoading(true);
+
+    // Verify current password by trying to sign in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: passwordData.current,
+    });
+
+    if (signInError) {
+      toast.error('Parola actuală este incorectă');
+      setPasswordLoading(false);
+      return;
+    }
+
+    // Update to new password
+    const { error } = await supabase.auth.updateUser({ password: passwordData.newPass });
+
+    if (error) {
+      toast.error('Eroare la schimbarea parolei. Încercați din nou.');
+    } else {
+      toast.success('Parola a fost schimbată cu succes!');
+      setPasswordData({ current: '', newPass: '', confirm: '' });
+    }
+
+    setPasswordLoading(false);
+  };
 
   return (
     <MainLayout title="Setări" description="Gestionează-ți profilul și preferințele">
@@ -198,6 +243,103 @@ const Settings = () => {
               <Button type="submit" variant="hero" disabled={isLoading}>
                 <Save className="w-4 h-4 mr-2" />
                 {isLoading ? 'Se salvează...' : 'Salvează modificările'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Password Change Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">
+              <span className="flex items-center gap-2">
+                <KeyRound className="w-5 h-5" />
+                Schimbare parolă
+              </span>
+            </CardTitle>
+            <CardDescription>Schimbă-ți parola de acces la platformă</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="current-password">Parola actuală</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    id="current-password"
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 pr-10"
+                    value={passwordData.current}
+                    onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Parolă nouă</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      id="new-password"
+                      type={showNewPassword ? 'text' : 'password'}
+                      placeholder="Minim 6 caractere"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 pr-10"
+                      value={passwordData.newPass}
+                      onChange={(e) => setPasswordData({ ...passwordData, newPass: e.target.value })}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-new-password">Confirmă parola nouă</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      id="confirm-new-password"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Repetă parola"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 pr-10"
+                      value={passwordData.confirm}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <Button type="submit" variant="hero" disabled={passwordLoading}>
+                <KeyRound className="w-4 h-4 mr-2" />
+                {passwordLoading ? 'Se procesează...' : 'Schimbă parola'}
               </Button>
             </form>
           </CardContent>
