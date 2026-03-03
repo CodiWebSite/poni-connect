@@ -32,6 +32,11 @@ const roleLabels: Record<string, string> = {
   hr: 'HR (SRUS)',
   bibliotecar: 'Bibliotecar',
   salarizare: 'Salarizare',
+  secretariat: 'Secretariat',
+  achizitii: 'Achiziții',
+  contabilitate: 'Contabilitate',
+  oficiu_juridic: 'Oficiu Juridic',
+  compartiment_comunicare: 'Compartiment Comunicare',
   user: 'Angajat',
 };
 
@@ -45,6 +50,11 @@ const roleBadgeColors: Record<string, string> = {
   hr: 'bg-purple-500 text-white',
   bibliotecar: 'bg-emerald-600 text-white',
   salarizare: 'bg-orange-600 text-white',
+  secretariat: 'bg-cyan-600 text-white',
+  achizitii: 'bg-rose-600 text-white',
+  contabilitate: 'bg-lime-700 text-white',
+  oficiu_juridic: 'bg-slate-600 text-white',
+  compartiment_comunicare: 'bg-fuchsia-600 text-white',
   user: 'bg-muted text-muted-foreground',
 };
 
