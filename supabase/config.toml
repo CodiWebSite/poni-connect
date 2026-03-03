@@ -11,6 +11,8 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = true
   [functions.import-employees]
     verify_jwt = true
+  [functions.invite-user]
+    verify_jwt = false
   [functions.log-auth-event]
     verify_jwt = true
   [functions.notify-leave-result]
