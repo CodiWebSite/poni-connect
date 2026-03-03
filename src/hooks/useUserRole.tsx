@@ -48,7 +48,7 @@ export function useUserRole() {
   const isStaff = isSuperAdmin || isHR || isSefSRUS;
   
   const canManageHR = isSuperAdmin || isHR || isSefSRUS;
-  const canManageContent = isSuperAdmin || isHR || isSefSRUS;
+  const canManageContent = role !== null && role !== 'user';
   const canManageLibrary = isSuperAdmin || isBibliotecar;
 
   return { 
