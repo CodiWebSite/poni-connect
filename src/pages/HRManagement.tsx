@@ -2420,21 +2420,25 @@ const HRManagement = () => {
                 {selectedManualEmployee.department && (
                   <p className="text-xs text-muted-foreground">{selectedManualEmployee.department}</p>
                 )}
-                <p className="text-sm">
-                  <span className="text-muted-foreground">Sold concediu: </span>
-                  <span className="font-bold text-primary">
-                    {remainingLeave(selectedManualEmployee)} zile disponibile
-                  </span>
-                </p>
-                <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
-                  <p>• {selectedManualEmployee.total_leave_days} cuvenite {new Date().getFullYear()} − {selectedManualEmployee.used_leave_days} utilizate = <strong>{selectedManualEmployee.total_leave_days - selectedManualEmployee.used_leave_days}</strong></p>
-                  {(selectedManualEmployee.carryoverDays || 0) > 0 && <p>• {selectedManualEmployee.carryoverDays} zile report {new Date().getFullYear() - 1}</p>}
-                  {(selectedManualEmployee.bonusDays || 0) > 0 && <p>• {selectedManualEmployee.bonusDays} zile Sold+</p>}
-                </div>
-                {(selectedManualEmployee.carryoverDays || 0) > 0 && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    ⚠ Include {selectedManualEmployee.carryoverDays} zile report {new Date().getFullYear() - 1}
-                  </p>
+                {!['cfp', 'bo', 'ccc', 'ev'].includes(manualLeaveForm.leave_type) && (
+                  <>
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Sold concediu: </span>
+                      <span className="font-bold text-primary">
+                        {remainingLeave(selectedManualEmployee)} zile disponibile
+                      </span>
+                    </p>
+                    <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                      <p>• {selectedManualEmployee.total_leave_days} cuvenite {new Date().getFullYear()} − {selectedManualEmployee.used_leave_days} utilizate = <strong>{selectedManualEmployee.total_leave_days - selectedManualEmployee.used_leave_days}</strong></p>
+                      {(selectedManualEmployee.carryoverDays || 0) > 0 && <p>• {selectedManualEmployee.carryoverDays} zile report {new Date().getFullYear() - 1}</p>}
+                      {(selectedManualEmployee.bonusDays || 0) > 0 && <p>• {selectedManualEmployee.bonusDays} zile Sold+</p>}
+                    </div>
+                    {(selectedManualEmployee.carryoverDays || 0) > 0 && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        ⚠ Include {selectedManualEmployee.carryoverDays} zile report {new Date().getFullYear() - 1}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             )}
