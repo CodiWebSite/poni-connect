@@ -25,6 +25,7 @@ import Library from "./pages/Library";
 import Maintenance from "./pages/Maintenance";
 import PlatformGuide from "./pages/PlatformGuide";
 import Salarizare from "./pages/Salarizare";
+import Announcements from "./pages/Announcements";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +104,7 @@ const App = () => (
                 <Route path="/library" element={<Library />} />
                 <Route path="/ghid" element={<PlatformGuide />} />
                 <Route path="/salarizare" element={<Salarizare />} />
+                <Route path="/announcements" element={<Announcements />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -24,6 +24,7 @@ import {
   HelpCircle,
   FlaskConical,
   Banknote,
+  Megaphone,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -79,6 +80,7 @@ const Sidebar = () => {
 
   const mainItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
