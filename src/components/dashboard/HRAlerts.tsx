@@ -51,7 +51,7 @@ const HRAlerts = () => {
     const leaveTypeLabels: Record<string, string> = {};
     NON_DEDUCTIBLE_TYPES.forEach(key => {
       const style = getLeaveStyle(key);
-      if (style) leaveTypeLabels[key] = `${style.description} (${style.label})`;
+      if (style) leaveTypeLabels[key] = `${style.label} (${style.description})`;
     });
 
     (activeHrLeaves || []).forEach(hr => {
