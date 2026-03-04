@@ -99,6 +99,8 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       return;
     }
 
+    console.log('[LeaveApprovalPanel] Raw query returned', data?.length ?? 0, 'requests', data);
+
     const epdIds = [...new Set((data || []).map(r => r.epd_id).filter(Boolean))];
     let epdMap: Record<string, { name: string; department: string; position: string; avatarUrl: string | null }> = {};
 
