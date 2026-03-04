@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, X, Star, Users, Filter } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, X, Star, Users, Filter, Download } from 'lucide-react';
+import { exportLeaveCalendarExcel } from '@/utils/exportLeaveCalendar';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, parseISO, isWithinInterval } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -43,6 +44,7 @@ const LeaveCalendar = () => {
   const [newHolidayName, setNewHolidayName] = useState('');
   const [newHolidayDate, setNewHolidayDate] = useState<Date>();
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchLeaves();
@@ -152,6 +154,18 @@ const LeaveCalendar = () => {
     ? leaves
     : leaves.filter(l => l.department === departmentFilter);
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      await exportLeaveCalendarExcel(currentMonth, filteredLeaves, customHolidays, departmentFilter);
+      toast.success('Export Excel generat cu succes!');
+    } catch (e) {
+      console.error(e);
+      toast.error('Eroare la generarea exportului');
+    }
+    setExporting(false);
+  };
+
   const onLeaveToday = filteredLeaves.filter(l => {
     const today = new Date();
     return isWithinInterval(today, { start: parseISO(l.startDate), end: parseISO(l.endDate) });
@@ -175,6 +189,10 @@ const LeaveCalendar = () => {
             </Button>
             <Button variant="outline" size="icon" onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
               <ChevronRight className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" className="ml-2 gap-1.5" onClick={handleExportExcel} disabled={exporting || loading}>
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              Export Excel
             </Button>
           </div>
         </div>
