@@ -25,6 +25,7 @@ import HRExportButton from '@/components/hr/HRExportButton';
 import { LeaveApproversManager } from '@/components/hr/LeaveApproversManager';
 import { EmployeeLeaveHistory } from '@/components/hr/EmployeeLeaveHistory';
 import LeaveCalendar from '@/components/hr/LeaveCalendar';
+import { EmailSyncImport } from '@/components/hr/EmailSyncImport';
 import { 
   Users, 
   UserPlus, 
@@ -1704,6 +1705,7 @@ const HRManagement = () => {
           <EmployeeImport />
           <LeaveCarryoverImport onImported={fetchEmployees} />
           <CIExpiryImport />
+          <EmailSyncImport />
         </TabsContent>
 
         {/* Changelog Tab */}
