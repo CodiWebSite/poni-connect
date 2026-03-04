@@ -406,7 +406,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          Nu există cereri de aprobat.
+          Nu există cereri de concediu de aprobat.
         </CardContent>
       </Card>
     );
