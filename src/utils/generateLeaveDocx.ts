@@ -127,9 +127,10 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     parseSignatureData(srusSignature),
   ]);
 
-  const totalDays = totalLeaveDays ?? 0;
+  const usedDays = usedLeaveDays ?? 0;
+  const remainingCurrentYear = (totalLeaveDays ?? 0) - usedDays;
   const carryover = carryoverDays ?? 0;
-  const totalAvailable = totalDays + carryover;
+  const totalAvailable = remainingCurrentYear + carryover;
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
@@ -258,7 +259,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
       spacing: { after: 50 },
       indent: { left: srusIndent },
       children: [
-        t(`${totalDays}`, { bold: true, size: S }),
+        t(`${remainingCurrentYear}`, { bold: true, size: S }),
         t(' aferente anului ', { size: S }),
         t(`${year}`, { bold: true, size: S }),
         t(' și ', { size: S }),
