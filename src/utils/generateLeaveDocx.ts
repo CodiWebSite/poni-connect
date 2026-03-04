@@ -68,9 +68,9 @@ function formatDate(dateStr: string): string {
 }
 
 const FONT = 'Times New Roman';
-const SIZE = 24; // 12pt
-const SIZE_SMALL = 20; // 10pt
-const SIZE_HEADER = 20; // 10pt
+const SIZE = 22; // 11pt
+const SIZE_SMALL = 18; // 9pt
+const SIZE_HEADER = 18; // 9pt
 const RIGHT_TAB = TabStopPosition.MAX;
 const NOBORDER = { style: 'none' as any, size: 0, color: 'FFFFFF' };
 const CELL_BORDERS = { top: NOBORDER, bottom: NOBORDER, left: NOBORDER, right: NOBORDER };
@@ -140,8 +140,8 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   // ════════════════════════════════════════════════════
 
   const leftApprovalChildren: Paragraph[] = [
-    new Paragraph({ spacing: { after: 0 }, children: [t('Aprobat,', {})] }),
-    new Paragraph({ spacing: { after: 80 }, children: [t('Șef compartiment', { bold: true })] }),
+    new Paragraph({ spacing: { after: 0 }, children: [t('Aprobat,', { size: SIZE_SMALL })] }),
+    new Paragraph({ spacing: { after: 40 }, children: [t('Șef compartiment', { bold: true, size: SIZE_SMALL })] }),
   ];
 
   // Dept head name
@@ -154,10 +154,10 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   // Stamp + signature for dept head
   const leftSigElements: (TextRun | ImageRun)[] = [];
   if (stampData.length > 0) {
-    leftSigElements.push(new ImageRun({ data: stampData, transformation: { width: 110, height: 110 }, type: 'png' }));
+    leftSigElements.push(new ImageRun({ data: stampData, transformation: { width: 90, height: 90 }, type: 'png' }));
   }
   if (deptHeadSigData) {
-    leftSigElements.push(new ImageRun({ data: deptHeadSigData, transformation: { width: 100, height: 40 }, type: 'png' }));
+    leftSigElements.push(new ImageRun({ data: deptHeadSigData, transformation: { width: 90, height: 35 }, type: 'png' }));
   }
   if (leftSigElements.length > 0) {
     leftApprovalChildren.push(new Paragraph({ spacing: { after: 0 }, children: leftSigElements }));
@@ -173,7 +173,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
 
   // Right column: DIRECTOR
   const rightApprovalChildren: Paragraph[] = [
-    new Paragraph({ spacing: { after: 80 }, alignment: AlignmentType.RIGHT, children: [t('DIRECTOR', { bold: true })] }),
+    new Paragraph({ spacing: { after: 40 }, alignment: AlignmentType.RIGHT, children: [t('DIRECTOR', { bold: true, size: SIZE_SMALL })] }),
   ];
 
   if (directorName) {
@@ -186,7 +186,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   if (stampData.length > 0) {
     rightApprovalChildren.push(
       new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [
-        new ImageRun({ data: stampData, transformation: { width: 110, height: 110 }, type: 'png' }),
+        new ImageRun({ data: stampData, transformation: { width: 90, height: 90 }, type: 'png' }),
       ]})
     );
   } else {
@@ -227,7 +227,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   // SRUS section (bottom right, indented)
   // ════════════════════════════════════════════════════
   const srusIndent = convertMillimetersToTwip(75);
-  const S = 22; // size for SRUS text
+  const S = 20; // size for SRUS text
 
   const srusSection: Paragraph[] = [
     new Paragraph({
@@ -335,10 +335,10 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
       properties: {
         page: {
           margin: {
-            top: convertMillimetersToTwip(20),
-            right: convertMillimetersToTwip(20),
-            bottom: convertMillimetersToTwip(20),
-            left: convertMillimetersToTwip(25),
+            top: convertMillimetersToTwip(12),
+            right: convertMillimetersToTwip(15),
+            bottom: convertMillimetersToTwip(10),
+            left: convertMillimetersToTwip(20),
           },
         },
       },
@@ -363,20 +363,20 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           children: [t('INSTITUTUL DE CHIMIE MACROMOLECULARĂ "PETRU PONI"', { bold: true, size: SIZE_HEADER })],
         }),
         new Paragraph({
-          spacing: { after: 200 },
+          spacing: { after: 80 },
           alignment: AlignmentType.CENTER,
-          children: [t('Aleea Grigore Ghica Vodă, nr. 41A, 700487 IAȘI, ROMANIA', { size: 18 })],
+          children: [t('Aleea Grigore Ghica Vodă, nr. 41A, 700487 IAȘI, ROMANIA', { size: 16 })],
         }),
 
         // ══════ ANEXA ══════
         new Paragraph({
-          spacing: { after: 200 },
+          spacing: { after: 80 },
           children: [t('Anexa 11.2.-P.O. ICMPP-SRUS', { bold: true, size: SIZE_HEADER })],
         }),
 
         // ══════ "Se aprobă," right ══════
         new Paragraph({
-          spacing: { after: 200 },
+          spacing: { after: 80 },
           alignment: AlignmentType.RIGHT,
           children: [t('Se aprobă,')],
         }),
@@ -384,25 +384,25 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         // ══════ APPROVAL TABLE (Șef compartiment LEFT, DIRECTOR RIGHT) ══════
         approvalTable,
 
-        empty(200),
+        empty(80),
 
         // ══════ TITLE ══════
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { before: 100, after: 100 },
+          spacing: { before: 40, after: 40 },
           children: [t('Cerere concediu odihnă', { bold: true })],
         }),
 
         // ══════ SALUTATION ══════
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { after: 200 },
+          spacing: { after: 80 },
           children: [t('Doamnă/Domnule Director,', { italics: true })],
         }),
 
         // ══════ BODY ══════
         new Paragraph({
-          spacing: { after: 0, line: 360 },
+          spacing: { after: 0, line: 300 },
           children: [
             t('\tSubsemnatul/a, '),
             ...underlinedField(employeeName, '_____________________________'),
@@ -413,16 +413,16 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           ],
         }),
         new Paragraph({
-          spacing: { after: 0, line: 276 },
+          spacing: { after: 0, line: 240 },
           alignment: AlignmentType.CENTER,
           children: [
-            t('(numele și prenumele)', { size: 16, italics: true }),
-            t('                              ', { size: 16 }),
-            t('(funcția)', { size: 16, italics: true }),
+            t('(numele și prenumele)', { size: 14, italics: true }),
+            t('                              ', { size: 14 }),
+            t('(funcția)', { size: 14, italics: true }),
           ],
         }),
         new Paragraph({
-          spacing: { after: 0, line: 360 },
+          spacing: { after: 0, line: 300 },
           children: [
             t('cadrul '),
             ...underlinedField(department, '_______________________________________________________________________'),
@@ -430,13 +430,13 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           ],
         }),
         new Paragraph({
-          spacing: { after: 100, line: 276 },
+          spacing: { after: 40, line: 240 },
           alignment: AlignmentType.CENTER,
-          children: [t('(compartimentul)', { size: 16, italics: true })],
+          children: [t('(compartimentul)', { size: 14, italics: true })],
         }),
 
         new Paragraph({
-          spacing: { after: 0, line: 360 },
+          spacing: { after: 0, line: 300 },
           children: [
             t('vă rog să-mi aprobați efectuarea unui număr de '),
             t(`${workingDays}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
@@ -445,7 +445,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         }),
 
         new Paragraph({
-          spacing: { after: 200, line: 360 },
+          spacing: { after: 80, line: 300 },
           children: [
             t('anului '),
             t(`${year}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
@@ -457,7 +457,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
 
         // ══════ REPLACEMENT ══════
         new Paragraph({
-          spacing: { after: 0, line: 360 },
+          spacing: { after: 0, line: 300 },
           children: [
             t('\tÎn această perioadă voi fi înlocuit/ă de dl./d-na '),
             ...underlinedField(replacementName, '_____________________________'),
@@ -465,25 +465,25 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           ],
         }),
         new Paragraph({
-          spacing: { after: 0, line: 276 },
+          spacing: { after: 0, line: 240 },
           alignment: AlignmentType.CENTER,
-          children: [t('(numele și prenumele)', { size: 16, italics: true })],
+          children: [t('(numele și prenumele)', { size: 14, italics: true })],
         }),
         new Paragraph({
-          spacing: { after: 0, line: 360 },
+          spacing: { after: 0, line: 300 },
           children: [
             ...underlinedField(replacementPosition, '_____________________________'),
             t('.'),
           ],
         }),
         new Paragraph({
-          spacing: { after: 200, line: 276 },
-          children: [t('(funcția)', { size: 16, italics: true })],
+          spacing: { after: 80, line: 240 },
+          children: [t('(funcția)', { size: 14, italics: true })],
         }),
 
         // ══════ CLOSING ══════
         new Paragraph({
-          spacing: { before: 100, after: 0 },
+          spacing: { before: 40, after: 0 },
           tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
           children: [
             t('\tCu mulțumiri,'),
@@ -492,9 +492,9 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           ],
         }),
         new Paragraph({
-          spacing: { after: 100 },
+          spacing: { after: 40 },
           alignment: AlignmentType.RIGHT,
-          children: [t('(numele și prenumele)', { size: 16, italics: true })],
+          children: [t('(numele și prenumele)', { size: 14, italics: true })],
         }),
 
         // Data          Semnătura
@@ -517,14 +517,14 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           spacing: { after: 0 },
           tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
           children: [
-            t('\t(data)', { size: 16, italics: true }),
+            t('\t(data)', { size: 14, italics: true }),
             tab(),
-            t('(semnătura)', { size: 16, italics: true }),
+            t('(semnătura)', { size: 14, italics: true }),
           ],
         }),
 
         // ══════ SRUS SECTION ══════
-        empty(300),
+        empty(100),
         ...srusSection,
         srusSignatureTable,
       ],
