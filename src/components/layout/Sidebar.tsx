@@ -274,8 +274,8 @@ const Sidebar = () => {
             )
           }
         />
-        {/* Demo Mode Toggle - hidden for regular employees */}
-        {role && role !== 'user' && (
+        {/* Demo Mode Toggle - only for Super Admin and HR/SRUS */}
+        {(isSuperAdmin || canManageHR) && (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <button
