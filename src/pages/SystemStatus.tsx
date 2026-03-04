@@ -153,6 +153,24 @@ function HealthCheckTab() {
                 <h3 className="text-lg font-semibold">
                   {loading ? 'Se verifică...' : health?.overall === 'healthy' ? 'Toate serviciile sunt operaționale' : 'Unele servicii au probleme'}
                 </h3>
+                {!loading && health && health.overall !== 'healthy' && (() => {
+                  const problemServices = Object.entries(health.checks)
+                    .filter(([, c]) => c.status !== 'ok')
+                    .map(([key, c]) => {
+                      const svc = serviceLabels[key] || { label: key };
+                      const st = statusConfig(c.status);
+                      return { label: svc.label, status: st.label, details: c.details };
+                    });
+                  return problemServices.length > 0 ? (
+                    <div className="mt-1 space-y-0.5">
+                      {problemServices.map((ps, i) => (
+                        <p key={i} className="text-sm text-amber-700 dark:text-amber-400">
+                          ⚠ <strong>{ps.label}</strong>: {ps.status}{ps.details ? ` — ${ps.details}` : ''}
+                        </p>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
                 {lastCheck && (
                   <p className="text-sm text-muted-foreground">
                     Ultima verificare: {format(new Date(lastCheck), 'dd MMM yyyy, HH:mm:ss', { locale: ro })}
