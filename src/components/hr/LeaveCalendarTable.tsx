@@ -28,28 +28,9 @@ interface LeaveCalendarTableProps {
   customHolidays: CustomHoliday[];
 }
 
-const LEAVE_TYPE_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  'co': { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20' },
-  'concediu_odihna': { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20' },
-  'bo': { label: 'CM', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20' },
-  'concediu_medical': { label: 'CM', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20' },
-  'ccc': { label: 'CCC', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-500/20' },
-  'concediu_crestere_copil': { label: 'CCC', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-500/20' },
-  'cfp': { label: 'CFP', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-500/20' },
-  'concediu_fara_plata': { label: 'CFP', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-500/20' },
-  'ev': { label: 'EV', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-500/20' },
-  'eveniment': { label: 'EV', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-500/20' },
-};
-
-const DEFAULT_LEAVE = { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20' };
+import { LEAVE_TYPES, getLeaveStyle } from '@/utils/leaveTypes';
 
 const DAY_ABBR: Record<number, string> = { 0: 'Dum', 1: 'Lun', 2: 'Mar', 3: 'Mie', 4: 'Joi', 5: 'Vin', 6: 'Sâm' };
-
-function getLeaveStyle(leaveType?: string) {
-  if (!leaveType) return DEFAULT_LEAVE;
-  const key = leaveType.toLowerCase().trim();
-  return LEAVE_TYPE_MAP[key] || DEFAULT_LEAVE;
-}
 
 const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalendarTableProps) => {
   const days = useMemo(() => {
@@ -241,28 +222,16 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
       </ScrollArea>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground border-t pt-3">
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-sky-600 dark:text-sky-400 bg-sky-500/20 px-1.5 py-0.5 rounded text-[10px]">CO</span>
-          <span>Concediu de odihnă</span>
+      <div className="border-t pt-3 space-y-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+          {LEAVE_TYPES.map(item => (
+            <div key={item.key} className="flex items-center gap-1.5">
+              <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${item.color} ${item.colorDark} ${item.bg}`}>{item.label}</span>
+              <span className="truncate">{item.description}</span>
+            </div>
+          ))}
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-rose-600 dark:text-rose-400 bg-rose-500/20 px-1.5 py-0.5 rounded text-[10px]">BO</span>
-          <span>Concediu medical</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-purple-600 dark:text-purple-400 bg-purple-500/20 px-1.5 py-0.5 rounded text-[10px]">CCC</span>
-          <span>Concediu creștere copil</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-amber-600 dark:text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded text-[10px]">CFP</span>
-          <span>Concediu fără plată</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded text-[10px]">EV</span>
-          <span>Eveniment</span>
-        </div>
-        <div className="border-l pl-4 flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground border-t pt-2 mt-2">
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-3 rounded-sm bg-red-500/15 border border-red-500/20" />
             <span>Sărbătoare legală</span>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { NON_DEDUCTIBLE_TYPES } from '@/utils/leaveTypes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -88,7 +89,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
       const numberOfDays = leave.details?.numberOfDays || 0;
       const leaveEpdId = leave.details?.epd_id || epdId;
       const leaveType = (leave.details?.leaveType || leave.details?.leave_type || 'co').toLowerCase();
-      const nonDeductibleTypes = ['cfp', 'bo', 'ccc', 'ev'];
+      const nonDeductibleTypes = NON_DEDUCTIBLE_TYPES;
       const isNonDeductible = nonDeductibleTypes.includes(leaveType);
 
       const { error } = await supabase.from('hr_requests').delete().eq('id', leave.id);

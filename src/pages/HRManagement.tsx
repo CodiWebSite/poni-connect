@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { LEAVE_TYPES } from '@/utils/leaveTypes';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -841,7 +842,7 @@ const HRManagement = () => {
     const totalAvailable = currentRemaining + carryover + (employee.bonusDays || 0);
 
     // Types that don't deduct from leave balance
-    const nonDeductibleTypes = ['cfp', 'bo', 'ccc', 'ev'];
+    const nonDeductibleTypes = LEAVE_TYPES.filter(t => !t.deductible).map(t => t.key);
     const isNonDeductible = nonDeductibleTypes.includes(manualLeaveForm.leave_type);
 
     // Validate based on deduction source (skip for non-deductible types)
@@ -2495,11 +2496,9 @@ const HRManagement = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="co">CO — Concediu de odihnă</SelectItem>
-                  <SelectItem value="bo">CM — Concediu medical</SelectItem>
-                  <SelectItem value="ccc">CCC — Concediu creștere copil</SelectItem>
-                  <SelectItem value="cfp">CFP — Concediu fără plată</SelectItem>
-                  <SelectItem value="ev">EV — Eveniment</SelectItem>
+                  {LEAVE_TYPES.map(lt => (
+                    <SelectItem key={lt.key} value={lt.key}>{lt.label} — {lt.description}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

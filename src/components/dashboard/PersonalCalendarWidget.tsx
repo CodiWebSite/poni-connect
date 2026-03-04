@@ -19,24 +19,9 @@ interface DepartmentLeave {
   isCurrentUser: boolean;
 }
 
-const LEAVE_TYPE_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  'co': { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20' },
-  'concediu_odihna': { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20' },
-  'bo': { label: 'CM', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20' },
-  'concediu_medical': { label: 'CM', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20' },
-  'ccc': { label: 'CCC', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-500/20' },
-  'cfp': { label: 'CFP', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-500/20' },
-  'concediu_fara_plata': { label: 'CFP', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-500/20' },
-  'ev': { label: 'EV', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-500/20' },
-};
+import { getLeaveStyle } from '@/utils/leaveTypes';
 
-const DEFAULT_LEAVE = { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20' };
 const DAY_ABBR: Record<number, string> = { 0: 'Dum', 1: 'Lun', 2: 'Mar', 3: 'Mie', 4: 'Joi', 5: 'Vin', 6: 'Sâm' };
-
-function getLeaveStyle(leaveType?: string) {
-  if (!leaveType) return DEFAULT_LEAVE;
-  return LEAVE_TYPE_MAP[leaveType.toLowerCase().trim()] || DEFAULT_LEAVE;
-}
 
 const PersonalCalendarWidget = () => {
   const { user } = useAuth();
