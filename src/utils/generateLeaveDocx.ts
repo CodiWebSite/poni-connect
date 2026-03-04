@@ -128,10 +128,11 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     parseSignatureData(srusSignature),
   ]);
 
+  const totalCurrentYear = totalLeaveDays ?? 0;
   const usedDays = usedLeaveDays ?? 0;
-  const remainingCurrentYear = (totalLeaveDays ?? 0) - usedDays;
+  const remainingCurrentYear = totalCurrentYear - usedDays;
   const carryover = carryoverDays ?? 0;
-  const totalAvailable = remainingCurrentYear + carryover;
+  const totalSold = totalCurrentYear + carryover; // TOTAL sold (all sources)
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
@@ -254,7 +255,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
       indent: { left: srusIndent },
       children: [
         t('are dreptul la ', { size: S }),
-        t(`${totalAvailable}`, { bold: true, size: S }),
+        t(`${totalSold}`, { bold: true, size: S }),
         t(' zile concediu de odihnă, din care', { size: S }),
       ],
     }),
@@ -263,11 +264,11 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
       indent: { left: srusIndent },
       children: [
         t(`${remainingCurrentYear}`, { bold: true, size: S }),
-        t(' aferente anului ', { size: S }),
+        t(' zile rămase aferente anului ', { size: S }),
         t(`${year}`, { bold: true, size: S }),
         t(' și ', { size: S }),
         t(`${carryover}`, { bold: true, size: S }),
-        t(' aferente anului', { size: S }),
+        t(' zile rămase aferente anului', { size: S }),
       ],
     }),
     new Paragraph({
