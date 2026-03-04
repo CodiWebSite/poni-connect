@@ -511,7 +511,7 @@ const Auth = () => {
               </TabsContent>
             </Tabs>
 
-            <div className="mt-4 pt-4 border-t border-border text-center">
+            <div className="mt-4 pt-4 border-t border-border text-center space-y-3">
               <button
                 type="button"
                 onClick={() => setShowAccountHelp(true)}
@@ -520,6 +520,17 @@ const Auth = () => {
                 <HelpCircle className="w-4 h-4" />
                 Nu reușești să-ți creezi cont? Solicită ajutor
               </button>
+
+              <div className="rounded-lg bg-muted/50 border border-border/60 px-4 py-3 text-xs text-muted-foreground space-y-1">
+                <p className="font-medium text-foreground/80">Asistență IT — pentru urgențe:</p>
+                <p>Condrea Codrin — Tehnician IT, interior <span className="font-medium">330</span></p>
+                <p>Buzdugan Cătălin — Departamentul IT, interior <span className="font-medium">160</span></p>
+                <p className="pt-0.5">
+                  <a href="mailto:condrea.codrin@icmpp.ro" className="text-primary hover:underline">condrea.codrin@icmpp.ro</a>
+                  {' · '}
+                  <a href="mailto:admin@icmpp.ro" className="text-primary hover:underline">admin@icmpp.ro</a>
+                </p>
+              </div>
             </div>
             </>
           )}
