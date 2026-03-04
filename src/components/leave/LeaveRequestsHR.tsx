@@ -338,6 +338,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   };
 
   const deductLeaveDays = async (request: LeaveRequestRow) => {
+    // Skip deduction in demo mode to protect real balances
+    if (isDemo) return;
     if (!request.epd_id) return;
     const currentYear = new Date().getFullYear();
     let daysToDeduct = request.working_days;
