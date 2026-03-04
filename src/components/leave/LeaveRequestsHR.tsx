@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck, FileSpreadsheet } from 'lucide-react';
+import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck, FileSpreadsheet, CheckCircle } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -45,11 +45,13 @@ interface LeaveRequestRow {
   employee_signature?: string | null;
   avatar_url?: string | null;
   epd_id?: string;
+  user_id: string;
 }
 
 const statusLabels: Record<string, string> = {
   draft: 'Ciornă',
   pending_department_head: 'Așteptare Șef Comp.',
+  pending_srus: 'Așteptare SRUS',
   approved: 'Aprobată',
   rejected: 'Respinsă',
 };
@@ -57,6 +59,7 @@ const statusLabels: Record<string, string> = {
 const statusColors: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
   pending_department_head: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  pending_srus: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
   approved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
   rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
 };
@@ -78,6 +81,10 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const [selectedSrusOfficer, setSelectedSrusOfficer] = useState<string>('Cătălina Bălan');
   const [srusSignature, setSrusSignature] = useState<string | null>(null);
   const [exportingXls, setExportingXls] = useState(false);
+  const [srusApproveDialog, setSrusApproveDialog] = useState<LeaveRequestRow | null>(null);
+  const [srusApproveOfficer, setSrusApproveOfficer] = useState<string>('Cătălina Bălan');
+  const [srusApproveSig, setSrusApproveSig] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllRequests();
@@ -203,7 +210,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     setLoading(false);
   };
 
-  const handleDownload = async (request: LeaveRequestRow, srusOfficerName: string) => {
+  const handleDownloadApproved = async (request: LeaveRequestRow) => {
     setDownloading(request.id);
     try {
       let totalLeaveDays = 0;
@@ -232,6 +239,13 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         }
       }
 
+      // Fetch stored SRUS data from the leave request
+      const { data: lrData } = await supabase
+        .from('leave_requests')
+        .select('srus_officer_name, srus_signature, srus_signed_at')
+        .eq('id', request.id)
+        .maybeSingle();
+
       await generateLeaveDocx({
         employeeName: request.employee_name,
         employeePosition: request.employee_position,
@@ -245,18 +259,17 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         replacementPosition: request.replacement_position || '',
         requestDate: format(parseISO(request.created_at), 'dd.MM.yyyy'),
         requestNumber: request.request_number,
-        isApproved: request.status === 'approved',
+        isApproved: true,
         employeeSignature: request.employee_signature,
         totalLeaveDays,
         usedLeaveDays,
         carryoverDays,
         carryoverFromYear,
-        srusOfficerName,
-        srusSignature,
+        srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
+        srusSignature: (lrData as any)?.srus_signature || undefined,
         approvalDate: request.dept_head_approved_at ? format(parseISO(request.dept_head_approved_at), 'dd.MM.yyyy') : undefined,
         deptHeadSignature: request.dept_head_signature,
         deptHeadName: request.dept_head_name,
-        
         directorName: request.director_name,
         directorApprovalDate: request.director_approved_at ? format(parseISO(request.director_approved_at), 'dd.MM.yyyy') : undefined,
       });
@@ -267,7 +280,6 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     }
     setDownloading(null);
     setDownloadDialog(null);
-    setSrusSignature(null);
   };
 
   const handleDelete = async (id: string, requestNumber: string) => {
@@ -281,6 +293,91 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       fetchAllRequests();
     }
     setDeleting(null);
+  };
+
+  const handleSrusApprove = async () => {
+    if (!srusApproveDialog || !srusApproveSig) {
+      toast({ title: 'Semnătură necesară', description: 'Vă rugăm să semnați înainte de validare.', variant: 'destructive' });
+      return;
+    }
+    setProcessing(srusApproveDialog.id);
+    const now = new Date().toISOString();
+
+    const { error } = await supabase
+      .from('leave_requests')
+      .update({
+        status: 'approved' as any,
+        srus_officer_name: srusApproveOfficer,
+        srus_signature: srusApproveSig,
+        srus_signed_at: now,
+      } as any)
+      .eq('id', srusApproveDialog.id);
+
+    if (error) {
+      toast({ title: 'Eroare', description: 'Nu s-a putut valida cererea.', variant: 'destructive' });
+    } else {
+      // Deduct leave days now that it's fully approved
+      await deductLeaveDays(srusApproveDialog);
+
+      // Notify employee
+      await supabase.from('notifications').insert({
+        user_id: srusApproveDialog.user_id,
+        title: 'Cerere concediu aprobată',
+        message: `Cererea ${srusApproveDialog.request_number} a fost validată de SRUS și este aprobată definitiv.`,
+        type: 'success',
+        related_type: 'leave_request',
+        related_id: srusApproveDialog.id,
+      });
+
+      toast({ title: 'Validată SRUS', description: `Cererea ${srusApproveDialog.request_number} este acum aprobată definitiv.` });
+      setSrusApproveDialog(null);
+      setSrusApproveSig(null);
+      fetchAllRequests();
+    }
+    setProcessing(null);
+  };
+
+  const deductLeaveDays = async (request: LeaveRequestRow) => {
+    if (!request.epd_id) return;
+    const currentYear = new Date().getFullYear();
+    let daysToDeduct = request.working_days;
+
+    const { data: carryovers } = await supabase
+      .from('leave_carryover')
+      .select('id, remaining_days, used_days')
+      .eq('employee_personal_data_id', request.epd_id)
+      .eq('to_year', currentYear)
+      .gt('remaining_days', 0);
+
+    if (carryovers && carryovers.length > 0) {
+      for (const carry of carryovers) {
+        if (daysToDeduct <= 0) break;
+        const deductFromCarry = Math.min(daysToDeduct, carry.remaining_days);
+        await supabase
+          .from('leave_carryover')
+          .update({
+            used_days: carry.used_days + deductFromCarry,
+            remaining_days: carry.remaining_days - deductFromCarry,
+          })
+          .eq('id', carry.id);
+        daysToDeduct -= deductFromCarry;
+      }
+    }
+
+    if (daysToDeduct > 0) {
+      const { data: epd } = await supabase
+        .from('employee_personal_data')
+        .select('used_leave_days')
+        .eq('id', request.epd_id)
+        .maybeSingle();
+
+      if (epd) {
+        await supabase
+          .from('employee_personal_data')
+          .update({ used_leave_days: (epd.used_leave_days || 0) + daysToDeduct })
+          .eq('id', request.epd_id);
+      }
+    }
   };
 
   const filtered = requests.filter(r => {
@@ -312,7 +409,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         { header: 'Data aprobării', key: 'approvalDate', width: 16 },
         { header: 'Data depunerii', key: 'createdAt', width: 16 },
       ];
-      const sMap: Record<string, string> = { draft: 'Ciornă', pending_department_head: 'Așteptare Șef', approved: 'Aprobată', rejected: 'Respinsă' };
+      const sMap: Record<string, string> = { draft: 'Ciornă', pending_department_head: 'Așteptare Șef', pending_srus: 'Așteptare SRUS', approved: 'Aprobată', rejected: 'Respinsă' };
       filtered.forEach(r => {
         ws.addRow({
           nr: r.request_number, name: r.employee_name, dept: r.employee_department,
@@ -394,6 +491,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
             <SelectContent>
               <SelectItem value="all">Toate statusurile</SelectItem>
               <SelectItem value="pending_department_head">Așteptare Șef</SelectItem>
+              <SelectItem value="pending_srus">Așteptare SRUS</SelectItem>
               <SelectItem value="approved">Aprobate</SelectItem>
               <SelectItem value="rejected">Respinse</SelectItem>
             </SelectContent>
@@ -469,6 +567,21 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
+                      ) : r.status === 'pending_srus' && r.dept_head_name ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1 text-sm text-amber-700 dark:text-amber-400">
+                                <UserCheck className="w-3.5 h-3.5" />
+                                <span className="truncate max-w-[120px]">{r.dept_head_name}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Aprobat de: {r.dept_head_name}</p>
+                              <p className="text-xs text-muted-foreground">Așteptare validare SRUS</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ) : r.status === 'rejected' ? (
                         <span className="text-xs text-muted-foreground">Respinsă</span>
                       ) : (
@@ -477,18 +590,32 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setDownloadDialog(r); setSelectedSrusOfficer('Cătălina Bălan'); setSrusSignature(null); }}
-                          disabled={downloading === r.id}
-                        >
-                          {downloading === r.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Download className="w-4 h-4" />
-                          )}
-                        </Button>
+                        {r.status === 'pending_srus' && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="bg-amber-600 hover:bg-amber-700 text-white"
+                            onClick={() => { setSrusApproveDialog(r); setSrusApproveOfficer('Cătălina Bălan'); setSrusApproveSig(null); }}
+                            disabled={processing === r.id}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Validează SRUS
+                          </Button>
+                        )}
+                        {r.status === 'approved' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setDownloadDialog(r); }}
+                            disabled={downloading === r.id}
+                          >
+                            {downloading === r.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -512,19 +639,44 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         )}
       </CardContent>
 
-      {/* Download Dialog - SRUS Officer Selection + Signature */}
-      <Dialog open={!!downloadDialog} onOpenChange={() => { setDownloadDialog(null); setSrusSignature(null); }}>
-        <DialogContent className="max-w-md">
+      {/* Download Dialog - simple, SRUS data already stored */}
+      <Dialog open={!!downloadDialog} onOpenChange={() => setDownloadDialog(null)}>
+        <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Descarcă Document {downloadDialog?.request_number}</DialogTitle>
           </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Angajat: <strong>{downloadDialog?.employee_name}</strong>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Toate semnăturile și ștampilele vor fi incluse în document.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDownloadDialog(null)}>Anulează</Button>
+            <Button
+              onClick={() => downloadDialog && handleDownloadApproved(downloadDialog)}
+              disabled={downloading === downloadDialog?.id}
+            >
+              {downloading === downloadDialog?.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Download className="w-4 h-4 mr-1" />}
+              Descarcă DOCX
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* SRUS Approval Dialog */}
+      <Dialog open={!!srusApproveDialog} onOpenChange={() => { setSrusApproveDialog(null); setSrusApproveSig(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Validare SRUS — {srusApproveDialog?.request_number}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Angajat: <strong>{downloadDialog?.employee_name}</strong>
+              Angajat: <strong>{srusApproveDialog?.employee_name}</strong> • {srusApproveDialog?.working_days} zile
             </p>
             <div className="space-y-2">
-              <Label>Salariat SRUS (semnează documentul)</Label>
-              <Select value={selectedSrusOfficer} onValueChange={(v) => { setSelectedSrusOfficer(v); setSrusSignature(null); }}>
+              <Label>Salariat SRUS</Label>
+              <Select value={srusApproveOfficer} onValueChange={(v) => { setSrusApproveOfficer(v); setSrusApproveSig(null); }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -536,18 +688,19 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
             </div>
             <SignaturePad
               label="Semnătura salariat SRUS"
-              onSave={(sig) => setSrusSignature(sig)}
-              existingSignature={srusSignature}
+              onSave={(sig) => setSrusApproveSig(sig)}
+              existingSignature={srusApproveSig}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setDownloadDialog(null); setSrusSignature(null); }}>Anulează</Button>
+            <Button variant="outline" onClick={() => { setSrusApproveDialog(null); setSrusApproveSig(null); }}>Anulează</Button>
             <Button
-              onClick={() => downloadDialog && handleDownload(downloadDialog, selectedSrusOfficer)}
-              disabled={downloading === downloadDialog?.id}
+              onClick={handleSrusApprove}
+              disabled={!srusApproveSig || processing === srusApproveDialog?.id}
+              className="bg-green-600 hover:bg-green-700"
             >
-              {downloading === downloadDialog?.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Download className="w-4 h-4 mr-1" />}
-              Descarcă DOCX
+              {processing === srusApproveDialog?.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+              Validează și Aprobă
             </Button>
           </DialogFooter>
         </DialogContent>
