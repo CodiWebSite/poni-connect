@@ -310,25 +310,69 @@ const PlatformGuide = () => {
                 </div>
 
                 <Separator className="my-3" />
-                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🎨 Legenda culorilor</p>
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🎨 Legenda abrevierilor și culorilor</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                   <div className="flex items-center gap-2">
                     <Badge className="bg-sky-500/20 text-sky-700 text-[10px]">CO</Badge>
                     <span>Concediu de odihnă</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-rose-500/20 text-rose-700 text-[10px]">BO</Badge>
+                    <Badge className="bg-rose-500/20 text-rose-700 text-[10px]">CM</Badge>
                     <span>Concediu medical</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-emerald-500/20 text-emerald-700 text-[10px]">EV</Badge>
+                    <span>Eveniment deosebit</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-teal-500/20 text-teal-700 text-[10px]">MD</Badge>
+                    <span>Muncă la domiciliu</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-orange-500/20 text-orange-700 text-[10px]">I</Badge>
+                    <span>Învoiri / fără salariu</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-red-500/20 text-red-700 text-[10px]">PRB</Badge>
+                    <span>Program redus boală</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-cyan-500/20 text-cyan-700 text-[10px]">L</Badge>
+                    <span>Zile libere plătite</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-indigo-500/20 text-indigo-700 text-[10px]">N</Badge>
+                    <span>Ore de noapte</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-pink-500/20 text-pink-700 text-[10px]">M</Badge>
+                    <span>Maternitate</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className="bg-slate-500/20 text-slate-700 text-[10px]">CS</Badge>
                     <span>Contract suspendat</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-emerald-500/20 text-emerald-700 text-[10px]">EV</Badge>
-                    <span>Eveniment</span>
+                    <Badge className="bg-lime-500/20 text-lime-700 text-[10px]">D</Badge>
+                    <span>Ore deplasare</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-yellow-500/20 text-yellow-700 text-[10px]">CD</Badge>
+                    <span>Condiții muncă</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-red-600/20 text-red-800 text-[10px]">Nm</Badge>
+                    <span>Absențe nemotivate</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-fuchsia-500/20 text-fuchsia-700 text-[10px]">PRM</Badge>
+                    <span>Program redus maternitate</span>
                   </div>
                 </div>
+
+                <InfoBox title="💡 Vizibilitate">
+                  <p>Angajații văd doar concediile colegilor din <strong>același departament</strong>. HR-ul și administratorii văd toate departamentele. Doar zilele lucrătoare sunt marcate (weekend-urile și sărbătorile sunt excluse automat).</p>
+                </InfoBox>
 
                 <Separator className="my-3" />
                 <p className="font-medium text-foreground text-xs uppercase tracking-wider">🧭 Navigare</p>
