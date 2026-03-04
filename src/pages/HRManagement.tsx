@@ -966,13 +966,8 @@ const HRManagement = () => {
         }
       }
 
-      const leaveTypeLabels: Record<string, string> = {
-        co: 'Concediu de odihnă',
-        bo: 'Concediu medical (CM)',
-        ccc: 'Concediu creștere copil',
-        cfp: 'Concediu fără plată',
-        ev: 'Eveniment',
-      };
+      const leaveTypeLabels: Record<string, string> = {};
+      LEAVE_TYPES.forEach(lt => { leaveTypeLabels[lt.key] = lt.description; });
 
       const deductFrom = manualLeaveForm.deduct_from;
       let daysFromCarryover = 0;
@@ -2602,7 +2597,7 @@ const HRManagement = () => {
 
             {manualLeaveForm.start_date && manualLeaveForm.end_date && (() => {
               const workingDays = calculateWorkingDays(manualLeaveForm.start_date, manualLeaveForm.end_date);
-              const isNonDeductible = ['cfp', 'bo', 'ccc', 'ev'].includes(manualLeaveForm.leave_type);
+              const isNonDeductible = LEAVE_TYPES.filter(t => !t.deductible).map(t => t.key).includes(manualLeaveForm.leave_type);
               const emp = selectedManualEmployee;
               const carryover = emp?.carryoverDays || 0;
               const currentRemaining = emp ? emp.total_leave_days - emp.used_leave_days : 0;
