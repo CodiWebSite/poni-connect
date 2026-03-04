@@ -24,31 +24,9 @@ interface DepartmentLeave {
   avatarUrl?: string | null;
 }
 
-const LEAVE_TYPE_MAP: Record<string, { label: string; color: string; bg: string; bgSolid: string }> = {
-  'co': { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20', bgSolid: 'bg-sky-100 dark:bg-sky-900/40' },
-  'concediu_odihna': { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20', bgSolid: 'bg-sky-100 dark:bg-sky-900/40' },
-  'bo': { label: 'CM', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20', bgSolid: 'bg-rose-100 dark:bg-rose-900/40' },
-  'concediu_medical': { label: 'CM', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20', bgSolid: 'bg-rose-100 dark:bg-rose-900/40' },
-  'ccc': { label: 'CCC', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-500/20', bgSolid: 'bg-purple-100 dark:bg-purple-900/40' },
-  'cfp': { label: 'CFP', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-500/20', bgSolid: 'bg-amber-100 dark:bg-amber-900/40' },
-  'concediu_fara_plata': { label: 'CFP', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-500/20', bgSolid: 'bg-amber-100 dark:bg-amber-900/40' },
-  'ev': { label: 'EV', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-500/20', bgSolid: 'bg-emerald-100 dark:bg-emerald-900/40' },
-};
+import { LEAVE_TYPES, LEAVE_TYPE_MAP, getLeaveStyle } from '@/utils/leaveTypes';
 
-const DEFAULT_LEAVE = { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20', bgSolid: 'bg-sky-100 dark:bg-sky-900/40' };
 const DAY_NAMES: Record<number, string> = { 0: 'Dum', 1: 'Lun', 2: 'Mar', 3: 'Mie', 4: 'Joi', 5: 'Vin', 6: 'Sâm' };
-
-function getLeaveStyle(leaveType?: string) {
-  if (!leaveType) return DEFAULT_LEAVE;
-  return LEAVE_TYPE_MAP[leaveType.toLowerCase().trim()] || DEFAULT_LEAVE;
-}
-
-const LEAVE_TYPE_LABELS: Record<string, string> = {
-  co: 'Concediu de odihnă', concediu_odihna: 'Concediu de odihnă',
-  bo: 'Concediu medical', concediu_medical: 'Concediu medical',
-  ccc: 'Creștere copil', cfp: 'Fără plată', concediu_fara_plata: 'Fără plată',
-  ev: 'Eveniment',
-};
 
 const LeaveCalendar = () => {
   const { user } = useAuth();
@@ -269,7 +247,7 @@ const LeaveCalendar = () => {
                           const style = getLeaveStyle(leave.leaveType);
                           const start = parseISO(leave.startDate);
                           const end = parseISO(leave.endDate);
-                          const typeName = LEAVE_TYPE_LABELS[leave.leaveType?.toLowerCase().trim() || 'co'] || 'Concediu';
+                          const typeName = getLeaveStyle(leave.leaveType)?.description || 'Concediu';
                           return (
                             <div key={i} className={cn('flex items-center justify-between gap-2 p-2 rounded-lg border', style.bgSolid)}>
                               <div className="flex items-center gap-2 min-w-0">
@@ -398,17 +376,11 @@ const LeaveCalendar = () => {
       <Card className="mt-4">
         <CardContent className="p-3 sm:p-4">
           <p className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2 sm:mb-3 uppercase tracking-wide">Legendă</p>
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-start sm:items-center gap-2 sm:gap-x-5 sm:gap-y-2">
-            {[
-              { label: 'CO', desc: 'Concediu odihnă', color: 'text-sky-600', bg: 'bg-sky-500/20' },
-              { label: 'BO', desc: 'Concediu medical', color: 'text-rose-600', bg: 'bg-rose-500/20' },
-              { label: 'CCC', desc: 'Creștere copil', color: 'text-purple-600', bg: 'bg-purple-500/20' },
-              { label: 'CFP', desc: 'Fără plată', color: 'text-amber-600', bg: 'bg-amber-500/20' },
-              { label: 'EV', desc: 'Eveniment', color: 'text-emerald-600', bg: 'bg-emerald-500/20' },
-            ].map(item => (
-              <div key={item.label} className="flex items-center gap-1.5 text-xs sm:text-sm">
-                <span className={cn('font-bold px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-xs', item.color, item.bg)}>{item.label}</span>
-                <span className="text-muted-foreground text-[11px] sm:text-sm">{item.desc}</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-1.5">
+            {LEAVE_TYPES.map(item => (
+              <div key={item.key} className="flex items-center gap-1.5 text-xs">
+                <span className={cn('font-bold px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-xs', item.color, item.colorDark, item.bg)}>{item.label}</span>
+                <span className="text-muted-foreground text-[11px] sm:text-xs truncate">{item.description}</span>
               </div>
             ))}
           </div>
