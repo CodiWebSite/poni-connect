@@ -12,6 +12,8 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { format, startOfMonth, endOfMonth, subMonths, eachDayOfInterval, isWeekend } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { LEAVE_TYPES, LEAVE_TYPE_MAP } from '@/utils/leaveTypes';
+import { isPublicHoliday } from '@/utils/romanianHolidays';
 
 const MONTH_NAMES_RO = [
   'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
@@ -62,7 +64,7 @@ function getWorkingDaysInRange(start: Date, end: Date, monthStart: Date, monthEn
   if (effectiveStart > effectiveEnd) return { days: 0, period: '' };
   
   const allDays = eachDayOfInterval({ start: effectiveStart, end: effectiveEnd });
-  const workingDays = allDays.filter(d => !isWeekend(d)).length;
+  const workingDays = allDays.filter(d => !isWeekend(d) && !isPublicHoliday(d)).length;
   
   return {
     days: workingDays,
@@ -97,11 +99,20 @@ function addMonthSheet(
     return nameA.localeCompare(nameB, 'ro');
   });
 
-  const leaveTypeLabels: Record<string, string> = {
-    co: 'CO',
-    cs: 'CS',
-    cm: 'CM',
-  };
+  // Build labels from centralized leave types config
+  const leaveTypeLabels: Record<string, string> = {};
+  for (const lt of LEAVE_TYPES) {
+    leaveTypeLabels[lt.key] = lt.label;
+  }
+  // Legacy aliases
+  leaveTypeLabels['concediu_odihna'] = 'CO';
+  leaveTypeLabels['concediu_medical'] = 'CM';
+  leaveTypeLabels['concediu_fara_plata'] = 'CS';
+  leaveTypeLabels['concediu_crestere_copil'] = 'CS';
+  leaveTypeLabels['cfp'] = 'CS';
+  leaveTypeLabels['ccc'] = 'CS';
+  leaveTypeLabels['eveniment'] = 'EV';
+  leaveTypeLabels['bo'] = 'CM';
 
   sorted.forEach((emp, idx) => {
     // Find all leave records for this employee in this month
@@ -223,15 +234,18 @@ const Salarizare = () => {
     // Transform hr_requests into LeaveRecord format
     const leaveRecords: LeaveRecord[] = (hrReqs || []).map((hr: any) => {
       const details = hr.details || {};
-      // Resolve epd_id: from details, or via user_id mapping
       const resolvedEpdId = details.epd_id || userIdToEpdId[hr.user_id] || null;
+      // Normalize leave type using centralized config
+      let rawType = (details.leaveType || 'co').toLowerCase().trim();
+      const mapped = LEAVE_TYPE_MAP[rawType];
+      const normalizedType = mapped ? mapped.key : rawType;
       return {
         start_date: details.startDate || '',
         end_date: details.endDate || '',
         working_days: details.numberOfDays || 0,
         epd_id: resolvedEpdId,
         user_id: hr.user_id,
-        leave_type: details.leaveType || 'co',
+        leave_type: normalizedType,
       };
     });
 
