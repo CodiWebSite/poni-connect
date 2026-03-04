@@ -16,7 +16,6 @@ import {
   VerticalAlign,
 } from 'docx';
 import { saveAs } from 'file-saver';
-import stampImage from '@/assets/stamp-icmpp.png';
 
 interface LeaveDocxParams {
   employeeName: string;
@@ -25,11 +24,11 @@ interface LeaveDocxParams {
   department: string;
   workingDays: number;
   year: number;
-  startDate: string; // yyyy-MM-dd
-  endDate?: string; // yyyy-MM-dd
+  startDate: string;
+  endDate?: string;
   replacementName: string;
   replacementPosition: string;
-  requestDate: string; // dd.MM.yyyy
+  requestDate: string;
   requestNumber: string;
   isApproved: boolean;
   employeeSignature?: string | null;
@@ -39,7 +38,7 @@ interface LeaveDocxParams {
   carryoverFromYear?: number;
   srusOfficerName?: string;
   srusSignature?: string | null;
-  approvalDate?: string; // dd.MM.yyyy
+  approvalDate?: string;
   deptHeadSignature?: string | null;
   deptHeadName?: string;
   directorName?: string;
@@ -69,13 +68,13 @@ function formatDate(dateStr: string): string {
 }
 
 const FONT = 'Times New Roman';
-const FONT_HANDWRITING = 'Segoe Script';
 const SIZE = 22; // 11pt
 const SIZE_SMALL = 18; // 9pt
 const SIZE_HEADER = 18; // 9pt
 const RIGHT_TAB = TabStopPosition.MAX;
 const NOBORDER = { style: 'none' as any, size: 0, color: 'FFFFFF' };
 const CELL_BORDERS = { top: NOBORDER, bottom: NOBORDER, left: NOBORDER, right: NOBORDER };
+const BLUE_PEN = '1a3ba3';
 
 function underlinedField(value: string | undefined | null, fallback: string): TextRun[] {
   if (value) {
@@ -96,8 +95,8 @@ function parseSignatureData(signature: string | null | undefined): Promise<Uint8
   }
 }
 
-const t = (text: string, opts: Partial<{ bold: boolean; italics: boolean; size: number; underline: any }> = {}) =>
-  new TextRun({ text, font: FONT, size: opts.size ?? SIZE, bold: opts.bold, italics: opts.italics, underline: opts.underline });
+const t = (text: string, opts: Partial<{ bold: boolean; italics: boolean; size: number; underline: any; color: string }> = {}) =>
+  new TextRun({ text, font: FONT, size: opts.size ?? SIZE, bold: opts.bold, italics: opts.italics, underline: opts.underline, color: opts.color });
 
 const tab = () => new TextRun({ text: '\t', font: FONT });
 const empty = (after = 0) => new Paragraph({ spacing: { after }, children: [] });
@@ -115,12 +114,9 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = endDate ? formatDate(endDate) : '';
 
-  // Fetch logo, stamp, and signatures in parallel
+  // Fetch logo and signatures in parallel (no more stamp)
   let logoData: Uint8Array;
   try { logoData = await fetchImageAsUint8Array('/logo_doc.jpg'); } catch { logoData = new Uint8Array(0); }
-
-  let stampData: Uint8Array;
-  try { stampData = await fetchImageAsUint8Array(stampImage); } catch { stampData = new Uint8Array(0); }
 
   const [signatureData, deptHeadSigData, srusSigData] = await Promise.all([
     parseSignatureData(employeeSignature),
@@ -132,40 +128,33 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const usedDays = usedLeaveDays ?? 0;
   const remainingCurrentYear = totalCurrentYear - usedDays;
   const carryover = carryoverDays ?? 0;
-  const totalSold = totalCurrentYear + carryover; // TOTAL sold (all sources)
+  const totalSold = totalCurrentYear + carryover;
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
     : formattedStartDate;
 
   // ════════════════════════════════════════════════════
-  // Build approval section as invisible table (2 columns)
-  // Left: Aprobat, / Șef compartiment / stamp+sig / date
-  // Right: DIRECTOR / name / stamp / date
+  // Left column: Aprobat, Șef compartiment, signature, date
   // ════════════════════════════════════════════════════
-
   const leftApprovalChildren: Paragraph[] = [
     new Paragraph({ spacing: { after: 0 }, children: [t('Aprobat,', { size: SIZE_SMALL })] }),
     new Paragraph({ spacing: { after: 40 }, children: [t('Șef compartiment', { bold: true, size: SIZE_SMALL })] }),
   ];
 
-  // Dept head name
   if (deptHeadName) {
     leftApprovalChildren.push(
       new Paragraph({ spacing: { after: 0 }, children: [t(deptHeadName, { bold: true, size: SIZE_SMALL })] })
     );
   }
 
-  // Stamp + signature for dept head
-  const leftSigElements: (TextRun | ImageRun)[] = [];
-  if (stampData.length > 0) {
-    leftSigElements.push(new ImageRun({ data: stampData, transformation: { width: 90, height: 90 }, type: 'png' }));
-  }
+  // Signature only (no stamp)
   if (deptHeadSigData) {
-    leftSigElements.push(new ImageRun({ data: deptHeadSigData, transformation: { width: 90, height: 35 }, type: 'png' }));
-  }
-  if (leftSigElements.length > 0) {
-    leftApprovalChildren.push(new Paragraph({ spacing: { after: 0 }, children: leftSigElements }));
+    leftApprovalChildren.push(
+      new Paragraph({ spacing: { after: 0 }, children: [
+        new ImageRun({ data: deptHeadSigData, transformation: { width: 90, height: 35 }, type: 'png' }),
+      ]})
+    );
   } else {
     leftApprovalChildren.push(new Paragraph({ spacing: { after: 0 }, children: [t('________________')] }));
   }
@@ -176,31 +165,16 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     );
   }
 
-  // Right column: DIRECTOR
+  // ════════════════════════════════════════════════════
+  // Right column: DIRECTOR — name in blue pen color
+  // ════════════════════════════════════════════════════
+  const actualDirectorName = directorName || 'Valeria Harabagiu';
   const rightApprovalChildren: Paragraph[] = [
     new Paragraph({ spacing: { after: 40 }, alignment: AlignmentType.RIGHT, children: [t('DIRECTOR', { bold: true, size: SIZE_SMALL })] }),
+    new Paragraph({ spacing: { after: 40 }, alignment: AlignmentType.RIGHT, children: [
+      t(actualDirectorName, { bold: true, size: SIZE, color: BLUE_PEN }),
+    ]}),
   ];
-
-  // Director name in handwriting font
-  const actualDirectorName = directorName || 'Valeria Harabagiu';
-  rightApprovalChildren.push(
-    new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [
-      new TextRun({ text: actualDirectorName, font: FONT_HANDWRITING, size: 22, bold: true, italics: true }),
-    ]})
-  );
-
-  // Director stamp
-  if (stampData.length > 0) {
-    rightApprovalChildren.push(
-      new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [
-        new ImageRun({ data: stampData, transformation: { width: 90, height: 90 }, type: 'png' }),
-      ]})
-    );
-  } else {
-    rightApprovalChildren.push(
-      new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t('________________')] })
-    );
-  }
 
   if (directorApprovalDate) {
     rightApprovalChildren.push(
@@ -231,10 +205,10 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   });
 
   // ════════════════════════════════════════════════════
-  // SRUS section (bottom right, indented)
+  // SRUS section
   // ════════════════════════════════════════════════════
   const srusIndent = convertMillimetersToTwip(75);
-  const S = 20; // size for SRUS text
+  const S = 20;
 
   const srusSection: Paragraph[] = [
     new Paragraph({
@@ -281,17 +255,12 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     }),
   ];
 
-  // SRUS signature area: name left, line right (using table)
   const srusSignatureTable = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: [
       new TableRow({
         children: [
-          new TableCell({
-            width: { size: 55, type: WidthType.PERCENTAGE },
-            borders: CELL_BORDERS,
-            children: [empty(0)],
-          }),
+          new TableCell({ width: { size: 55, type: WidthType.PERCENTAGE }, borders: CELL_BORDERS, children: [empty(0)] }),
           new TableCell({
             width: { size: 25, type: WidthType.PERCENTAGE },
             borders: CELL_BORDERS,
@@ -300,11 +269,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
               new Paragraph({ spacing: { after: 0 }, children: [t('(numele salariatului de la SRUS)', { size: 16, italics: true })] }),
             ],
           }),
-          new TableCell({
-            width: { size: 20, type: WidthType.PERCENTAGE },
-            borders: CELL_BORDERS,
-            children: [empty(0)],
-          }),
+          new TableCell({ width: { size: 20, type: WidthType.PERCENTAGE }, borders: CELL_BORDERS, children: [empty(0)] }),
         ],
       }),
       new TableRow({
@@ -322,26 +287,22 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
               new Paragraph({ spacing: { after: 0 }, children: [t('(semnătura)', { size: 14, italics: true })] }),
             ],
           }),
-          new TableCell({
-            width: { size: 20, type: WidthType.PERCENTAGE },
-            borders: CELL_BORDERS,
-            children: [empty(0)],
-          }),
+          new TableCell({ width: { size: 20, type: WidthType.PERCENTAGE }, borders: CELL_BORDERS, children: [empty(0)] }),
         ],
       }),
     ],
   });
 
   // ════════════════════════════════════════════════════
-  // Build document
+  // Build document — balanced margins for centered look
   // ════════════════════════════════════════════════════
   const doc = new Document({
     sections: [{
       properties: {
         page: {
           margin: {
-            top: convertMillimetersToTwip(12),
-            right: convertMillimetersToTwip(15),
+            top: convertMillimetersToTwip(15),
+            right: convertMillimetersToTwip(20),
             bottom: convertMillimetersToTwip(10),
             left: convertMillimetersToTwip(20),
           },
@@ -352,6 +313,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         ...(logoData.length > 0 ? [
           new Paragraph({
             spacing: { after: 0 },
+            alignment: AlignmentType.CENTER,
             children: [
               new ImageRun({ data: logoData, transformation: { width: 50, height: 50 }, type: 'jpg' }),
             ],
@@ -386,7 +348,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           children: [t('Se aprobă,')],
         }),
 
-        // ══════ APPROVAL TABLE (Șef compartiment LEFT, DIRECTOR RIGHT) ══════
+        // ══════ APPROVAL TABLE ══════
         approvalTable,
 
         empty(80),
