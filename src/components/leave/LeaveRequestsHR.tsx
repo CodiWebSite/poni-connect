@@ -34,6 +34,8 @@ interface LeaveRequestRow {
   employee_position: string;
   employee_grade: string;
   director_approved_at: string | null;
+  director_id: string | null;
+  director_name?: string;
   dept_head_approved_at: string | null;
   dept_head_id: string | null;
   dept_head_name?: string;
@@ -114,14 +116,16 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       });
     }
 
-    // Get approver names
+    // Get approver names (dept heads + directors)
     const deptHeadIds = [...new Set((data || []).map(r => r.dept_head_id).filter(Boolean))];
+    const directorIds = [...new Set((data || []).map(r => r.director_id).filter(Boolean))];
+    const allApproverIds = [...new Set([...deptHeadIds, ...directorIds])];
     let approverMap: Record<string, string> = {};
-    if (deptHeadIds.length > 0) {
+    if (allApproverIds.length > 0) {
       const { data: approverProfiles } = await supabase
         .from('profiles')
         .select('user_id, full_name')
-        .in('user_id', deptHeadIds);
+        .in('user_id', allApproverIds);
       (approverProfiles || []).forEach(p => {
         approverMap[p.user_id] = p.full_name;
       });
@@ -190,6 +194,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         employee_grade: epdMap[r.epd_id]?.grade || '',
         dept_head_name: r.dept_head_id ? approverMap[r.dept_head_id] || '' : '',
         dept_head_signature: (r as any).dept_head_signature || null,
+        director_name: r.director_id ? approverMap[r.director_id] || '' : '',
         avatar_url: r.epd_id ? avatarMap[r.epd_id] || null : null,
       }))
     );
@@ -216,12 +221,12 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
         const { data: carryover } = await supabase
           .from('leave_carryover')
-          .select('initial_days, remaining_days, from_year')
+          .select('remaining_days, from_year')
           .eq('employee_personal_data_id', request.epd_id)
           .eq('to_year', request.year)
           .maybeSingle();
         if (carryover) {
-          carryoverDays = carryover.initial_days;
+          carryoverDays = carryover.remaining_days;
           carryoverFromYear = carryover.from_year;
         }
 
@@ -254,6 +259,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         deptHeadSignature: request.dept_head_signature,
         deptHeadName: request.dept_head_name,
         remainingDays,
+        directorName: request.director_name,
+        directorApprovalDate: request.director_approved_at ? format(parseISO(request.director_approved_at), 'dd.MM.yyyy') : undefined,
       });
       toast({ title: 'Descărcat', description: `Document ${request.request_number} generat cu succes.` });
     } catch (err) {
