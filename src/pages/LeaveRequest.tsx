@@ -13,8 +13,20 @@ import { LeaveApprovalHistory } from '@/components/leave/LeaveApprovalHistory';
 import { LeaveRequestsHR } from '@/components/leave/LeaveRequestsHR';
 import { LeaveRequestsList } from '@/components/leave/LeaveRequestsList';
 import { LeaveApprovalDelegate } from '@/components/leave/LeaveApprovalDelegate';
-import { FileText, CheckSquare, ClipboardList, Send, History, FlaskConical, UserCheck } from 'lucide-react';
+import { FileText, CheckSquare, ClipboardList, Send, History, FlaskConical, UserCheck, Bug, Eye } from 'lucide-react';
 import ContextualHelp from '@/components/shared/ContextualHelp';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+
+type SimulatedRole = 'none' | 'angajat' | 'sef_departament' | 'hr_srus' | 'full';
+
+const ROLE_LABELS: Record<SimulatedRole, string> = {
+  none: 'Fără simulare (rolul tău real)',
+  angajat: '👤 Angajat simplu',
+  sef_departament: '🏢 Șef Departament',
+  hr_srus: '📋 HR / SRUS',
+  full: '⭐ Toate tab-urile (Super Admin)',
+};
 
 const LeaveRequest = () => {
   const { user, loading: authLoading } = useAuth();
@@ -23,10 +35,10 @@ const LeaveRequest = () => {
   const { settings } = useAppSettings();
   const [isDesignatedApprover, setIsDesignatedApprover] = useState(false);
   const [isActiveDelegate, setIsActiveDelegate] = useState(false);
+  const [simulatedRole, setSimulatedRole] = useState<SimulatedRole>('none');
 
   useEffect(() => {
     if (user) {
-      // Check both per-employee and per-department approver mappings
       Promise.all([
         supabase.from('leave_approvers').select('id').eq('approver_user_id', user.id).limit(1),
         supabase.from('leave_department_approvers').select('id').eq('approver_user_id', user.id).limit(1),
@@ -36,7 +48,6 @@ const LeaveRequest = () => {
         );
       });
 
-      // Check if user is an active delegate right now
       const today = new Date().toISOString().split('T')[0];
       supabase
         .from('leave_approval_delegates' as any)
@@ -65,14 +76,75 @@ const LeaveRequest = () => {
   if (!user) return <Navigate to="/auth" replace />;
 
   const isDeptHead = isSef || isSefSRUS || isSuperAdmin;
-  const canApprove = isDeptHead || isDesignatedApprover || isActiveDelegate;
-  const isHR = canManageHR;
+  const realCanApprove = isDeptHead || isDesignatedApprover || isActiveDelegate;
+  const realIsHR = canManageHR;
+
+  // Compute effective permissions based on simulation
+  let canApprove = realCanApprove;
+  let isHR = realIsHR;
+
+  if (isSuperAdmin && simulatedRole !== 'none') {
+    switch (simulatedRole) {
+      case 'angajat':
+        canApprove = false;
+        isHR = false;
+        break;
+      case 'sef_departament':
+        canApprove = true;
+        isHR = false;
+        break;
+      case 'hr_srus':
+        canApprove = false;
+        isHR = true;
+        break;
+      case 'full':
+        canApprove = true;
+        isHR = true;
+        break;
+    }
+  }
 
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
   const defaultTab = canApprove ? 'approve' : 'new';
 
   return (
-    <MainLayout title="Cereri Concediu de Odihnă" description={<span className="inline-flex items-center gap-1">Depune și gestionează cererile de concediu <ContextualHelp title="Cerere de Concediu" content="Completați formularul, semnați electronic și trimiteți cererea." steps={['Completați perioada și înlocuitorul', 'Semnați cererea electronic', 'Așteptați aprobarea: Șef → Director']} /></span>}>
+    <MainLayout title="Cereri Concediu de Odihnă" description={<span className="inline-flex items-center gap-1">Depune și gestionează cererile de concediu <ContextualHelp title="Cerere de Concediu" content="Completați formularul, semnați electronic și trimiteți cererea." steps={['Completați perioada și înlocuitorul', 'Semnați cererea electronic', 'Așteptați aprobarea: Șef → SRUS → Aprobat']} /></span>}>
+      
+      {/* Debug Sandbox Panel - only for Super Admin */}
+      {isSuperAdmin && (
+        <Card className="mb-4 border-2 border-dashed border-purple-400/60 bg-purple-50/50 dark:bg-purple-950/20 dark:border-purple-500/40">
+          <CardContent className="py-3 px-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                <Bug className="w-4 h-4" />
+                <span className="text-sm font-semibold">Sandbox Test</span>
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <Eye className="w-4 h-4 text-muted-foreground" />
+                <Select value={simulatedRole} onValueChange={(v) => setSimulatedRole(v as SimulatedRole)}>
+                  <SelectTrigger className="w-[280px] h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.entries(ROLE_LABELS) as [SimulatedRole, string][]).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {simulatedRole !== 'none' && (
+                <Badge className="bg-purple-600 text-white text-[10px]">
+                  Simulare activă: {ROLE_LABELS[simulatedRole]}
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-purple-600/80 dark:text-purple-400/80 mt-2">
+              Vizualizează interfața din perspectiva diferitelor roluri. Datele rămân reale — doar tab-urile vizibile se schimbă.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {settings.leave_module_beta && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-300/60 bg-amber-50/70 dark:border-amber-600/40 dark:bg-amber-950/30 px-4 py-2.5">
           <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
@@ -86,7 +158,6 @@ const LeaveRequest = () => {
       )}
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
-          {/* All employees can submit and see their requests */}
           <TabsTrigger value="new" className="gap-2">
             <Send className="w-4 h-4" />
             Cerere Nouă
@@ -96,7 +167,6 @@ const LeaveRequest = () => {
             Cererile Mele
           </TabsTrigger>
 
-          {/* Dept heads and designated approvers can approve */}
           {canApprove && (
             <TabsTrigger value="approve" className="gap-2">
               <CheckSquare className="w-4 h-4" />
@@ -104,7 +174,6 @@ const LeaveRequest = () => {
             </TabsTrigger>
           )}
 
-          {/* Dept heads see their approval history */}
           {canApprove && (
             <TabsTrigger value="history" className="gap-2">
               <History className="w-4 h-4" />
@@ -112,7 +181,6 @@ const LeaveRequest = () => {
             </TabsTrigger>
           )}
 
-          {/* Approvers can set a temporary delegate */}
           {canApprove && (
             <TabsTrigger value="delegate" className="gap-2">
               <UserCheck className="w-4 h-4" />
@@ -120,7 +188,6 @@ const LeaveRequest = () => {
             </TabsTrigger>
           )}
 
-          {/* HR sees all requests */}
           {isHR && (
             <TabsTrigger value="hr" className="gap-2">
               <ClipboardList className="w-4 h-4" />
