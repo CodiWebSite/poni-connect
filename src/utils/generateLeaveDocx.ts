@@ -12,6 +12,7 @@ import {
   BorderStyle,
 } from 'docx';
 import { saveAs } from 'file-saver';
+import stampImage from '@/assets/stamp-icmpp.png';
 
 interface LeaveDocxParams {
   employeeName: string;
@@ -37,6 +38,8 @@ interface LeaveDocxParams {
   deptHeadSignature?: string | null;
   deptHeadName?: string;
   remainingDays?: number;
+  directorName?: string;
+  directorApprovalDate?: string;
 }
 
 async function fetchImageAsUint8Array(url: string): Promise<Uint8Array> {
@@ -93,14 +96,18 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     requestDate, requestNumber, isApproved, employeeSignature,
     totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear, srusOfficerName,
     approvalDate, deptHeadSignature, deptHeadName, remainingDays,
+    directorName, directorApprovalDate,
   } = params;
 
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = endDate ? formatDate(endDate) : '';
 
-  // Fetch logo and signatures in parallel
+  // Fetch logo, stamp, and signatures in parallel
   let logoData: Uint8Array;
   try { logoData = await fetchImageAsUint8Array('/logo_doc.jpg'); } catch { logoData = new Uint8Array(0); }
+
+  let stampData: Uint8Array;
+  try { stampData = await fetchImageAsUint8Array(stampImage); } catch { stampData = new Uint8Array(0); }
 
   const [signatureData, deptHeadSigData] = await Promise.all([
     parseSignatureData(employeeSignature),
@@ -122,6 +129,91 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const tab = () => new TextRun({ text: '\t', font: FONT });
   const empty = (after = 0) => new Paragraph({ spacing: { after }, children: [] });
 
+  // Build dept head section children (left side)
+  const deptHeadChildren: Paragraph[] = [];
+
+  // Dept head name
+  if (deptHeadName) {
+    deptHeadChildren.push(
+      new Paragraph({
+        spacing: { after: 0 },
+        children: [t(deptHeadName, { bold: true, size: SIZE_SMALL })],
+      })
+    );
+  }
+
+  // Dept head signature + stamp overlay
+  const deptHeadSigElements: (TextRun | ImageRun)[] = [];
+  if (stampData.length > 0) {
+    deptHeadSigElements.push(
+      new ImageRun({ data: stampData, transformation: { width: 80, height: 80 }, type: 'png' })
+    );
+  }
+  if (deptHeadSigData) {
+    deptHeadSigElements.push(
+      new ImageRun({ data: deptHeadSigData, transformation: { width: 120, height: 45 }, type: 'png' })
+    );
+  }
+  if (deptHeadSigElements.length > 0) {
+    deptHeadChildren.push(
+      new Paragraph({ spacing: { after: 0 }, children: deptHeadSigElements })
+    );
+  } else {
+    deptHeadChildren.push(
+      new Paragraph({ spacing: { after: 0 }, children: [t('________________')] })
+    );
+  }
+
+  // Approval date
+  if (approvalDate) {
+    deptHeadChildren.push(
+      new Paragraph({
+        spacing: { after: 0 },
+        children: [t(`Data: ${approvalDate}`, { size: SIZE_SMALL })],
+      })
+    );
+  }
+
+  // Build director section children (right side - separate paragraphs after the combined line)
+  const directorChildren: Paragraph[] = [];
+
+  if (directorName) {
+    directorChildren.push(
+      new Paragraph({
+        spacing: { after: 0 },
+        alignment: AlignmentType.RIGHT,
+        children: [t(directorName, { bold: true, size: SIZE_SMALL })],
+      })
+    );
+  }
+
+  // Director stamp + signature
+  const directorSigElements: (TextRun | ImageRun)[] = [];
+  if (stampData.length > 0) {
+    directorSigElements.push(
+      new ImageRun({ data: stampData, transformation: { width: 80, height: 80 }, type: 'png' })
+    );
+  }
+  if (directorSigElements.length > 0) {
+    directorChildren.push(
+      new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: directorSigElements })
+    );
+  } else {
+    directorChildren.push(
+      new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t('________________')] })
+    );
+  }
+
+  if (directorApprovalDate) {
+    directorChildren.push(
+      new Paragraph({
+        spacing: { after: 0 },
+        alignment: AlignmentType.RIGHT,
+        children: [t(`Data: ${directorApprovalDate}`, { size: SIZE_SMALL })],
+      })
+    );
+  }
+
   const doc = new Document({
     sections: [{
       properties: {
@@ -135,7 +227,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         },
       },
       children: [
-        // ══════ HEADER: Logo + Institution (aligned with table) ══════
+        // ══════ HEADER: Logo + Institution ══════
         ...(logoData.length > 0 ? [
           new Paragraph({
             spacing: { after: 0 },
@@ -188,29 +280,14 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           children: [t('Șef compartiment', { bold: true })],
         }),
 
-        // Dept head name
-        ...(deptHeadName ? [
-          new Paragraph({
-            spacing: { after: 0 },
-            children: [t(deptHeadName, { bold: true, size: SIZE_SMALL })],
-          }),
-        ] : []),
+        // Dept head details (left side)
+        ...deptHeadChildren,
 
-        // Dept head signature or line
-        new Paragraph({
-          spacing: { after: 0 },
-          children: deptHeadSigData ? [
-            new ImageRun({ data: deptHeadSigData, transformation: { width: 120, height: 45 }, type: 'png' }),
-          ] : [t('________________')],
-        }),
-        ...(approvalDate ? [
-          new Paragraph({
-            spacing: { after: 300 },
-            children: [t(`Data: ${approvalDate}`, { size: SIZE_SMALL })],
-          }),
-        ] : [
-          new Paragraph({ spacing: { after: 300 }, children: [] }),
-        ]),
+        // Director details (right side)
+        ...directorChildren,
+
+        // Spacer
+        empty(200),
 
         // ══════ TITLE ══════
         new Paragraph({
