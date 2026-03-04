@@ -285,6 +285,8 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   };
 
   const deductLeaveDays = async (request: LeaveRequest) => {
+    // Skip deduction in demo mode to protect real balances
+    if (isDemo) return;
     const currentYear = new Date().getFullYear();
     let daysToDeduct = request.working_days;
 
