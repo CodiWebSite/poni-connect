@@ -43,17 +43,25 @@ const HelpdeskContactForm = ({ onBack }: HelpdeskContactFormProps) => {
     }
 
     setSending(true);
-    const { error } = await supabase.from('helpdesk_tickets' as any).insert({
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      subject: subject || 'General',
-      message: message.trim(),
-    } as any);
-
-    if (error) {
+    try {
+      const payload = {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        subject: subject || 'General',
+        message: message.trim(),
+      };
+      console.log('Helpdesk insert payload:', payload);
+      const { data, error } = await supabase.from('helpdesk_tickets').insert(payload).select();
+      console.log('Helpdesk insert result:', { data, error });
+      if (error) {
+        console.error('Helpdesk insert error details:', JSON.stringify(error));
+        toast.error('Eroare la trimiterea mesajului. Încercați din nou.');
+      } else {
+        setSent(true);
+      }
+    } catch (err) {
+      console.error('Helpdesk insert exception:', err);
       toast.error('Eroare la trimiterea mesajului. Încercați din nou.');
-    } else {
-      setSent(true);
     }
     setSending(false);
   };
