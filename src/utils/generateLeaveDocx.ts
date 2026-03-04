@@ -9,7 +9,11 @@ import {
   ImageRun,
   TabStopType,
   TabStopPosition,
-  BorderStyle,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  VerticalAlign,
 } from 'docx';
 import { saveAs } from 'file-saver';
 import stampImage from '@/assets/stamp-icmpp.png';
@@ -34,10 +38,9 @@ interface LeaveDocxParams {
   carryoverDays?: number;
   carryoverFromYear?: number;
   srusOfficerName?: string;
-  approvalDate?: string; // dd.MM.yyyy - date when dept head approved
+  approvalDate?: string; // dd.MM.yyyy
   deptHeadSignature?: string | null;
   deptHeadName?: string;
-  remainingDays?: number;
   directorName?: string;
   directorApprovalDate?: string;
 }
@@ -66,9 +69,11 @@ function formatDate(dateStr: string): string {
 
 const FONT = 'Times New Roman';
 const SIZE = 24; // 12pt
-const SIZE_SMALL = 18; // 9pt
+const SIZE_SMALL = 20; // 10pt
 const SIZE_HEADER = 20; // 10pt
 const RIGHT_TAB = TabStopPosition.MAX;
+const NOBORDER = { style: 'none' as any, size: 0, color: 'FFFFFF' };
+const CELL_BORDERS = { top: NOBORDER, bottom: NOBORDER, left: NOBORDER, right: NOBORDER };
 
 function underlinedField(value: string | undefined | null, fallback: string): TextRun[] {
   if (value) {
@@ -89,13 +94,19 @@ function parseSignatureData(signature: string | null | undefined): Promise<Uint8
   }
 }
 
+const t = (text: string, opts: Partial<{ bold: boolean; italics: boolean; size: number; underline: any }> = {}) =>
+  new TextRun({ text, font: FONT, size: opts.size ?? SIZE, bold: opts.bold, italics: opts.italics, underline: opts.underline });
+
+const tab = () => new TextRun({ text: '\t', font: FONT });
+const empty = (after = 0) => new Paragraph({ spacing: { after }, children: [] });
+
 export async function generateLeaveDocx(params: LeaveDocxParams) {
   const {
     employeeName, employeePosition, employeeGrade, department, workingDays, year,
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
     totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear, srusOfficerName,
-    approvalDate, deptHeadSignature, deptHeadName, remainingDays,
+    approvalDate, deptHeadSignature, deptHeadName,
     directorName, directorApprovalDate,
   } = params;
 
@@ -117,103 +128,208 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const totalDays = totalLeaveDays ?? 0;
   const carryover = carryoverDays ?? 0;
   const totalAvailable = totalDays + carryover;
-  const remaining = remainingDays ?? 0;
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
     : formattedStartDate;
 
-  const t = (text: string, opts: Partial<{ bold: boolean; italics: boolean; size: number; underline: any }> = {}) =>
-    new TextRun({ text, font: FONT, size: opts.size ?? SIZE, bold: opts.bold, italics: opts.italics, underline: opts.underline });
+  // ════════════════════════════════════════════════════
+  // Build approval section as invisible table (2 columns)
+  // Left: Aprobat, / Șef compartiment / stamp+sig / date
+  // Right: DIRECTOR / name / stamp / date
+  // ════════════════════════════════════════════════════
 
-  const tab = () => new TextRun({ text: '\t', font: FONT });
-  const empty = (after = 0) => new Paragraph({ spacing: { after }, children: [] });
-
-  // Build dept head section children (left side)
-  const deptHeadChildren: Paragraph[] = [];
+  const leftApprovalChildren: Paragraph[] = [
+    new Paragraph({ spacing: { after: 0 }, children: [t('Aprobat,', {})] }),
+    new Paragraph({ spacing: { after: 80 }, children: [t('Șef compartiment', { bold: true })] }),
+  ];
 
   // Dept head name
   if (deptHeadName) {
-    deptHeadChildren.push(
-      new Paragraph({
-        spacing: { after: 0 },
-        children: [t(deptHeadName, { bold: true, size: SIZE_SMALL })],
-      })
+    leftApprovalChildren.push(
+      new Paragraph({ spacing: { after: 0 }, children: [t(deptHeadName, { bold: true, size: SIZE_SMALL })] })
     );
   }
 
-  // Dept head signature + stamp overlay
-  const deptHeadSigElements: (TextRun | ImageRun)[] = [];
+  // Stamp + signature for dept head
+  const leftSigElements: (TextRun | ImageRun)[] = [];
   if (stampData.length > 0) {
-    deptHeadSigElements.push(
-      new ImageRun({ data: stampData, transformation: { width: 130, height: 130 }, type: 'png' })
-    );
+    leftSigElements.push(new ImageRun({ data: stampData, transformation: { width: 110, height: 110 }, type: 'png' }));
   }
   if (deptHeadSigData) {
-    deptHeadSigElements.push(
-      new ImageRun({ data: deptHeadSigData, transformation: { width: 120, height: 45 }, type: 'png' })
-    );
+    leftSigElements.push(new ImageRun({ data: deptHeadSigData, transformation: { width: 100, height: 40 }, type: 'png' }));
   }
-  if (deptHeadSigElements.length > 0) {
-    deptHeadChildren.push(
-      new Paragraph({ spacing: { after: 0 }, children: deptHeadSigElements })
-    );
+  if (leftSigElements.length > 0) {
+    leftApprovalChildren.push(new Paragraph({ spacing: { after: 0 }, children: leftSigElements }));
   } else {
-    deptHeadChildren.push(
-      new Paragraph({ spacing: { after: 0 }, children: [t('________________')] })
-    );
+    leftApprovalChildren.push(new Paragraph({ spacing: { after: 0 }, children: [t('________________')] }));
   }
 
-  // Approval date
   if (approvalDate) {
-    deptHeadChildren.push(
-      new Paragraph({
-        spacing: { after: 0 },
-        children: [t(`Data: ${approvalDate}`, { size: SIZE_SMALL })],
-      })
+    leftApprovalChildren.push(
+      new Paragraph({ spacing: { after: 0 }, children: [t(`Data: ${approvalDate}`, { size: SIZE_SMALL })] })
     );
   }
 
-  // Build director section children (right side - separate paragraphs after the combined line)
-  const directorChildren: Paragraph[] = [];
+  // Right column: DIRECTOR
+  const rightApprovalChildren: Paragraph[] = [
+    new Paragraph({ spacing: { after: 80 }, alignment: AlignmentType.RIGHT, children: [t('DIRECTOR', { bold: true })] }),
+  ];
 
   if (directorName) {
-    directorChildren.push(
-      new Paragraph({
-        spacing: { after: 0 },
-        alignment: AlignmentType.RIGHT,
-        children: [t(directorName, { bold: true, size: SIZE_SMALL })],
-      })
+    rightApprovalChildren.push(
+      new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t(directorName, { bold: true, size: SIZE_SMALL })] })
     );
   }
 
-  // Director stamp + signature
-  const directorSigElements: (TextRun | ImageRun)[] = [];
+  // Director stamp
   if (stampData.length > 0) {
-    directorSigElements.push(
-      new ImageRun({ data: stampData, transformation: { width: 130, height: 130 }, type: 'png' })
-    );
-  }
-  if (directorSigElements.length > 0) {
-    directorChildren.push(
-      new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: directorSigElements })
+    rightApprovalChildren.push(
+      new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [
+        new ImageRun({ data: stampData, transformation: { width: 110, height: 110 }, type: 'png' }),
+      ]})
     );
   } else {
-    directorChildren.push(
+    rightApprovalChildren.push(
       new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t('________________')] })
     );
   }
 
   if (directorApprovalDate) {
-    directorChildren.push(
-      new Paragraph({
-        spacing: { after: 0 },
-        alignment: AlignmentType.RIGHT,
-        children: [t(`Data: ${directorApprovalDate}`, { size: SIZE_SMALL })],
-      })
+    rightApprovalChildren.push(
+      new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t(`Data: ${directorApprovalDate}`, { size: SIZE_SMALL })] })
     );
   }
 
+  const approvalTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 50, type: WidthType.PERCENTAGE },
+            borders: CELL_BORDERS,
+            verticalAlign: VerticalAlign.TOP,
+            children: leftApprovalChildren,
+          }),
+          new TableCell({
+            width: { size: 50, type: WidthType.PERCENTAGE },
+            borders: CELL_BORDERS,
+            verticalAlign: VerticalAlign.TOP,
+            children: rightApprovalChildren,
+          }),
+        ],
+      }),
+    ],
+  });
+
+  // ════════════════════════════════════════════════════
+  // SRUS section (bottom right, indented)
+  // ════════════════════════════════════════════════════
+  const srusIndent = convertMillimetersToTwip(75);
+  const S = 22; // size for SRUS text
+
+  const srusSection: Paragraph[] = [
+    new Paragraph({
+      spacing: { after: 50 },
+      indent: { left: srusIndent },
+      children: [t('Propunem să aprobați,', { size: S })],
+    }),
+    new Paragraph({
+      spacing: { after: 50 },
+      indent: { left: srusIndent },
+      children: [
+        t('La această dată dl./d-na ', { size: S }),
+        t(employeeName || '_________________________', { bold: !!employeeName, size: S }),
+      ],
+    }),
+    new Paragraph({
+      spacing: { after: 50 },
+      indent: { left: srusIndent },
+      children: [
+        t('are dreptul la ', { size: S }),
+        t(`${totalAvailable}`, { bold: true, size: S }),
+        t(' zile concediu de odihnă, din care', { size: S }),
+      ],
+    }),
+    new Paragraph({
+      spacing: { after: 50 },
+      indent: { left: srusIndent },
+      children: [
+        t(`${totalDays}`, { bold: true, size: S }),
+        t(' aferente anului ', { size: S }),
+        t(`${year}`, { bold: true, size: S }),
+        t(' și ', { size: S }),
+        t(`${carryover}`, { bold: true, size: S }),
+        t(' aferente anului', { size: S }),
+      ],
+    }),
+    new Paragraph({
+      spacing: { after: 100 },
+      indent: { left: srusIndent },
+      children: [
+        t(carryoverFromYear ? `${carryoverFromYear}` : '_______', { bold: !!carryoverFromYear, size: S }),
+        t('.', { size: S }),
+      ],
+    }),
+  ];
+
+  // SRUS signature area: name left, line right (using table)
+  const srusSignatureTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 55, type: WidthType.PERCENTAGE },
+            borders: CELL_BORDERS,
+            children: [empty(0)],
+          }),
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: CELL_BORDERS,
+            children: [
+              new Paragraph({ spacing: { after: 0 }, children: [t(srusOfficerName || '___________________', { bold: !!srusOfficerName, size: S })] }),
+              new Paragraph({ spacing: { after: 0 }, children: [t('(numele salariatului de la SRUS)', { size: 16, italics: true })] }),
+            ],
+          }),
+          new TableCell({
+            width: { size: 20, type: WidthType.PERCENTAGE },
+            borders: CELL_BORDERS,
+            children: [
+              new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t('___________________', { size: S })] }),
+              empty(0),
+            ],
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ width: { size: 55, type: WidthType.PERCENTAGE }, borders: CELL_BORDERS, children: [empty(0)] }),
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: CELL_BORDERS,
+            children: [
+              new Paragraph({ spacing: { after: 0 }, children: [t('___________________', { size: S })] }),
+              new Paragraph({ spacing: { after: 0 }, children: [t('(semnătura)', { size: 16, italics: true })] }),
+            ],
+          }),
+          new TableCell({
+            width: { size: 20, type: WidthType.PERCENTAGE },
+            borders: CELL_BORDERS,
+            children: [
+              new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t('___________________', { size: S })] }),
+              empty(0),
+            ],
+          }),
+        ],
+      }),
+    ],
+  });
+
+  // ════════════════════════════════════════════════════
+  // Build document
+  // ════════════════════════════════════════════════════
   const doc = new Document({
     sections: [{
       properties: {
@@ -227,7 +343,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         },
       },
       children: [
-        // ══════ HEADER: Logo + Institution ══════
+        // ══════ HEADER ══════
         ...(logoData.length > 0 ? [
           new Paragraph({
             spacing: { after: 0 },
@@ -249,44 +365,25 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         new Paragraph({
           spacing: { after: 200 },
           alignment: AlignmentType.CENTER,
-          children: [t('Aleea Grigore Ghica Vodă, nr. 41A, 700487 IAȘI, ROMANIA', { size: SIZE_SMALL })],
+          children: [t('Aleea Grigore Ghica Vodă, nr. 41A, 700487 IAȘI, ROMANIA', { size: 18 })],
         }),
 
-        // ══════ ANEXA left ══════
+        // ══════ ANEXA ══════
         new Paragraph({
           spacing: { after: 200 },
           children: [t('Anexa 11.2.-P.O. ICMPP-SRUS', { bold: true, size: SIZE_HEADER })],
         }),
 
-        // ══════ "Se aprobă," right-aligned ══════
+        // ══════ "Se aprobă," right ══════
         new Paragraph({
           spacing: { after: 200 },
           alignment: AlignmentType.RIGHT,
           children: [t('Se aprobă,')],
         }),
 
-        // ══════ "Aprobat," left + "DIRECTOR" right ══════
-        new Paragraph({
-          spacing: { after: 0 },
-          tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-          children: [
-            t('Aprobat,'),
-            tab(),
-            t('DIRECTOR', { bold: true }),
-          ],
-        }),
-        new Paragraph({
-          spacing: { after: 0 },
-          children: [t('Șef compartiment', { bold: true })],
-        }),
+        // ══════ APPROVAL TABLE (Șef compartiment LEFT, DIRECTOR RIGHT) ══════
+        approvalTable,
 
-        // Dept head details (left side)
-        ...deptHeadChildren,
-
-        // Director details (right side)
-        ...directorChildren,
-
-        // Spacer
         empty(200),
 
         // ══════ TITLE ══════
@@ -316,12 +413,26 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           ],
         }),
         new Paragraph({
-          spacing: { after: 100, line: 360 },
+          spacing: { after: 0, line: 276 },
+          alignment: AlignmentType.CENTER,
+          children: [
+            t('(numele și prenumele)', { size: 16, italics: true }),
+            t('                              ', { size: 16 }),
+            t('(funcția)', { size: 16, italics: true }),
+          ],
+        }),
+        new Paragraph({
+          spacing: { after: 0, line: 360 },
           children: [
             t('cadrul '),
             ...underlinedField(department, '_______________________________________________________________________'),
             t(','),
           ],
+        }),
+        new Paragraph({
+          spacing: { after: 100, line: 276 },
+          alignment: AlignmentType.CENTER,
+          children: [t('(compartimentul)', { size: 16, italics: true })],
         }),
 
         new Paragraph({
@@ -354,22 +465,36 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           ],
         }),
         new Paragraph({
-          spacing: { after: 200, line: 360 },
+          spacing: { after: 0, line: 276 },
+          alignment: AlignmentType.CENTER,
+          children: [t('(numele și prenumele)', { size: 16, italics: true })],
+        }),
+        new Paragraph({
+          spacing: { after: 0, line: 360 },
           children: [
             ...underlinedField(replacementPosition, '_____________________________'),
             t('.'),
           ],
         }),
+        new Paragraph({
+          spacing: { after: 200, line: 276 },
+          children: [t('(funcția)', { size: 16, italics: true })],
+        }),
 
         // ══════ CLOSING ══════
         new Paragraph({
-          spacing: { before: 100, after: 100 },
+          spacing: { before: 100, after: 0 },
           tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
           children: [
-            t('Cu mulțumiri,'),
+            t('\tCu mulțumiri,'),
             tab(),
             ...underlinedField(employeeName, '____________________________'),
           ],
+        }),
+        new Paragraph({
+          spacing: { after: 100 },
+          alignment: AlignmentType.RIGHT,
+          children: [t('(numele și prenumele)', { size: 16, italics: true })],
         }),
 
         // Data          Semnătura
@@ -378,83 +503,30 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
           children: [
             ...(signatureData ? [
-              t(requestDate),
+              t(`\t${requestDate}`),
               tab(),
               new ImageRun({ data: signatureData, transformation: { width: 120, height: 45 }, type: 'png' }),
             ] : [
-              t(requestDate || '___________________'),
+              t(`\t${requestDate || '___________________'}`),
               tab(),
               t('___________________'),
             ]),
           ],
         }),
-
-        // ══════ SRUS SECTION ══════
-        empty(400),
-
-        new Paragraph({
-          spacing: { after: 50 },
-          indent: { left: convertMillimetersToTwip(80) },
-          children: [t('Propunem să aprobați,', { size: 22 })],
-        }),
-        new Paragraph({
-          spacing: { after: 50 },
-          indent: { left: convertMillimetersToTwip(80) },
-          children: [
-            t('La această dată dl./d-na ', { size: 22 }),
-            t(employeeName || '_________________________', { bold: !!employeeName, size: 22 }),
-          ],
-        }),
-        new Paragraph({
-          spacing: { after: 50 },
-          indent: { left: convertMillimetersToTwip(80) },
-          children: [
-            t('are dreptul la ', { size: 22 }),
-            t(`${totalAvailable}`, { bold: true, size: 22 }),
-            t(' zile concediu de odihnă, din care', { size: 22 }),
-          ],
-        }),
-        new Paragraph({
-          spacing: { after: 50 },
-          indent: { left: convertMillimetersToTwip(80) },
-          children: [
-            t(`${totalDays}`, { bold: true, size: 22 }),
-            t(` aferente anului `, { size: 22 }),
-            t(`${year}`, { bold: true, size: 22 }),
-            t(' și ', { size: 22 }),
-            t(`${carryover}`, { bold: true, size: 22 }),
-            t(' aferente anului', { size: 22 }),
-          ],
-        }),
-        new Paragraph({
-          spacing: { after: 50 },
-          indent: { left: convertMillimetersToTwip(80) },
-          children: [
-            t(carryoverFromYear ? `${carryoverFromYear}` : '_______', { bold: !!carryoverFromYear, size: 22 }),
-            t('.', { size: 22 }),
-          ],
-        }),
-        // Remaining balance line
-        new Paragraph({
-          spacing: { after: 100 },
-          indent: { left: convertMillimetersToTwip(80) },
-          children: [
-            t('Sold rămas: ', { size: 22 }),
-            t(`${remaining}`, { bold: true, size: 22 }),
-            t(` zile (an ${year}).`, { size: 22 }),
-          ],
-        }),
-        empty(50),
         new Paragraph({
           spacing: { after: 0 },
-          indent: { left: convertMillimetersToTwip(80) },
-          children: [t(srusOfficerName || '___________________', { bold: !!srusOfficerName, size: 22 })],
+          tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
+          children: [
+            t('\t(data)', { size: 16, italics: true }),
+            tab(),
+            t('(semnătura)', { size: 16, italics: true }),
+          ],
         }),
-        new Paragraph({
-          spacing: { before: 50 },
-          indent: { left: convertMillimetersToTwip(80) },
-          children: [t('___________________', { size: 22 })],
-        }),
+
+        // ══════ SRUS SECTION ══════
+        empty(300),
+        ...srusSection,
+        srusSignatureTable,
       ],
     }],
   });

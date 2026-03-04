@@ -208,7 +208,6 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       let usedLeaveDays = 0;
       let carryoverDays = 0;
       let carryoverFromYear: number | undefined;
-      let remainingDays = 0;
 
       if (request.epd_id) {
         const { data: epd } = await supabase
@@ -229,10 +228,6 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           carryoverDays = carryover.remaining_days;
           carryoverFromYear = carryover.from_year;
         }
-
-        const totalAvailable = totalLeaveDays + (carryover?.remaining_days ?? 0);
-        remainingDays = totalAvailable - usedLeaveDays;
-        if (remainingDays < 0) remainingDays = 0;
       }
 
       await generateLeaveDocx({
@@ -258,7 +253,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         approvalDate: request.dept_head_approved_at ? format(parseISO(request.dept_head_approved_at), 'dd.MM.yyyy') : undefined,
         deptHeadSignature: request.dept_head_signature,
         deptHeadName: request.dept_head_name,
-        remainingDays,
+        
         directorName: request.director_name,
         directorApprovalDate: request.director_approved_at ? format(parseISO(request.director_approved_at), 'dd.MM.yyyy') : undefined,
       });
