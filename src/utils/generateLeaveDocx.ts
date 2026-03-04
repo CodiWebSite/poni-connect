@@ -299,10 +299,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           new TableCell({
             width: { size: 20, type: WidthType.PERCENTAGE },
             borders: CELL_BORDERS,
-            children: [
-              new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t('___________________', { size: S })] }),
-              empty(0),
-            ],
+            children: [empty(0)],
           }),
         ],
       }),
@@ -324,10 +321,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           new TableCell({
             width: { size: 20, type: WidthType.PERCENTAGE },
             borders: CELL_BORDERS,
-            children: [
-              new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t('___________________', { size: S })] }),
-              empty(0),
-            ],
+            children: [empty(0)],
           }),
         ],
       }),
