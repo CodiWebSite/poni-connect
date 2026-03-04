@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { NON_DEDUCTIBLE_TYPES, getLeaveStyle } from '@/utils/leaveTypes';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,17 +48,16 @@ const HRAlerts = () => {
     const suspendedEpdIds = new Set<string>();
     const suspendedReasons: Record<string, string> = {};
     
-    const leaveTypeLabels: Record<string, string> = {
-      cfp: 'Concediu fără plată (CFP)',
-      bo: 'Concediu medical (BO)',
-      ccc: 'Concediu creștere copil (CCC)',
-      ev: 'Eveniment deosebit (EV)',
-    };
+    const leaveTypeLabels: Record<string, string> = {};
+    NON_DEDUCTIBLE_TYPES.forEach(key => {
+      const style = getLeaveStyle(key);
+      if (style) leaveTypeLabels[key] = `${style.description} (${style.label})`;
+    });
 
     (activeHrLeaves || []).forEach(hr => {
       const details = hr.details as any;
       const leaveType = details?.leaveType || details?.leave_type || '';
-      if (['cfp', 'bo', 'ccc', 'ev'].includes(leaveType)) {
+      if (NON_DEDUCTIBLE_TYPES.includes(leaveType)) {
         const startDate = details?.startDate || details?.start_date || '';
         const endDate = details?.endDate || details?.end_date || '';
         const epdId = details?.epd_id || '';
