@@ -69,6 +69,7 @@ function formatDate(dateStr: string): string {
 }
 
 const FONT = 'Times New Roman';
+const FONT_HANDWRITING = 'Segoe Script';
 const SIZE = 22; // 11pt
 const SIZE_SMALL = 18; // 9pt
 const SIZE_HEADER = 18; // 9pt
@@ -179,11 +180,13 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     new Paragraph({ spacing: { after: 40 }, alignment: AlignmentType.RIGHT, children: [t('DIRECTOR', { bold: true, size: SIZE_SMALL })] }),
   ];
 
-  if (directorName) {
-    rightApprovalChildren.push(
-      new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t(directorName, { bold: true, size: SIZE_SMALL })] })
-    );
-  }
+  // Director name in handwriting font
+  const actualDirectorName = directorName || 'Valeria Harabagiu';
+  rightApprovalChildren.push(
+    new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [
+      new TextRun({ text: actualDirectorName, font: FONT_HANDWRITING, size: 22, bold: true, italics: true }),
+    ]})
+  );
 
   // Director stamp
   if (stampData.length > 0) {

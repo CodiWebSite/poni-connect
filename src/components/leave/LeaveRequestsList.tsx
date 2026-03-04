@@ -94,6 +94,28 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       }
     }
 
+    // Fetch full leave request data (signatures, approver info)
+    const { data: lrData } = await supabase
+      .from('leave_requests')
+      .select('srus_officer_name, srus_signature, srus_signed_at, dept_head_signature, dept_head_id, director_id, dept_head_approved_at')
+      .eq('id', request.id)
+      .maybeSingle();
+
+    // Get dept head and director names
+    let deptHeadName: string | undefined;
+    let directorName: string | undefined;
+    const approverIds = [lrData?.dept_head_id, lrData?.director_id].filter(Boolean);
+    if (approverIds.length > 0) {
+      const { data: approverProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', approverIds);
+      (approverProfiles || []).forEach(p => {
+        if (p.user_id === lrData?.dept_head_id) deptHeadName = p.full_name;
+        if (p.user_id === lrData?.director_id) directorName = p.full_name;
+      });
+    }
+
     await generateLeaveDocx({
       employeeName: epd ? `${epd.last_name} ${epd.first_name}` : '',
       employeePosition: epd?.position || '',
@@ -113,7 +135,12 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       usedLeaveDays: epd?.used_leave_days ?? 0,
       carryoverDays,
       carryoverFromYear,
-      approvalDate: request.dept_head_approved_at ? format(parseISO(request.dept_head_approved_at), 'dd.MM.yyyy') : undefined,
+      srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
+      srusSignature: (lrData as any)?.srus_signature || undefined,
+      approvalDate: lrData?.dept_head_approved_at ? format(parseISO(lrData.dept_head_approved_at), 'dd.MM.yyyy') : undefined,
+      deptHeadSignature: (lrData as any)?.dept_head_signature || undefined,
+      deptHeadName,
+      directorName,
     });
   };
 
