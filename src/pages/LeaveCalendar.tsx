@@ -27,8 +27,8 @@ interface DepartmentLeave {
 const LEAVE_TYPE_MAP: Record<string, { label: string; color: string; bg: string; bgSolid: string }> = {
   'co': { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20', bgSolid: 'bg-sky-100 dark:bg-sky-900/40' },
   'concediu_odihna': { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20', bgSolid: 'bg-sky-100 dark:bg-sky-900/40' },
-  'bo': { label: 'BO', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20', bgSolid: 'bg-rose-100 dark:bg-rose-900/40' },
-  'concediu_medical': { label: 'BO', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20', bgSolid: 'bg-rose-100 dark:bg-rose-900/40' },
+  'bo': { label: 'CM', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20', bgSolid: 'bg-rose-100 dark:bg-rose-900/40' },
+  'concediu_medical': { label: 'CM', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20', bgSolid: 'bg-rose-100 dark:bg-rose-900/40' },
   'ccc': { label: 'CCC', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-500/20', bgSolid: 'bg-purple-100 dark:bg-purple-900/40' },
   'cfp': { label: 'CFP', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-500/20', bgSolid: 'bg-amber-100 dark:bg-amber-900/40' },
   'concediu_fara_plata': { label: 'CFP', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-500/20', bgSolid: 'bg-amber-100 dark:bg-amber-900/40' },

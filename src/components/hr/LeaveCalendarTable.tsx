@@ -31,8 +31,8 @@ interface LeaveCalendarTableProps {
 const LEAVE_TYPE_MAP: Record<string, { label: string; color: string; bg: string }> = {
   'co': { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20' },
   'concediu_odihna': { label: 'CO', color: 'text-sky-700 dark:text-sky-300', bg: 'bg-sky-500/20' },
-  'bo': { label: 'BO', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20' },
-  'concediu_medical': { label: 'BO', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20' },
+  'bo': { label: 'CM', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20' },
+  'concediu_medical': { label: 'CM', color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/20' },
   'ccc': { label: 'CCC', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-500/20' },
   'concediu_crestere_copil': { label: 'CCC', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-500/20' },
   'cfp': { label: 'CFP', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-500/20' },

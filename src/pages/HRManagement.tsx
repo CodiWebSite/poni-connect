@@ -967,7 +967,7 @@ const HRManagement = () => {
 
       const leaveTypeLabels: Record<string, string> = {
         co: 'Concediu de odihnă',
-        bo: 'Concediu medical',
+        bo: 'Concediu medical (CM)',
         ccc: 'Concediu creștere copil',
         cfp: 'Concediu fără plată',
         ev: 'Eveniment',
@@ -2496,7 +2496,7 @@ const HRManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="co">CO — Concediu de odihnă</SelectItem>
-                  <SelectItem value="bo">BO — Concediu medical</SelectItem>
+                  <SelectItem value="bo">CM — Concediu medical</SelectItem>
                   <SelectItem value="ccc">CCC — Concediu creștere copil</SelectItem>
                   <SelectItem value="cfp">CFP — Concediu fără plată</SelectItem>
                   <SelectItem value="ev">EV — Eveniment</SelectItem>
