@@ -921,6 +921,9 @@ export type Database = {
           replacement_name: string
           replacement_position: string | null
           request_number: string
+          srus_officer_name: string | null
+          srus_signature: string | null
+          srus_signed_at: string | null
           start_date: string
           status: Database["public"]["Enums"]["leave_request_status"]
           updated_at: string
@@ -950,6 +953,9 @@ export type Database = {
           replacement_name: string
           replacement_position?: string | null
           request_number?: string
+          srus_officer_name?: string | null
+          srus_signature?: string | null
+          srus_signed_at?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["leave_request_status"]
           updated_at?: string
@@ -979,6 +985,9 @@ export type Database = {
           replacement_name?: string
           replacement_position?: string | null
           request_number?: string
+          srus_officer_name?: string | null
+          srus_signature?: string | null
+          srus_signed_at?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["leave_request_status"]
           updated_at?: string
@@ -1585,6 +1594,7 @@ export type Database = {
         | "draft"
         | "pending_director"
         | "pending_department_head"
+        | "pending_srus"
         | "approved"
         | "rejected"
       procurement_category:
@@ -1761,6 +1771,7 @@ export const Constants = {
         "draft",
         "pending_director",
         "pending_department_head",
+        "pending_srus",
         "approved",
         "rejected",
       ],

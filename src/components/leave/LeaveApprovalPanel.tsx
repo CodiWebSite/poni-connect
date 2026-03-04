@@ -205,7 +205,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     const { error } = await supabase
       .from('leave_requests')
       .update({
-        status: 'approved' as any,
+        status: 'pending_srus' as any,
         dept_head_id: user.id,
         dept_head_approved_at: now,
         dept_head_signature: approverSignature,
@@ -215,23 +215,19 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     if (error) {
       toast({ title: 'Eroare', description: 'Nu s-a putut aproba cererea.', variant: 'destructive' });
     } else {
-      await deductLeaveDays(approveDialog);
-
       await supabase.from('notifications').insert({
         user_id: approveDialog.user_id,
-        title: 'Cerere concediu aprobată',
-        message: `Cererea de concediu ${approveDialog.request_number} a fost aprobată de șeful de compartiment.`,
-        type: 'success',
+        title: 'Cerere concediu aprobată de șef compartiment',
+        message: `Cererea de concediu ${approveDialog.request_number} a fost aprobată de șeful de compartiment și urmează validarea SRUS.`,
+        type: 'info',
         related_type: 'leave_request',
         related_id: approveDialog.id,
       });
 
-      sendResultEmail(approveDialog, 'approved');
-
-      // Notify HR staff
+      // Notify HR staff that they need to validate
       notifyHRApproval(approveDialog);
 
-      toast({ title: 'Aprobat', description: `Cererea ${approveDialog.request_number} a fost aprobată.` });
+      toast({ title: 'Aprobat de șef compartiment', description: `Cererea ${approveDialog.request_number} a fost trimisă la SRUS pentru validare.` });
       setApproveDialog(null);
       setApproverSignature(null);
       onUpdated();
@@ -260,9 +256,9 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
           if (hr.user_id === user!.id) continue; // Don't notify yourself
           await supabase.from('notifications').insert({
             user_id: hr.user_id,
-            title: 'Cerere concediu aprobată de șef',
-            message: `${request.employee_name} — cererea ${request.request_number} a fost aprobată de ${myProfile?.full_name || 'Șef compartiment'}.`,
-            type: 'info',
+            title: 'Cerere concediu — necesită validare SRUS',
+            message: `${request.employee_name} — cererea ${request.request_number} a fost aprobată de ${myProfile?.full_name || 'Șef compartiment'} și necesită validarea SRUS.`,
+            type: 'warning',
             related_type: 'leave_request',
             related_id: request.id,
           });

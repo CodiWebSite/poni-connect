@@ -106,6 +106,7 @@ const leaveStatusConfig: Record<string, { label: string; variant: 'default' | 's
   pending: { label: 'În așteptare', variant: 'secondary' },
   pending_director: { label: 'Așteptare Director', variant: 'secondary' },
   pending_department_head: { label: 'Așteptare Șef', variant: 'secondary' },
+  pending_srus: { label: 'Așteptare SRUS', variant: 'secondary' },
   draft: { label: 'Ciornă', variant: 'secondary' },
   rejected: { label: 'Respins', variant: 'destructive' },
 };
