@@ -911,7 +911,7 @@ const HRManagement = () => {
         }
       });
 
-      // Skip deduction for non-deductible leave types (CFP, BO, CCC, EV)
+      // Skip deduction for non-deductible leave types (CS, CM, EV, etc.)
       if (!isNonDeductible) {
         // Calculate how many days go to carryover vs current
         const deductFrom = manualLeaveForm.deduct_from;
@@ -2418,7 +2418,7 @@ const HRManagement = () => {
                 {selectedManualEmployee.department && (
                   <p className="text-xs text-muted-foreground">{selectedManualEmployee.department}</p>
                 )}
-                {!['cfp', 'bo', 'ccc', 'ev'].includes(manualLeaveForm.leave_type) && (
+                {!LEAVE_TYPES.filter(t => !t.deductible).map(t => t.key).includes(manualLeaveForm.leave_type) && (
                   <>
                     <p className="text-sm">
                       <span className="text-muted-foreground">Sold concediu: </span>
@@ -2442,16 +2442,16 @@ const HRManagement = () => {
             )}
 
             {/* Non-deductible leave type info */}
-            {['cfp', 'bo', 'ccc', 'ev'].includes(manualLeaveForm.leave_type) && (
+            {LEAVE_TYPES.filter(t => !t.deductible).map(t => t.key).includes(manualLeaveForm.leave_type) && (
               <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
                 <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                  ℹ️ {manualLeaveForm.leave_type === 'cfp' ? 'Concediu fără plată — contract suspendat. ' : ''}Nu se deduce din soldul de concediu de odihnă.
+                  ℹ️ {manualLeaveForm.leave_type === 'cs' ? 'Contract suspendat. ' : ''}Nu se deduce din soldul de concediu de odihnă.
                 </p>
               </div>
             )}
 
             {/* Deduction source selection - only show when employee has carryover and deductible type */}
-            {selectedManualEmployee && (selectedManualEmployee.carryoverDays || 0) > 0 && !['cfp', 'bo', 'ccc', 'ev'].includes(manualLeaveForm.leave_type) && (
+            {selectedManualEmployee && (selectedManualEmployee.carryoverDays || 0) > 0 && !LEAVE_TYPES.filter(t => !t.deductible).map(t => t.key).includes(manualLeaveForm.leave_type) && (
               <div className="space-y-2">
                 <Label>Deduce din soldul *</Label>
                 <RadioGroup

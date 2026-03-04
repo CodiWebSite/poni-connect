@@ -310,12 +310,8 @@ const PlatformGuide = () => {
                     <span>Concediu medical</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-purple-500/20 text-purple-700 text-[10px]">CCC</Badge>
-                    <span>Creștere copil</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-amber-500/20 text-amber-700 text-[10px]">CFP</Badge>
-                    <span>Fără plată</span>
+                    <Badge className="bg-slate-500/20 text-slate-700 text-[10px]">CS</Badge>
+                    <span>Contract suspendat</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className="bg-emerald-500/20 text-emerald-700 text-[10px]">EV</Badge>

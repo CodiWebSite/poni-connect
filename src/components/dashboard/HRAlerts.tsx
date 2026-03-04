@@ -36,7 +36,7 @@ const HRAlerts = () => {
       .from('employee_records')
       .select('id, total_leave_days, used_leave_days, user_id');
 
-    // Fetch active non-deductible leaves (CFP, BO, CCC, EV) from hr_requests
+    // Fetch active non-deductible leaves (CS, CM, EV, etc.) from hr_requests
     const today = new Date().toISOString().split('T')[0];
     const { data: activeHrLeaves } = await supabase
       .from('hr_requests')
