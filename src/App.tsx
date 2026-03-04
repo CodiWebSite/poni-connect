@@ -27,6 +27,7 @@ import PlatformGuide from "./pages/PlatformGuide";
 import Salarizare from "./pages/Salarizare";
 import Announcements from "./pages/Announcements";
 import SystemStatus from "./pages/SystemStatus";
+import MyTeam from "./pages/MyTeam";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +107,7 @@ const App = () => (
                 <Route path="/ghid" element={<PlatformGuide />} />
                 <Route path="/salarizare" element={<Salarizare />} />
                 <Route path="/announcements" element={<Announcements />} />
+                <Route path="/my-team" element={<MyTeam />} />
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="*" element={<NotFound />} />
