@@ -441,6 +441,19 @@ const PlatformGuide = () => {
                 </div>
 
                 <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🔐 Schimbare parolă</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• Puteți schimba parola curentă din secțiunea dedicată.</p>
+                  <p>• Introduceți <strong>parola actuală</strong>, apoi <strong>noua parolă</strong> (minim 6 caractere).</p>
+                  <p>• Apăsați iconița <strong>👁 (ochi)</strong> pentru a vizualiza/ascunde parola introdusă.</p>
+                  <p>• Apăsați <strong>„Schimbă parola"</strong> pentru a salva.</p>
+                </div>
+
+                <InfoBox title="💡 Ați uitat parola?">
+                  <p>Din pagina de autentificare, apăsați <strong>„Am uitat parola"</strong>. Veți primi un e-mail cu un link de resetare. Link-ul este valabil pentru o singură utilizare.</p>
+                </InfoBox>
+
+                <Separator className="my-3" />
                 <p className="font-medium text-foreground text-xs uppercase tracking-wider">🔄 Ajutor – Tour de prezentare</p>
                 <div className="space-y-1.5 mt-2">
                   <p>• Butonul <strong>„Reia tour-ul de prezentare"</strong> repornește ghidul interactiv pas cu pas.</p>
