@@ -42,7 +42,7 @@ interface LeaveApprovalPanelProps {
 
 export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const { user } = useAuth();
-  const { role, isSuperAdmin } = useUserRole();
+  const { role, isSuperAdmin, loading: roleLoading } = useUserRole();
   const { toast } = useToast();
   const { isDemo } = useDemoMode();
 
@@ -59,7 +59,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
 
   useEffect(() => {
-    if (!user || !role) return;
+    if (!user || !role || roleLoading) return;
     let cancelled = false;
 
     const load = async () => {
@@ -69,7 +69,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     load();
 
     return () => { cancelled = true; };
-  }, [role, user]);
+  }, [role, user, roleLoading]);
 
   const checkDesignatedApprover = async () => {
     if (!user) return;
@@ -401,15 +401,15 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     setProcessing(null);
   };
 
-  if (!isDeptHead && !isDesignatedApprover && !loading) return null;
-
-  if (loading) {
+  if (roleLoading || loading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
+
+  if (!isDeptHead && !isDesignatedApprover) return null;
 
   if (requests.length === 0) {
     return (
