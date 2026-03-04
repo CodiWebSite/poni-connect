@@ -38,6 +38,7 @@ interface LeaveDocxParams {
   carryoverDays?: number;
   carryoverFromYear?: number;
   srusOfficerName?: string;
+  srusSignature?: string | null;
   approvalDate?: string; // dd.MM.yyyy
   deptHeadSignature?: string | null;
   deptHeadName?: string;
@@ -105,7 +106,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     employeeName, employeePosition, employeeGrade, department, workingDays, year,
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
-    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear, srusOfficerName,
+    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear, srusOfficerName, srusSignature,
     approvalDate, deptHeadSignature, deptHeadName,
     directorName, directorApprovalDate,
   } = params;
@@ -120,9 +121,10 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   let stampData: Uint8Array;
   try { stampData = await fetchImageAsUint8Array(stampImage); } catch { stampData = new Uint8Array(0); }
 
-  const [signatureData, deptHeadSigData] = await Promise.all([
+  const [signatureData, deptHeadSigData, srusSigData] = await Promise.all([
     parseSignatureData(employeeSignature),
     parseSignatureData(deptHeadSignature),
+    parseSignatureData(srusSignature),
   ]);
 
   const totalDays = totalLeaveDays ?? 0;
@@ -310,8 +312,12 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
             width: { size: 25, type: WidthType.PERCENTAGE },
             borders: CELL_BORDERS,
             children: [
-              new Paragraph({ spacing: { after: 0 }, children: [t('___________________', { size: S })] }),
-              new Paragraph({ spacing: { after: 0 }, children: [t('(semnătura)', { size: 16, italics: true })] }),
+              ...(srusSigData ? [
+                new Paragraph({ spacing: { after: 0 }, children: [new ImageRun({ data: srusSigData, transformation: { width: 100, height: 40 }, type: 'png' })] }),
+              ] : [
+                new Paragraph({ spacing: { after: 0 }, children: [t('___________________', { size: S })] }),
+              ]),
+              new Paragraph({ spacing: { after: 0 }, children: [t('(semnătura)', { size: 14, italics: true })] }),
             ],
           }),
           new TableCell({

@@ -17,6 +17,7 @@ import ExcelJS from 'exceljs';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { generateLeaveDocx } from '@/utils/generateLeaveDocx';
+import { SignaturePad } from '@/components/shared/SignaturePad';
 
 interface LeaveRequestRow {
   id: string;
@@ -75,6 +76,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [downloadDialog, setDownloadDialog] = useState<LeaveRequestRow | null>(null);
   const [selectedSrusOfficer, setSelectedSrusOfficer] = useState<string>('Cătălina Bălan');
+  const [srusSignature, setSrusSignature] = useState<string | null>(null);
   const [exportingXls, setExportingXls] = useState(false);
 
   useEffect(() => {
@@ -250,6 +252,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         carryoverDays,
         carryoverFromYear,
         srusOfficerName,
+        srusSignature,
         approvalDate: request.dept_head_approved_at ? format(parseISO(request.dept_head_approved_at), 'dd.MM.yyyy') : undefined,
         deptHeadSignature: request.dept_head_signature,
         deptHeadName: request.dept_head_name,
@@ -264,6 +267,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     }
     setDownloading(null);
     setDownloadDialog(null);
+    setSrusSignature(null);
   };
 
   const handleDelete = async (id: string, requestNumber: string) => {
@@ -476,7 +480,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => { setDownloadDialog(r); setSelectedSrusOfficer('Cătălina Bălan'); }}
+                          onClick={() => { setDownloadDialog(r); setSelectedSrusOfficer('Cătălina Bălan'); setSrusSignature(null); }}
                           disabled={downloading === r.id}
                         >
                           {downloading === r.id ? (
@@ -508,9 +512,9 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         )}
       </CardContent>
 
-      {/* Download Dialog - SRUS Officer Selection */}
-      <Dialog open={!!downloadDialog} onOpenChange={() => setDownloadDialog(null)}>
-        <DialogContent className="max-w-sm">
+      {/* Download Dialog - SRUS Officer Selection + Signature */}
+      <Dialog open={!!downloadDialog} onOpenChange={() => { setDownloadDialog(null); setSrusSignature(null); }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Descarcă Document {downloadDialog?.request_number}</DialogTitle>
           </DialogHeader>
@@ -520,7 +524,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
             </p>
             <div className="space-y-2">
               <Label>Salariat SRUS (semnează documentul)</Label>
-              <Select value={selectedSrusOfficer} onValueChange={setSelectedSrusOfficer}>
+              <Select value={selectedSrusOfficer} onValueChange={(v) => { setSelectedSrusOfficer(v); setSrusSignature(null); }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -530,9 +534,14 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                 </SelectContent>
               </Select>
             </div>
+            <SignaturePad
+              label="Semnătura salariat SRUS"
+              onSave={(sig) => setSrusSignature(sig)}
+              existingSignature={srusSignature}
+            />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDownloadDialog(null)}>Anulează</Button>
+            <Button variant="outline" onClick={() => { setDownloadDialog(null); setSrusSignature(null); }}>Anulează</Button>
             <Button
               onClick={() => downloadDialog && handleDownload(downloadDialog, selectedSrusOfficer)}
               disabled={downloading === downloadDialog?.id}
