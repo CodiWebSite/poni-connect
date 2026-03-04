@@ -99,8 +99,7 @@ function addMonthSheet(
 
   const leaveTypeLabels: Record<string, string> = {
     co: 'CO',
-    ccc: 'CCC',
-    cfp: 'CFP',
+    cs: 'CS',
     cm: 'CM',
   };
 

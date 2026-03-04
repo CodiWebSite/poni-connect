@@ -25,8 +25,6 @@ const LEAVE_COLORS: Record<string, { font: string; fill: string }> = {
   co:  { font: '0369A1', fill: 'E0F2FE' },
   cm:  { font: 'BE123C', fill: 'FFE4E6' },
   bo:  { font: 'BE123C', fill: 'FFE4E6' },
-  cfp: { font: 'A16207', fill: 'FEF3C7' },
-  ccc: { font: '7E22CE', fill: 'F3E8FF' },
   ev:  { font: '047857', fill: 'D1FAE5' },
   md:  { font: '0F766E', fill: 'CCFBF1' },
   i:   { font: 'C2410C', fill: 'FFEDD5' },

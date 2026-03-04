@@ -279,12 +279,8 @@ const PersonalCalendarWidget = () => {
             <span>Concediu medical</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="font-bold text-purple-600 bg-purple-500/20 px-1 rounded text-[8px]">CCC</span>
-            <span>Creștere copil</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="font-bold text-amber-600 bg-amber-500/20 px-1 rounded text-[8px]">CFP</span>
-            <span>Fără plată</span>
+            <span className="font-bold text-slate-600 bg-slate-500/20 px-1 rounded text-[8px]">CS</span>
+            <span>Contract suspendat</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="font-bold text-emerald-600 bg-emerald-500/20 px-1 rounded text-[8px]">EV</span>
