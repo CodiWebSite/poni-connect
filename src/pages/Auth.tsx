@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Lock, Mail, User, Eye, EyeOff, ArrowLeft, CheckCircle2, MailCheck, HelpCircle } from 'lucide-react';
+import { Lock, Mail, User, Eye, EyeOff, ArrowLeft, CheckCircle2, MailCheck, HelpCircle, Headset } from 'lucide-react';
 import { z } from 'zod';
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '@/integrations/supabase/client';
 import AccountHelpForm from '@/components/auth/AccountHelpForm';
+import HelpdeskContactForm from '@/components/auth/HelpdeskContactForm';
 
 const TURNSTILE_SITE_KEY = '0x4AAAAAACGNQ32sLxuYBXgD';
 
@@ -76,6 +77,7 @@ const Auth = () => {
   const [signupToken, setSignupToken] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showAccountHelp, setShowAccountHelp] = useState(false);
+  const [showHelpdeskForm, setShowHelpdeskForm] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
@@ -269,7 +271,9 @@ const Auth = () => {
         </CardHeader>
         
         <CardContent>
-          {showAccountHelp ? (
+          {showHelpdeskForm ? (
+            <HelpdeskContactForm onBack={() => setShowHelpdeskForm(false)} />
+          ) : showAccountHelp ? (
             <AccountHelpForm onBack={() => setShowAccountHelp(false)} />
           ) : showEmailConfirmation ? (
             <div className="space-y-6 text-center py-4">
@@ -521,7 +525,7 @@ const Auth = () => {
                 Nu reușești să-ți creezi cont? Solicită ajutor
               </button>
 
-              <div className="rounded-lg bg-muted/50 border border-border/60 px-4 py-3 text-xs text-muted-foreground space-y-1">
+              <div className="rounded-lg bg-muted/50 border border-border/60 px-4 py-3 text-xs text-muted-foreground space-y-2">
                 <p className="font-medium text-foreground/80">Asistență IT — pentru urgențe:</p>
                 <p>Condrea Codrin — Tehnician IT, interior <span className="font-medium">330</span></p>
                 <p>Buzdugan Cătălin — Departamentul IT, interior <span className="font-medium">160</span></p>
@@ -530,6 +534,14 @@ const Auth = () => {
                   {' · '}
                   <a href="mailto:admin@icmpp.ro" className="text-primary hover:underline">admin@icmpp.ro</a>
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setShowHelpdeskForm(true)}
+                  className="mt-1 inline-flex items-center gap-1.5 text-primary hover:underline font-medium text-xs"
+                >
+                  <Headset className="w-3.5 h-3.5" />
+                  Trimite un mesaj echipei IT
+                </button>
               </div>
             </div>
             </>

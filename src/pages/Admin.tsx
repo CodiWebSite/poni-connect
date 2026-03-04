@@ -22,6 +22,7 @@ import AuthLoginLog from '@/components/admin/AuthLoginLog';
 import EquipmentRegistry from '@/components/admin/EquipmentRegistry';
 import AppSettingsPanel from '@/components/admin/AppSettingsPanel';
 import InvitePlatformPanel from '@/components/admin/InvitePlatformPanel';
+import HelpdeskPanel from '@/components/admin/HelpdeskPanel';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -195,9 +196,10 @@ const Admin = () => {
            <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit</TabsTrigger>
            <TabsTrigger value="auth-log" className="text-xs sm:text-sm">Autentificări</TabsTrigger>
            <TabsTrigger value="inventory" className="text-xs sm:text-sm">Inventar</TabsTrigger>
-            <TabsTrigger value="invitations" className="text-xs sm:text-sm">Invitații</TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
-         </TabsList>
+             <TabsTrigger value="invitations" className="text-xs sm:text-sm">Invitații</TabsTrigger>
+             <TabsTrigger value="helpdesk" className="text-xs sm:text-sm">HelpDesk</TabsTrigger>
+             <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
+          </TabsList>
         <TabsContent value="roles" className="space-y-6">
           <Card>
             <CardHeader>
@@ -286,6 +288,9 @@ const Admin = () => {
         </TabsContent>
         <TabsContent value="invitations">
           <InvitePlatformPanel />
+        </TabsContent>
+        <TabsContent value="helpdesk">
+          <HelpdeskPanel />
         </TabsContent>
         <TabsContent value="settings">
           <AppSettingsPanel />
