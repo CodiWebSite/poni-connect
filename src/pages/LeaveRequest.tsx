@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useDemoMode } from '@/contexts/DemoModeContext';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,6 +34,7 @@ const LeaveRequest = () => {
   const { isSuperAdmin, role, isSef, isSefSRUS, canManageHR, loading: roleLoading } = useUserRole();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { settings } = useAppSettings();
+  const { isDemo } = useDemoMode();
   const [isDesignatedApprover, setIsDesignatedApprover] = useState(false);
   const [isActiveDelegate, setIsActiveDelegate] = useState(false);
   const [simulatedRole, setSimulatedRole] = useState<SimulatedRole>('none');
@@ -111,7 +113,7 @@ const LeaveRequest = () => {
     <MainLayout title="Cereri Concediu de Odihnă" description={<span className="inline-flex items-center gap-1">Depune și gestionează cererile de concediu <ContextualHelp title="Cerere de Concediu" content="Completați formularul, semnați electronic și trimiteți cererea." steps={['Completați perioada și înlocuitorul', 'Semnați cererea electronic', 'Așteptați aprobarea: Șef → SRUS → Aprobat']} /></span>}>
       
       {/* Debug Sandbox Panel - only for Super Admin */}
-      {isSuperAdmin && (
+      {isSuperAdmin && isDemo && (
         <Card className="mb-4 border-2 border-dashed border-purple-400/60 bg-purple-50/50 dark:bg-purple-950/20 dark:border-purple-500/40">
           <CardContent className="py-3 px-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
