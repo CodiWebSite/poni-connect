@@ -37,7 +37,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 // Configuration
 const SITE_NAME = "Intranet ICMPP"
 const SENDER_DOMAIN = "notify.djfunkyevents.ro"
-const ROOT_DOMAIN = "djfunkyevents.ro"
+const ROOT_DOMAIN = "intranet.icmpp.ro"
 const FROM_DOMAIN = "icmpp.ro"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
