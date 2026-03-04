@@ -41,23 +41,47 @@ Deno.serve(async (req) => {
       },
     });
 
+    const subject = to === "condrea.codrin@icmpp.ro" 
+      ? `🧪 [TEST] Cerere concediu nouă — Popescu Ion (CO-2026-TEST)`
+      : "Test Email — Intranet ICMPP";
+
+    const leaveHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #1a365d; border-bottom: 2px solid #3182ce; padding-bottom: 10px;">
+          Cerere de Concediu de Odihnă
+        </h2>
+        <p>Bună ziua,</p>
+        <p>Angajatul <strong>Popescu Ion (TEST)</strong> din compartimentul <strong>Laborator Polimeri Funcționali</strong> a depus o cerere de concediu:</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+          <tr style="background: #ebf8ff;">
+            <td style="padding: 8px 12px; border: 1px solid #bee3f8; font-weight: bold;">Nr. cerere</td>
+            <td style="padding: 8px 12px; border: 1px solid #bee3f8;">CO-2026-TEST</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 12px; border: 1px solid #bee3f8; font-weight: bold;">Perioada</td>
+            <td style="padding: 8px 12px; border: 1px solid #bee3f8;">10.03.2026 — 14.03.2026</td>
+          </tr>
+          <tr style="background: #ebf8ff;">
+            <td style="padding: 8px 12px; border: 1px solid #bee3f8; font-weight: bold;">Zile lucrătoare</td>
+            <td style="padding: 8px 12px; border: 1px solid #bee3f8;">5</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 12px; border: 1px solid #bee3f8; font-weight: bold;">Înlocuitor</td>
+            <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Ionescu Maria</td>
+          </tr>
+        </table>
+        <p>Vă rugăm să accesați platforma pentru a verifica și aproba cererea.</p>
+        <p style="color: #718096; font-size: 12px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+          ⚠️ Acesta este un email de test. Nu răspundeți la acest mesaj.
+        </p>
+      </div>
+    `;
+
     const info = await transporter.sendMail({
       from: fromAddress,
       to: to,
-      subject: "Test Email — Intranet ICMPP",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #1a365d; border-bottom: 2px solid #3182ce; padding-bottom: 10px;">
-            ✅ Test Email Reușit
-          </h2>
-          <p>Bună ziua,</p>
-          <p>Acesta este un email de test trimis de pe platforma Intranet ICMPP.</p>
-          <p>Dacă primiți acest mesaj, configurația SMTP funcționează corect.</p>
-          <p style="color: #718096; font-size: 12px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
-            Trimis automat de sistemul Intranet ICMPP la ${new Date().toLocaleString('ro-RO')}.
-          </p>
-        </div>
-      `,
+      subject,
+      html: leaveHtml,
     });
 
     console.log(`Test email sent to: ${to}, messageId: ${info.messageId}`);
