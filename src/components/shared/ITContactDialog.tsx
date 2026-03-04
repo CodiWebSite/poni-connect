@@ -80,14 +80,15 @@ const ITContactDialog = ({ trigger }: ITContactDialogProps) => {
     }
 
     setSending(true);
-    const { error } = await supabase.from('helpdesk_tickets' as any).insert({
+    const { error } = await supabase.from('helpdesk_tickets').insert({
       name: name.trim(),
       email: email.trim().toLowerCase(),
       subject: subject || 'General',
       message: message.trim(),
-    } as any);
+    });
 
     if (error) {
+      console.error('Helpdesk ticket insert error:', error);
       toast.error('Eroare la trimiterea mesajului. Încercați din nou.');
     } else {
       setSent(true);
