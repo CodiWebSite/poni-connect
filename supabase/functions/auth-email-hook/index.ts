@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 
 // Configuration
 const SITE_NAME = "Intranet ICMPP"
-const SENDER_DOMAIN = "notify.icmpp.ro"
+const SENDER_DOMAIN = "notify.djfunkyevents.ro"
 const ROOT_DOMAIN = "intranet.icmpp.ro"
 const FROM_DOMAIN = "icmpp.ro" // Domain shown in From address (may be root or sender subdomain)
 
