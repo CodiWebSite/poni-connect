@@ -44,6 +44,7 @@ const Sidebar = () => {
   const [fullName, setFullName] = useState('');
   const [pendingHR, setPendingHR] = useState(0);
   const [pendingAdmin, setPendingAdmin] = useState(0);
+  const [pendingHelpdesk, setPendingHelpdesk] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -69,8 +70,12 @@ const Sidebar = () => {
 
       // Account requests badge - for super admin only
       if (isSuperAdmin) {
-        const { count } = await supabase.from('account_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending');
-        setPendingAdmin(count || 0);
+        const [{ count: accCount }, { count: hdCount }] = await Promise.all([
+          supabase.from('account_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+          supabase.from('helpdesk_tickets' as any).select('id', { count: 'exact', head: true }).eq('status', 'open'),
+        ]);
+        setPendingAdmin(accCount || 0);
+        setPendingHelpdesk(hdCount || 0);
       }
     };
     fetchCounts();
@@ -243,16 +248,28 @@ const Sidebar = () => {
             isCollapsed ? (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
-                  <button className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
+                  <button className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors relative">
                     <Headset className="w-5 h-5" />
+                    {isSuperAdmin && pendingHelpdesk > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center animate-scale-in">
+                        {pendingHelpdesk > 9 ? '9+' : pendingHelpdesk}
+                      </span>
+                    )}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">Contact IT</TooltipContent>
+                <TooltipContent side="right" className="font-medium">
+                  Contact IT{isSuperAdmin && pendingHelpdesk > 0 ? ` (${pendingHelpdesk} tichete)` : ''}
+                </TooltipContent>
               </Tooltip>
             ) : (
               <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors text-sm">
                 <Headset className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium">Contact IT</span>
+                <span className="font-medium flex-1 text-left">Contact IT</span>
+                {isSuperAdmin && pendingHelpdesk > 0 && (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-[20px] justify-center animate-scale-in">
+                    {pendingHelpdesk}
+                  </Badge>
+                )}
               </button>
             )
           }

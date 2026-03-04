@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Headset, Loader2, Clock, CheckCircle2, MessageSquare, Trash2, Mail } from 'lucide-react';
+import { Headset, Loader2, Clock, CheckCircle2, MessageSquare, Trash2, Mail, Send, Reply } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -40,7 +42,11 @@ const HelpdeskPanel = () => {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
+  const [replySubjects, setReplySubjects] = useState<Record<string, string>>({});
+  const [showReply, setShowReply] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [sendingReply, setSendingReply] = useState<string | null>(null);
 
   const fetchTickets = useCallback(async () => {
     const { data, error } = await supabase
@@ -106,6 +112,46 @@ const HelpdeskPanel = () => {
       setTickets(prev => prev.filter(t => t.id !== id));
     }
     setSaving(null);
+  };
+
+  const sendEmailReply = async (ticket: Ticket) => {
+    const replyText = replyTexts[ticket.id]?.trim();
+    if (!replyText) {
+      toast({ title: 'Eroare', description: 'Scrie un mesaj de răspuns.', variant: 'destructive' });
+      return;
+    }
+
+    setSendingReply(ticket.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({ title: 'Eroare', description: 'Nu ești autentificat.', variant: 'destructive' });
+        setSendingReply(null);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('reply-helpdesk', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: {
+          ticket_id: ticket.id,
+          to_email: ticket.email,
+          to_name: ticket.name,
+          subject: replySubjects[ticket.id] || `Re: ${ticket.subject || 'HelpDesk'} — Răspuns IT ICMPP`,
+          reply_message: replyText,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'Email trimis', description: `Răspunsul a fost trimis la ${ticket.email}.` });
+      setReplyTexts(prev => ({ ...prev, [ticket.id]: '' }));
+      setShowReply(prev => ({ ...prev, [ticket.id]: false }));
+      fetchTickets();
+    } catch (e) {
+      console.error('Reply error:', e);
+      toast({ title: 'Eroare', description: 'Nu s-a putut trimite emailul.', variant: 'destructive' });
+    }
+    setSendingReply(null);
   };
 
   const openCount = tickets.filter(t => t.status === 'open').length;
@@ -184,6 +230,7 @@ const HelpdeskPanel = () => {
                       <p className="text-sm whitespace-pre-wrap">{ticket.message}</p>
                     </div>
 
+                    {/* Admin notes */}
                     <div className="space-y-2">
                       <p className="text-xs font-medium text-muted-foreground">Notițe admin:</p>
                       <Textarea
@@ -193,49 +240,105 @@ const HelpdeskPanel = () => {
                         rows={2}
                         className="text-sm"
                       />
-                      <div className="flex flex-wrap gap-2">
+                    </div>
+
+                    {/* Email reply section */}
+                    {showReply[ticket.id] && (
+                      <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                        <p className="text-xs font-medium text-primary flex items-center gap-1.5">
+                          <Reply className="w-3.5 h-3.5" />
+                          Răspunde prin email la {ticket.email}
+                        </p>
+                        <Input
+                          placeholder="Subiect (opțional)"
+                          value={replySubjects[ticket.id] ?? `Re: ${ticket.subject || 'HelpDesk'} — Răspuns IT ICMPP`}
+                          onChange={(e) => setReplySubjects(prev => ({ ...prev, [ticket.id]: e.target.value }))}
+                          className="text-sm h-8"
+                        />
+                        <Textarea
+                          placeholder="Scrie răspunsul aici..."
+                          value={replyTexts[ticket.id] ?? ''}
+                          onChange={(e) => setReplyTexts(prev => ({ ...prev, [ticket.id]: e.target.value }))}
+                          rows={3}
+                          className="text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => sendEmailReply(ticket)}
+                            disabled={sendingReply === ticket.id}
+                          >
+                            {sendingReply === ticket.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                            ) : (
+                              <Send className="w-3 h-3 mr-1" />
+                            )}
+                            {sendingReply === ticket.id ? 'Se trimite...' : 'Trimite email'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setShowReply(prev => ({ ...prev, [ticket.id]: false }))}
+                          >
+                            Anulează
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => saveNotes(ticket.id)}
+                        disabled={saving === ticket.id}
+                      >
+                        {saving === ticket.id ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                        Salvează notițe
+                      </Button>
+                      {!showReply[ticket.id] && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => setShowReply(prev => ({ ...prev, [ticket.id]: true }))}
+                        >
+                          <Reply className="w-3 h-3 mr-1" />
+                          Răspunde pe email
+                        </Button>
+                      )}
+                      {ticket.status === 'open' && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => saveNotes(ticket.id)}
+                          onClick={() => updateStatus(ticket.id, 'in_progress')}
                           disabled={saving === ticket.id}
                         >
-                          {saving === ticket.id ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-                          Salvează notițe
+                          Marchează „În lucru"
                         </Button>
-                        {ticket.status === 'open' && (
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() => updateStatus(ticket.id, 'in_progress')}
-                            disabled={saving === ticket.id}
-                          >
-                            Marchează „În lucru"
-                          </Button>
-                        )}
-                        {(ticket.status === 'open' || ticket.status === 'in_progress') && (
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className="bg-green-600 hover:bg-green-700"
-                            onClick={() => updateStatus(ticket.id, 'resolved')}
-                            disabled={saving === ticket.id}
-                          >
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            Rezolvat
-                          </Button>
-                        )}
+                      )}
+                      {(ticket.status === 'open' || ticket.status === 'in_progress') && (
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => deleteTicket(ticket.id)}
+                          variant="outline"
+                          className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/20"
+                          onClick={() => updateStatus(ticket.id, 'resolved')}
                           disabled={saving === ticket.id}
                         >
-                          <Trash2 className="w-3 h-3 mr-1" />
-                          Șterge
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Rezolvat
                         </Button>
-                      </div>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => deleteTicket(ticket.id)}
+                        disabled={saving === ticket.id}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Șterge
+                      </Button>
                     </div>
                   </div>
                 )}
