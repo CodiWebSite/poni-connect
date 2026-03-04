@@ -61,7 +61,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   useEffect(() => {
     checkDesignatedApprover();
     fetchPendingRequests();
-  }, [role, user]);
+  }, [role, user, isDemo]);
 
   const checkDesignatedApprover = async () => {
     if (!user) return;
