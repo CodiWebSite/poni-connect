@@ -146,7 +146,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const deptHeadSigElements: (TextRun | ImageRun)[] = [];
   if (stampData.length > 0) {
     deptHeadSigElements.push(
-      new ImageRun({ data: stampData, transformation: { width: 80, height: 80 }, type: 'png' })
+      new ImageRun({ data: stampData, transformation: { width: 130, height: 130 }, type: 'png' })
     );
   }
   if (deptHeadSigData) {
@@ -191,7 +191,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const directorSigElements: (TextRun | ImageRun)[] = [];
   if (stampData.length > 0) {
     directorSigElements.push(
-      new ImageRun({ data: stampData, transformation: { width: 80, height: 80 }, type: 'png' })
+      new ImageRun({ data: stampData, transformation: { width: 130, height: 130 }, type: 'png' })
     );
   }
   if (directorSigElements.length > 0) {
@@ -410,7 +410,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           indent: { left: convertMillimetersToTwip(80) },
           children: [
             t('are dreptul la ', { size: 22 }),
-            t(totalAvailable > 0 ? `${totalAvailable}` : '_____', { bold: totalAvailable > 0, size: 22 }),
+            t(`${totalAvailable}`, { bold: true, size: 22 }),
             t(' zile concediu de odihnă, din care', { size: 22 }),
           ],
         }),
@@ -418,11 +418,11 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           spacing: { after: 50 },
           indent: { left: convertMillimetersToTwip(80) },
           children: [
-            t(totalDays > 0 ? `${totalDays}` : '_______', { bold: totalDays > 0, size: 22 }),
+            t(`${totalDays}`, { bold: true, size: 22 }),
             t(` aferente anului `, { size: 22 }),
             t(`${year}`, { bold: true, size: 22 }),
             t(' și ', { size: 22 }),
-            t(carryover > 0 ? `${carryover}` : '______', { bold: carryover > 0, size: 22 }),
+            t(`${carryover}`, { bold: true, size: 22 }),
             t(' aferente anului', { size: 22 }),
           ],
         }),
@@ -440,7 +440,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           indent: { left: convertMillimetersToTwip(80) },
           children: [
             t('Sold rămas: ', { size: 22 }),
-            t(remaining > 0 ? `${remaining}` : '______', { bold: remaining > 0, size: 22 }),
+            t(`${remaining}`, { bold: true, size: 22 }),
             t(` zile (an ${year}).`, { size: 22 }),
           ],
         }),
