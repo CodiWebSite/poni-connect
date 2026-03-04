@@ -50,11 +50,11 @@ const HelpdeskPanel = () => {
 
   const fetchTickets = useCallback(async () => {
     const { data, error } = await supabase
-      .from('helpdesk_tickets' as any)
+      .from('helpdesk_tickets')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (data) setTickets(data as any);
+    if (data) setTickets(data as unknown as Ticket[]);
     if (error) console.error('Error fetching tickets:', error);
     setLoading(false);
   }, []);
@@ -65,11 +65,11 @@ const HelpdeskPanel = () => {
 
   const updateStatus = async (id: string, status: string) => {
     setSaving(id);
-    const updates: any = { status };
+    const updates: Record<string, string> = { status };
     if (notes[id]) updates.admin_notes = notes[id];
 
     const { error } = await supabase
-      .from('helpdesk_tickets' as any)
+      .from('helpdesk_tickets')
       .update(updates)
       .eq('id', id);
 
@@ -85,8 +85,8 @@ const HelpdeskPanel = () => {
   const saveNotes = async (id: string) => {
     setSaving(id);
     const { error } = await supabase
-      .from('helpdesk_tickets' as any)
-      .update({ admin_notes: notes[id] || null } as any)
+      .from('helpdesk_tickets')
+      .update({ admin_notes: notes[id] || null })
       .eq('id', id);
 
     if (error) {
@@ -101,7 +101,7 @@ const HelpdeskPanel = () => {
   const deleteTicket = async (id: string) => {
     setSaving(id);
     const { error } = await supabase
-      .from('helpdesk_tickets' as any)
+      .from('helpdesk_tickets')
       .delete()
       .eq('id', id);
 
