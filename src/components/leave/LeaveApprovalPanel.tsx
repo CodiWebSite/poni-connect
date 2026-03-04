@@ -59,9 +59,17 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
 
   useEffect(() => {
-    checkDesignatedApprover();
-    fetchPendingRequests();
-  }, [role, user, isDemo]);
+    if (!user || !role) return;
+    let cancelled = false;
+
+    const load = async () => {
+      await checkDesignatedApprover();
+      if (!cancelled) await fetchPendingRequests();
+    };
+    load();
+
+    return () => { cancelled = true; };
+  }, [role, user]);
 
   const checkDesignatedApprover = async () => {
     if (!user) return;
