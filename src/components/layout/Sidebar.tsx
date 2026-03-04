@@ -274,8 +274,8 @@ const Sidebar = () => {
             )
           }
         />
-        {/* Demo Mode Toggle - only for Super Admin and HR/SRUS */}
-        {(isSuperAdmin || canManageHR) && (
+        {/* Demo Mode Toggle - only for Super Admin, HR/SRUS and Dept Heads */}
+        {(isSuperAdmin || canManageHR || isSef) && (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <button

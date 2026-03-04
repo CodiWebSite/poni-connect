@@ -85,7 +85,7 @@ const LeaveRequest = () => {
   let canApprove = realCanApprove;
   let isHR = realIsHR;
 
-  if ((isSuperAdmin || canManageHR) && simulatedRole !== 'none') {
+  if ((isSuperAdmin || canManageHR || isSef) && simulatedRole !== 'none') {
     switch (simulatedRole) {
       case 'angajat':
         canApprove = false;
@@ -113,7 +113,7 @@ const LeaveRequest = () => {
     <MainLayout title="Cereri Concediu de Odihnă" description={<span className="inline-flex items-center gap-1">Depune și gestionează cererile de concediu <ContextualHelp title="Cerere de Concediu" content="Completați formularul, semnați electronic și trimiteți cererea." steps={['Completați perioada și înlocuitorul', 'Semnați cererea electronic', 'Așteptați aprobarea: Șef → SRUS → Aprobat']} /></span>}>
       
       {/* Debug Sandbox Panel - only for Super Admin */}
-      {(isSuperAdmin || canManageHR) && isDemo && (
+      {(isSuperAdmin || canManageHR || isSef) && isDemo && (
         <Card className="mb-4 border-2 border-dashed border-purple-400/60 bg-purple-50/50 dark:bg-purple-950/20 dark:border-purple-500/40">
           <CardContent className="py-3 px-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
