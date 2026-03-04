@@ -88,6 +88,10 @@ const PlatformGuide = () => {
                     <div><strong>Dashboard</strong> – pagina principală cu statistici rapide, acțiuni rapide și calendar personal.</div>
                   </div>
                   <div className="flex items-start gap-2">
+                    <Bell className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Anunțuri</strong> – anunțurile oficiale ale instituției, cu posibilitate de fixare și prioritizare.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <UserCircle className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <div><strong>Profilul Meu</strong> – datele dvs. personale, soldul de concediu, documente și istoric.</div>
                   </div>
@@ -104,6 +108,10 @@ const PlatformGuide = () => {
                     <div><strong>Cerere Concediu</strong> – depunerea și urmărirea cererilor de concediu de odihnă.</div>
                   </div>
                   <div className="flex items-start gap-2">
+                    <BookOpen className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Bibliotecă</strong> – catalogul de cărți și reviste al institutului (vizibil pentru bibliotecari).</div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <Settings className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <div><strong>Setări</strong> – actualizarea numelui, telefonului și a temei vizuale.</div>
                   </div>
@@ -115,6 +123,9 @@ const PlatformGuide = () => {
 
                 <InfoBox title="💡 Sfat: Colapsarea meniului">
                   <p>Apăsați săgeata din colțul din dreapta-sus al sidebar-ului pentru a-l restrânge (va afișa doar iconițele). Apăsați din nou pentru a-l extinde.</p>
+                </InfoBox>
+                <InfoBox title="💡 Contact IT">
+                  <p>În partea de jos a meniului găsiți butonul „Contact IT" – apăsați pentru a trimite un tichet HelpDesk direct echipei de suport.</p>
                 </InfoBox>
 
                 <SidebarMockup />
@@ -256,8 +267,8 @@ const PlatformGuide = () => {
 
                 <InfoBox title="⚠️ Important: Flux de aprobare">
                   <p>Cererea parcurge 2 etape obligatorii:</p>
-                  <p>1. <strong>Șef departament</strong> – aprobă/respinge cererea și semnează electronic.</p>
-                  <p>2. <strong>Director</strong> – aprobarea finală. Abia după această etapă, cererea devine „Aprobată".</p>
+                  <p>1. <strong>Șef compartiment</strong> – aprobă/respinge cererea și semnează electronic.</p>
+                  <p>2. <strong>Ofițer SRUS (HR)</strong> – validarea finală. Abia după această etapă, cererea devine „Aprobată" și zilele sunt deduse automat din sold.</p>
                   <p>Primiți notificări la fiecare schimbare de status.</p>
                 </InfoBox>
 
@@ -393,6 +404,17 @@ const PlatformGuide = () => {
                 </div>
               </GuideSection>
 
+              {/* ─── ANUNȚURI ─── */}
+              <GuideSection icon={Bell} title="Anunțuri – Comunicări oficiale">
+                <div className="space-y-1.5">
+                  <p>• Pagina <strong>Anunțuri</strong> centralizează comunicările oficiale ale instituției.</p>
+                  <p>• Anunțurile pot fi <strong>fixate</strong> (pinned) – acestea apar mereu primele.</p>
+                  <p>• Fiecare anunț poate conține <strong>atașamente</strong> și <strong>link-uri</strong> utile.</p>
+                  <p>• Prioritizarea vizuală: anunțurile urgente sunt evidențiate cu culori distincte.</p>
+                  <p>• Personalul cu roluri administrative poate crea, edita și șterge anunțuri.</p>
+                </div>
+              </GuideSection>
+
               {/* ─── NOTIFICĂRI ─── */}
               <GuideSection icon={Bell} title="Notificări – Cum funcționează">
                 <div className="space-y-1.5">
@@ -400,6 +422,7 @@ const PlatformGuide = () => {
                   <p>  – Cereri de concediu aprobate sau respinse.</p>
                   <p>  – Mesaje de la administrator.</p>
                   <p>  – Alerte de expirare carte de identitate.</p>
+                  <p>  – Anunțuri noi și cereri de aprobare.</p>
                   <p>• Notificările apar ca un <strong>badge roșu pe clopoțel</strong> (bara de sus).</p>
                   <p>• Apăsați pe clopoțel pentru a vedea lista. Apăsați pe o notificare pentru detalii.</p>
                   <p>• Puteți marca notificările ca citite individual sau pe toate deodată.</p>
@@ -435,7 +458,7 @@ const PlatformGuide = () => {
                     'Apăsați „Detalii" pentru a vedea cererea completă (inclusiv semnătura angajatului).',
                     'Pentru aprobare: apăsați „Aprobă", adăugați opțional un comentariu, și semnați electronic.',
                     'Pentru respingere: apăsați „Respinge" și completați obligatoriu motivul respingerii.',
-                    'După aprobarea dvs., cererea merge automat la etapa următoare (Director).',
+                    'După aprobarea dvs., cererea merge automat la etapa următoare (validare SRUS/HR).',
                     'Angajatul primește o notificare cu decizia dvs.',
                   ]} />
 
@@ -584,11 +607,19 @@ const PlatformGuide = () => {
                     </div>
                     <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
                       <Badge variant="secondary" className="text-[10px]">hr</Badge>
-                      <span className="text-xs">HR – gestionare angajați</span>
+                      <span className="text-xs">HR (SRUS) – gestionare angajați</span>
                     </div>
                     <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
                       <Badge variant="secondary" className="text-[10px]">director_institut</Badge>
-                      <span className="text-xs">Director – aprobări finale</span>
+                      <span className="text-xs">Director Institut – conducere</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
+                      <Badge variant="secondary" className="text-[10px]">director_adjunct</Badge>
+                      <span className="text-xs">Director Adjunct – conducere</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
+                      <Badge variant="secondary" className="text-[10px]">secretar_stiintific</Badge>
+                      <span className="text-xs">Secretar Științific – conducere</span>
                     </div>
                     <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
                       <Badge variant="secondary" className="text-[10px]">super_admin</Badge>
@@ -598,7 +629,34 @@ const PlatformGuide = () => {
                       <Badge variant="secondary" className="text-[10px]">bibliotecar</Badge>
                       <span className="text-xs">Bibliotecar – gestionare bibliotecă</span>
                     </div>
+                    <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
+                      <Badge variant="secondary" className="text-[10px]">salarizare</Badge>
+                      <span className="text-xs">Salarizare – acces date salariale</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
+                      <Badge variant="secondary" className="text-[10px]">secretariat</Badge>
+                      <span className="text-xs">Secretariat – documente și corespondență</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
+                      <Badge variant="secondary" className="text-[10px]">achizitii</Badge>
+                      <span className="text-xs">Achiziții – gestionare achiziții</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
+                      <Badge variant="secondary" className="text-[10px]">contabilitate</Badge>
+                      <span className="text-xs">Contabilitate – operațiuni financiare</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
+                      <Badge variant="secondary" className="text-[10px]">oficiu_juridic</Badge>
+                      <span className="text-xs">Oficiu Juridic – consiliere juridică</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 rounded border bg-muted/30">
+                      <Badge variant="secondary" className="text-[10px]">compartiment_comunicare</Badge>
+                      <span className="text-xs">Comunicare – relații publice</span>
+                    </div>
                   </div>
+                  <InfoBox title="💡 Pre-atribuire roluri">
+                    <p>Puteți seta rolul unui angajat <strong>înainte</strong> ca acesta să-și creeze contul. Mergeți la Administrare → Pre-atribuire Roluri → adăugați email-ul și rolul dorit. La înregistrare, rolul se aplică automat.</p>
+                  </InfoBox>
                 </GuideSection>
 
                 <GuideSection icon={AlertTriangle} title="Modul de mentenanță">
