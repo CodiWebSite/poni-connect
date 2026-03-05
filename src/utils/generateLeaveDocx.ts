@@ -326,12 +326,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           children: [t('Anexa 11.2.-P.O. ICMPP-SRUS', { bold: true, size: SIZE_HEADER })],
         }),
 
-        // ══════ "Se aprobă," right ══════
-        new Paragraph({
-          spacing: { after: 80 },
-          alignment: AlignmentType.RIGHT,
-          children: [t('Se aprobă,')],
-        }),
+        empty(80),
 
         // ══════ APPROVAL TABLE ══════
         approvalTable,
