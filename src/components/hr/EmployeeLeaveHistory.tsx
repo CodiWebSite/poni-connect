@@ -50,7 +50,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
     setLoading(true);
     let allLeaves: LeaveHistoryItem[] = [];
 
-    // Fetch leaves by user_id (for employees with accounts)
+    // Fetch from hr_requests by user_id (for employees with accounts)
     if (userId) {
       const { data } = await supabase
         .from('hr_requests')
@@ -70,9 +70,59 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
         .contains('details', { epd_id: epdId })
         .order('created_at', { ascending: false });
       if (data) {
-        // Merge without duplicates
         const existingIds = new Set(allLeaves.map(l => l.id));
         allLeaves = [...allLeaves, ...data.filter(l => !existingIds.has(l.id))];
+      }
+    }
+
+    // Also fetch from leave_requests (formal workflow)
+    if (userId) {
+      const { data } = await supabase
+        .from('leave_requests')
+        .select('id, status, start_date, end_date, working_days, created_at, request_number')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (data) {
+        const existingIds = new Set(allLeaves.map(l => l.id));
+        const mapped = data.filter(l => !existingIds.has(l.id)).map(lr => ({
+          id: lr.id,
+          status: lr.status === 'approved' ? 'approved' : lr.status === 'rejected' ? 'rejected' : 'pending',
+          details: {
+            startDate: lr.start_date,
+            endDate: lr.end_date,
+            numberOfDays: lr.working_days,
+            leaveType: 'co',
+            source: 'leave_requests',
+            request_number: lr.request_number,
+          },
+          created_at: lr.created_at,
+        }));
+        allLeaves = [...allLeaves, ...mapped];
+      }
+    }
+
+    if (epdId) {
+      const { data } = await supabase
+        .from('leave_requests')
+        .select('id, status, start_date, end_date, working_days, created_at, request_number')
+        .eq('epd_id', epdId)
+        .order('created_at', { ascending: false });
+      if (data) {
+        const existingIds = new Set(allLeaves.map(l => l.id));
+        const mapped = data.filter(l => !existingIds.has(l.id)).map(lr => ({
+          id: lr.id,
+          status: lr.status === 'approved' ? 'approved' : lr.status === 'rejected' ? 'rejected' : 'pending',
+          details: {
+            startDate: lr.start_date,
+            endDate: lr.end_date,
+            numberOfDays: lr.working_days,
+            leaveType: 'co',
+            source: 'leave_requests',
+            request_number: lr.request_number,
+          },
+          created_at: lr.created_at,
+        }));
+        allLeaves = [...allLeaves, ...mapped];
       }
     }
 
