@@ -173,39 +173,16 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     );
   }
 
-  // ════════════════════════════════════════════════════
-  // Right column: DIRECTOR — name in blue pen color
-  // ════════════════════════════════════════════════════
-  const actualDirectorName = directorName || 'Valeria Harabagiu';
-  const rightApprovalChildren: Paragraph[] = [
-    new Paragraph({ spacing: { after: 40 }, alignment: AlignmentType.RIGHT, children: [t('DIRECTOR', { bold: true, size: SIZE_SMALL })] }),
-    new Paragraph({ spacing: { after: 40 }, alignment: AlignmentType.RIGHT, children: [
-      t(actualDirectorName, { bold: true, size: SIZE, color: BLUE_PEN }),
-    ]}),
-  ];
-
-  if (directorApprovalDate) {
-    rightApprovalChildren.push(
-      new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.RIGHT, children: [t(`Data: ${directorApprovalDate}`, { size: SIZE_SMALL })] })
-    );
-  }
-
   const approvalTable = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: [
       new TableRow({
         children: [
           new TableCell({
-            width: { size: 50, type: WidthType.PERCENTAGE },
+            width: { size: 100, type: WidthType.PERCENTAGE },
             borders: CELL_BORDERS,
             verticalAlign: VerticalAlign.TOP,
             children: leftApprovalChildren,
-          }),
-          new TableCell({
-            width: { size: 50, type: WidthType.PERCENTAGE },
-            borders: CELL_BORDERS,
-            verticalAlign: VerticalAlign.TOP,
-            children: rightApprovalChildren,
           }),
         ],
       }),
