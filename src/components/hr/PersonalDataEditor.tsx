@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Save, Upload, Download, Trash2, Clock, FileImage } from 'lucide-react';
@@ -65,6 +66,7 @@ export const PersonalDataEditor = ({
   const [personalData, setPersonalData] = useState<PersonalData | null>(null);
   const [ciFile, setCiFile] = useState<File | null>(null);
   const [uploadingCi, setUploadingCi] = useState(false);
+  const [noEmail, setNoEmail] = useState(false);
   const [carryover2025, setCarryover2025] = useState({ id: '', initial_days: 0, used_days: 0 });
   const [form, setForm] = useState({
     email: '',
@@ -116,8 +118,10 @@ export const PersonalDataEditor = ({
 
     if (data) {
       setPersonalData(data as PersonalData);
+      const isNoEmail = data.email?.endsWith('@fara-email.local') || false;
+      setNoEmail(isNoEmail);
       setForm({
-        email: data.email || '',
+        email: isNoEmail ? '' : (data.email || ''),
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         cnp: data.cnp || '',
@@ -288,17 +292,25 @@ export const PersonalDataEditor = ({
       return;
     }
 
-    if (!form.email || !form.first_name || !form.last_name || !form.cnp) {
+    if (!noEmail && !form.email) {
       toast({ title: 'Eroare', description: 'Email, prenume, nume și CNP sunt obligatorii.', variant: 'destructive' });
       return;
     }
+    if (!form.first_name || !form.last_name || !form.cnp) {
+      toast({ title: 'Eroare', description: 'Prenume, nume și CNP sunt obligatorii.', variant: 'destructive' });
+      return;
+    }
+
+    const emailToSave = noEmail 
+      ? `${form.cnp || 'unknown'}@fara-email.local` 
+      : form.email.toLowerCase().trim();
 
     setSaving(true);
     
     const { error } = await supabase
       .from('employee_personal_data')
       .update({
-        email: form.email.toLowerCase().trim(),
+        email: emailToSave,
         first_name: form.first_name.trim(),
         last_name: form.last_name.trim(),
         cnp: form.cnp.trim(),
@@ -426,12 +438,28 @@ export const PersonalDataEditor = ({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Email *</Label>
+                  <Label>Email {!noEmail && '*'}</Label>
                   <Input 
                     type="email"
                     value={form.email} 
                     onChange={(e) => updateForm('email', e.target.value)}
+                    disabled={noEmail}
+                    placeholder={noEmail ? 'Fără email' : ''}
+                    className={noEmail ? 'opacity-50' : ''}
                   />
+                  <div className="flex items-center gap-2 mt-1">
+                    <Checkbox 
+                      id="no-email" 
+                      checked={noEmail} 
+                      onCheckedChange={(checked) => {
+                        setNoEmail(!!checked);
+                        if (checked) updateForm('email', '');
+                      }}
+                    />
+                    <label htmlFor="no-email" className="text-xs text-muted-foreground cursor-pointer">
+                      Angajatul nu are adresă de email
+                    </label>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>CNP *</Label>
