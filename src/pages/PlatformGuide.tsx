@@ -108,16 +108,20 @@ const PlatformGuide = () => {
                     <div><strong>Cerere Concediu</strong> – depunerea și urmărirea cererilor de concediu de odihnă.</div>
                   </div>
                   <div className="flex items-start gap-2">
+                    <Users className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Echipa Mea</strong> – vizualizarea membrilor echipei (disponibil pentru șefii de departament, HR și administratori).</div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <BookOpen className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <div><strong>Bibliotecă</strong> – catalogul de cărți și reviste al institutului (vizibil pentru bibliotecari).</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Settings className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                    <div><strong>Setări</strong> – actualizarea numelui, telefonului și a temei vizuale.</div>
+                    <div><strong>Setări</strong> – actualizarea numelui, telefonului, temei vizuale și schimbarea parolei.</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <HelpCircle className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                    <div><strong>Ghid Platformă</strong> – această pagină cu instrucțiuni detaliate.</div>
+                    <div><strong>Ghid Platformă</strong> – această pagină cu instrucțiuni detaliate, adaptată rolului dvs.</div>
                   </div>
                 </div>
 
@@ -549,12 +553,22 @@ const PlatformGuide = () => {
                   </InfoBox>
                 </GuideSection>
 
+                <GuideSection icon={Users} title="Echipa Mea – Vizualizare membrii echipei">
+                  <div className="space-y-1.5">
+                    <p>• Pagina <strong>„Echipa Mea"</strong> apare în meniu doar pentru șefii de departament, HR și administratori.</p>
+                    <p>• Vedeți toți membrii departamentului dvs. cu: nume, funcție, email, departament.</p>
+                    <p>• Informații de contact rapide pentru fiecare membru al echipei.</p>
+                    <p>• Util pentru a avea o imagine de ansamblu asupra echipei și a coordona mai eficient.</p>
+                  </div>
+                </GuideSection>
+
                 <GuideSection icon={Eye} title="Ce vede un șef de departament în plus față de un angajat">
                   <div className="space-y-1.5">
                     <p>• <strong>Badge pe meniu</strong> – numărul cererilor în așteptare, vizibil pe „Cerere Concediu" în sidebar.</p>
                     <p>• <strong>Tab „De Aprobat"</strong> – disponibil doar pentru șefi și aprobatori desemnați.</p>
                     <p>• <strong>Tab „Centralizator"</strong> – istoric complet al deciziilor.</p>
                     <p>• <strong>Tab „Înlocuitor"</strong> – delegarea temporară a aprobării.</p>
+                    <p>• <strong>Echipa Mea</strong> – vizualizarea completă a membrilor echipei.</p>
                     <p>• <strong>Dashboard</strong> – poate afișa alerte suplimentare despre cererile în așteptare.</p>
                   </div>
                 </GuideSection>
@@ -640,11 +654,23 @@ const PlatformGuide = () => {
                   <StepList steps={[
                     '„Setări Aplicație" – activare/dezactivare mentenanță, mesaj homepage, modul beta concedii.',
                     '„Conturi" – cereri de creare cont, aprobare/respingere cu note.',
+                    '„Invitații" – trimiterea invitațiilor pe email pentru conturi noi.',
+                    '„Creare Manuală" – crearea directă a conturilor pentru angajați.',
                     '„Pre-atribuire Roluri" – setarea rolului pentru un email înainte ca persoana să-și creeze contul.',
+                    '„HelpDesk" – vizualizarea și rezolvarea tichetelor de suport trimise de angajați.',
                     '„Jurnal Audit" – log-ul complet al acțiunilor din sistem.',
                     '„Autentificări" – log-ul tuturor conectărilor (cu IP, device, status).',
                     '„Echipamente" – registrul echipamentelor IT asignate angajaților.',
                   ]} />
+                </GuideSection>
+
+                <GuideSection icon={Eye} title="Stare Sistem – Monitorizare platformă">
+                  <div className="space-y-1.5">
+                    <p>• Pagina <strong>„Stare Sistem"</strong> este accesibilă doar administratorilor.</p>
+                    <p>• Afișează starea curentă a serviciilor platformei (bază de date, autentificare, stocare).</p>
+                    <p>• Incidente active și istoricul incidentelor rezolvate.</p>
+                    <p>• Puteți crea, actualiza și rezolva incidente pentru a informa utilizatorii.</p>
+                  </div>
                 </GuideSection>
 
                 <GuideSection icon={Users} title="Gestionare conturi și roluri">
