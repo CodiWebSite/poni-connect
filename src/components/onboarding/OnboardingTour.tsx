@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, ChevronRight, ChevronLeft, PartyPopper, Home, UserCircle, FileText, Calendar, FolderDown, Settings, BookOpen, Layout } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, PartyPopper, Home, UserCircle, FileText, Calendar, FolderDown, Settings, BookOpen, Layout, Megaphone, Users, Headset, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STEPS = [
@@ -17,43 +17,67 @@ const STEPS = [
   {
     icon: Layout,
     title: 'Meniul de navigare (Sidebar)',
-    description: 'În partea stângă veți găsi meniul principal. De aici accesați toate secțiunile platformei: profilul, cererile de concediu, formulare și setări.',
+    description: 'În partea stângă veți găsi meniul principal. De aici accesați toate secțiunile platformei: profilul, cererile de concediu, formulare, anunțuri și setări.',
     color: 'text-blue-500',
+  },
+  {
+    icon: Home,
+    title: 'Dashboard',
+    description: 'Pagina principală cu acțiuni rapide (Profil, Calendar, Formulare), anunțuri recente, calendarul personal și soldul de concediu.',
+    color: 'text-emerald-500',
+  },
+  {
+    icon: Megaphone,
+    title: 'Anunțuri',
+    description: 'Comunicările oficiale ale instituției. Anunțurile pot fi fixate (pinned), pot conține atașamente și link-uri, și sunt prioritizate vizual.',
+    color: 'text-rose-500',
   },
   {
     icon: UserCircle,
     title: 'Profilul Meu',
-    description: 'Aici vedeți datele dvs. personale, soldul de concediu, documentele asociate și istoricul cererilor. Puteți actualiza fotografia de profil.',
-    color: 'text-emerald-500',
+    description: 'Vedeți datele personale, soldul de concediu (inclusiv report și zile bonus), documentele asociate, istoricul cererilor și puteți solicita corectări.',
+    color: 'text-teal-500',
   },
   {
     icon: FileText,
     title: 'Cerere de Concediu',
-    description: 'Completați și trimiteți cereri de concediu de odihnă direct din platformă. Cererea parcurge un flux de aprobare: șef departament → director.',
+    description: 'Completați și trimiteți cereri de concediu direct din platformă. Fluxul de aprobare: Șef compartiment → Ofițer SRUS. Descărcați cererea aprobată ca DOCX.',
     color: 'text-amber-500',
   },
   {
     icon: Calendar,
     title: 'Calendar Concedii',
-    description: 'Vizualizați concediile colegilor din departamentul dvs. într-un calendar lunar. Vedeți cine este în concediu azi.',
+    description: 'Vizualizați concediile colegilor din departament într-un tabel lunar. Weekend-urile și sărbătorile sunt marcate distinct. Vedeți cine e în concediu azi.',
     color: 'text-sky-500',
   },
   {
     icon: FolderDown,
     title: 'Formulare',
-    description: 'Descărcați modelele oficiale de formulare: cereri, declarații, fișe de solicitare analize, documente deplasări și altele.',
+    description: 'Descărcați modele oficiale de formulare: cereri, declarații, fișe de solicitare analize, documente deplasări. Organizate pe categorii.',
     color: 'text-violet-500',
+  },
+  {
+    icon: Users,
+    title: 'Echipa Mea',
+    description: 'Disponibil pentru șefii de departament – vizualizați membrii echipei dvs., informații de contact și statusul concediilor.',
+    color: 'text-indigo-500',
   },
   {
     icon: Settings,
     title: 'Setări',
-    description: 'Schimbați tema (luminos/întunecat), actualizați datele de contact și personalizați experiența pe platformă.',
+    description: 'Schimbați tema (luminos/întunecat/sistem), actualizați numele și telefonul, schimbați parola și reporniți turul de prezentare.',
     color: 'text-orange-500',
   },
   {
-    icon: BookOpen,
+    icon: Headset,
+    title: 'Contact IT (HelpDesk)',
+    description: 'În partea de jos a meniului găsiți butonul „Contact IT" – trimiteți un tichet direct echipei de suport tehnic pentru orice problemă.',
+    color: 'text-cyan-500',
+  },
+  {
+    icon: HelpCircle,
     title: 'Ghid Platformă',
-    description: 'Oricând aveți nevoie de ajutor, accesați secțiunea "Ghid Platformă" din meniu. Conține instrucțiuni pas cu pas pentru fiecare funcționalitate.',
+    description: 'Oricând aveți nevoie de ajutor, accesați „Ghid Platformă" din meniu. Conține instrucțiuni pas cu pas pentru fiecare funcționalitate, adaptate rolului dvs.',
     color: 'text-rose-500',
   },
 ];
@@ -87,9 +111,7 @@ const OnboardingTour = ({ forceShow = false, onClose }: OnboardingTourProps) => 
         .maybeSingle();
 
       if (!data) {
-        // First time - show tour
         setIsVisible(true);
-        // Create record
         await supabase.from('user_onboarding' as any).insert({ user_id: user.id } as any);
       } else if (!(data as any).tour_completed) {
         setIsVisible(true);

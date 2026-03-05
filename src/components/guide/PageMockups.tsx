@@ -1,4 +1,4 @@
-import { Home, UserCircle, Calendar, FileText, FolderDown, Settings, HelpCircle, Bell, Search, Moon, Menu, ChevronRight, CheckSquare, Download, Edit, Eye } from 'lucide-react';
+import { Home, UserCircle, Calendar, FileText, FolderDown, Settings, HelpCircle, Bell, Search, Moon, Menu, ChevronRight, CheckSquare, Download, Edit, Eye, Users } from 'lucide-react';
 
 // Reusable mini-mockup wrapper
 const MockupFrame = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -29,11 +29,11 @@ export const SidebarMockup = () => (
         </div>
         {[
           { icon: Home, label: 'Dashboard', active: true },
+          { icon: Bell, label: 'Anunțuri', active: false },
           { icon: UserCircle, label: 'Profilul Meu', active: false },
           { icon: Calendar, label: 'Calendar Concedii', active: false },
           { icon: FolderDown, label: 'Formulare', active: false },
           { icon: FileText, label: 'Cerere Concediu', active: false, badge: '2' },
-          { icon: Settings, label: 'Setări', active: false },
           { icon: HelpCircle, label: 'Ghid Platformă', active: false },
         ].map(({ icon: Icon, label, active, badge }) => (
           <div key={label} className={`flex items-center gap-2 px-2 py-1.5 rounded text-[10px] ${active ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}>
