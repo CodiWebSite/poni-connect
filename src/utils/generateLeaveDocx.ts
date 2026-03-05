@@ -152,7 +152,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   if (deptHeadSigData) {
     leftApprovalChildren.push(
       new Paragraph({ spacing: { after: 0 }, children: [
-        new ImageRun({ data: deptHeadSigData, transformation: { width: 90, height: 35 }, type: 'png' }),
+        new ImageRun({ data: deptHeadSigData, transformation: { width: 130, height: 50 }, type: 'png' }),
       ]})
     );
   } else {
@@ -280,7 +280,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
             borders: CELL_BORDERS,
             children: [
               ...(srusSigData ? [
-                new Paragraph({ spacing: { after: 0 }, children: [new ImageRun({ data: srusSigData, transformation: { width: 100, height: 40 }, type: 'png' })] }),
+                new Paragraph({ spacing: { after: 0 }, children: [new ImageRun({ data: srusSigData, transformation: { width: 140, height: 55 }, type: 'png' })] }),
               ] : [
                 new Paragraph({ spacing: { after: 0 }, children: [t('___________________', { size: S })] }),
               ]),
@@ -415,7 +415,9 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           spacing: { after: 80, line: 300 },
           children: [
             t('anului '),
-            t(`${year}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
+            t(carryoverDays && carryoverDays > 0 && carryoverFromYear
+              ? `${carryoverFromYear}/${year}`
+              : `${year}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
             t(', începând cu data de '),
             t(periodText, { bold: true, underline: { type: UnderlineType.SINGLE } }),
             t('.'),
@@ -472,7 +474,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
             ...(signatureData ? [
               t(`\t${requestDate}`),
               tab(),
-              new ImageRun({ data: signatureData, transformation: { width: 120, height: 45 }, type: 'png' }),
+              new ImageRun({ data: signatureData, transformation: { width: 160, height: 60 }, type: 'png' }),
             ] : [
               t(`\t${requestDate || '___________________'}`),
               tab(),
