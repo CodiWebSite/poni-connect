@@ -79,7 +79,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
     if (userId) {
       const { data } = await supabase
         .from('leave_requests')
-        .select('id, status, start_date, end_date, working_days, created_at, request_number')
+        .select('id, status, start_date, end_date, working_days, year, created_at, request_number')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       if (data) {
@@ -94,6 +94,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
             leaveType: 'co',
             source: 'leave_requests',
             request_number: lr.request_number,
+            year: (lr as any).year,
           },
           created_at: lr.created_at,
         }));
@@ -104,7 +105,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
     if (epdId) {
       const { data } = await supabase
         .from('leave_requests')
-        .select('id, status, start_date, end_date, working_days, created_at, request_number')
+        .select('id, status, start_date, end_date, working_days, year, created_at, request_number')
         .eq('epd_id', epdId)
         .order('created_at', { ascending: false });
       if (data) {
@@ -119,6 +120,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
             leaveType: 'co',
             source: 'leave_requests',
             request_number: lr.request_number,
+            year: (lr as any).year,
           },
           created_at: lr.created_at,
         }));
@@ -262,9 +264,12 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
                         </p>
                         <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
                         {details.manualEntry && <Badge variant="outline" className="text-[10px]">HR</Badge>}
+                        {details.source === 'leave_requests' && <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800">Online</Badge>}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                         {details.numberOfDays && <span className="font-medium">{details.numberOfDays} zile</span>}
+                        {details.year && <span>An: {details.year}</span>}
+                        {details.request_number && <span className="font-mono">{details.request_number}</span>}
                         <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
                       </div>
                       {details.notes && <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>}
