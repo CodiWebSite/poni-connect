@@ -24,6 +24,7 @@ interface LeaveDocxParams {
   department: string;
   workingDays: number;
   year: number;
+  leaveSourceYear?: number;
   startDate: string;
   endDate?: string;
   replacementName: string;
@@ -103,13 +104,16 @@ const empty = (after = 0) => new Paragraph({ spacing: { after }, children: [] })
 
 export async function generateLeaveDocx(params: LeaveDocxParams) {
   const {
-    employeeName, employeePosition, employeeGrade, department, workingDays, year,
+    employeeName, employeePosition, employeeGrade, department, workingDays, year, leaveSourceYear,
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
     totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear, srusOfficerName, srusSignature,
     approvalDate, deptHeadSignature, deptHeadName,
     directorName, directorApprovalDate,
   } = params;
+
+  // Determine which year to show: explicit leaveSourceYear, or derive from carryover info
+  const displayYear = leaveSourceYear || (carryoverDays && carryoverDays > 0 && carryoverFromYear ? carryoverFromYear : year);
 
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = endDate ? formatDate(endDate) : '';
@@ -415,9 +419,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           spacing: { after: 80, line: 300 },
           children: [
             t('anului '),
-            t(carryoverDays && carryoverDays > 0 && carryoverFromYear
-              ? `${carryoverFromYear}/${year}`
-              : `${year}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
+            t(`${displayYear}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
             t(', începând cu data de '),
             t(periodText, { bold: true, underline: { type: UnderlineType.SINGLE } }),
             t('.'),
