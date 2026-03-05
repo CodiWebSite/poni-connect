@@ -1543,6 +1543,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_leave_approver_for_request: {
+        Args: { _request_id: string; _user_id: string }
+        Returns: boolean
+      }
       log_audit_event: {
         Args: {
           _action: string
