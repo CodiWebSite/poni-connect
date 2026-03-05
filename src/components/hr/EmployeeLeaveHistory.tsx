@@ -259,7 +259,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
                         <Badge className={`text-[10px] font-bold ${typeInfo.className}`}>{typeInfo.label}</Badge>
                         <p className="font-medium text-sm">
                           {startDate && endDate
-                            ? `${format(startDate, 'dd MMM', { locale: ro })} — ${format(endDate, 'dd MMM yyyy', { locale: ro })}`
+                            ? `${format(startDate, 'dd.MM.yyyy', { locale: ro })} — ${format(endDate, 'dd.MM.yyyy', { locale: ro })}`
                             : 'Perioadă nespecificată'}
                         </p>
                         <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
