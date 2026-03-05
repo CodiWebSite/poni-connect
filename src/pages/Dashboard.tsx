@@ -10,10 +10,12 @@ import AdoptionTrendChart from '@/components/dashboard/AdoptionTrendChart';
 import LeaveByDepartment from '@/components/dashboard/LeaveByDepartment';
 import HRAlerts from '@/components/dashboard/HRAlerts';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
+import OnlineUsersWidget from '@/components/dashboard/OnlineUsersWidget';
 import { StatCardSkeleton, QuickActionsSkeleton, ChartSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { usePresence } from '@/hooks/usePresence';
 import { Users, UserCircle, Calendar, FolderDown, Info } from 'lucide-react';
 import ContextualHelp from '@/components/shared/ContextualHelp';
 import SpringDecoration from '@/components/dashboard/SpringDecoration';
@@ -27,8 +29,9 @@ const quickActions = [
 ];
 
 const Dashboard = () => {
-  const { role, loading: roleLoading } = useUserRole();
+  const { role, isSuperAdmin, loading: roleLoading } = useUserRole();
   const { settings } = useAppSettings();
+  usePresence();
   const [stats, setStats] = useState({ employees: 0 });
 
   useEffect(() => {
@@ -86,7 +89,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className={`grid grid-cols-1 ${isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 mb-6`}>
         <StatCard
           title="Angajați"
           value={stats.employees}
@@ -94,6 +97,7 @@ const Dashboard = () => {
           iconClassName="bg-primary"
         />
         <ActivationChart />
+        {isSuperAdmin && <OnlineUsersWidget />}
       </div>
 
       {/* HR Analytics */}
