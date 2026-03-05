@@ -23,7 +23,7 @@ import { saveAs } from 'file-saver';
 import {
   Shield, Database, Activity, FileDown, Loader2, Plus, CheckCircle2,
   AlertTriangle, AlertCircle, Info, Clock, Trash2, RefreshCw, Settings2, Download,
-  Wifi, WifiOff, Server, HardDrive, Lock, Zap, Heart, TrendingUp
+  Wifi, WifiOff, Server, HardDrive, Lock, Zap, Heart, TrendingUp, FolderArchive
 } from 'lucide-react';
 
 // ==================== TYPES ====================
@@ -277,6 +277,7 @@ function BackupTab({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [backingUp, setBackingUp] = useState(false);
+  const [backingUpStorage, setBackingUpStorage] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ type: 'backup', status: 'success', size_info: '', notes: '' });
 
@@ -310,6 +311,54 @@ function BackupTab({ userId }: { userId: string }) {
       toast.error('Eroare la crearea backup-ului: ' + (err?.message || 'Necunoscută'));
     }
     setBackingUp(false);
+  };
+
+  const handleStorageBackup = async () => {
+    setBackingUpStorage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('backup-storage');
+      if (error) throw error;
+
+      const buckets = data?.buckets || [];
+      const totalFiles = data?.metadata?.total_files || 0;
+
+      if (totalFiles === 0) {
+        toast.info('Nu există fișiere în storage pentru export.');
+        setBackingUpStorage(false);
+        return;
+      }
+
+      // Download each file
+      let downloaded = 0;
+      for (const bucket of buckets) {
+        for (const file of bucket.files) {
+          try {
+            const response = await fetch(file.url);
+            const blob = await response.blob();
+            const safeName = file.name.replace(/\//g, '_');
+            saveAs(blob, `${bucket.bucket}_${safeName}`);
+            downloaded++;
+          } catch (err) {
+            console.error(`Failed to download ${bucket.bucket}/${file.name}:`, err);
+          }
+        }
+      }
+
+      toast.success(`Export storage finalizat: ${downloaded}/${totalFiles} fișiere descărcate din ${buckets.length} bucket-uri.`);
+
+      // Log in backup_logs
+      await supabase.from('backup_logs').insert({
+        type: 'backup',
+        status: 'success',
+        size_info: `${totalFiles} fișiere storage`,
+        notes: `Backup Storage — ${totalFiles} fișiere din ${buckets.length} bucket-uri`,
+        performed_by: userId,
+      } as any);
+      fetchLogs();
+    } catch (err: any) {
+      toast.error('Eroare la exportul storage: ' + (err?.message || 'Necunoscută'));
+    }
+    setBackingUpStorage(false);
   };
 
   const handleAdd = async () => {
@@ -360,7 +409,10 @@ function BackupTab({ userId }: { userId: string }) {
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button onClick={handleBackup} disabled={backingUp} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              {backingUp ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Se creează...</> : <><Download className="w-4 h-4 mr-2" />Backup Complet</>}
+              {backingUp ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Se creează...</> : <><Download className="w-4 h-4 mr-2" />Backup Date</>}
+            </Button>
+            <Button onClick={handleStorageBackup} disabled={backingUpStorage} variant="outline">
+              {backingUpStorage ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Export storage...</> : <><FolderArchive className="w-4 h-4 mr-2" />Export Fișiere</>}
             </Button>
             <Button variant="outline" size="sm" onClick={fetchLogs}><RefreshCw className="w-4 h-4 mr-1" />Reîncarcă</Button>
             <Button variant="outline" size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-1" />Manual</Button>
@@ -375,6 +427,17 @@ function BackupTab({ userId }: { userId: string }) {
               <div>
                 <p className="font-medium text-sm">Se exportă toate datele platformei...</p>
                 <p className="text-xs text-muted-foreground">Aceasta poate dura câteva secunde, în funcție de volumul de date.</p>
+              </div>
+            </div>
+          </div>
+        )}
+        {backingUpStorage && (
+          <div className="mb-4 p-4 rounded-lg border border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <div>
+                <p className="font-medium text-sm">Se exportă fișierele din storage...</p>
+                <p className="text-xs text-muted-foreground">Avatare, documente, atașamente — fiecare fișier va fi descărcat individual.</p>
               </div>
             </div>
           </div>
