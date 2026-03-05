@@ -19,6 +19,7 @@ import {
   FileText,
   FolderDown,
   BookOpen,
+  HelpCircle,
   Banknote,
   Megaphone,
   ServerCog,
@@ -61,6 +62,7 @@ const MobileNav = () => {
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request' },
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
+    { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 
   const managementItems = [
