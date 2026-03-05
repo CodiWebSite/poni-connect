@@ -11,6 +11,7 @@ import { ProgressRing } from '@/components/ui/progress-ring';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { useToast } from '@/hooks/use-toast';
 import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestForm';
+import { AvatarCropDialog } from '@/components/profile/AvatarCropDialog';
 import { ProfileSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { 
   User, FileText, Download, Calendar, Briefcase, Building, Phone,
@@ -134,6 +135,8 @@ const MyProfile = () => {
   const [approverSource, setApproverSource] = useState<'individual' | 'department' | null>(null);
   const [delegateName, setDelegateName] = useState<string | null>(null);
   const [delegatePeriod, setDelegatePeriod] = useState<string | null>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string>('');
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
@@ -312,17 +315,32 @@ const MyProfile = () => {
       toast({ title: 'Eroare', description: 'Selectați un fișier imagine.', variant: 'destructive' });
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: 'Eroare', description: 'Imaginea trebuie să fie sub 2MB.', variant: 'destructive' });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Eroare', description: 'Imaginea trebuie să fie sub 5MB.', variant: 'destructive' });
       return;
     }
 
+    // Read the file and open crop dialog
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string);
+      setCropDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+    // Reset input so same file can be re-selected
+    e.target.value = '';
+  };
+
+  const handleCroppedAvatar = async (croppedBlob: Blob) => {
+    if (!user) return;
     setUploadingAvatar(true);
     try {
-      const ext = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${ext}`;
+      const filePath = `${user.id}/avatar.jpg`;
 
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, croppedBlob, { 
+        upsert: true, 
+        contentType: 'image/jpeg' 
+      });
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
@@ -799,6 +817,13 @@ const MyProfile = () => {
           position: position || undefined,
           phone: profile?.phone || undefined,
         }}
+      />
+
+      <AvatarCropDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        imageSrc={cropImageSrc}
+        onCropComplete={handleCroppedAvatar}
       />
     </MainLayout>
   );

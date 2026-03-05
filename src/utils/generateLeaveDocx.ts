@@ -130,9 +130,13 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
 
   const totalCurrentYear = totalLeaveDays ?? 0;
   const usedDays = usedLeaveDays ?? 0;
-  const remainingCurrentYear = totalCurrentYear - usedDays;
   const carryover = carryoverDays ?? 0;
-  const totalSold = totalCurrentYear + carryover;
+
+  // Show pre-leave balance: add back the current request's working days
+  // because the deduction may have already been applied to the balance
+  const usedBeforeThisLeave = Math.max(0, usedDays - workingDays);
+  const remainingCurrentYear = totalCurrentYear - usedBeforeThisLeave;
+  const totalSold = remainingCurrentYear + carryover;
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
