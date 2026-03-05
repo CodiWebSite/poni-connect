@@ -350,6 +350,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         // ══════ BODY ══════
         new Paragraph({
           spacing: { after: 0, line: 300 },
+          indent: { left: convertMillimetersToTwip(15) },
           children: [
             t('\tSubsemnatul/a, '),
             ...underlinedField(employeeName, '_____________________________'),
@@ -370,6 +371,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         }),
         new Paragraph({
           spacing: { after: 0, line: 300 },
+          indent: { left: convertMillimetersToTwip(15) },
           children: [
             t('cadrul '),
             ...underlinedField(department, '_______________________________________________________________________'),
@@ -384,6 +386,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
 
         new Paragraph({
           spacing: { after: 0, line: 300 },
+          indent: { left: convertMillimetersToTwip(15) },
           children: [
             t('vă rog să-mi aprobați efectuarea unui număr de '),
             t(`${workingDays}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
@@ -393,6 +396,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
 
         new Paragraph({
           spacing: { after: 80, line: 300 },
+          indent: { left: convertMillimetersToTwip(15) },
           children: [
             t('anului '),
             t(`${displayYear}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
@@ -405,6 +409,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         // ══════ REPLACEMENT ══════
         new Paragraph({
           spacing: { after: 0, line: 300 },
+          indent: { left: convertMillimetersToTwip(15) },
           children: [
             t('\tÎn această perioadă voi fi înlocuit/ă de dl./d-na '),
             ...underlinedField(replacementName, '_____________________________'),
@@ -418,6 +423,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         }),
         new Paragraph({
           spacing: { after: 0, line: 300 },
+          indent: { left: convertMillimetersToTwip(15) },
           children: [
             ...underlinedField(replacementPosition, '_____________________________'),
             t('.'),
@@ -425,12 +431,14 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         }),
         new Paragraph({
           spacing: { after: 80, line: 240 },
+          indent: { left: convertMillimetersToTwip(15) },
           children: [t('(funcția)', { size: 14, italics: true })],
         }),
 
         // ══════ CLOSING ══════
         new Paragraph({
           spacing: { before: 40, after: 0 },
+          indent: { left: convertMillimetersToTwip(15) },
           tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
           children: [
             t('\tCu mulțumiri,'),
@@ -447,6 +455,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         // Data          Semnătura
         new Paragraph({
           spacing: { after: 0 },
+          indent: { left: convertMillimetersToTwip(15) },
           tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
           children: [
             ...(signatureData ? [
@@ -462,6 +471,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         }),
         new Paragraph({
           spacing: { after: 0 },
+          indent: { left: convertMillimetersToTwip(15) },
           tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
           children: [
             t('\t(data)', { size: 14, italics: true }),
