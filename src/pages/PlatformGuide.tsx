@@ -609,6 +609,68 @@ const PlatformGuide = () => {
                 <ChatMockup />
               </GuideSection>
 
+              {/* ─── PROGRAMĂRI SĂLI ─── */}
+              <GuideSection icon={DoorOpen} title="Programări Săli – Rezervare spații comune">
+                <p className="mb-2">Modulul de programări permite rezervarea sălilor de ședință și a spațiilor comune:</p>
+                <div className="space-y-1.5">
+                  <p>• <strong>Vizualizare calendar</strong> – vedeți toate rezervările existente într-un calendar săptămânal sau lunar.</p>
+                  <p>• <strong>Rezervare nouă</strong> – selectați sala, data, ora de început și de sfârșit, titlul și o descriere opțională.</p>
+                  <p>• <strong>Verificare disponibilitate</strong> – sistemul previne suprapunerile de rezervări.</p>
+                  <p>• <strong>Anulare</strong> – puteți anula propriile rezervări.</p>
+                  <p>• Administratorii pot gestiona toate rezervările.</p>
+                </div>
+                <InfoBox title="💡 Sfat">
+                  <p>Planificați din timp și rezervați sălile cu cel puțin o zi înainte pentru a evita conflictele de programare.</p>
+                </InfoBox>
+              </GuideSection>
+
+              {/* ─── ACTIVITĂȚI RECREATIVE ─── */}
+              <GuideSection icon={PartyPopper} title="Activități Recreative – Evenimente sociale">
+                <p className="mb-2">Secțiunea pentru activități sociale, sportive și culturale organizate de institut:</p>
+                <div className="space-y-1.5">
+                  <p>• <strong>Lista activităților</strong> – vedeți toate evenimentele planificate cu data, locația și descrierea.</p>
+                  <p>• <strong>Categorii</strong> – activitățile sunt organizate pe categorii (sport, cultură, social etc.).</p>
+                  <p>• <strong>Participare</strong> – puteți confirma sau refuza participarea la fiecare activitate.</p>
+                  <p>• <strong>Limită participanți</strong> – unele activități au un număr maxim de locuri.</p>
+                  <p>• Organizatorii pot crea, edita și gestiona activitățile.</p>
+                </div>
+              </GuideSection>
+
+              {/* ─── INSTALARE APP ─── */}
+              <GuideSection icon={Smartphone} title="Instalează Aplicația – ICMPP ca app pe telefon/desktop">
+                <p className="mb-2">Platforma poate fi instalată ca aplicație nativă pe orice dispozitiv:</p>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">📱 Android (Chrome)</p>
+                <StepList steps={[
+                  'Deschideți platforma în Chrome pe telefon.',
+                  'Apăsați pe meniul ⋮ (cele 3 puncte) din colțul din dreapta-sus.',
+                  'Selectați „Adaugă pe ecranul de pornire" sau „Instalează aplicația".',
+                  'Confirmați cu „Instalează". Iconița apare pe ecranul principal!',
+                ]} />
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🍎 iPhone / iPad (Safari)</p>
+                <StepList steps={[
+                  'Deschideți platforma în Safari (nu funcționează din Chrome pe iOS).',
+                  'Apăsați pe butonul Share (săgeata în sus din bara de jos).',
+                  'Derulați și apăsați „Adaugă pe ecranul principal".',
+                  'Confirmați cu „Adaugă". Aplicația apare pe ecranul de pornire!',
+                ]} />
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🖥️ Desktop (Chrome / Edge)</p>
+                <StepList steps={[
+                  'Căutați iconița de instalare în bara de adrese (dreapta).',
+                  'Apăsați pe ea și confirmați cu „Instalează".',
+                  'Aplicația se deschide într-o fereastră separată, fără bara browserului.',
+                ]} />
+
+                <InfoBox title="💡 De ce să instalezi?">
+                  <p>Aplicația se deschide mai repede, fără bara browserului, arată și funcționează ca o aplicație reală și se actualizează automat. Accesați <strong>pagina „Instalează App"</strong> din meniu pentru instrucțiuni detaliate și butonul de instalare directă.</p>
+                </InfoBox>
+              </GuideSection>
+
               {/* ─── NOTIFICĂRI ─── */}
               <GuideSection icon={Bell} title="Notificări – Cum funcționează">
                 <div className="space-y-1.5">
@@ -617,6 +679,7 @@ const PlatformGuide = () => {
                   <p>  – Mesaje de la administrator.</p>
                   <p>  – Alerte de expirare carte de identitate.</p>
                   <p>  – Anunțuri noi și cereri de aprobare.</p>
+                  <p>  – Mesaje noi în chat (cu sunet de notificare).</p>
                   <p>• Notificările apar ca un <strong>badge roșu pe clopoțel</strong> (bara de sus).</p>
                   <p>• Apăsați pe clopoțel pentru a vedea lista. Apăsați pe o notificare pentru detalii.</p>
                   <p>• Puteți marca notificările ca citite individual sau pe toate deodată.</p>
