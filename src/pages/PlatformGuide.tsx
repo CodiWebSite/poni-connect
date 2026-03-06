@@ -12,6 +12,7 @@ import {
   Printer, UserCircle, FileText, Calendar, FolderDown, Settings, CheckSquare,
   ClipboardList, Shield, Users, BookOpen, Bell, Home, Search, Moon,
   Eye, Download, History, UserCheck, AlertTriangle, HelpCircle, MessageCircle,
+  DoorOpen, PartyPopper, ExternalLink, Mail, Smartphone, CloudSun,
 } from 'lucide-react';
 import {
   SidebarMockup, HeaderMockup, DashboardMockup, ProfileMockup,
