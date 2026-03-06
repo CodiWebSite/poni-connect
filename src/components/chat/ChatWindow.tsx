@@ -60,7 +60,11 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [convName, setConvName] = useState('');
+  const [convType, setConvType] = useState<'direct' | 'group'>('direct');
+  const [convAdminId, setConvAdminId] = useState<string | null>(null);
+  const [memberCount, setMemberCount] = useState(0);
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [otherLastRead, setOtherLastRead] = useState<string | null>(null);
