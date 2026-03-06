@@ -585,24 +585,29 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border bg-card flex items-center gap-3">
+      <div className="px-3 py-2.5 border-b border-border bg-card flex items-center gap-2">
+        {onBack && (
+          <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0 text-muted-foreground" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <div className="flex-1 min-w-0">
           <button
             onClick={() => otherUserId && setShowMediaPanel(true)}
-            className={cn("font-semibold text-foreground text-left", otherUserId && "hover:underline cursor-pointer")}
+            className={cn("font-semibold text-foreground text-left text-sm truncate block", otherUserId && "hover:underline cursor-pointer")}
           >
             {convName}
           </button>
           {otherUserId && (
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className={cn("w-2 h-2 rounded-full", isOnline ? "bg-green-500" : "bg-muted-foreground/30")} />
-              <span className={cn("text-xs", isOnline ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}>
+            <div className="flex items-center gap-1.5">
+              <span className={cn("w-1.5 h-1.5 rounded-full", isOnline ? "bg-green-500" : "bg-muted-foreground/30")} />
+              <span className={cn("text-[11px]", isOnline ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}>
                 {statusText}
               </span>
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setShowSearch(s => !s); setSearchQuery(''); }}>
             <Search className="h-4 w-4" />
           </Button>
