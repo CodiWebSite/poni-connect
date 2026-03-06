@@ -94,7 +94,7 @@ const SharedMediaPanel = ({ conversationId, open, onOpenChange, convName }: Prop
 
   const images = items.filter(i => i.attachment_type === 'image');
   const videos = items.filter(i => i.attachment_type === 'video');
-  const documents = items.filter(i => i.attachment_type === 'document');
+  const documents = items.filter(i => i.attachment_type !== 'image' && i.attachment_type !== 'video');
 
   const renderImageGrid = () => {
     if (!images.length) return <EmptyState text="Nicio imagine partajată" />;
