@@ -905,6 +905,17 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
           convName={convName}
         />
       )}
+      {/* Group info panel */}
+      {conversationId && convType === 'group' && (
+        <GroupInfoPanel
+          open={showGroupInfo}
+          onOpenChange={setShowGroupInfo}
+          conversationId={conversationId}
+          groupName={convName}
+          adminId={convAdminId}
+          onNameUpdated={(name) => setConvName(name)}
+        />
+      )}
     </div>
   );
 };
