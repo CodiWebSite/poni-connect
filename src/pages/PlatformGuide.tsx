@@ -127,6 +127,10 @@ const PlatformGuide = () => {
                     <div><strong>Cerere Concediu</strong> – depunerea și urmărirea cererilor de concediu de odihnă.</div>
                   </div>
                   <div className="flex items-start gap-2">
+                    <MessageCircle className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Mesagerie</strong> – chat intern între colegi, mesaje directe și grupuri, cu suport pentru fișiere și reacții.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <Users className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <div><strong>Echipa Mea</strong> – vizualizarea membrilor echipei (disponibil pentru șefii de departament, HR și administratori).</div>
                   </div>
