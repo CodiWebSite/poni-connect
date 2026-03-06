@@ -53,6 +53,59 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_organizers: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      activity_responses: {
+        Row: {
+          activity_id: string
+          created_at: string
+          id: string
+          response: string
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          id?: string
+          response?: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          id?: string
+          response?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_responses_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "recreational_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           attachments: Json | null
@@ -1353,6 +1406,51 @@ export type Database = {
         }
         Relationships: []
       }
+      recreational_activities: {
+        Row: {
+          category: Database["public"]["Enums"]["activity_category"]
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          image_url: string | null
+          location: string | null
+          max_participants: number | null
+          scheduled_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["activity_category"]
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          max_participants?: number | null
+          scheduled_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["activity_category"]
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          max_participants?: number | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       room_bookings: {
         Row: {
           booked_by: string
@@ -1600,6 +1698,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_activity_organizer: { Args: { _user_id: string }; Returns: boolean }
       is_leave_approver_for_request: {
         Args: { _request_id: string; _user_id: string }
         Returns: boolean
@@ -1627,6 +1726,14 @@ export type Database = {
       }
     }
     Enums: {
+      activity_category:
+        | "film"
+        | "muzica"
+        | "jocuri"
+        | "quiz"
+        | "creativ"
+        | "socializare"
+        | "altele"
       app_role:
         | "admin"
         | "user"
@@ -1803,6 +1910,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_category: [
+        "film",
+        "muzica",
+        "jocuri",
+        "quiz",
+        "creativ",
+        "socializare",
+        "altele",
+      ],
       app_role: [
         "admin",
         "user",

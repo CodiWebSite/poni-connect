@@ -24,6 +24,7 @@ import {
   Megaphone,
   ServerCog,
   DoorOpen,
+  PartyPopper,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -64,6 +65,7 @@ const MobileNav = () => {
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request' },
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
+    { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 
