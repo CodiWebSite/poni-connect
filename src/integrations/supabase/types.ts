@@ -1799,6 +1799,10 @@ export type Database = {
         Returns: boolean
       }
       is_activity_organizer: { Args: { _user_id: string }; Returns: boolean }
+      is_chat_conversation_creator: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_chat_participant: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
