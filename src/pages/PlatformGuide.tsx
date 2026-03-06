@@ -668,9 +668,9 @@ const PlatformGuide = () => {
 
                 <Separator className="my-3" />
                 <p className="font-medium text-foreground text-xs uppercase tracking-wider">💻 MacBook / macOS</p>
-                <p className="text-xs text-muted-foreground italic mb-1">Varianta 1 — Chrome / Edge (recomandat):</p>
+                <p className="text-xs text-muted-foreground italic mb-1">Varianta 1 — Chrome (recomandat):</p>
                 <StepList steps={[
-                  'Deschideți platforma în Chrome sau Edge.',
+                  'Deschideți platforma în Google Chrome.',
                   'Căutați iconița de instalare în bara de adrese (dreapta) și apăsați pe ea.',
                   'Confirmați cu „Instalează". Aplicația apare în Launchpad și Dock.',
                 ]} />
