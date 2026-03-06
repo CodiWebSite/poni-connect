@@ -1,4 +1,4 @@
-import { Home, UserCircle, Calendar, FileText, FolderDown, Settings, HelpCircle, Bell, Search, Moon, Menu, ChevronRight, CheckSquare, Download, Edit, Eye, Users } from 'lucide-react';
+import { Home, UserCircle, Calendar, FileText, FolderDown, Settings, HelpCircle, Bell, Search, Moon, Menu, ChevronRight, CheckSquare, Download, Edit, Eye, Users, MessageCircle, Paperclip, Send, Smile } from 'lucide-react';
 
 // Reusable mini-mockup wrapper
 const MockupFrame = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -331,6 +331,90 @@ export const ApprovalMockup = () => (
       </div>
     </div>
     <p className="text-[10px] text-muted-foreground mt-2 italic">Cererea în așteptare cu butoanele Aprobă/Respinge/Detalii și semnătura obligatorie.</p>
+  </MockupFrame>
+);
+
+// ─── CHAT MOCKUP ───
+export const ChatMockup = () => (
+  <MockupFrame title="Mesagerie – Chat intern">
+    <div className="flex gap-2 h-48">
+      {/* Conversation list */}
+      <div className="w-32 shrink-0 border border-border/40 rounded-lg overflow-hidden flex flex-col">
+        <div className="p-1.5 border-b border-border/40 flex items-center justify-between">
+          <span className="text-[9px] font-semibold">Conversații</span>
+          <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-[10px] text-primary">+</div>
+        </div>
+        <div className="flex-1 overflow-hidden space-y-0.5 p-1">
+          {[
+            { name: 'Ionescu M.', msg: 'Mulțumesc!', online: true, unread: 0 },
+            { name: 'Popescu A.', msg: 'Am trimis fișierul', online: false, unread: 2 },
+            { name: 'Lab. Polimeri', msg: 'Maria: Salut tuturor', online: false, unread: 0 },
+          ].map(c => (
+            <div key={c.name} className={`p-1 rounded text-[8px] ${c.name === 'Ionescu M.' ? 'bg-primary/10' : 'hover:bg-muted/30'}`}>
+              <div className="flex items-center gap-1">
+                <div className="relative">
+                  <div className="w-4 h-4 rounded-full bg-muted flex items-center justify-center">
+                    <UserCircle className="w-3 h-3 text-muted-foreground" />
+                  </div>
+                  {c.online && <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-card" />}
+                </div>
+                <span className="font-medium truncate flex-1">{c.name}</span>
+                {c.unread > 0 && <span className="w-3 h-3 rounded-full bg-primary text-white text-[7px] flex items-center justify-center">{c.unread}</span>}
+              </div>
+              <div className="text-muted-foreground truncate ml-5">{c.msg}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Chat window */}
+      <div className="flex-1 border border-border/40 rounded-lg overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="p-1.5 border-b border-border/40 flex items-center gap-1.5">
+          <div className="relative">
+            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+              <UserCircle className="w-3 h-3 text-primary/60" />
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-card" />
+          </div>
+          <div>
+            <div className="text-[9px] font-semibold">Ionescu Maria</div>
+            <div className="text-[7px] text-emerald-600">Online</div>
+          </div>
+        </div>
+        {/* Messages */}
+        <div className="flex-1 p-1.5 space-y-1 overflow-hidden">
+          <div className="flex justify-start">
+            <div className="bg-muted/50 rounded-lg px-2 py-1 text-[8px] max-w-[80%]">
+              Salut! Ai primit raportul?
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <div className="bg-primary text-primary-foreground rounded-lg px-2 py-1 text-[8px] max-w-[80%]">
+              Da, l-am descărcat. Mulțumesc! 👍
+            </div>
+          </div>
+          <div className="flex justify-start">
+            <div className="bg-muted/50 rounded-lg px-2 py-1 text-[8px] max-w-[80%]">
+              <div className="flex items-center gap-1 text-[7px] text-primary">
+                <FileText className="w-2.5 h-2.5" /> Raport_analiza.pdf
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-start gap-1 ml-1">
+            <span className="text-[7px] bg-muted/30 rounded px-1">👍 1</span>
+            <span className="text-[7px] bg-muted/30 rounded px-1">❤️ 1</span>
+          </div>
+        </div>
+        {/* Input */}
+        <div className="p-1 border-t border-border/40 flex items-center gap-1">
+          <Paperclip className="w-3 h-3 text-muted-foreground shrink-0" />
+          <div className="flex-1 bg-muted/30 rounded px-1.5 py-0.5 text-[8px] text-muted-foreground">Scrie un mesaj...</div>
+          <Smile className="w-3 h-3 text-muted-foreground shrink-0" />
+          <Send className="w-3 h-3 text-primary shrink-0" />
+        </div>
+      </div>
+    </div>
+    <p className="text-[10px] text-muted-foreground mt-2 italic">Stânga: lista conversațiilor cu punct verde = online și badge necitite. Dreapta: fereastra de chat cu mesaje, fișiere și reacții.</p>
   </MockupFrame>
 );
 
