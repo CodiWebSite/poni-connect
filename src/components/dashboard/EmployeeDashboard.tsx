@@ -33,7 +33,7 @@ const getGreeting = () => {
 const EmployeeDashboard = () => {
   const { user } = useAuth();
   const [employeeRecord, setEmployeeRecord] = useState<EmployeeRecord | null>(null);
-  const [fullName, setFullName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,12 +43,17 @@ const EmployeeDashboard = () => {
   const fetchData = async () => {
     if (!user) return;
 
-    const [{ data: profile }, { data: record }] = await Promise.all([
+    const [{ data: epd }, { data: profile }, { data: record }] = await Promise.all([
+      supabase.from('employee_personal_data').select('last_name, first_name').eq('email', user.email || '').eq('is_archived', false).maybeSingle(),
       supabase.from('profiles').select('full_name').eq('user_id', user.id).single(),
       supabase.from('employee_records').select('hire_date, contract_type, total_leave_days, used_leave_days, remaining_leave_days').eq('user_id', user.id).single(),
     ]);
 
-    if (profile) setFullName(profile.full_name || '');
+    if (epd?.last_name && epd?.first_name) {
+      setDisplayName(`${epd.last_name.toUpperCase()} ${epd.first_name.toUpperCase()}`);
+    } else if (profile?.full_name) {
+      setDisplayName(profile.full_name);
+    }
     if (record) setEmployeeRecord(record);
     setLoading(false);
   };
@@ -87,7 +92,7 @@ const EmployeeDashboard = () => {
       {/* Welcome with contextual greeting */}
       <div className="animate-fade-in">
         <h2 className="text-lg sm:text-2xl font-display font-bold text-foreground">
-          {getGreeting()}, {fullName ? fullName.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ') : 'utilizator'}! 👋
+          {getGreeting()}, {displayName || 'utilizator'}! 👋
         </h2>
         <p className="text-sm sm:text-base text-muted-foreground mt-0.5 sm:mt-1">
           {today} — Iată un rezumat al situației tale.
