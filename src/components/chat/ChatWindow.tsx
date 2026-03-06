@@ -234,11 +234,24 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
 
     const { data: conv } = await supabase
       .from('chat_conversations')
-      .select('type, name, department')
+      .select('type, name, department, admin_id')
       .eq('id', conversationId)
       .maybeSingle();
 
-    if (conv?.type === 'direct') {
+    const cType = (conv?.type || 'direct') as 'direct' | 'group';
+    setConvType(cType);
+    setConvAdminId((conv as any)?.admin_id || null);
+
+    // Fetch member count for groups
+    if (cType === 'group') {
+      const { count } = await supabase
+        .from('chat_participants')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conversationId);
+      setMemberCount(count || 0);
+    }
+
+    if (cType === 'direct') {
       const { data: parts } = await supabase
         .from('chat_participants')
         .select('user_id')
