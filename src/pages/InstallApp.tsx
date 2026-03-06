@@ -215,11 +215,11 @@ const InstallApp = () => {
                       <Laptop className="w-3 h-3 mr-1" /> MacBook / macOS
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground italic ml-1 mb-2">Varianta 1 — Chrome / Edge (recomandat)</p>
+                  <p className="text-xs text-muted-foreground italic ml-1 mb-2">Varianta 1 — Chrome (recomandat)</p>
                   <ol className="space-y-2 text-sm text-muted-foreground ml-1">
                     <li className="flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
-                      <span>Deschide platforma în <strong>Chrome</strong> sau <strong>Edge</strong>.</span>
+                      <span>Deschide platforma în <strong>Google Chrome</strong>.</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
