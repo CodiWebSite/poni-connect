@@ -21,6 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { formatNumePrenume } from '@/utils/formatName';
 
 interface Profile {
   full_name: string;
@@ -242,7 +243,7 @@ const MyProfile = () => {
         .select('full_name')
         .eq('user_id', foundApproverId)
         .maybeSingle();
-      setApproverName(ap?.full_name || foundApproverEmail || 'Necunoscut');
+      setApproverName(formatNumePrenume({ fullName: ap?.full_name }) || foundApproverEmail || 'Necunoscut');
       setApproverSource(foundApproverSource);
 
       // Check if approver has an active delegate right now
@@ -263,7 +264,7 @@ const MyProfile = () => {
           .select('full_name')
           .eq('user_id', del.delegate_user_id)
           .maybeSingle();
-        setDelegateName(delProfile?.full_name || null);
+        setDelegateName(delProfile?.full_name ? formatNumePrenume({ fullName: delProfile.full_name }) : null);
         setDelegatePeriod(`${format(new Date(del.start_date), 'dd.MM.yyyy')} – ${format(new Date(del.end_date), 'dd.MM.yyyy')}`);
       } else {
         setDelegateName(null);
@@ -419,7 +420,7 @@ const MyProfile = () => {
               {/* Info */}
               <div className="text-center sm:text-left space-y-1.5 flex-1 min-w-0">
                 <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-foreground">
-                  {profile?.full_name || 'N/A'}
+                  {formatNumePrenume({ firstName: personalData?.first_name, lastName: personalData?.last_name, fullName: profile?.full_name })}
                 </h1>
                 {position && (
                   <p className="text-sm sm:text-base text-muted-foreground font-medium">
@@ -812,7 +813,7 @@ const MyProfile = () => {
         open={showCorrectionForm} 
         onOpenChange={setShowCorrectionForm}
         currentData={{
-          full_name: profile?.full_name,
+          full_name: formatNumePrenume({ firstName: personalData?.first_name, lastName: personalData?.last_name, fullName: profile?.full_name }),
           department: department || undefined,
           position: position || undefined,
           phone: profile?.phone || undefined,
