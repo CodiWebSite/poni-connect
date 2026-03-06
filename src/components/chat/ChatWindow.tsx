@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Send, MessageCircle, Paperclip, Smile, FileText, FileSpreadsheet, FileType, Presentation, Film, Download, X, Check, CheckCheck, Trash2, Search, FolderOpen, ChevronUp, ChevronDown, XCircle, ArrowLeft, MoreVertical } from 'lucide-react';
+import { Send, MessageCircle, Paperclip, Smile, FileText, FileSpreadsheet, FileType, Presentation, Film, Download, X, Check, CheckCheck, Trash2, Search, FolderOpen, ChevronUp, ChevronDown, XCircle, ArrowLeft, MoreVertical, Users } from 'lucide-react';
 import SharedMediaPanel from './SharedMediaPanel';
+import GroupInfoPanel from './GroupInfoPanel';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -59,7 +60,11 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [convName, setConvName] = useState('');
+  const [convType, setConvType] = useState<'direct' | 'group'>('direct');
+  const [convAdminId, setConvAdminId] = useState<string | null>(null);
+  const [memberCount, setMemberCount] = useState(0);
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [otherLastRead, setOtherLastRead] = useState<string | null>(null);
@@ -229,11 +234,24 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
 
     const { data: conv } = await supabase
       .from('chat_conversations')
-      .select('type, name, department')
+      .select('type, name, department, admin_id')
       .eq('id', conversationId)
       .maybeSingle();
 
-    if (conv?.type === 'direct') {
+    const cType = (conv?.type || 'direct') as 'direct' | 'group';
+    setConvType(cType);
+    setConvAdminId((conv as any)?.admin_id || null);
+
+    // Fetch member count for groups
+    if (cType === 'group') {
+      const { count } = await supabase
+        .from('chat_participants')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conversationId);
+      setMemberCount(count || 0);
+    }
+
+    if (cType === 'direct') {
       const { data: parts } = await supabase
         .from('chat_participants')
         .select('user_id')
@@ -283,6 +301,10 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
     setPendingFile(null);
     setPendingPreview(null);
     setReactions({});
+    setConvType('direct');
+    setConvAdminId(null);
+    setMemberCount(0);
+    setShowGroupInfo(false);
     fetchMessages();
   }, [conversationId]);
 
@@ -475,8 +497,9 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
     }
   };
 
-  // Message status
+  // Message status (only for direct chats)
   const getMessageStatus = (msg: Message, isLast: boolean) => {
+    if (convType === 'group') return null; // No individual status in groups
     if (msg.sender_id !== user?.id) return null;
     if (otherLastRead && msg.created_at <= otherLastRead) return 'seen';
     if (isOnline) return 'delivered';
@@ -633,12 +656,16 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
         )}
         <div className="flex-1 min-w-0">
           <button
-            onClick={() => otherUserId && setShowMediaPanel(true)}
-            className={cn("font-semibold text-foreground text-left text-sm truncate block", otherUserId && "hover:underline cursor-pointer")}
+            onClick={() => {
+              if (convType === 'group') setShowGroupInfo(true);
+              else if (otherUserId) setShowMediaPanel(true);
+            }}
+            className={cn("font-semibold text-foreground text-left text-sm truncate block", (otherUserId || convType === 'group') && "hover:underline cursor-pointer")}
           >
+            {convType === 'group' && <Users className="h-3.5 w-3.5 inline mr-1.5 text-primary" />}
             {convName}
           </button>
-          {otherUserId && (
+          {convType === 'direct' && otherUserId && (
             <div className="flex items-center gap-1.5">
               <span className={cn("w-1.5 h-1.5 rounded-full", isOnline ? "bg-green-500" : "bg-muted-foreground/30")} />
               <span className={cn("text-[11px]", isOnline ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}>
@@ -646,16 +673,17 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
               </span>
             </div>
           )}
+          {convType === 'group' && (
+            <p className="text-[11px] text-muted-foreground">{memberCount} membri</p>
+          )}
         </div>
         <div className="flex items-center gap-0.5">
           <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setShowSearch(s => !s); setSearchQuery(''); }}>
             <Search className="h-4 w-4" />
           </Button>
-          {otherUserId && (
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setShowMediaPanel(true)}>
-              <FolderOpen className="h-4 w-4" />
-            </Button>
-          )}
+          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => convType === 'group' ? setShowGroupInfo(true) : setShowMediaPanel(true)}>
+            {convType === 'group' ? <Users className="h-4 w-4" /> : <FolderOpen className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
@@ -876,6 +904,17 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
           open={showMediaPanel}
           onOpenChange={setShowMediaPanel}
           convName={convName}
+        />
+      )}
+      {/* Group info panel */}
+      {conversationId && convType === 'group' && (
+        <GroupInfoPanel
+          open={showGroupInfo}
+          onOpenChange={setShowGroupInfo}
+          conversationId={conversationId}
+          groupName={convName}
+          adminId={convAdminId}
+          onNameUpdated={(name) => setConvName(name)}
         />
       )}
     </div>
