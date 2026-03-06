@@ -1443,7 +1443,7 @@ const HRManagement = () => {
                                 {employee.leaveHistory.slice(0, 4).map((lv, idx) => (
                                   <span key={idx} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border">
                                     {lv.startDate && lv.endDate
-                                      ? `${format(new Date(lv.startDate), 'dd.MM')} - ${format(new Date(lv.endDate), 'dd.MM.yy')}`
+                                      ? `${format(new Date(lv.startDate), 'dd.MM.yy')} - ${format(new Date(lv.endDate), 'dd.MM.yy')}`
                                       : '—'}
                                     {lv.numberOfDays > 0 && <span className="font-medium">({lv.numberOfDays}z)</span>}
                                   </span>
