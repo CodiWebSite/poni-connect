@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, MessageCircle, Paperclip, Smile, Image as ImageIcon, FileText, Film, Download, X } from 'lucide-react';
+import { Send, MessageCircle, Paperclip, Smile, FileText, Film, Download, X, Check, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -28,9 +28,10 @@ interface Message {
 
 interface Props {
   conversationId: string | null;
+  onMessagesRead?: () => void;
 }
 
-const ChatWindow = ({ conversationId }: Props) => {
+const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -39,6 +40,7 @@ const ChatWindow = ({ conversationId }: Props) => {
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
+  const [otherLastRead, setOtherLastRead] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
@@ -68,16 +70,35 @@ const ChatWindow = ({ conversationId }: Props) => {
       .select('is_online, last_seen_at')
       .eq('user_id', uid)
       .maybeSingle();
-
     if (data) {
-      const online = data.is_online && data.last_seen_at >= fiveMinAgo;
-      setIsOnline(online);
+      setIsOnline(data.is_online && data.last_seen_at >= fiveMinAgo);
       setLastSeen(data.last_seen_at);
     } else {
       setIsOnline(false);
       setLastSeen(null);
     }
   }, []);
+
+  const fetchOtherLastRead = useCallback(async () => {
+    if (!conversationId || !user) return;
+    const { data } = await supabase
+      .from('chat_participants')
+      .select('last_read_at')
+      .eq('conversation_id', conversationId)
+      .neq('user_id', user.id)
+      .maybeSingle();
+    setOtherLastRead(data?.last_read_at || null);
+  }, [conversationId, user]);
+
+  const markAsRead = useCallback(async () => {
+    if (!conversationId || !user) return;
+    await supabase
+      .from('chat_participants')
+      .update({ last_read_at: new Date().toISOString() })
+      .eq('conversation_id', conversationId)
+      .eq('user_id', user.id);
+    onMessagesRead?.();
+  }, [conversationId, user, onMessagesRead]);
 
   const fetchMessages = async () => {
     if (!conversationId) return;
@@ -123,13 +144,8 @@ const ChatWindow = ({ conversationId }: Props) => {
       setMessages(enriched);
     }
 
-    if (user) {
-      await supabase
-        .from('chat_participants')
-        .update({ last_read_at: new Date().toISOString() })
-        .eq('conversation_id', conversationId)
-        .eq('user_id', user.id);
-    }
+    await markAsRead();
+    await fetchOtherLastRead();
   };
 
   useEffect(() => {
@@ -138,17 +154,21 @@ const ChatWindow = ({ conversationId }: Props) => {
     setOtherUserId(null);
     setIsOnline(false);
     setLastSeen(null);
+    setOtherLastRead(null);
     setPendingFile(null);
     setPendingPreview(null);
     fetchMessages();
   }, [conversationId]);
 
-  // Refresh presence every 30s
+  // Refresh presence + other's last_read every 15s
   useEffect(() => {
-    if (!otherUserId) return;
-    const interval = setInterval(() => fetchPresence(otherUserId), 30000);
+    if (!otherUserId || !conversationId) return;
+    const interval = setInterval(() => {
+      fetchPresence(otherUserId);
+      fetchOtherLastRead();
+    }, 15000);
     return () => clearInterval(interval);
-  }, [otherUserId, fetchPresence]);
+  }, [otherUserId, conversationId, fetchPresence, fetchOtherLastRead]);
 
   // Realtime subscription
   useEffect(() => {
@@ -165,11 +185,27 @@ const ChatWindow = ({ conversationId }: Props) => {
         const p = await getProfile(msg.sender_id);
         setMessages(prev => [...prev, { ...msg, sender_name: p.name, sender_avatar: p.avatar }]);
         if (user && msg.sender_id !== user.id) {
-          await supabase
-            .from('chat_participants')
-            .update({ last_read_at: new Date().toISOString() })
-            .eq('conversation_id', conversationId)
-            .eq('user_id', user.id);
+          await markAsRead();
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [conversationId, user, markAsRead]);
+
+  // Listen for participant updates (to detect when other user reads messages)
+  useEffect(() => {
+    if (!conversationId) return;
+    const channel = supabase
+      .channel(`read-${conversationId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'chat_participants',
+        filter: `conversation_id=eq.${conversationId}`,
+      }, (payload) => {
+        const updated = payload.new as any;
+        if (user && updated.user_id !== user.id) {
+          setOtherLastRead(updated.last_read_at);
         }
       })
       .subscribe();
@@ -193,36 +229,22 @@ const ChatWindow = ({ conversationId }: Props) => {
     if (!user) return null;
     const ext = file.name.split('.').pop();
     const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-    const { error } = await supabase.storage
-      .from('chat-attachments')
-      .upload(path, file);
-
+    const { error } = await supabase.storage.from('chat-attachments').upload(path, file);
     if (error) {
       toast({ title: 'Eroare la încărcare', description: error.message, variant: 'destructive' });
       return null;
     }
-
-    const { data: urlData } = supabase.storage
-      .from('chat-attachments')
-      .getPublicUrl(path);
-
-    return {
-      url: urlData.publicUrl,
-      type: getAttachmentType(file),
-      name: file.name,
-    };
+    const { data: urlData } = supabase.storage.from('chat-attachments').getPublicUrl(path);
+    return { url: urlData.publicUrl, type: getAttachmentType(file), name: file.name };
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (file.size > 20 * 1024 * 1024) {
       toast({ title: 'Fișier prea mare', description: 'Dimensiunea maximă este 20MB.', variant: 'destructive' });
       return;
     }
-
     setPendingFile(file);
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -231,33 +253,22 @@ const ChatWindow = ({ conversationId }: Props) => {
     } else {
       setPendingPreview(null);
     }
-
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const cancelFile = () => {
-    setPendingFile(null);
-    setPendingPreview(null);
-  };
+  const cancelFile = () => { setPendingFile(null); setPendingPreview(null); };
 
   const handleSend = async () => {
     if ((!newMessage.trim() && !pendingFile) || !conversationId || !user) return;
     setSending(true);
-
     try {
       let attachmentData: { url: string; type: string; name: string } | null = null;
-
       if (pendingFile) {
         setUploading(true);
         attachmentData = await uploadFile(pendingFile);
         setUploading(false);
-        if (!attachmentData && !newMessage.trim()) {
-          setSending(false);
-          return;
-        }
+        if (!attachmentData && !newMessage.trim()) { setSending(false); return; }
       }
-
       await supabase.from('chat_messages').insert({
         conversation_id: conversationId,
         sender_id: user.id,
@@ -266,12 +277,7 @@ const ChatWindow = ({ conversationId }: Props) => {
         attachment_type: attachmentData?.type || null,
         attachment_name: attachmentData?.name || null,
       } as any);
-
-      await supabase
-        .from('chat_conversations')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', conversationId);
-
+      await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
       setNewMessage('');
       setPendingFile(null);
       setPendingPreview(null);
@@ -281,49 +287,70 @@ const ChatWindow = ({ conversationId }: Props) => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   const handleEmojiSelect = (emoji: any) => {
     setNewMessage(prev => prev + emoji.native);
   };
 
+  // Message status: sent → delivered (online) → seen (read)
+  const getMessageStatus = (msg: Message, isLast: boolean) => {
+    if (msg.sender_id !== user?.id) return null; // only show for own messages
+
+    // Seen: other user has read this message
+    if (otherLastRead && msg.created_at <= otherLastRead) {
+      return 'seen';
+    }
+    // Delivered: other user is online
+    if (isOnline) {
+      return 'delivered';
+    }
+    // Sent: message exists in DB
+    return 'sent';
+  };
+
+  const renderMessageStatus = (status: string | null) => {
+    if (!status) return null;
+    
+    switch (status) {
+      case 'sent':
+        return (
+          <span className="inline-flex items-center gap-0.5 text-muted-foreground" title="Trimis">
+            <Check className="h-3 w-3" />
+          </span>
+        );
+      case 'delivered':
+        return (
+          <span className="inline-flex items-center text-muted-foreground" title="Livrat">
+            <CheckCheck className="h-3.5 w-3.5" />
+          </span>
+        );
+      case 'seen':
+        return (
+          <span className="inline-flex items-center text-primary" title="Văzut">
+            <CheckCheck className="h-3.5 w-3.5" />
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
   const renderAttachment = (msg: Message) => {
     if (!msg.attachment_url) return null;
-
     if (msg.attachment_type === 'image') {
       return (
         <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="block mt-1">
-          <img
-            src={msg.attachment_url}
-            alt={msg.attachment_name || 'Imagine'}
-            className="max-w-[240px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
-          />
+          <img src={msg.attachment_url} alt={msg.attachment_name || 'Imagine'} className="max-w-[240px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" />
         </a>
       );
     }
-
     if (msg.attachment_type === 'video') {
-      return (
-        <video
-          src={msg.attachment_url}
-          controls
-          className="max-w-[280px] max-h-[200px] rounded-lg mt-1"
-        />
-      );
+      return <video src={msg.attachment_url} controls className="max-w-[280px] max-h-[200px] rounded-lg mt-1" />;
     }
-
-    // Document
     return (
-      <a
-        href={msg.attachment_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 mt-1 px-3 py-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors text-xs"
-      >
+      <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-1 px-3 py-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors text-xs">
         <FileText className="h-4 w-4 flex-shrink-0" />
         <span className="truncate flex-1">{msg.attachment_name || 'Document'}</span>
         <Download className="h-3.5 w-3.5 flex-shrink-0 opacity-60" />
@@ -350,20 +377,14 @@ const ChatWindow = ({ conversationId }: Props) => {
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      {/* Header with online status */}
+      {/* Header */}
       <div className="px-4 py-3 border-b border-border bg-card flex items-center gap-3">
         <div className="flex-1">
           <h3 className="font-semibold text-foreground">{convName}</h3>
           {otherUserId && (
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className={cn(
-                "w-2 h-2 rounded-full",
-                isOnline ? "bg-green-500" : "bg-muted-foreground/30"
-              )} />
-              <span className={cn(
-                "text-xs",
-                isOnline ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
-              )}>
+              <span className={cn("w-2 h-2 rounded-full", isOnline ? "bg-green-500" : "bg-muted-foreground/30")} />
+              <span className={cn("text-xs", isOnline ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}>
                 {statusText}
               </span>
             </div>
@@ -376,6 +397,8 @@ const ChatWindow = ({ conversationId }: Props) => {
         {messages.map((msg, i) => {
           const isOwn = msg.sender_id === user?.id;
           const showAvatar = !isOwn && (i === 0 || messages[i - 1]?.sender_id !== msg.sender_id);
+          const isLastOwnInGroup = isOwn && (i === messages.length - 1 || messages[i + 1]?.sender_id !== msg.sender_id);
+          const msgStatus = getMessageStatus(msg, isLastOwnInGroup);
 
           return (
             <div key={msg.id} className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}>
@@ -398,27 +421,24 @@ const ChatWindow = ({ conversationId }: Props) => {
                 <div
                   className={cn(
                     "inline-block rounded-2xl text-sm overflow-hidden",
-                    isOwn
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-muted text-foreground rounded-bl-md",
+                    isOwn ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md",
                     (msg.content || msg.attachment_type !== 'image') && "px-3 py-2"
                   )}
                 >
                   {msg.attachment_url && msg.attachment_type === 'image' && !msg.content && (
                     <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={msg.attachment_url}
-                        alt={msg.attachment_name || 'Imagine'}
-                        className="max-w-[240px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                      />
+                      <img src={msg.attachment_url} alt={msg.attachment_name || 'Imagine'} className="max-w-[240px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" />
                     </a>
                   )}
                   {msg.content && <span>{msg.content}</span>}
                   {msg.attachment_url && (msg.content || msg.attachment_type !== 'image') && renderAttachment(msg)}
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5 mx-1">
-                  {format(new Date(msg.created_at), 'HH:mm', { locale: ro })}
-                </p>
+                <div className={cn("flex items-center gap-1 mt-0.5 mx-1", isOwn ? "justify-end" : "justify-start")}>
+                  <span className="text-[10px] text-muted-foreground">
+                    {format(new Date(msg.created_at), 'HH:mm', { locale: ro })}
+                  </span>
+                  {isOwn && renderMessageStatus(msgStatus)}
+                </div>
               </div>
             </div>
           );
@@ -444,72 +464,29 @@ const ChatWindow = ({ conversationId }: Props) => {
         </div>
       )}
 
-      {/* Input bar */}
+      {/* Input */}
       <div className="p-3 border-t border-border bg-card">
         <div className="flex items-center gap-1.5">
-          {/* Attach button */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
-            onChange={handleFileSelect}
-          />
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-foreground"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={sending}
-          >
-            <Paperclip className="h-4.5 w-4.5" />
+          <input ref={fileInputRef} type="file" className="hidden" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar" onChange={handleFileSelect} />
+          <Button size="icon" variant="ghost" className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-foreground" onClick={() => fileInputRef.current?.click()} disabled={sending}>
+            <Paperclip className="h-4 w-4" />
           </Button>
-
-          {/* Emoji picker */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-foreground"
-                disabled={sending}
-              >
-                <Smile className="h-4.5 w-4.5" />
+              <Button size="icon" variant="ghost" className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-foreground" disabled={sending}>
+                <Smile className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent side="top" align="start" className="w-auto p-0 border-0">
-              <Picker
-                data={data}
-                onEmojiSelect={handleEmojiSelect}
-                theme="auto"
-                locale="ro"
-                previewPosition="none"
-                skinTonePosition="search"
-                maxFrequentRows={2}
-              />
+              <Picker data={data} onEmojiSelect={handleEmojiSelect} theme="auto" locale="ro" previewPosition="none" skinTonePosition="search" maxFrequentRows={2} />
             </PopoverContent>
           </Popover>
-
-          <Input
-            placeholder="Scrie un mesaj..."
-            value={newMessage}
-            onChange={e => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={sending}
-            className="flex-1"
-          />
-          <Button
-            size="icon"
-            onClick={handleSend}
-            disabled={sending || (!newMessage.trim() && !pendingFile)}
-            className="flex-shrink-0"
-          >
+          <Input placeholder="Scrie un mesaj..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={handleKeyDown} disabled={sending} className="flex-1" />
+          <Button size="icon" onClick={handleSend} disabled={sending || (!newMessage.trim() && !pendingFile)} className="flex-shrink-0">
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        {uploading && (
-          <p className="text-xs text-muted-foreground mt-1 ml-2">Se încarcă fișierul...</p>
-        )}
+        {uploading && <p className="text-xs text-muted-foreground mt-1 ml-2">Se încarcă fișierul...</p>}
       </div>
     </div>
   );
