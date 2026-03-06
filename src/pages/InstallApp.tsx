@@ -3,7 +3,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, Smartphone, Monitor, Share, MoreVertical, Plus, ChevronRight, Check } from 'lucide-react';
+import { Download, Smartphone, Monitor, Share, MoreVertical, Plus, ChevronRight, Check, Laptop } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -185,11 +185,11 @@ const InstallApp = () => {
                   </ol>
                 </div>
 
-                {/* Desktop */}
+                {/* Desktop Windows/Linux */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Badge className="bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20">
-                      <Monitor className="w-3 h-3 mr-1" /> Desktop (Chrome / Edge)
+                      <Monitor className="w-3 h-3 mr-1" /> Windows / Linux (Chrome / Edge)
                     </Badge>
                   </div>
                   <ol className="space-y-2 text-sm text-muted-foreground ml-1">
@@ -206,6 +206,49 @@ const InstallApp = () => {
                       <span>Aplicația se deschide într-o fereastră separată, fără bara browserului.</span>
                     </li>
                   </ol>
+                </div>
+
+                {/* macOS */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20">
+                      <Laptop className="w-3 h-3 mr-1" /> MacBook / macOS
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic ml-1 mb-2">Varianta 1 — Chrome / Edge (recomandat)</p>
+                  <ol className="space-y-2 text-sm text-muted-foreground ml-1">
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                      <span>Deschide platforma în <strong>Chrome</strong> sau <strong>Edge</strong>.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                      <span>Caută iconița de instalare <Download className="w-3.5 h-3.5 inline text-primary" /> în bara de adrese (dreapta) și apasă pe ea.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                      <span>Confirmă cu <strong>„Instalează"</strong>. Aplicația apare în <strong>Launchpad</strong> și Dock.</span>
+                    </li>
+                  </ol>
+
+                  <p className="text-xs text-muted-foreground italic ml-1 mb-2 mt-4">Varianta 2 — Safari (macOS Sonoma 14+ / Safari 17+)</p>
+                  <ol className="space-y-2 text-sm text-muted-foreground ml-1">
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                      <span>Deschide platforma în <strong>Safari</strong>.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                      <span>Din meniul Safari, alege <strong>File → Add to Dock</strong> (sau „Fișier → Adaugă în Dock").</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                      <span>Aplicația apare în <strong>Dock</strong> și se deschide într-o fereastră dedicată, fără bara Safari.</span>
+                    </li>
+                  </ol>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 ml-1 mt-2">
+                    ⚠️ Dacă ai o versiune mai veche de macOS (sub Sonoma 14), Safari nu suportă instalarea — folosește Chrome.
+                  </p>
                 </div>
               </CardContent>
             </Card>
