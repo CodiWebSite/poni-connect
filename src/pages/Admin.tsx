@@ -101,8 +101,8 @@ const Admin = () => {
     const usersWithRoles: UserWithRole[] = profiles.map(profile => {
       const userRole = roles.find(r => r.user_id === profile.user_id);
       const r = userRole?.role as string || 'user';
-      const validRoles = ['super_admin', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'sef_srus', 'sef', 'hr', 'bibliotecar', 'user'];
-      const mappedRole = validRoles.includes(r) ? r : 'user';
+      const validRoles = ['super_admin', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'sef_srus', 'sef', 'hr', 'bibliotecar', 'salarizare', 'achizitii', 'contabilitate', 'oficiu_juridic', 'compartiment_comunicare', 'secretariat', 'admin', 'user'];
+      const mappedRole = validRoles.includes(r) ? r : r;
       return {
         user_id: profile.user_id,
         full_name: profile.full_name,
