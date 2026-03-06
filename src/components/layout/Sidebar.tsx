@@ -49,6 +49,7 @@ const Sidebar = () => {
   const [pendingHR, setPendingHR] = useState(0);
   const [pendingAdmin, setPendingAdmin] = useState(0);
   const [pendingHelpdesk, setPendingHelpdesk] = useState(0);
+  const [unreadChat, setUnreadChat] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -85,6 +86,86 @@ const Sidebar = () => {
     fetchCounts();
   }, [canManageHR, isSuperAdmin, isSef, isSefSRUS]);
 
+  // Fetch total unread chat messages count
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnreadChat = async () => {
+      const { data: participantData } = await supabase
+        .from('chat_participants')
+        .select('conversation_id, last_read_at')
+        .eq('user_id', user.id);
+      if (!participantData?.length) { setUnreadChat(0); return; }
+      let total = 0;
+      for (const p of participantData) {
+        if (p.last_read_at) {
+          const { count } = await supabase
+            .from('chat_messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('conversation_id', p.conversation_id)
+            .neq('sender_id', user.id)
+            .gt('created_at', p.last_read_at);
+          total += (count || 0);
+        }
+      }
+      setUnreadChat(total);
+    };
+    fetchUnreadChat();
+
+    // Listen for new chat messages to update badge + play sound
+    const channel = supabase
+      .channel('sidebar-chat-badge')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+      }, (payload) => {
+        const msg = payload.new as any;
+        if (msg.sender_id !== user.id) {
+          setUnreadChat(prev => prev + 1);
+          // Play notification sound
+          try {
+            const audio = new Audio('data:audio/wav;base64,UklGRl9vT19teleUQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ==');
+            // Use a proper short notification beep via oscillator
+            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 880;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+          } catch (e) {
+            // Audio not available, ignore
+          }
+        }
+      })
+      .subscribe();
+
+    // Listen for read updates to decrease badge
+    const readChannel = supabase
+      .channel('sidebar-chat-read')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'chat_participants',
+      }, (payload) => {
+        const updated = payload.new as any;
+        if (updated.user_id === user.id) {
+          // Re-fetch total unread on own read update
+          fetchUnreadChat();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(readChannel);
+    };
+  }, [user]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
@@ -101,7 +182,7 @@ const Sidebar = () => {
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
-    { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
+    { icon: MessageCircle, label: 'Mesagerie', path: '/chat', badge: unreadChat || undefined },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 
