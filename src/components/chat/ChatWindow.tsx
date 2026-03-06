@@ -67,7 +67,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
-  const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
+  const [_hoveredMsg, setHoveredMsg] = useState<string | null>(null); // kept for potential future use
   const [unsendMsgId, setUnsendMsgId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
