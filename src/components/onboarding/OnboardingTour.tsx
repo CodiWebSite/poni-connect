@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, ChevronRight, ChevronLeft, PartyPopper, Home, UserCircle, FileText, Calendar, FolderDown, Settings, BookOpen, Layout, Megaphone, Users, Headset, HelpCircle, MessageCircle } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, PartyPopper, Home, UserCircle, FileText, Calendar, FolderDown, Settings, BookOpen, Layout, Megaphone, Users, Headset, HelpCircle, MessageCircle, DoorOpen, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STEPS = [
@@ -57,9 +57,21 @@ const STEPS = [
     color: 'text-violet-500',
   },
   {
+    icon: DoorOpen,
+    title: 'Programări Săli',
+    description: 'Rezervați sălile de ședință și spațiile comune ale institutului. Vizualizați disponibilitatea într-un calendar și preveniți suprapunerile.',
+    color: 'text-amber-600',
+  },
+  {
+    icon: PartyPopper,
+    title: 'Activități Recreative',
+    description: 'Evenimente sociale, sportive și culturale organizate de institut. Confirmați participarea și vedeți locurile disponibile.',
+    color: 'text-pink-500',
+  },
+  {
     icon: MessageCircle,
     title: 'Mesagerie (Chat)',
-    description: 'Comunicați în timp real cu colegii prin mesaje directe sau grupuri. Trimiteți fișiere, emoji-uri și reacții. Vedeți cine este online prin indicatorul verde de prezență.',
+    description: 'Comunicați în timp real cu colegii. Trimiteți fișiere (până la 400MB), emoji-uri și reacții. Căutați în mesaje, vedeți statusul (trimis/livrat/citit) și cine este online.',
     color: 'text-blue-500',
   },
   {
@@ -85,6 +97,12 @@ const STEPS = [
     title: 'Ghid Platformă',
     description: 'Oricând aveți nevoie de ajutor, accesați „Ghid Platformă" din meniu. Conține instrucțiuni pas cu pas pentru fiecare funcționalitate, adaptate rolului dvs.',
     color: 'text-rose-500',
+  },
+  {
+    icon: Download,
+    title: 'Instalează ca Aplicație',
+    description: 'Platforma poate fi instalată pe telefon (Android/iPhone) sau desktop, direct din browser. Accesați „Instalează App" din meniu pentru instrucțiuni pas cu pas.',
+    color: 'text-primary',
   },
 ];
 
