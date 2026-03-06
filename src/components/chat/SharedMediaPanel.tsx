@@ -156,7 +156,7 @@ const SharedMediaPanel = ({ conversationId, open, onOpenChange, convName }: Prop
               <FileText className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-foreground">{item.attachment_name || 'Document'}</p>
+              <p className="text-sm font-medium text-foreground break-all">{item.attachment_name || 'Document'}</p>
               <p className="text-[11px] text-muted-foreground">{item.sender_name} · {format(new Date(item.created_at), 'd MMM yyyy', { locale: ro })}</p>
             </div>
             <button onClick={() => handleDownload(item.attachment_url, item.attachment_name || 'document')} className="p-1.5 rounded-md hover:bg-background text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
