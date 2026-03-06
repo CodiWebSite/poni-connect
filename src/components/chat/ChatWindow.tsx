@@ -681,9 +681,14 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
           <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setShowSearch(s => !s); setSearchQuery(''); }}>
             <Search className="h-4 w-4" />
           </Button>
-          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => convType === 'group' ? setShowGroupInfo(true) : setShowMediaPanel(true)}>
-            {convType === 'group' ? <Users className="h-4 w-4" /> : <FolderOpen className="h-4 w-4" />}
+          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setShowMediaPanel(true)}>
+            <FolderOpen className="h-4 w-4" />
           </Button>
+          {convType === 'group' && (
+            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setShowGroupInfo(true)}>
+              <Users className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
