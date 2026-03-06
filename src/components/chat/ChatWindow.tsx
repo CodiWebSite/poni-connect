@@ -804,7 +804,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
             onChange={e => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={sending}
-            className="flex-1 h-9 text-sm sm:text-sm text-base"
+            className="flex-1 h-9 text-[16px] sm:text-sm"
           />
           <Button size="icon" onClick={handleSend} disabled={sending || (!newMessage.trim() && !pendingFile)} className="h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0">
             <Send className="h-4 w-4" />
