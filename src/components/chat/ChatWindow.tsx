@@ -67,6 +67,11 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
   const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
   const [unsendMsgId, setUnsendMsgId] = useState<string | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<number[]>([]);
+  const [searchIndex, setSearchIndex] = useState(0);
+  const [showMediaPanel, setShowMediaPanel] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const profileCache = useRef<Record<string, { name: string; avatar: string | null }>>({});
