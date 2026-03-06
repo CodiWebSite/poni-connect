@@ -49,6 +49,7 @@ const Sidebar = () => {
   const [pendingHR, setPendingHR] = useState(0);
   const [pendingAdmin, setPendingAdmin] = useState(0);
   const [pendingHelpdesk, setPendingHelpdesk] = useState(0);
+  const [unreadChat, setUnreadChat] = useState(0);
 
   useEffect(() => {
     if (user) {
