@@ -250,12 +250,17 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
                     selectedId === conv.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
                   )}
                 >
-                  <Avatar className="h-9 w-9 flex-shrink-0">
-                    {avatarUrl && <AvatarImage src={avatarUrl} />}
-                    <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
-                      {isGroup ? <Users className="h-4 w-4" /> : initials}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative flex-shrink-0">
+                    <Avatar className="h-9 w-9">
+                      {avatarUrl && <AvatarImage src={avatarUrl} />}
+                      <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
+                        {isGroup ? <Users className="h-4 w-4" /> : initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    {!isGroup && conv.is_online && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-card" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium truncate">{label}</span>
