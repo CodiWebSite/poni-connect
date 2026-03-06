@@ -182,7 +182,7 @@ const Sidebar = () => {
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
-    { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
+    { icon: MessageCircle, label: 'Mesagerie', path: '/chat', badge: unreadChat || undefined },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 
