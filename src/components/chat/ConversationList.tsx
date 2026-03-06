@@ -64,6 +64,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
 
     for (const conv of convData) {
       let otherUser: ConversationItem['other_user'] = undefined;
+      let isOnline = false;
 
       if (conv.type === 'direct') {
         const { data: parts } = await supabase
@@ -87,6 +88,15 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
               user_id: profile.user_id,
             };
           }
+
+          // Check presence
+          const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+          const { data: presence } = await supabase
+            .from('user_presence')
+            .select('is_online, last_seen_at')
+            .eq('user_id', parts[0].user_id)
+            .maybeSingle();
+          isOnline = !!(presence?.is_online && presence.last_seen_at >= fiveMinAgo);
         }
       }
 
@@ -118,6 +128,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
         other_user: otherUser,
         last_message: lastMsg?.[0]?.content || null,
         unread_count: unreadCount,
+        is_online: isOnline,
       });
     }
 
