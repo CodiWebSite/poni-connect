@@ -144,7 +144,7 @@ const NewGroupDialog = ({ open, onOpenChange, onCreated }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
@@ -152,7 +152,7 @@ const NewGroupDialog = ({ open, onOpenChange, onCreated }: Props) => {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-3 flex-1 min-h-0 flex flex-col">
           <div>
             <Label className="text-xs text-muted-foreground">Numele grupului</Label>
             <Input
@@ -191,7 +191,7 @@ const NewGroupDialog = ({ open, onOpenChange, onCreated }: Props) => {
             />
           </div>
 
-          <ScrollArea className="max-h-[280px]">
+          <ScrollArea className="flex-1 min-h-0 max-h-[50vh]">
             <div className="space-y-0.5">
               {grouped.map(([dept, deptUsers]) => {
                 const isExpanded = expandedDepts.has(dept);
