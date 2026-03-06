@@ -147,6 +147,36 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
     onSelect(convId);
   }, [onSelect]);
 
+  // Listen for presence changes to update online indicators instantly
+  useEffect(() => {
+    if (!user) return;
+
+    const presenceChannel = supabase
+      .channel('chat-list-presence')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_presence',
+      }, (payload) => {
+        if (!payload.new || typeof payload.new !== 'object') return;
+        const row = payload.new as any;
+        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const nowOnline = !!(row.is_online && row.last_seen_at >= fiveMinAgo);
+
+        setConversations(prev =>
+          prev.map(c => {
+            if (c.type === 'direct' && c.other_user?.user_id === row.user_id) {
+              return { ...c, is_online: nowOnline };
+            }
+            return c;
+          })
+        );
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(presenceChannel); };
+  }, [user]);
+
   // Listen for new messages in any conversation to update badges
   useEffect(() => {
     if (!user) return;
