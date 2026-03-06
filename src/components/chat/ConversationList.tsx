@@ -20,6 +20,7 @@ interface ConversationItem {
   other_user?: { full_name: string; avatar_url: string | null; user_id: string };
   last_message: string | null;
   unread_count: number;
+  is_online: boolean;
 }
 
 interface Props {
