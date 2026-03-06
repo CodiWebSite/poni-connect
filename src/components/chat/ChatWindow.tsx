@@ -705,22 +705,24 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
                   {/* Quick reaction bar on hover */}
                   {isHovered && (
                     <div className={cn(
-                      "absolute -top-8 flex items-center gap-0.5 bg-popover border border-border rounded-full px-1 py-0.5 shadow-md z-10",
+                      "absolute -top-8 flex items-center gap-0.5 z-10",
                       isOwn ? "right-0" : "left-0"
                     )}>
-                      {QUICK_REACTIONS.map(emoji => (
-                        <button
-                          key={emoji}
-                          onClick={() => toggleReaction(msg.id, emoji)}
-                          className="hover:scale-125 transition-transform px-0.5 text-sm"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
+                      <div className="flex items-center gap-0.5 bg-popover border border-border rounded-full px-1 py-0.5 shadow-md">
+                        {QUICK_REACTIONS.map(emoji => (
+                          <button
+                            key={emoji}
+                            onClick={() => toggleReaction(msg.id, emoji)}
+                            className="hover:scale-125 transition-transform px-0.5 text-sm"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
                       {isOwn && (
                         <button
                           onClick={() => setUnsendMsgId(msg.id)}
-                          className="hover:scale-110 transition-transform px-1 text-destructive"
+                          className="ml-1 p-1.5 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 shadow-sm transition-colors"
                           title="Șterge mesajul"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
