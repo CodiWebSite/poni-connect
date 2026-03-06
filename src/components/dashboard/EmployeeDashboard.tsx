@@ -14,6 +14,7 @@ import { QuickActionsSkeleton, LeaveBalanceSkeleton, ChartSkeleton } from './Das
 import SpringDecoration from './SpringDecoration';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { formatNumePrenume } from '@/utils/formatName';
 
 interface EmployeeRecord {
   hire_date: string | null;
@@ -49,11 +50,7 @@ const EmployeeDashboard = () => {
       supabase.from('employee_records').select('hire_date, contract_type, total_leave_days, used_leave_days, remaining_leave_days').eq('user_id', user.id).single(),
     ]);
 
-    if (epd?.last_name && epd?.first_name) {
-      setDisplayName(`${epd.last_name.toUpperCase()} ${epd.first_name.toUpperCase()}`);
-    } else if (profile?.full_name) {
-      setDisplayName(profile.full_name);
-    }
+    setDisplayName(formatNumePrenume({ firstName: epd?.first_name, lastName: epd?.last_name, fullName: profile?.full_name }));
     if (record) setEmployeeRecord(record);
     setLoading(false);
   };

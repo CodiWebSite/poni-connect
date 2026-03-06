@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDemoMode } from '@/contexts/DemoModeContext';
 import { FlaskConical, X } from 'lucide-react';
+import { formatNumePrenume } from '@/utils/formatName';
 
 const routeLabels: Record<string, string> = {
   '/': 'Dashboard',
@@ -35,13 +36,17 @@ const Header = ({ title, description }: HeaderProps) => {
   const { isDemo, toggleDemo } = useDemoMode();
   const location = useLocation();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string>('');
 
   useEffect(() => {
     if (user) {
-      supabase.from('profiles').select('avatar_url').eq('user_id', user.id).maybeSingle()
-        .then(({ data }) => {
-          if (data?.avatar_url) setAvatarUrl(data.avatar_url);
-        });
+      Promise.all([
+        supabase.from('profiles').select('avatar_url, full_name').eq('user_id', user.id).maybeSingle(),
+        supabase.from('employee_personal_data').select('last_name, first_name').eq('email', user.email || '').eq('is_archived', false).maybeSingle(),
+      ]).then(([{ data: profile }, { data: epd }]) => {
+        if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
+        setDisplayName(formatNumePrenume({ firstName: epd?.first_name, lastName: epd?.last_name, fullName: profile?.full_name }));
+      });
     }
   }, [user]);
 
@@ -95,7 +100,7 @@ const Header = ({ title, description }: HeaderProps) => {
               </AvatarFallback>
             </Avatar>
             <div className="hidden lg:block">
-              <p className="text-sm font-medium truncate max-w-[150px]">{user?.email}</p>
+              <p className="text-sm font-medium truncate max-w-[150px]">{displayName || user?.email}</p>
             </div>
           </div>
         </div>
