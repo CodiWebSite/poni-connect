@@ -241,8 +241,8 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 20 * 1024 * 1024) {
-      toast({ title: 'Fișier prea mare', description: 'Dimensiunea maximă este 20MB.', variant: 'destructive' });
+    if (file.size > 400 * 1024 * 1024) {
+      toast({ title: 'Fișier prea mare', description: 'Dimensiunea maximă este 400MB.', variant: 'destructive' });
       return;
     }
     setPendingFile(file);
