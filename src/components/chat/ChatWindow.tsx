@@ -47,11 +47,12 @@ interface Reaction {
 interface Props {
   conversationId: string | null;
   onMessagesRead?: () => void;
+  onBack?: () => void;
 }
 
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
-const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
+const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
