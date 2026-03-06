@@ -264,17 +264,17 @@ const NewGroupDialog = ({ open, onOpenChange, onCreated }: Props) => {
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[95vh] flex flex-col">
-          <DrawerHeader>
+        <DrawerContent className="max-h-[92dvh] flex flex-col">
+          <DrawerHeader className="flex-shrink-0">
             <DrawerTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
               Grup nou
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-2 flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className="px-4 pb-2 flex-1 flex flex-col min-h-0">
             {formContent}
           </div>
-          <DrawerFooter className="flex-row justify-end gap-2">
+          <DrawerFooter className="flex-row justify-end gap-2 flex-shrink-0">
             {footerButtons}
           </DrawerFooter>
         </DrawerContent>
