@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Send, MessageCircle, Paperclip, Smile, FileText, Film, Download, X, Check, CheckCheck, Trash2, Search, FolderOpen, ChevronUp, ChevronDown, XCircle, ArrowLeft, MoreVertical } from 'lucide-react';
+import { Send, MessageCircle, Paperclip, Smile, FileText, FileSpreadsheet, FileType, Presentation, Film, Download, X, Check, CheckCheck, Trash2, Search, FolderOpen, ChevronUp, ChevronDown, XCircle, ArrowLeft, MoreVertical } from 'lucide-react';
 import SharedMediaPanel from './SharedMediaPanel';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -496,6 +496,17 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
     }
   };
 
+  const getDocIcon = (name: string | null) => {
+    const ext = (name || '').split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'pdf': return <FileType className="h-4 w-4 text-red-500 flex-shrink-0" />;
+      case 'xls': case 'xlsx': case 'csv': return <FileSpreadsheet className="h-4 w-4 text-green-600 flex-shrink-0" />;
+      case 'ppt': case 'pptx': return <Presentation className="h-4 w-4 text-orange-500 flex-shrink-0" />;
+      case 'doc': case 'docx': return <FileText className="h-4 w-4 text-blue-500 flex-shrink-0" />;
+      default: return <FileText className="h-4 w-4 flex-shrink-0" />;
+    }
+  };
+
   const renderAttachment = (msg: Message) => {
     if (!msg.attachment_url) return null;
     if (msg.attachment_type === 'image') {
@@ -513,7 +524,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
         onClick={() => handleDownload(msg.attachment_url!, msg.attachment_name || 'document')}
         className="flex items-center gap-2 mt-1 px-3 py-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors text-xs w-full text-left"
       >
-        <FileText className="h-4 w-4 flex-shrink-0" />
+        {getDocIcon(msg.attachment_name)}
         <span className="truncate flex-1">{msg.attachment_name || 'Document'}</span>
         <Download className="h-3.5 w-3.5 flex-shrink-0 opacity-60" />
       </button>
