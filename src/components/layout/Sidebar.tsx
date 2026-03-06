@@ -97,13 +97,22 @@ const Sidebar = () => {
       if (!participantData?.length) { setUnreadChat(0); return; }
       let total = 0;
       for (const p of participantData) {
-        if (p.last_read_at) {
+        const lastRead = p.last_read_at;
+        if (lastRead) {
           const { count } = await supabase
             .from('chat_messages')
             .select('id', { count: 'exact', head: true })
             .eq('conversation_id', p.conversation_id)
             .neq('sender_id', user.id)
-            .gt('created_at', p.last_read_at);
+            .gt('created_at', lastRead);
+          total += (count || 0);
+        } else {
+          // No last_read_at means all messages from others are unread
+          const { count } = await supabase
+            .from('chat_messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('conversation_id', p.conversation_id)
+            .neq('sender_id', user.id);
           total += (count || 0);
         }
       }
@@ -121,11 +130,12 @@ const Sidebar = () => {
       }, (payload) => {
         const msg = payload.new as any;
         if (msg.sender_id !== user.id) {
-          setUnreadChat(prev => prev + 1);
+          // Only increment if not currently on that conversation
+          if (!window.location.pathname.startsWith('/chat')) {
+            setUnreadChat(prev => prev + 1);
+          }
           // Play notification sound
           try {
-            const audio = new Audio('data:audio/wav;base64,UklGRl9vT19teleUQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ==');
-            // Use a proper short notification beep via oscillator
             const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -144,7 +154,7 @@ const Sidebar = () => {
       })
       .subscribe();
 
-    // Listen for read updates to decrease badge
+    // Listen for read updates to re-fetch badge
     const readChannel = supabase
       .channel('sidebar-chat-read')
       .on('postgres_changes', {
@@ -154,7 +164,6 @@ const Sidebar = () => {
       }, (payload) => {
         const updated = payload.new as any;
         if (updated.user_id === user.id) {
-          // Re-fetch total unread on own read update
           fetchUnreadChat();
         }
       })
