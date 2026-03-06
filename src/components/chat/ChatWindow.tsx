@@ -772,15 +772,15 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
       )}
 
       {/* Input */}
-      <div className="p-3 border-t border-border bg-card">
-        <div className="flex items-center gap-1.5">
+      <div className="p-2 sm:p-3 border-t border-border bg-card">
+        <div className="flex items-center gap-1">
           <input ref={fileInputRef} type="file" className="hidden" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar" onChange={handleFileSelect} />
-          <Button size="icon" variant="ghost" className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-foreground" onClick={() => fileInputRef.current?.click()} disabled={sending}>
+          <Button size="icon" variant="ghost" className="h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 text-muted-foreground hover:text-foreground" onClick={() => fileInputRef.current?.click()} disabled={sending}>
             <Paperclip className="h-4 w-4" />
           </Button>
           <Popover>
             <PopoverTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-foreground" disabled={sending}>
+              <Button size="icon" variant="ghost" className="h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 text-muted-foreground hover:text-foreground hidden sm:inline-flex" disabled={sending}>
                 <Smile className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -788,8 +788,15 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
               <Picker data={data} onEmojiSelect={handleEmojiSelect} theme="auto" locale="ro" previewPosition="none" skinTonePosition="search" maxFrequentRows={2} />
             </PopoverContent>
           </Popover>
-          <Input placeholder="Scrie un mesaj..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={handleKeyDown} disabled={sending} className="flex-1" />
-          <Button size="icon" onClick={handleSend} disabled={sending || (!newMessage.trim() && !pendingFile)} className="flex-shrink-0">
+          <Input
+            placeholder="Scrie un mesaj..."
+            value={newMessage}
+            onChange={e => setNewMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={sending}
+            className="flex-1 h-9 text-sm"
+          />
+          <Button size="icon" onClick={handleSend} disabled={sending || (!newMessage.trim() && !pendingFile)} className="h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0">
             <Send className="h-4 w-4" />
           </Button>
         </div>
