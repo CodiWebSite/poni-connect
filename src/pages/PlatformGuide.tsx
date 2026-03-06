@@ -11,11 +11,11 @@ import { Separator } from '@/components/ui/separator';
 import {
   Printer, UserCircle, FileText, Calendar, FolderDown, Settings, CheckSquare,
   ClipboardList, Shield, Users, BookOpen, Bell, Home, Search, Moon,
-  Eye, Download, History, UserCheck, AlertTriangle, HelpCircle,
+  Eye, Download, History, UserCheck, AlertTriangle, HelpCircle, MessageCircle,
 } from 'lucide-react';
 import {
   SidebarMockup, HeaderMockup, DashboardMockup, ProfileMockup,
-  LeaveRequestMockup, LeaveCalendarMockup, FormsMockup, ApprovalMockup,
+  LeaveRequestMockup, LeaveCalendarMockup, FormsMockup, ApprovalMockup, ChatMockup,
 } from '@/components/guide/PageMockups';
 
 const GuideSection = ({ icon: Icon, title, children, badge }: { icon: any; title: string; children: React.ReactNode; badge?: string }) => (
@@ -125,6 +125,10 @@ const PlatformGuide = () => {
                   <div className="flex items-start gap-2">
                     <FileText className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <div><strong>Cerere Concediu</strong> – depunerea și urmărirea cererilor de concediu de odihnă.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MessageCircle className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Mesagerie</strong> – chat intern între colegi, mesaje directe și grupuri, cu suport pentru fișiere și reacții.</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Users className="w-4 h-4 mt-0.5 text-primary shrink-0" />
@@ -493,6 +497,49 @@ const PlatformGuide = () => {
                   <p>• Prioritizarea vizuală: anunțurile urgente sunt evidențiate cu culori distincte.</p>
                   <p>• Personalul cu roluri administrative poate crea, edita și șterge anunțuri.</p>
                 </div>
+              </GuideSection>
+
+              {/* ─── MESAGERIE (CHAT) ─── */}
+              <GuideSection icon={MessageCircle} title="Mesagerie – Chat intern între colegi">
+                <p className="mb-2">Platforma include un sistem de mesagerie internă pentru comunicare rapidă între colegi:</p>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">💬 Conversații</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• <strong>Conversații directe</strong> – trimiteți mesaje private oricărui coleg din institut.</p>
+                  <p>• <strong>Grupuri</strong> – creați conversații de grup cu mai mulți colegi sau pe departament.</p>
+                  <p>• <strong>Conversație nouă</strong> – apăsați butonul „+" din lista de conversații pentru a iniția o discuție nouă.</p>
+                  <p>• Lista de conversații arată <strong>ultimul mesaj</strong> și un <strong>badge cu numărul mesajelor necitite</strong>.</p>
+                </div>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">📎 Fișiere și media</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• Trimiteți <strong>imagini</strong> (se afișează inline cu previzualizare).</p>
+                  <p>• Trimiteți <strong>documente</strong> (PDF, Word, Excel, PowerPoint) – fiecare cu iconița corespunzătoare.</p>
+                  <p>• Panoul <strong>„Media partajate"</strong> (iconița din header-ul chat-ului) afișează toate fișierele schimbate în conversație, organizate pe imagini și documente.</p>
+                </div>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">😊 Reacții și Emoji</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• <strong>Reacții</strong> – treceți mouse-ul peste un mesaj și apăsați iconița 😊 pentru a adăuga o reacție rapidă.</p>
+                  <p>• <strong>Emoji picker</strong> – apăsați iconița zâmbitoare din bara de introducere text pentru a alege dintr-o gamă largă de emoji-uri.</p>
+                </div>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🟢 Status online/offline</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• Un <strong>punct verde</strong> lângă avatarul unui coleg indică faptul că este online.</p>
+                  <p>• Statusul se actualizează <strong>în timp real</strong> – vedeți instant când cineva intră sau iese.</p>
+                  <p>• În header-ul conversației, sub numele colegului, apare „Online" sau „Ultima activitate acum X minute".</p>
+                </div>
+
+                <InfoBox title="💡 Sfat: Mesagerie pe mobil">
+                  <p>Pe telefon, conversația se deschide pe ecran complet. Apăsați săgeata din stânga-sus pentru a reveni la lista de conversații.</p>
+                </InfoBox>
+
+                <ChatMockup />
               </GuideSection>
 
               {/* ─── NOTIFICĂRI ─── */}

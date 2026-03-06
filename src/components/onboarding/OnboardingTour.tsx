@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, ChevronRight, ChevronLeft, PartyPopper, Home, UserCircle, FileText, Calendar, FolderDown, Settings, BookOpen, Layout, Megaphone, Users, Headset, HelpCircle } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, PartyPopper, Home, UserCircle, FileText, Calendar, FolderDown, Settings, BookOpen, Layout, Megaphone, Users, Headset, HelpCircle, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STEPS = [
@@ -55,6 +55,12 @@ const STEPS = [
     title: 'Formulare',
     description: 'Descărcați modele oficiale de formulare: cereri, declarații, fișe de solicitare analize, documente deplasări. Organizate pe categorii.',
     color: 'text-violet-500',
+  },
+  {
+    icon: MessageCircle,
+    title: 'Mesagerie (Chat)',
+    description: 'Comunicați în timp real cu colegii prin mesaje directe sau grupuri. Trimiteți fișiere, emoji-uri și reacții. Vedeți cine este online prin indicatorul verde de prezență.',
+    color: 'text-blue-500',
   },
   {
     icon: Users,
