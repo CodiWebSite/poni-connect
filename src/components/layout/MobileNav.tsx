@@ -25,6 +25,9 @@ import {
   ServerCog,
   DoorOpen,
   PartyPopper,
+  MessageCircle,
+  ExternalLink,
+  Mail,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -55,7 +58,7 @@ const MobileNav = () => {
     navigate('/auth');
   };
 
-  const mainItems = [
+  const mainItems: { icon: any; label: string; path: string; external?: boolean }[] = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
@@ -66,6 +69,9 @@ const MobileNav = () => {
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
+    { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
+    { icon: ExternalLink, label: 'Adeverințe', path: 'https://adeverinte.icmpp.ro/', external: true },
+    { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 
@@ -77,25 +83,36 @@ const MobileNav = () => {
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
 
-  const renderNavItem = (item: { icon: any; label: string; path: string }) => {
-    const isActive = location.pathname === item.path;
-    return (
-      <Link
-        key={item.path}
-        to={item.path}
-        onClick={() => setIsOpen(false)}
-        className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative",
-          isActive
-            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-            : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        )}
-      >
+  const renderNavItem = (item: { icon: any; label: string; path: string; external?: boolean }) => {
+    const isExternal = item.external;
+    const isActive = !isExternal && location.pathname === item.path;
+    const classes = cn(
+      "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative",
+      isActive
+        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    );
+    const inner = (
+      <>
         {isActive && (
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-sidebar-primary-foreground rounded-r-full -ml-3" />
         )}
         <item.icon className="w-5 h-5" />
         <span className="font-medium">{item.label}</span>
+      </>
+    );
+
+    if (isExternal) {
+      return (
+        <a key={item.path} href={item.path} target="_blank" rel="noopener noreferrer" className={classes} onClick={() => setIsOpen(false)}>
+          {inner}
+        </a>
+      );
+    }
+
+    return (
+      <Link key={item.path} to={item.path} onClick={() => setIsOpen(false)} className={classes}>
+        {inner}
       </Link>
     );
   };
