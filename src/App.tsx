@@ -29,6 +29,7 @@ import Announcements from "./pages/Announcements";
 import SystemStatus from "./pages/SystemStatus";
 import MyTeam from "./pages/MyTeam";
 import RoomBookings from "./pages/RoomBookings";
+import RecreationalActivities from "./pages/RecreationalActivities";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +111,7 @@ const App = () => (
                 <Route path="/announcements" element={<Announcements />} />
                 <Route path="/my-team" element={<MyTeam />} />
                 <Route path="/room-bookings" element={<RoomBookings />} />
+                <Route path="/activitati" element={<RecreationalActivities />} />
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="*" element={<NotFound />} />

@@ -29,6 +29,7 @@ import {
   Megaphone,
   Headset,
   DoorOpen,
+  PartyPopper,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -98,6 +99,7 @@ const Sidebar = () => {
     ...((isSef || isSefSRUS || isSuperAdmin) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
+    { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 
