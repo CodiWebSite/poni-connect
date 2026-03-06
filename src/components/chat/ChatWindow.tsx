@@ -301,6 +301,10 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
     setPendingFile(null);
     setPendingPreview(null);
     setReactions({});
+    setConvType('direct');
+    setConvAdminId(null);
+    setMemberCount(0);
+    setShowGroupInfo(false);
     fetchMessages();
   }, [conversationId]);
 
