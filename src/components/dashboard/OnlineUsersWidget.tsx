@@ -48,7 +48,7 @@ const OnlineUsersWidget = () => {
 
   useEffect(() => {
     fetchData();
-    const pollInterval = setInterval(fetchData, 15_000);
+    const pollInterval = setInterval(fetchData, 30_000); // fallback only
 
     const channel = supabase
       .channel('online-users')
