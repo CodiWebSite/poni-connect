@@ -23,6 +23,7 @@ import {
   Banknote,
   Megaphone,
   ServerCog,
+  DoorOpen,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -62,6 +63,7 @@ const MobileNav = () => {
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request' },
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
+    { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 

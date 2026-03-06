@@ -28,6 +28,7 @@ import {
   ServerCog,
   Megaphone,
   Headset,
+  DoorOpen,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -96,6 +97,7 @@ const Sidebar = () => {
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request', badge: (isSef || isSefSRUS || isSuperAdmin) ? pendingHR : undefined },
     ...((isSef || isSefSRUS || isSuperAdmin) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
+    { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 

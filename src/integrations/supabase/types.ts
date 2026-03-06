@@ -1353,6 +1353,45 @@ export type Database = {
         }
         Relationships: []
       }
+      room_bookings: {
+        Row: {
+          booked_by: string
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          room: string
+          start_time: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          booked_by: string
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          room: string
+          start_time: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          booked_by?: string
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          room?: string
+          start_time?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suggestions: {
         Row: {
           admin_response: string | null
