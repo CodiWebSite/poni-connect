@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Users } from 'lucide-react';
+import { Search, Plus, Users, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumePrenume } from '@/utils/formatName';
 import NewConversationDialog from './NewConversationDialog';
+import NewGroupDialog from './NewGroupDialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface ConversationItem {
   id: string;
@@ -33,6 +35,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchConversations = useCallback(async () => {
@@ -241,9 +244,23 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
       <div className="p-3 space-y-2 border-b border-border">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-foreground">Conversații</h2>
-          <Button size="icon" variant="ghost" onClick={() => setDialogOpen(true)} className="h-8 w-8">
-            <Plus className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setDialogOpen(true)} className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                Conversație directă
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setGroupDialogOpen(true)} className="gap-2">
+                <Users className="h-4 w-4" />
+                Grup nou
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -317,6 +334,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
       </ScrollArea>
 
       <NewConversationDialog open={dialogOpen} onOpenChange={setDialogOpen} onCreated={handleCreated} />
+      <NewGroupDialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen} onCreated={handleCreated} />
     </div>
   );
 };
