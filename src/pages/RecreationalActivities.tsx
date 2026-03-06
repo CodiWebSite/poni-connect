@@ -77,6 +77,7 @@ const RecreationalActivities = () => {
   const [responses, setResponses] = useState<ActivityResponse[]>([]);
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [isOrganizer, setIsOrganizer] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -92,47 +93,36 @@ const RecreationalActivities = () => {
   });
 
   // Organizer add
-  const [orgEmail, setOrgEmail] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState('');
 
   const fetchAll = async () => {
     setLoading(true);
-    const [actRes, respRes, orgRes] = await Promise.all([
+    const [actRes, respRes, orgRes, allProfRes] = await Promise.all([
       supabase.from('recreational_activities').select('*').order('scheduled_at', { ascending: true, nullsFirst: false }),
       supabase.from('activity_responses').select('*'),
       supabase.from('activity_organizers').select('*'),
+      supabase.from('profiles').select('user_id, full_name, avatar_url, department').order('full_name'),
     ]);
 
     const acts = (actRes.data || []) as Activity[];
     const resps = (respRes.data || []) as ActivityResponse[];
     const orgs = (orgRes.data || []) as Organizer[];
+    const allProfs = (allProfRes.data || []) as Profile[];
 
     setActivities(acts);
     setResponses(resps);
     setOrganizers(orgs);
+    setAllProfiles(allProfs);
 
     // Check if current user is organizer
     if (user) {
       setIsOrganizer(isSuperAdmin || orgs.some(o => o.user_id === user.id));
     }
 
-    // Fetch profiles for all relevant user IDs
-    const userIds = new Set<string>();
-    acts.forEach(a => userIds.add(a.created_by));
-    resps.forEach(r => userIds.add(r.user_id));
-    orgs.forEach(o => userIds.add(o.user_id));
-
-    if (userIds.size > 0) {
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, avatar_url, department')
-        .in('user_id', Array.from(userIds));
-
-      if (profileData) {
-        const map: Record<string, Profile> = {};
-        profileData.forEach(p => { map[p.user_id] = p; });
-        setProfiles(map);
-      }
-    }
+    // Build profiles map
+    const map: Record<string, Profile> = {};
+    allProfs.forEach(p => { map[p.user_id] = p; });
+    setProfiles(map);
 
     setLoading(false);
   };
@@ -206,27 +196,20 @@ const RecreationalActivities = () => {
   };
 
   const handleAddOrganizer = async () => {
-    if (!orgEmail.trim()) return;
-    // Find user by email from profiles
-    const { data: prof } = await supabase.from('profiles').select('user_id, full_name').ilike('full_name', `%${orgEmail.trim()}%`);
-    
-    // Also try to match by looking up auth email through employee data
-    const { data: epd } = await supabase.from('employee_personal_data').select('email').ilike('email', `%${orgEmail.trim()}%`);
-
-    // For simplicity, try direct profile lookup by joining with the name/email
-    // We'll search profiles for the name
-    if (prof && prof.length > 0) {
-      const userId = prof[0].user_id;
-      const { error } = await supabase.from('activity_organizers').insert({ user_id: userId, added_by: user?.id });
-      if (error) {
-        toast({ title: 'Eroare', description: error.message, variant: 'destructive' });
-      } else {
-        toast({ title: 'Organizator adăugat', description: prof[0].full_name });
-        setOrgEmail('');
-        fetchAll();
-      }
+    if (!selectedUserId) return;
+    // Check if already an organizer
+    if (organizers.some(o => o.user_id === selectedUserId)) {
+      toast({ title: 'Deja organizator', description: 'Acest utilizator este deja organizator.', variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase.from('activity_organizers').insert({ user_id: selectedUserId, added_by: user?.id });
+    if (error) {
+      toast({ title: 'Eroare', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: 'Nu s-a găsit', description: 'Niciun utilizator cu acest nume.', variant: 'destructive' });
+      const prof = profiles[selectedUserId];
+      toast({ title: 'Organizator adăugat', description: prof?.full_name || '' });
+      setSelectedUserId('');
+      fetchAll();
     }
   };
 
@@ -437,13 +420,21 @@ const RecreationalActivities = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex gap-2">
-              <Input
-                value={orgEmail}
-                onChange={e => setOrgEmail(e.target.value)}
-                placeholder="Caută după nume..."
-                className="flex-1"
-              />
-              <Button size="sm" onClick={handleAddOrganizer}>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Selectează angajat..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allProfiles
+                    .filter(p => !organizers.some(o => o.user_id === p.user_id))
+                    .map(p => (
+                      <SelectItem key={p.user_id} value={p.user_id}>
+                        {p.full_name} {p.department ? `(${p.department})` : ''}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Button size="sm" onClick={handleAddOrganizer} disabled={!selectedUserId}>
                 <UserPlus className="w-4 h-4" />
               </Button>
             </div>
