@@ -238,7 +238,10 @@ const NewGroupDialog = ({ open, onOpenChange, onCreated }: Props) => {
         />
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-1 px-1" style={{ maxHeight: isMobile ? '50vh' : '50vh' }}>
+      <div 
+        className="flex-1 overflow-y-auto overscroll-contain -mx-1 px-1 touch-pan-y"
+        style={{ minHeight: '200px', maxHeight: isMobile ? 'calc(100dvh - 340px)' : '50vh', WebkitOverflowScrolling: 'touch' }}
+      >
         {userListContent}
       </div>
     </div>
