@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Send, MessageCircle, Paperclip, Smile, FileText, Film, Download, X, Check, CheckCheck, Trash2, Search, FolderOpen, ChevronUp, ChevronDown, XCircle, ArrowLeft, MoreVertical } from 'lucide-react';
 import SharedMediaPanel from './SharedMediaPanel';
