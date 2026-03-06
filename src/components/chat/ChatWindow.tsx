@@ -497,8 +497,9 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
     }
   };
 
-  // Message status
+  // Message status (only for direct chats)
   const getMessageStatus = (msg: Message, isLast: boolean) => {
+    if (convType === 'group') return null; // No individual status in groups
     if (msg.sender_id !== user?.id) return null;
     if (otherLastRead && msg.created_at <= otherLastRead) return 'seen';
     if (isOnline) return 'delivered';
