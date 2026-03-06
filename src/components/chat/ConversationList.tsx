@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Users, UserPlus } from 'lucide-react';
+import { Search, Plus, Users, UserPlus, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumePrenume } from '@/utils/formatName';
 import NewConversationDialog from './NewConversationDialog';
@@ -38,8 +38,17 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Ensure department group exists on first load
+  const deptGroupEnsured = useState(false);
+  
   const fetchConversations = useCallback(async () => {
     if (!user) return;
+
+    // Auto-create/join department group (once per session)
+    if (!deptGroupEnsured[0]) {
+      deptGroupEnsured[1](true);
+      try { await supabase.rpc('ensure_department_group', { _user_id: user.id }); } catch(e) {}
+    }
 
     const { data: participantData } = await supabase
       .from('chat_participants')
@@ -285,6 +294,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
             {filtered.map(conv => {
               const isGroup = conv.type === 'group';
               const label = isGroup ? (conv.name || conv.department) : conv.other_user?.full_name || 'Utilizator';
+              const isDeptGroup = isGroup && !!conv.department;
               const avatarUrl = !isGroup ? conv.other_user?.avatar_url : null;
               const initials = (label || 'U').substring(0, 2).toUpperCase();
 
@@ -300,8 +310,11 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
                   <div className="relative flex-shrink-0">
                     <Avatar className="h-9 w-9">
                       {avatarUrl && <AvatarImage src={avatarUrl} />}
-                      <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
-                        {isGroup ? <Users className="h-4 w-4" /> : initials}
+                      <AvatarFallback className={cn(
+                        "text-xs",
+                        isDeptGroup ? "bg-primary/15 text-primary" : "bg-secondary text-secondary-foreground"
+                      )}>
+                        {isDeptGroup ? <Building2 className="h-4 w-4" /> : isGroup ? <Users className="h-4 w-4" /> : initials}
                       </AvatarFallback>
                     </Avatar>
                     {!isGroup && conv.is_online && (
