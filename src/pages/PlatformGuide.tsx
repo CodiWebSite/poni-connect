@@ -12,6 +12,7 @@ import {
   Printer, UserCircle, FileText, Calendar, FolderDown, Settings, CheckSquare,
   ClipboardList, Shield, Users, BookOpen, Bell, Home, Search, Moon,
   Eye, Download, History, UserCheck, AlertTriangle, HelpCircle, MessageCircle,
+  DoorOpen, PartyPopper, ExternalLink, Mail, Smartphone, CloudSun,
 } from 'lucide-react';
 import {
   SidebarMockup, HeaderMockup, DashboardMockup, ProfileMockup,
@@ -104,7 +105,7 @@ const PlatformGuide = () => {
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
                     <Home className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                    <div><strong>Dashboard</strong> – pagina principală cu statistici rapide, acțiuni rapide și calendar personal.</div>
+                    <div><strong>Dashboard</strong> – pagina principală cu statistici rapide, acțiuni rapide, calendar personal, meteo și utilizatori online.</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Bell className="w-4 h-4 mt-0.5 text-primary shrink-0" />
@@ -127,8 +128,16 @@ const PlatformGuide = () => {
                     <div><strong>Cerere Concediu</strong> – depunerea și urmărirea cererilor de concediu de odihnă.</div>
                   </div>
                   <div className="flex items-start gap-2">
+                    <DoorOpen className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Programări Săli</strong> – rezervarea sălilor de ședință și laboratoarelor comune.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <PartyPopper className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Activități Recreative</strong> – evenimente sociale, sportive și culturale organizate de institut.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <MessageCircle className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                    <div><strong>Mesagerie</strong> – chat intern între colegi, mesaje directe și grupuri, cu suport pentru fișiere și reacții.</div>
+                    <div><strong>Mesagerie</strong> – chat intern între colegi cu suport pentru fișiere, reacții, căutare și status online în timp real.</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Users className="w-4 h-4 mt-0.5 text-primary shrink-0" />
@@ -139,12 +148,24 @@ const PlatformGuide = () => {
                     <div><strong>Bibliotecă</strong> – catalogul de cărți și reviste al institutului (vizibil pentru bibliotecari).</div>
                   </div>
                   <div className="flex items-start gap-2">
+                    <ExternalLink className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Adeverințe</strong> – link extern către sistemul de adeverințe ICMPP (se deschide în tab nou).</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Mail className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Mail ICMPP</strong> – link extern către webmail-ul instituțional (se deschide în tab nou).</div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <Settings className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <div><strong>Setări</strong> – actualizarea numelui, telefonului, temei vizuale și schimbarea parolei.</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <HelpCircle className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <div><strong>Ghid Platformă</strong> – această pagină cu instrucțiuni detaliate, adaptată rolului dvs.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Download className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Instalează App</strong> – instrucțiuni pas cu pas pentru instalarea platformei ca aplicație pe telefon sau desktop.</div>
                   </div>
                 </div>
 
@@ -186,16 +207,36 @@ const PlatformGuide = () => {
                 <p className="mb-2">Dashboard-ul afișează informații utile la prima vedere:</p>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
+                    <Download className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Banner instalare aplicație</strong> – în partea de sus, un banner vă invită să instalați platforma ca aplicație pe telefon sau desktop. Se poate închide și nu mai apare în sesiunea curentă.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <Eye className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                    <div><strong>Acțiuni rapide</strong> – 3 carduri în partea de sus: Profilul Meu, Calendar Concedii, Formulare. Apăsați pe oricare pentru acces direct.</div>
+                    <div><strong>Acțiuni rapide</strong> – 3 carduri: Profilul Meu, Calendar Concedii, Formulare. Apăsați pe oricare pentru acces direct.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Calendar className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Sold concediu</strong> – un inel de progres vizual arată câte zile ați utilizat, cu cifre animate.</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Calendar className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <div><strong>Calendarul personal</strong> – vedeți evenimentele lunii curente și zilele dvs. de concediu.</div>
                   </div>
                   <div className="flex items-start gap-2">
+                    <CloudSun className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Widget meteo</strong> – afișează vremea curentă în Iași (temperatură, condiții, vânt).</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Users className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Utilizatori online</strong> – vedeți câți colegi sunt activi pe platformă în acest moment.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <Bell className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                    <div><strong>Soldul de concediu</strong> – pentru angajați, se afișează direct câte zile mai aveți disponibile.</div>
+                    <div><strong>Anunțuri recente</strong> – ultimele 3 anunțuri ale instituției, direct pe dashboard.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <History className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Istoricul activității</strong> – ultimele acțiuni ale dvs. pe platformă (cereri, logări etc.).</div>
                   </div>
                 </div>
 
@@ -500,24 +541,35 @@ const PlatformGuide = () => {
               </GuideSection>
 
               {/* ─── MESAGERIE (CHAT) ─── */}
-              <GuideSection icon={MessageCircle} title="Mesagerie – Chat intern între colegi">
+              <GuideSection icon={MessageCircle} title="Mesagerie – Chat intern între colegi" badge="Beta">
                 <p className="mb-2">Platforma include un sistem de mesagerie internă pentru comunicare rapidă între colegi:</p>
 
                 <Separator className="my-3" />
                 <p className="font-medium text-foreground text-xs uppercase tracking-wider">💬 Conversații</p>
                 <div className="space-y-1.5 mt-2">
                   <p>• <strong>Conversații directe</strong> – trimiteți mesaje private oricărui coleg din institut.</p>
-                  <p>• <strong>Grupuri</strong> – creați conversații de grup cu mai mulți colegi sau pe departament.</p>
+                  <p>• <strong>Director de contacte</strong> – organizat pe departamente/laboratoare cu secțiuni expandabile.</p>
                   <p>• <strong>Conversație nouă</strong> – apăsați butonul „+" din lista de conversații pentru a iniția o discuție nouă.</p>
                   <p>• Lista de conversații arată <strong>ultimul mesaj</strong> și un <strong>badge cu numărul mesajelor necitite</strong>.</p>
+                  <p>• Badge global de mesaje necitite vizibil în <strong>sidebar</strong> (meniul din stânga).</p>
                 </div>
 
                 <Separator className="my-3" />
                 <p className="font-medium text-foreground text-xs uppercase tracking-wider">📎 Fișiere și media</p>
                 <div className="space-y-1.5 mt-2">
-                  <p>• Trimiteți <strong>imagini</strong> (se afișează inline cu previzualizare).</p>
-                  <p>• Trimiteți <strong>documente</strong> (PDF, Word, Excel, PowerPoint) – fiecare cu iconița corespunzătoare.</p>
-                  <p>• Panoul <strong>„Media partajate"</strong> (iconița din header-ul chat-ului) afișează toate fișierele schimbate în conversație, organizate pe imagini și documente.</p>
+                  <p>• Trimiteți <strong>imagini</strong> (se afișează inline cu previzualizare) și <strong>video</strong>.</p>
+                  <p>• Trimiteți <strong>documente</strong> (PDF, Word, Excel, PowerPoint) – fiecare cu iconița corespunzătoare tipului de fișier.</p>
+                  <p>• Limita maximă per fișier: <strong>400 MB</strong>.</p>
+                  <p>• Panoul <strong>„Media partajate"</strong> (iconița din header-ul chat-ului) afișează toate fișierele schimbate, organizate pe: Imagini, Video și Documente.</p>
+                  <p>• La descărcare, fișierele păstrează <strong>numele original</strong>.</p>
+                </div>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">✓ Status mesaje</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• <strong>✓</strong> – mesajul a fost trimis.</p>
+                  <p>• <strong>✓✓</strong> – mesajul a fost livrat.</p>
+                  <p>• <strong>✓✓ albastru</strong> – mesajul a fost citit de destinatar.</p>
                 </div>
 
                 <Separator className="my-3" />
@@ -528,18 +580,95 @@ const PlatformGuide = () => {
                 </div>
 
                 <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🔍 Căutare și funcții avansate</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• <strong>Căutare în conversație</strong> – apăsați iconița lupă din header-ul chat-ului pentru a căuta în mesaje. Rezultatele sunt evidențiate (highlighted).</p>
+                  <p>• <strong>Ștergere mesaje (Unsend)</strong> – puteți șterge mesajele proprii. Fișierele atașate sunt șterse automat și din stocare.</p>
+                </div>
+
+                <Separator className="my-3" />
                 <p className="font-medium text-foreground text-xs uppercase tracking-wider">🟢 Status online/offline</p>
                 <div className="space-y-1.5 mt-2">
                   <p>• Un <strong>punct verde</strong> lângă avatarul unui coleg indică faptul că este online.</p>
                   <p>• Statusul se actualizează <strong>în timp real</strong> – vedeți instant când cineva intră sau iese.</p>
                   <p>• În header-ul conversației, sub numele colegului, apare „Online" sau „Ultima activitate acum X minute".</p>
+                  <p>• Indicatorul online este vizibil atât în <strong>lista de conversații</strong> cât și în <strong>fereastra de chat</strong>.</p>
+                </div>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🔔 Notificări chat</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• La primirea unui mesaj nou, se aude un <strong>sunet de notificare</strong> (beep).</p>
+                  <p>• Badge-ul de mesaje necitite se actualizează în timp real în meniu.</p>
                 </div>
 
                 <InfoBox title="💡 Sfat: Mesagerie pe mobil">
-                  <p>Pe telefon, conversația se deschide pe ecran complet. Apăsați săgeata din stânga-sus pentru a reveni la lista de conversații.</p>
+                  <p>Pe telefon, conversația se deschide pe ecran complet. Apăsați săgeata din stânga-sus pentru a reveni la lista de conversații. Inputul de text este optimizat pentru a preveni auto-zoom-ul pe iOS.</p>
                 </InfoBox>
 
                 <ChatMockup />
+              </GuideSection>
+
+              {/* ─── PROGRAMĂRI SĂLI ─── */}
+              <GuideSection icon={DoorOpen} title="Programări Săli – Rezervare spații comune">
+                <p className="mb-2">Modulul de programări permite rezervarea sălilor de ședință și a spațiilor comune:</p>
+                <div className="space-y-1.5">
+                  <p>• <strong>Vizualizare calendar</strong> – vedeți toate rezervările existente într-un calendar săptămânal sau lunar.</p>
+                  <p>• <strong>Rezervare nouă</strong> – selectați sala, data, ora de început și de sfârșit, titlul și o descriere opțională.</p>
+                  <p>• <strong>Verificare disponibilitate</strong> – sistemul previne suprapunerile de rezervări.</p>
+                  <p>• <strong>Anulare</strong> – puteți anula propriile rezervări.</p>
+                  <p>• Administratorii pot gestiona toate rezervările.</p>
+                </div>
+                <InfoBox title="💡 Sfat">
+                  <p>Planificați din timp și rezervați sălile cu cel puțin o zi înainte pentru a evita conflictele de programare.</p>
+                </InfoBox>
+              </GuideSection>
+
+              {/* ─── ACTIVITĂȚI RECREATIVE ─── */}
+              <GuideSection icon={PartyPopper} title="Activități Recreative – Evenimente sociale">
+                <p className="mb-2">Secțiunea pentru activități sociale, sportive și culturale organizate de institut:</p>
+                <div className="space-y-1.5">
+                  <p>• <strong>Lista activităților</strong> – vedeți toate evenimentele planificate cu data, locația și descrierea.</p>
+                  <p>• <strong>Categorii</strong> – activitățile sunt organizate pe categorii (sport, cultură, social etc.).</p>
+                  <p>• <strong>Participare</strong> – puteți confirma sau refuza participarea la fiecare activitate.</p>
+                  <p>• <strong>Limită participanți</strong> – unele activități au un număr maxim de locuri.</p>
+                  <p>• Organizatorii pot crea, edita și gestiona activitățile.</p>
+                </div>
+              </GuideSection>
+
+              {/* ─── INSTALARE APP ─── */}
+              <GuideSection icon={Smartphone} title="Instalează Aplicația – ICMPP ca app pe telefon/desktop">
+                <p className="mb-2">Platforma poate fi instalată ca aplicație nativă pe orice dispozitiv:</p>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">📱 Android (Chrome)</p>
+                <StepList steps={[
+                  'Deschideți platforma în Chrome pe telefon.',
+                  'Apăsați pe meniul ⋮ (cele 3 puncte) din colțul din dreapta-sus.',
+                  'Selectați „Adaugă pe ecranul de pornire" sau „Instalează aplicația".',
+                  'Confirmați cu „Instalează". Iconița apare pe ecranul principal!',
+                ]} />
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🍎 iPhone / iPad (Safari)</p>
+                <StepList steps={[
+                  'Deschideți platforma în Safari (nu funcționează din Chrome pe iOS).',
+                  'Apăsați pe butonul Share (săgeata în sus din bara de jos).',
+                  'Derulați și apăsați „Adaugă pe ecranul principal".',
+                  'Confirmați cu „Adaugă". Aplicația apare pe ecranul de pornire!',
+                ]} />
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🖥️ Desktop (Chrome / Edge)</p>
+                <StepList steps={[
+                  'Căutați iconița de instalare în bara de adrese (dreapta).',
+                  'Apăsați pe ea și confirmați cu „Instalează".',
+                  'Aplicația se deschide într-o fereastră separată, fără bara browserului.',
+                ]} />
+
+                <InfoBox title="💡 De ce să instalezi?">
+                  <p>Aplicația se deschide mai repede, fără bara browserului, arată și funcționează ca o aplicație reală și se actualizează automat. Accesați <strong>pagina „Instalează App"</strong> din meniu pentru instrucțiuni detaliate și butonul de instalare directă.</p>
+                </InfoBox>
               </GuideSection>
 
               {/* ─── NOTIFICĂRI ─── */}
@@ -550,6 +679,7 @@ const PlatformGuide = () => {
                   <p>  – Mesaje de la administrator.</p>
                   <p>  – Alerte de expirare carte de identitate.</p>
                   <p>  – Anunțuri noi și cereri de aprobare.</p>
+                  <p>  – Mesaje noi în chat (cu sunet de notificare).</p>
                   <p>• Notificările apar ca un <strong>badge roșu pe clopoțel</strong> (bara de sus).</p>
                   <p>• Apăsați pe clopoțel pentru a vedea lista. Apăsați pe o notificare pentru detalii.</p>
                   <p>• Puteți marca notificările ca citite individual sau pe toate deodată.</p>
