@@ -31,6 +31,8 @@ import {
   DoorOpen,
   PartyPopper,
   MessageCircle,
+  ExternalLink,
+  Mail,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -192,6 +194,8 @@ const Sidebar = () => {
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat', badge: unreadChat || undefined },
+    { icon: ExternalLink, label: 'Adeverințe', path: 'https://adeverinte.icmpp.ro/', external: true },
+    { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 
@@ -203,20 +207,19 @@ const Sidebar = () => {
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin }] : []),
   ];
 
-  const renderNavItem = (item: { icon: any; label: string; path: string; badge?: number }) => {
-    const isActive = location.pathname === item.path;
-    const linkContent = (
-      <Link
-        key={item.path}
-        to={item.path}
-        className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group",
-          isActive
-            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-            : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        )}
-      >
-        {/* Active indicator bar */}
+  const renderNavItem = (item: { icon: any; label: string; path: string; badge?: number; external?: boolean }) => {
+    const isExternal = item.external;
+    const isActive = !isExternal && location.pathname === item.path;
+
+    const commonClasses = cn(
+      "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group",
+      isActive
+        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    );
+
+    const innerContent = (
+      <>
         {isActive && (
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-sidebar-primary-foreground rounded-r-full -ml-3" />
         )}
@@ -238,6 +241,26 @@ const Sidebar = () => {
             )}
           </>
         )}
+      </>
+    );
+
+    const linkContent = isExternal ? (
+      <a
+        key={item.path}
+        href={item.path}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={commonClasses}
+      >
+        {innerContent}
+      </a>
+    ) : (
+      <Link
+        key={item.path}
+        to={item.path}
+        className={commonClasses}
+      >
+        {innerContent}
       </Link>
     );
 
