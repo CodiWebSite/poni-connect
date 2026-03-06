@@ -146,14 +146,30 @@ const SharedMediaPanel = ({ conversationId, open, onOpenChange, convName }: Prop
     );
   };
 
+  const getDocIcon = (name: string | null) => {
+    const ext = (name || '').split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'pdf':
+        return <FileType className="h-5 w-5 text-red-500" />;
+      case 'xls': case 'xlsx': case 'csv':
+        return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
+      case 'ppt': case 'pptx':
+        return <Presentation className="h-5 w-5 text-orange-500" />;
+      case 'doc': case 'docx':
+        return <FileText className="h-5 w-5 text-blue-500" />;
+      default:
+        return <FileText className="h-5 w-5 text-primary" />;
+    }
+  };
+
   const renderDocumentList = () => {
     if (!documents.length) return <EmptyState text="Niciun document partajat" />;
     return (
       <div className="p-3 space-y-2">
         {documents.map(item => (
           <div key={item.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <FileText className="h-5 w-5 text-primary" />
+            <div className="w-10 h-10 rounded-md bg-background flex items-center justify-center flex-shrink-0 border border-border">
+              {getDocIcon(item.attachment_name)}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground break-all">{item.attachment_name || 'Document'}</p>
