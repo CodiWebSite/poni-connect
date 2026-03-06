@@ -20,6 +20,7 @@ interface ConversationItem {
   other_user?: { full_name: string; avatar_url: string | null; user_id: string };
   last_message: string | null;
   unread_count: number;
+  is_online: boolean;
 }
 
 interface Props {
@@ -63,6 +64,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
 
     for (const conv of convData) {
       let otherUser: ConversationItem['other_user'] = undefined;
+      let isOnline = false;
 
       if (conv.type === 'direct') {
         const { data: parts } = await supabase
@@ -86,6 +88,15 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
               user_id: profile.user_id,
             };
           }
+
+          // Check presence
+          const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+          const { data: presence } = await supabase
+            .from('user_presence')
+            .select('is_online, last_seen_at')
+            .eq('user_id', parts[0].user_id)
+            .maybeSingle();
+          isOnline = !!(presence?.is_online && presence.last_seen_at >= fiveMinAgo);
         }
       }
 
@@ -117,6 +128,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
         other_user: otherUser,
         last_message: lastMsg?.[0]?.content || null,
         unread_count: unreadCount,
+        is_online: isOnline,
       });
     }
 
@@ -238,12 +250,17 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
                     selectedId === conv.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
                   )}
                 >
-                  <Avatar className="h-9 w-9 flex-shrink-0">
-                    {avatarUrl && <AvatarImage src={avatarUrl} />}
-                    <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
-                      {isGroup ? <Users className="h-4 w-4" /> : initials}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative flex-shrink-0">
+                    <Avatar className="h-9 w-9">
+                      {avatarUrl && <AvatarImage src={avatarUrl} />}
+                      <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
+                        {isGroup ? <Users className="h-4 w-4" /> : initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    {!isGroup && conv.is_online && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-card" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium truncate">{label}</span>
