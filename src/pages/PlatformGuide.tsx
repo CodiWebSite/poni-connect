@@ -659,12 +659,28 @@ const PlatformGuide = () => {
                 ]} />
 
                 <Separator className="my-3" />
-                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🖥️ Desktop (Chrome / Edge)</p>
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">🖥️ Windows / Linux (Chrome / Edge)</p>
                 <StepList steps={[
                   'Căutați iconița de instalare în bara de adrese (dreapta).',
                   'Apăsați pe ea și confirmați cu „Instalează".',
                   'Aplicația se deschide într-o fereastră separată, fără bara browserului.',
                 ]} />
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">💻 MacBook / macOS</p>
+                <p className="text-xs text-muted-foreground italic mb-1">Varianta 1 — Chrome / Edge (recomandat):</p>
+                <StepList steps={[
+                  'Deschideți platforma în Chrome sau Edge.',
+                  'Căutați iconița de instalare în bara de adrese (dreapta) și apăsați pe ea.',
+                  'Confirmați cu „Instalează". Aplicația apare în Launchpad și Dock.',
+                ]} />
+                <p className="text-xs text-muted-foreground italic mb-1 mt-2">Varianta 2 — Safari (macOS Sonoma 14+ / Safari 17+):</p>
+                <StepList steps={[
+                  'Deschideți platforma în Safari.',
+                  'Din meniul Safari, alegeți File → Add to Dock.',
+                  'Aplicația apare în Dock și se deschide fără bara Safari.',
+                ]} />
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">⚠️ Versiunile mai vechi de macOS (sub Sonoma 14) nu suportă instalarea din Safari — folosiți Chrome.</p>
 
                 <InfoBox title="💡 De ce să instalezi?">
                   <p>Aplicația se deschide mai repede, fără bara browserului, arată și funcționează ca o aplicație reală și se actualizează automat. Accesați <strong>pagina „Instalează App"</strong> din meniu pentru instrucțiuni detaliate și butonul de instalare directă.</p>
