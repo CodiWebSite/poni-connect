@@ -47,7 +47,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
     // Auto-create/join department group (once per session)
     if (!deptGroupEnsured[0]) {
       deptGroupEnsured[1](true);
-      await supabase.rpc('ensure_department_group', { _user_id: user.id }).catch(() => {});
+      try { await supabase.rpc('ensure_department_group', { _user_id: user.id }); } catch(e) {}
     }
 
     const { data: participantData } = await supabase
