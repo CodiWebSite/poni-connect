@@ -6,6 +6,7 @@ import PageTransition from './PageTransition';
 import OnboardingTour from '@/components/onboarding/OnboardingTour';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { usePresence } from '@/hooks/usePresence';
 import { cn } from '@/lib/utils';
 import { AlertTriangle } from 'lucide-react';
 
@@ -18,6 +19,7 @@ interface MainLayoutProps {
 const MainLayout = ({ children, title, description }: MainLayoutProps) => {
   const { isCollapsed } = useSidebarContext();
   const { settings } = useAppSettings();
+  usePresence();
 
   return (
     <div className="min-h-screen bg-background">
