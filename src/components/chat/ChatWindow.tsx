@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, MessageCircle, Paperclip, Smile, FileText, Film, Download, X, Check, CheckCheck, Trash2, Search, FolderOpen, ChevronUp, ChevronDown, XCircle } from 'lucide-react';
+import { Send, MessageCircle, Paperclip, Smile, FileText, Film, Download, X, Check, CheckCheck, Trash2, Search, FolderOpen, ChevronUp, ChevronDown, XCircle, ArrowLeft } from 'lucide-react';
 import SharedMediaPanel from './SharedMediaPanel';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
