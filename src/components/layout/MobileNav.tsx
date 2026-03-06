@@ -28,6 +28,7 @@ import {
   MessageCircle,
   ExternalLink,
   Mail,
+  Download,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -73,6 +74,7 @@ const MobileNav = () => {
     { icon: ExternalLink, label: 'Adeverințe', path: 'https://adeverinte.icmpp.ro/', external: true },
     { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
+    { icon: Download, label: 'Instalează App', path: '/install' },
   ];
 
   const managementItems = [

@@ -31,6 +31,7 @@ import MyTeam from "./pages/MyTeam";
 import RoomBookings from "./pages/RoomBookings";
 import RecreationalActivities from "./pages/RecreationalActivities";
 import Chat from "./pages/Chat";
+import InstallApp from "./pages/InstallApp";
 
 const queryClient = new QueryClient();
 
@@ -114,6 +115,7 @@ const App = () => (
                 <Route path="/room-bookings" element={<RoomBookings />} />
                 <Route path="/activitati" element={<RecreationalActivities />} />
                 <Route path="/chat" element={<Chat />} />
+                <Route path="/install" element={<InstallApp />} />
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="*" element={<NotFound />} />
