@@ -261,27 +261,33 @@ export type Database = {
       }
       chat_conversations: {
         Row: {
+          admin_id: string | null
           created_at: string
           created_by: string | null
           department: string | null
+          group_avatar_url: string | null
           id: string
           name: string | null
           type: string
           updated_at: string
         }
         Insert: {
+          admin_id?: string | null
           created_at?: string
           created_by?: string | null
           department?: string | null
+          group_avatar_url?: string | null
           id?: string
           name?: string | null
           type?: string
           updated_at?: string
         }
         Update: {
+          admin_id?: string | null
           created_at?: string
           created_by?: string | null
           department?: string | null
+          group_avatar_url?: string | null
           id?: string
           name?: string | null
           type?: string
