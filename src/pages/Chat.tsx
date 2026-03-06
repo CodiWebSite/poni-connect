@@ -16,27 +16,38 @@ const Chat = () => {
     setListKey(k => k + 1);
   }, []);
 
+  // On mobile when inside a conversation, render without MainLayout for full-screen chat
+  if (isMobile && selectedConvId) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col">
+        <ChatWindow
+          conversationId={selectedConvId}
+          onMessagesRead={handleMessagesRead}
+          onBack={() => setSelectedConvId(null)}
+        />
+      </div>
+    );
+  }
+
   return (
     <MainLayout title="Mesagerie" description="Chat intern între colegi">
-      {/* Show beta banner only on conversation list view (or always on desktop) */}
-      {(!isMobile || !selectedConvId) && <ChatBetaBanner />}
+      <ChatBetaBanner />
 
       <div
         className="bg-card border border-border rounded-xl overflow-hidden flex"
-        style={{ height: isMobile ? 'calc(100dvh - 140px)' : 'calc(100vh - 220px)' }}
+        style={{ height: isMobile ? 'calc(100dvh - 160px)' : 'calc(100vh - 220px)' }}
       >
         {showList && (
-          <div className={isMobile ? "w-full" : "w-[320px] flex-shrink-0 border-r border-border"}>
+          <div className={isMobile ? "w-full h-full" : "w-[320px] flex-shrink-0 border-r border-border"}>
             <ConversationList key={listKey} selectedId={selectedConvId} onSelect={setSelectedConvId} />
           </div>
         )}
 
-        {showChat && (
+        {showChat && !isMobile && (
           <div className="flex-1 flex flex-col min-w-0">
             <ChatWindow
               conversationId={selectedConvId}
               onMessagesRead={handleMessagesRead}
-              onBack={isMobile ? () => setSelectedConvId(null) : undefined}
             />
           </div>
         )}
