@@ -196,7 +196,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   })();
 
   const handleSubmit = async () => {
-    if (!user || !employeeData || !signature || !startDate || !endDate || !replacementId) {
+    if (!user || !employeeData || !signature || !startDate || !endDate) {
       toast({ title: 'Eroare', description: 'Completați toate câmpurile și semnați cererea.', variant: 'destructive' });
       return;
     }
@@ -487,7 +487,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
         {/* Replacement */}
         <div className="space-y-2">
-          <Label>Înlocuitor pe perioada concediului *</Label>
+          <Label>Înlocuitor pe perioada concediului</Label>
           <Select value={replacementId} onValueChange={setReplacementId}>
             <SelectTrigger>
               <SelectValue placeholder="Selectați înlocuitorul" />
@@ -518,7 +518,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         <div className="flex justify-end">
           <Button
             onClick={handleSubmit}
-            disabled={submitting || !signature || !startDate || !endDate || !replacementId || workingDays <= 0}
+            disabled={submitting || !signature || !startDate || !endDate || workingDays <= 0}
             className="gap-2"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
