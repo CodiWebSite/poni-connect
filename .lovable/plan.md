@@ -1,114 +1,60 @@
 
 
-## Plan: Modul Salarizare -- Rol dedicat cu acces exclusiv
+# Chat Intern / Mesagerie — Modul Beta
 
-### Rezumat
+## Descriere
+Sistem de mesagerie internă cu conversații directe (1-la-1) și grupuri pe departament, marcat ca **Beta v0.9** similar cu modulul de concedii.
 
-Se creează un rol nou `salarizare` in baza de date, o pagina dedicata `/salarizare` vizibila DOAR pentru utilizatorii cu acest rol (nu si super_admin), si se scoate optiunea "Raport salarizare" din HRExportButton.
+## Structura bazei de date
 
-### 1. Migrare SQL
+**3 tabele noi:**
 
-```sql
--- Adaugare rol nou
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'salarizare';
+1. **`chat_conversations`** — conversațiile (direct sau grup)
+   - `id`, `type` (direct/group), `name` (pentru grupuri), `department` (pentru grupuri auto), `created_by`, `created_at`, `updated_at`
 
--- Functie de verificare
-CREATE OR REPLACE FUNCTION public.can_manage_salarizare(_user_id uuid)
-RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = _user_id AND role = 'salarizare'
-  )
-$$;
+2. **`chat_participants`** — cine participă la fiecare conversație
+   - `id`, `conversation_id`, `user_id`, `joined_at`, `last_read_at`
 
--- RLS: rolul salarizare poate citi employee_personal_data
-CREATE POLICY "Salarizare can view EPD"
-ON public.employee_personal_data FOR SELECT
-TO authenticated
-USING (can_manage_salarizare(auth.uid()));
+3. **`chat_messages`** — mesajele propriu-zise
+   - `id`, `conversation_id`, `sender_id`, `content` (text), `created_at`, `updated_at`, `is_edited`
 
--- RLS: rolul salarizare poate citi leave_requests
-CREATE POLICY "Salarizare can view leave requests"
-ON public.leave_requests FOR SELECT
-TO authenticated
-USING (can_manage_salarizare(auth.uid()));
+Realtime activat pe `chat_messages` pentru primire instantanee.
 
--- RLS: rolul salarizare poate citi employee_records
-CREATE POLICY "Salarizare can view employee records"
-ON public.employee_records FOR SELECT
-TO authenticated
-USING (can_manage_salarizare(auth.uid()));
+## RLS (securitate)
+- Participanții pot vedea/trimite mesaje doar în conversațiile la care participă
+- Funcție `is_chat_participant(user_id, conversation_id)` SECURITY DEFINER pentru a evita recursivitate
 
--- RLS: rolul salarizare poate citi leave_carryover
-CREATE POLICY "Salarizare can view leave carryover"
-ON public.leave_carryover FOR SELECT
-TO authenticated
-USING (can_manage_salarizare(auth.uid()));
+## Funcționalități
+1. **Conversații directe** — click pe un coleg din director/profil → deschide chat 1-la-1
+2. **Grupuri departament** — create automat pe baza departamentului din `profiles`
+3. **Indicatori necitite** — badge pe sidebar cu nr. mesaje necitite
+4. **Typing indicator** — via Supabase Realtime Presence (fără tabel)
+5. **Banner Beta** — controlat din `app_settings` (`chat_beta` key), identic cu cel de pe concedii
 
--- RLS: rolul salarizare poate citi leave_bonus
-CREATE POLICY "Salarizare can view leave bonus"
-ON public.leave_bonus FOR SELECT
-TO authenticated
-USING (can_manage_salarizare(auth.uid()));
+## Pagini și componente noi
 
--- RLS: rolul salarizare poate citi profiles
-CREATE POLICY "Salarizare can view profiles"
-ON public.profiles FOR SELECT
-TO authenticated
-USING (can_manage_salarizare(auth.uid()));
-```
+- **`src/pages/Chat.tsx`** — pagina principală cu layout split (lista conversații + zona mesaje)
+- **`src/components/chat/ConversationList.tsx`** — lista conversațiilor cu search, badge necitite
+- **`src/components/chat/ChatWindow.tsx`** — zona de mesaje cu scroll infinit, input, timestamp-uri
+- **`src/components/chat/NewConversationDialog.tsx`** — dialog pentru conversație nouă (selectare utilizator)
+- **`src/components/chat/ChatBetaBanner.tsx`** — banner Beta reutilizabil
 
-Update `handle_new_user` -- adaugare label "Salarizare" in CASE.
+## Modificări existente
+- **Sidebar.tsx** — adăugare link „Mesagerie" cu iconiță `MessageCircle` + badge necitite
+- **App.tsx** — rută nouă `/chat`
+- **app_settings** — inserare rând `chat_beta = true`
 
-### 2. Modificari cod
+## Design UI
+- Layout responsive: pe desktop split 30/70 (listă/mesaje), pe mobil navigare între ecrane
+- Mesajele proprii aliniate la dreapta (albastru), cele primite la stânga (gri)
+- Avatar + nume expeditor + timestamp
+- ScrollArea pentru istoric mesaje
+- Input cu buton Send în partea de jos
 
-**`src/hooks/useUserRole.tsx`**
-- Adaugare `'salarizare'` in lista de roluri valide
-- Export `isSalarizare` computed property
-
-**`src/components/layout/Sidebar.tsx`**
-- Adaugare intrare `Salarizare` cu icon `Banknote`, vizibila DOAR daca `isSalarizare` (nu si super_admin)
-- Plasare in sectiunea de management
-
-**`src/components/layout/MobileNav.tsx`**
-- Aceeasi intrare pentru mobile
-
-**`src/App.tsx`**
-- Adaugare ruta `/salarizare` -> `Salarizare`
-
-**`src/pages/Salarizare.tsx`** (NOU)
-- Verificare rol: daca nu e `salarizare`, redirect la `/`
-- UI cu 3 butoane de export XLSX:
-  1. **Luna precedenta** -- un sheet cu angajatii A-Z si concediile din luna precedenta (zile + perioade)
-  2. **Concedii 2025** -- 12 sheet-uri (Ian-Dec 2025), fiecare cu angajatii si concediile lunii respective
-  3. **Concedii 2026** -- 12 sheet-uri (Ian-Dec 2026), fiecare cu angajatii si concediile lunii respective
-- Datele se iau din `employee_personal_data` + `leave_requests` (approved) + `leave_carryover` + `leave_bonus`
-- Se reutilizeaza logica de stil Excel din HRExportButton (HEADER_FILL, styleSheet, etc.)
-
-**`src/components/hr/HRExportButton.tsx`**
-- Scoatere optiunea "Raport salarizare (CO/luna)" din dropdown (liniile 432-435)
-
-### 3. Structura XLSX
-
-```text
-Export "Luna precedenta (Feb 2026)":
-Sheet: "Feb 2026"
-| Nr | Nume        | Dept   | Functie | Zile CO | Perioade    |
-
-Export "Concedii 2025":
-Sheet: "Ianuarie 2025" ... "Decembrie 2025" (12 sheets)
-| Nr | Nume        | Dept   | Functie | Zile CO | Perioade    |
-
-Export "Concedii 2026":  
-Sheet: "Ianuarie 2026" ... "Decembrie 2026" (12 sheets)
-| Nr | Nume        | Dept   | Functie | Zile CO | Perioade    |
-```
-
-### 4. Fișiere afectate
-
-- **Nou**: `src/pages/Salarizare.tsx`
-- **Modificat**: `src/hooks/useUserRole.tsx`, `src/components/layout/Sidebar.tsx`, `src/components/layout/MobileNav.tsx`, `src/App.tsx`, `src/components/hr/HRExportButton.tsx`
-- **Migrare DB**: rol + functie + 6 politici RLS + update handle_new_user
+## Ordine implementare
+1. Migrare DB (tabele + RLS + realtime)
+2. Inserare setting `chat_beta`
+3. Pagina Chat cu componentele
+4. Integrare sidebar + routing
+5. Badge necitite în sidebar
 
