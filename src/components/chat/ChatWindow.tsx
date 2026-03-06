@@ -286,14 +286,42 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
     fetchMessages();
   }, [conversationId]);
 
-  // Refresh presence + other's last_read every 15s
+  // Realtime presence + polling fallback
   useEffect(() => {
     if (!otherUserId || !conversationId) return;
+
+    // Immediate fetch
+    fetchPresence(otherUserId);
+    fetchOtherLastRead();
+
+    // Realtime subscription for other user's presence changes
+    const presenceChannel = supabase
+      .channel(`presence-${otherUserId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_presence',
+        filter: `user_id=eq.${otherUserId}`,
+      }, (payload) => {
+        if (payload.new && typeof payload.new === 'object') {
+          const row = payload.new as any;
+          const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+          setIsOnline(row.is_online && row.last_seen_at >= fiveMinAgo);
+          setLastSeen(row.last_seen_at);
+        }
+      })
+      .subscribe();
+
+    // Fallback polling every 30s
     const interval = setInterval(() => {
       fetchPresence(otherUserId);
       fetchOtherLastRead();
-    }, 15000);
-    return () => clearInterval(interval);
+    }, 30000);
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(presenceChannel);
+    };
   }, [otherUserId, conversationId, fetchPresence, fetchOtherLastRead]);
 
   // Realtime subscription for messages
