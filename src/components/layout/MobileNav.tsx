@@ -25,6 +25,9 @@ import {
   ServerCog,
   DoorOpen,
   PartyPopper,
+  MessageCircle,
+  ExternalLink,
+  Mail,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -55,7 +58,7 @@ const MobileNav = () => {
     navigate('/auth');
   };
 
-  const mainItems = [
+  const mainItems: { icon: any; label: string; path: string; external?: boolean }[] = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
@@ -66,6 +69,9 @@ const MobileNav = () => {
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
+    { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
+    { icon: ExternalLink, label: 'Adeverințe', path: 'https://adeverinte.icmpp.ro/', external: true },
+    { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 
