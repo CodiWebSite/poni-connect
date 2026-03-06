@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Users, MessageCircle } from 'lucide-react';
+import { Search, Plus, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumePrenume } from '@/utils/formatName';
 import NewConversationDialog from './NewConversationDialog';
@@ -18,7 +18,7 @@ interface ConversationItem {
   department: string | null;
   updated_at: string;
   other_user?: { full_name: string; avatar_url: string | null; user_id: string };
-  last_message?: string;
+  last_message: string | null;
   unread_count: number;
 }
 
@@ -34,10 +34,9 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     if (!user) return;
 
-    // Get conversations user participates in
     const { data: participantData } = await supabase
       .from('chat_participants')
       .select('conversation_id, last_read_at')
@@ -60,7 +59,6 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
 
     if (!convData) { setLoading(false); return; }
 
-    // For direct convos, get the other user's profile
     const items: ConversationItem[] = [];
 
     for (const conv of convData) {
@@ -91,7 +89,6 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
         }
       }
 
-      // Get last message
       const { data: lastMsg } = await supabase
         .from('chat_messages')
         .select('content, created_at')
@@ -99,7 +96,6 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
         .order('created_at', { ascending: false })
         .limit(1);
 
-      // Count unread
       const lastRead = lastReadMap[conv.id];
       let unreadCount = 0;
       if (lastRead) {
@@ -119,16 +115,64 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
         department: conv.department,
         updated_at: conv.updated_at,
         other_user: otherUser,
-        last_message: lastMsg?.[0]?.content,
+        last_message: lastMsg?.[0]?.content || null,
         unread_count: unreadCount,
       });
     }
 
     setConversations(items);
     setLoading(false);
-  };
+  }, [user]);
 
-  useEffect(() => { fetchConversations(); }, [user]);
+  useEffect(() => { fetchConversations(); }, [fetchConversations]);
+
+  // Expose refresh method via selecting a conversation (marks as read → refresh list)
+  const handleSelect = useCallback((convId: string) => {
+    // Immediately clear badge locally for instant feedback
+    setConversations(prev =>
+      prev.map(c => c.id === convId ? { ...c, unread_count: 0 } : c)
+    );
+    onSelect(convId);
+  }, [onSelect]);
+
+  // Listen for new messages in any conversation to update badges
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('chat-list-updates')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+      }, (payload) => {
+        const msg = payload.new as any;
+        if (msg.sender_id === user.id) return; // own messages don't increment badge
+
+        setConversations(prev => {
+          const idx = prev.findIndex(c => c.id === msg.conversation_id);
+          if (idx === -1) {
+            // New conversation we don't have yet — refetch
+            fetchConversations();
+            return prev;
+          }
+          const updated = [...prev];
+          const conv = { ...updated[idx] };
+          // Only increment if this conversation is NOT currently selected
+          if (msg.conversation_id !== selectedId) {
+            conv.unread_count = (conv.unread_count || 0) + 1;
+          }
+          conv.last_message = msg.content || (msg.attachment_name ? `📎 ${msg.attachment_name}` : '📎 Atașament');
+          conv.updated_at = msg.created_at;
+          updated[idx] = conv;
+          // Re-sort by updated_at desc
+          updated.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+          return updated;
+        });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, selectedId, fetchConversations]);
 
   const filtered = conversations.filter(c => {
     const label = c.type === 'direct' ? c.other_user?.full_name : c.name;
@@ -140,6 +184,15 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
     fetchConversations();
     onSelect(convId);
   };
+
+  // Called by parent when messages are read in the active conversation
+  const refreshUnread = useCallback(() => {
+    if (selectedId) {
+      setConversations(prev =>
+        prev.map(c => c.id === selectedId ? { ...c, unread_count: 0 } : c)
+      );
+    }
+  }, [selectedId]);
 
   return (
     <div className="flex flex-col h-full border-r border-border">
@@ -179,12 +232,10 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
               return (
                 <button
                   key={conv.id}
-                  onClick={() => onSelect(conv.id)}
+                  onClick={() => handleSelect(conv.id)}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
-                    selectedId === conv.id
-                      ? "bg-primary/10 text-primary"
-                      : "hover:bg-muted"
+                    selectedId === conv.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
                   )}
                 >
                   <Avatar className="h-9 w-9 flex-shrink-0">
@@ -197,13 +248,18 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium truncate">{label}</span>
                       {conv.unread_count > 0 && (
-                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-[20px] justify-center">
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-[20px] justify-center animate-scale-in">
                           {conv.unread_count}
                         </Badge>
                       )}
                     </div>
                     {conv.last_message && (
-                      <p className="text-xs text-muted-foreground truncate">{conv.last_message}</p>
+                      <p className={cn(
+                        "text-xs truncate",
+                        conv.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"
+                      )}>
+                        {conv.last_message}
+                      </p>
                     )}
                   </div>
                 </button>
