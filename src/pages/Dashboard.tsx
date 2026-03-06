@@ -15,7 +15,6 @@ import { StatCardSkeleton, QuickActionsSkeleton, ChartSkeleton } from '@/compone
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAppSettings } from '@/hooks/useAppSettings';
-import { usePresence } from '@/hooks/usePresence';
 import { Users, UserCircle, Calendar, FolderDown, Info } from 'lucide-react';
 import ContextualHelp from '@/components/shared/ContextualHelp';
 import SpringDecoration from '@/components/dashboard/SpringDecoration';
@@ -31,7 +30,6 @@ const quickActions = [
 const Dashboard = () => {
   const { role, isSuperAdmin, loading: roleLoading } = useUserRole();
   const { settings } = useAppSettings();
-  usePresence();
   const [stats, setStats] = useState({ employees: 0 });
 
   useEffect(() => {

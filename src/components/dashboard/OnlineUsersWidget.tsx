@@ -20,6 +20,9 @@ const OnlineUsersWidget = () => {
   useEffect(() => {
     fetchCount();
 
+    // Fallback polling every 15s to catch missed realtime events
+    const pollInterval = setInterval(fetchCount, 15_000);
+
     // Subscribe to realtime changes
     const channel = supabase
       .channel('online-users')
@@ -33,6 +36,7 @@ const OnlineUsersWidget = () => {
       .subscribe();
 
     return () => {
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
   }, []);
