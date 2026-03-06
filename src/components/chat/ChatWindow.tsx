@@ -659,7 +659,13 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
           return (
             <div
               key={msg.id}
-              className={cn("flex gap-2 group", isOwn ? "justify-end" : "justify-start")}
+              ref={el => { messageRefs.current[msg.id] = el; }}
+              className={cn(
+                "flex gap-2 group transition-colors duration-300 rounded-lg px-1 -mx-1",
+                isOwn ? "justify-end" : "justify-start",
+                isCurrentSearchResult && "bg-yellow-200/30 dark:bg-yellow-800/20",
+                isSearchMatch && !isCurrentSearchResult && "bg-yellow-100/15 dark:bg-yellow-900/10"
+              )}
               onMouseEnter={() => setHoveredMsg(msg.id)}
               onMouseLeave={() => setHoveredMsg(null)}
             >
@@ -692,7 +698,7 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
                         <img src={msg.attachment_url} alt={msg.attachment_name || 'Imagine'} className="max-w-[240px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" />
                       </a>
                     )}
-                    {msg.content && <span>{msg.content}</span>}
+                    {msg.content && <span>{searchQuery ? highlightText(msg.content) : msg.content}</span>}
                     {msg.attachment_url && (msg.content || msg.attachment_type !== 'image') && renderAttachment(msg)}
                   </div>
 
