@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { FileText, Image, Film, Download, X, ExternalLink } from 'lucide-react';
+import { FileText, Image, Film, Download, ExternalLink, FileSpreadsheet, FileType, Presentation } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { formatNumePrenume } from '@/utils/formatName';
