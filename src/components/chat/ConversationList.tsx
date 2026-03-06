@@ -38,8 +38,17 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Ensure department group exists on first load
+  const deptGroupEnsured = useState(false);
+  
   const fetchConversations = useCallback(async () => {
     if (!user) return;
+
+    // Auto-create/join department group (once per session)
+    if (!deptGroupEnsured[0]) {
+      deptGroupEnsured[1](true);
+      await supabase.rpc('ensure_department_group', { _user_id: user.id }).catch(() => {});
+    }
 
     const { data: participantData } = await supabase
       .from('chat_participants')
