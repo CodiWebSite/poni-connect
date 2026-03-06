@@ -200,7 +200,7 @@ const NewGroupDialog = ({ open, onOpenChange, onCreated }: Props) => {
   );
 
   const formContent = (
-    <div className="space-y-3 flex-1 min-h-0 flex flex-col">
+    <div className="space-y-3 flex-1 flex flex-col min-h-0">
       <div>
         <Label className="text-xs text-muted-foreground">Numele grupului</Label>
         <Input
@@ -238,7 +238,10 @@ const NewGroupDialog = ({ open, onOpenChange, onCreated }: Props) => {
         />
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-1 px-1" style={{ maxHeight: isMobile ? '50vh' : '50vh' }}>
+      <div 
+        className="flex-1 overflow-y-auto overscroll-contain -mx-1 px-1 touch-pan-y"
+        style={{ minHeight: '200px', maxHeight: isMobile ? 'calc(100dvh - 340px)' : '50vh', WebkitOverflowScrolling: 'touch' }}
+      >
         {userListContent}
       </div>
     </div>
@@ -261,17 +264,17 @@ const NewGroupDialog = ({ open, onOpenChange, onCreated }: Props) => {
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[95vh] flex flex-col">
-          <DrawerHeader>
+        <DrawerContent className="max-h-[92dvh] flex flex-col">
+          <DrawerHeader className="flex-shrink-0">
             <DrawerTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
               Grup nou
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-2 flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className="px-4 pb-2 flex-1 flex flex-col min-h-0">
             {formContent}
           </div>
-          <DrawerFooter className="flex-row justify-end gap-2">
+          <DrawerFooter className="flex-row justify-end gap-2 flex-shrink-0">
             {footerButtons}
           </DrawerFooter>
         </DrawerContent>
