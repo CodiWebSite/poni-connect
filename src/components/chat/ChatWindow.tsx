@@ -67,7 +67,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
-  const [_hoveredMsg, setHoveredMsg] = useState<string | null>(null); // kept for potential future use
+  // hoveredMsg removed - using DropdownMenu instead
   const [unsendMsgId, setUnsendMsgId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -659,7 +659,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
           const showAvatar = !isOwn && (i === 0 || messages[i - 1]?.sender_id !== msg.sender_id);
           const isLastOwnInGroup = isOwn && (i === messages.length - 1 || messages[i + 1]?.sender_id !== msg.sender_id);
           const msgStatus = getMessageStatus(msg, isLastOwnInGroup);
-          const isHovered = hoveredMsg === msg.id;
+          
           const isSearchMatch = searchResults.includes(i);
           const isCurrentSearchResult = searchResults[searchIndex] === i;
 
