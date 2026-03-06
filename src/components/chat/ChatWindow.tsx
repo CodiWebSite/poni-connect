@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, MessageCircle, Paperclip, Smile, FileText, Film, Download, X, Check, CheckCheck, Trash2, Search, FolderOpen, ChevronUp, ChevronDown, XCircle, ArrowLeft } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Send, MessageCircle, Paperclip, Smile, FileText, Film, Download, X, Check, CheckCheck, Trash2, Search, FolderOpen, ChevronUp, ChevronDown, XCircle, ArrowLeft, MoreVertical } from 'lucide-react';
 import SharedMediaPanel from './SharedMediaPanel';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -66,7 +67,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
-  const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
+  // hoveredMsg removed - using DropdownMenu instead
   const [unsendMsgId, setUnsendMsgId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -658,7 +659,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
           const showAvatar = !isOwn && (i === 0 || messages[i - 1]?.sender_id !== msg.sender_id);
           const isLastOwnInGroup = isOwn && (i === messages.length - 1 || messages[i + 1]?.sender_id !== msg.sender_id);
           const msgStatus = getMessageStatus(msg, isLastOwnInGroup);
-          const isHovered = hoveredMsg === msg.id;
+          
           const isSearchMatch = searchResults.includes(i);
           const isCurrentSearchResult = searchResults[searchIndex] === i;
 
@@ -672,8 +673,6 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
                 isCurrentSearchResult && "bg-yellow-200/30 dark:bg-yellow-800/20",
                 isSearchMatch && !isCurrentSearchResult && "bg-yellow-100/15 dark:bg-yellow-900/10"
               )}
-              onMouseEnter={() => setHoveredMsg(msg.id)}
-              onMouseLeave={() => setHoveredMsg(null)}
             >
               {!isOwn && (
                 <div className="w-8 flex-shrink-0">
@@ -691,7 +690,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
                 {showAvatar && !isOwn && (
                   <p className="text-[11px] text-muted-foreground mb-0.5 ml-1">{msg.sender_name}</p>
                 )}
-                <div className="relative">
+                <div className={cn("flex items-end gap-1", isOwn ? "flex-row-reverse" : "flex-row")}>
                   <div
                     className={cn(
                       "inline-block rounded-2xl text-sm overflow-hidden",
@@ -708,34 +707,45 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
                     {msg.attachment_url && (msg.content || msg.attachment_type !== 'image') && renderAttachment(msg)}
                   </div>
 
-                  {/* Quick reaction bar on hover */}
-                  {isHovered && (
-                    <div className={cn(
-                      "absolute -top-8 flex items-center gap-0.5 z-10",
-                      isOwn ? "right-0" : "left-0"
-                    )}>
-                      <div className="flex items-center gap-0.5 bg-popover border border-border rounded-full px-1 py-0.5 shadow-md">
-                        {QUICK_REACTIONS.map(emoji => (
-                          <button
-                            key={emoji}
-                            onClick={() => toggleReaction(msg.id, emoji)}
-                            className="hover:scale-125 transition-transform px-0.5 text-sm"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
+                  {/* Action menu - visible on hover (desktop) or always accessible */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground flex-shrink-0">
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align={isOwn ? "end" : "start"} className="min-w-[180px]">
+                      <div className="px-2 py-1.5">
+                        <p className="text-xs text-muted-foreground mb-1.5">Reacții</p>
+                        <div className="flex items-center gap-1">
+                          {QUICK_REACTIONS.map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={() => toggleReaction(msg.id, emoji)}
+                              className={cn(
+                                "text-lg hover:scale-125 transition-transform p-0.5 rounded",
+                                reactions[msg.id]?.find(r => r.emoji === emoji && r.hasOwn) && "bg-primary/15"
+                              )}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       {isOwn && (
-                        <button
-                          onClick={() => setUnsendMsgId(msg.id)}
-                          className="ml-1 p-1.5 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 shadow-sm transition-colors"
-                          title="Șterge mesajul"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => setUnsendMsgId(msg.id)}
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Șterge mesajul
+                          </DropdownMenuItem>
+                        </>
                       )}
-                    </div>
-                  )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {renderReactions(msg.id)}
