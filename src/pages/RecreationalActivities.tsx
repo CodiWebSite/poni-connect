@@ -13,13 +13,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import {
   Plus, Film, Music, Gamepad2, Brain, Palette, Coffee, Sparkles,
   CalendarDays, MapPin, Users, Check, X, HelpCircle, Trash2,
-  UserPlus, Crown, Edit
+  UserPlus, Crown, Edit, ChevronsUpDown
 } from 'lucide-react';
 
 type ActivityCategory = 'film' | 'muzica' | 'jocuri' | 'quiz' | 'creativ' | 'socializare' | 'altele';
@@ -94,6 +96,7 @@ const RecreationalActivities = () => {
 
   // Organizer add
   const [selectedUserId, setSelectedUserId] = useState('');
+  const [orgPopoverOpen, setOrgPopoverOpen] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -420,20 +423,44 @@ const RecreationalActivities = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex gap-2">
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selectează angajat..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {allProfiles
-                    .filter(p => !organizers.some(o => o.user_id === p.user_id))
-                    .map(p => (
-                      <SelectItem key={p.user_id} value={p.user_id}>
-                        {p.full_name} {p.department ? `(${p.department})` : ''}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              <Popover open={orgPopoverOpen} onOpenChange={setOrgPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" className="flex-1 justify-between font-normal">
+                    {selectedUserId ? profiles[selectedUserId]?.full_name || 'Selectat' : 'Selectează angajat...'}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Caută angajat..." />
+                    <CommandList>
+                      <CommandEmpty>Niciun rezultat.</CommandEmpty>
+                      <CommandGroup>
+                        {allProfiles
+                          .filter(p => !organizers.some(o => o.user_id === p.user_id))
+                          .map(p => (
+                            <CommandItem
+                              key={p.user_id}
+                              value={`${p.full_name} ${p.department || ''}`}
+                              onSelect={() => { setSelectedUserId(p.user_id); setOrgPopoverOpen(false); }}
+                              className="flex items-center gap-2"
+                            >
+                              <Avatar className="w-6 h-6">
+                                <AvatarImage src={p.avatar_url || ''} />
+                                <AvatarFallback className="text-[9px]">{p.full_name?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm">{p.full_name}</span>
+                                {p.department && <span className="text-xs text-muted-foreground ml-1">({p.department})</span>}
+                              </div>
+                              {selectedUserId === p.user_id && <Check className="w-4 h-4 text-primary" />}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <Button size="sm" onClick={handleAddOrganizer} disabled={!selectedUserId}>
                 <UserPlus className="w-4 h-4" />
               </Button>
