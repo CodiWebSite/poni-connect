@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -51,7 +54,23 @@ const InfoBox = ({ title, children }: { title: string; children: React.ReactNode
 
 const PlatformGuide = () => {
   const { isSuperAdmin, canManageHR, isSef, isSefSRUS } = useUserRole();
-  const isDeptHead = isSef || isSefSRUS || isSuperAdmin;
+  const { user } = useAuth();
+  const [isDesignatedApprover, setIsDesignatedApprover] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const checkApprover = async () => {
+      // Check if user is a designated approver (individual or department-level)
+      const [{ count: indivCount }, { count: deptCount }] = await Promise.all([
+        supabase.from('leave_approvers').select('id', { count: 'exact', head: true }).eq('approver_user_id', user.id),
+        supabase.from('leave_department_approvers').select('id', { count: 'exact', head: true }).eq('approver_user_id', user.id),
+      ]);
+      setIsDesignatedApprover((indivCount || 0) > 0 || (deptCount || 0) > 0);
+    };
+    checkApprover();
+  }, [user]);
+
+  const isDeptHead = isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover;
 
   return (
     <MainLayout title="Ghid Platformă" description="Instrucțiuni detaliate pentru utilizarea platformei ICMPP Intranet">
@@ -500,11 +519,11 @@ const PlatformGuide = () => {
         {isDeptHead && (
           <Card className="print:shadow-none print:border">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckSquare className="w-5 h-5 text-primary" />
-                Ghid detaliat pentru șefi de departament
-              </CardTitle>
-              <CardDescription>Aprobarea cererilor, delegarea și monitorizarea echipei</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <CheckSquare className="w-5 h-5 text-primary" />
+              Ghid detaliat pentru aprobatori de concediu
+            </CardTitle>
+            <CardDescription>Aprobarea cererilor, delegarea și monitorizarea echipei – pentru șefi de departament și aprobatori desemnați</CardDescription>
             </CardHeader>
             <CardContent>
               <Accordion type="multiple" className="w-full">
