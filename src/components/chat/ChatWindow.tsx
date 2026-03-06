@@ -655,12 +655,16 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
         )}
         <div className="flex-1 min-w-0">
           <button
-            onClick={() => otherUserId && setShowMediaPanel(true)}
-            className={cn("font-semibold text-foreground text-left text-sm truncate block", otherUserId && "hover:underline cursor-pointer")}
+            onClick={() => {
+              if (convType === 'group') setShowGroupInfo(true);
+              else if (otherUserId) setShowMediaPanel(true);
+            }}
+            className={cn("font-semibold text-foreground text-left text-sm truncate block", (otherUserId || convType === 'group') && "hover:underline cursor-pointer")}
           >
+            {convType === 'group' && <Users className="h-3.5 w-3.5 inline mr-1.5 text-primary" />}
             {convName}
           </button>
-          {otherUserId && (
+          {convType === 'direct' && otherUserId && (
             <div className="flex items-center gap-1.5">
               <span className={cn("w-1.5 h-1.5 rounded-full", isOnline ? "bg-green-500" : "bg-muted-foreground/30")} />
               <span className={cn("text-[11px]", isOnline ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}>
@@ -668,16 +672,17 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
               </span>
             </div>
           )}
+          {convType === 'group' && (
+            <p className="text-[11px] text-muted-foreground">{memberCount} membri</p>
+          )}
         </div>
         <div className="flex items-center gap-0.5">
           <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setShowSearch(s => !s); setSearchQuery(''); }}>
             <Search className="h-4 w-4" />
           </Button>
-          {otherUserId && (
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setShowMediaPanel(true)}>
-              <FolderOpen className="h-4 w-4" />
-            </Button>
-          )}
+          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => convType === 'group' ? setShowGroupInfo(true) : setShowMediaPanel(true)}>
+            {convType === 'group' ? <Users className="h-4 w-4" /> : <FolderOpen className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
