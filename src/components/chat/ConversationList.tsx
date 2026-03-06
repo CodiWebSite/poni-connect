@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Users, UserPlus, Building2 } from 'lucide-react';
+import { Search, Plus, Users, UserPlus, Building2, Pin, PinOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumePrenume } from '@/utils/formatName';
 import NewConversationDialog from './NewConversationDialog';
 import NewGroupDialog from './NewGroupDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { toast } from '@/hooks/use-toast';
 
 interface ConversationItem {
   id: string;
@@ -23,6 +24,7 @@ interface ConversationItem {
   last_message: string | null;
   unread_count: number;
   is_online: boolean;
+  is_pinned: boolean;
 }
 
 interface Props {
@@ -37,6 +39,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [contextMenu, setContextMenu] = useState<{ convId: string; x: number; y: number } | null>(null);
 
   // Ensure department group exists on first load
   const deptGroupEnsured = useState(false);
@@ -52,7 +55,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
 
     const { data: participantData } = await supabase
       .from('chat_participants')
-      .select('conversation_id, last_read_at')
+      .select('conversation_id, last_read_at, is_pinned')
       .eq('user_id', user.id);
 
     if (!participantData?.length) {
@@ -63,6 +66,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
 
     const convIds = participantData.map(p => p.conversation_id);
     const lastReadMap = Object.fromEntries(participantData.map(p => [p.conversation_id, p.last_read_at]));
+    const pinnedMap = Object.fromEntries(participantData.map(p => [p.conversation_id, !!(p as any).is_pinned]));
 
     const { data: convData } = await supabase
       .from('chat_conversations')
@@ -141,8 +145,16 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
         last_message: lastMsg?.[0]?.content || null,
         unread_count: unreadCount,
         is_online: isOnline,
+        is_pinned: pinnedMap[conv.id] || false,
       });
     }
+
+    // Sort: pinned first, then by updated_at desc
+    items.sort((a, b) => {
+      if (a.is_pinned && !b.is_pinned) return -1;
+      if (!a.is_pinned && b.is_pinned) return 1;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
 
     setConversations(items);
     setLoading(false);
@@ -152,12 +164,42 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
 
   // Expose refresh method via selecting a conversation (marks as read → refresh list)
   const handleSelect = useCallback((convId: string) => {
-    // Immediately clear badge locally for instant feedback
     setConversations(prev =>
       prev.map(c => c.id === convId ? { ...c, unread_count: 0 } : c)
     );
     onSelect(convId);
   }, [onSelect]);
+
+  const togglePin = useCallback(async (convId: string) => {
+    if (!user) return;
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    const newPinned = !conv.is_pinned;
+
+    // Optimistic update
+    setConversations(prev => {
+      const updated = prev.map(c => c.id === convId ? { ...c, is_pinned: newPinned } : c);
+      updated.sort((a, b) => {
+        if (a.is_pinned && !b.is_pinned) return -1;
+        if (!a.is_pinned && b.is_pinned) return 1;
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      });
+      return updated;
+    });
+
+    const { error } = await supabase
+      .from('chat_participants')
+      .update({ is_pinned: newPinned } as any)
+      .eq('conversation_id', convId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast({ title: 'Eroare', description: 'Nu s-a putut actualiza pin-ul.', variant: 'destructive' });
+      fetchConversations();
+    }
+
+    setContextMenu(null);
+  }, [user, conversations, fetchConversations]);
 
   // Listen for presence changes to update online indicators instantly
   useEffect(() => {
@@ -200,26 +242,28 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
         table: 'chat_messages',
       }, (payload) => {
         const msg = payload.new as any;
-        if (msg.sender_id === user.id) return; // own messages don't increment badge
+        if (msg.sender_id === user.id) return;
 
         setConversations(prev => {
           const idx = prev.findIndex(c => c.id === msg.conversation_id);
           if (idx === -1) {
-            // New conversation we don't have yet — refetch
             fetchConversations();
             return prev;
           }
           const updated = [...prev];
           const conv = { ...updated[idx] };
-          // Only increment if this conversation is NOT currently selected
           if (msg.conversation_id !== selectedId) {
             conv.unread_count = (conv.unread_count || 0) + 1;
           }
           conv.last_message = msg.content || (msg.attachment_name ? `📎 ${msg.attachment_name}` : '📎 Atașament');
           conv.updated_at = msg.created_at;
           updated[idx] = conv;
-          // Re-sort by updated_at desc
-          updated.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+          // Re-sort: pinned first, then by updated_at
+          updated.sort((a, b) => {
+            if (a.is_pinned && !b.is_pinned) return -1;
+            if (!a.is_pinned && b.is_pinned) return 1;
+            return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+          });
           return updated;
         });
       })
@@ -227,6 +271,14 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
 
     return () => { supabase.removeChannel(channel); };
   }, [user, selectedId, fetchConversations]);
+
+  // Close context menu on click outside
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handler = () => setContextMenu(null);
+    window.addEventListener('click', handler);
+    return () => window.removeEventListener('click', handler);
+  }, [contextMenu]);
 
   const filtered = conversations.filter(c => {
     const label = c.type === 'direct' ? c.other_user?.full_name : c.name;
@@ -239,7 +291,6 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
     onSelect(convId);
   };
 
-  // Called by parent when messages are read in the active conversation
   const refreshUnread = useCallback(() => {
     if (selectedId) {
       setConversations(prev =>
@@ -248,8 +299,15 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
     }
   }, [selectedId]);
 
+  const handleContextMenu = (e: React.MouseEvent | React.TouchEvent, convId: string) => {
+    e.preventDefault();
+    const clientX = 'touches' in e ? e.touches[0]?.clientX || 0 : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0]?.clientY || 0 : e.clientY;
+    setContextMenu({ convId, x: clientX, y: clientY });
+  };
+
   return (
-    <div className="flex flex-col h-full border-r border-border">
+    <div className="flex flex-col h-full border-r border-border relative">
       <div className="p-3 space-y-2 border-b border-border">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-foreground">Conversații</h2>
@@ -302,6 +360,7 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
                 <button
                   key={conv.id}
                   onClick={() => handleSelect(conv.id)}
+                  onContextMenu={(e) => handleContextMenu(e, conv.id)}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
                     selectedId === conv.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
@@ -322,10 +381,13 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium truncate">{label}</span>
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1 min-w-0">
+                        {conv.is_pinned && <Pin className="h-3 w-3 text-primary flex-shrink-0" />}
+                        <span className="text-sm font-medium truncate">{label}</span>
+                      </div>
                       {conv.unread_count > 0 && (
-                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-[20px] justify-center animate-scale-in">
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-[20px] justify-center animate-scale-in flex-shrink-0">
                           {conv.unread_count}
                         </Badge>
                       )}
@@ -345,6 +407,29 @@ const ConversationList = ({ selectedId, onSelect }: Props) => {
           </div>
         )}
       </ScrollArea>
+
+      {/* Context menu for pin/unpin */}
+      {contextMenu && (
+        <div
+          className="fixed z-[100] bg-popover border border-border rounded-lg shadow-lg py-1 min-w-[160px]"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={e => e.stopPropagation()}
+        >
+          {(() => {
+            const conv = conversations.find(c => c.id === contextMenu.convId);
+            const isPinned = conv?.is_pinned || false;
+            return (
+              <button
+                onClick={() => togglePin(contextMenu.convId)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+              >
+                {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                {isPinned ? 'Anulează fixare' : 'Fixează conversația'}
+              </button>
+            );
+          })()}
+        </div>
+      )}
 
       <NewConversationDialog open={dialogOpen} onOpenChange={setDialogOpen} onCreated={handleCreated} />
       <NewGroupDialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen} onCreated={handleCreated} />
