@@ -30,6 +30,7 @@ import {
   Headset,
   DoorOpen,
   PartyPopper,
+  MessageCircle,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -100,6 +101,7 @@ const Sidebar = () => {
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
+    { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
   ];
 
