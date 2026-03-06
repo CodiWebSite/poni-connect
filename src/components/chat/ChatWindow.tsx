@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, MessageCircle, Paperclip, Smile, FileText, Film, Download, X, Check, CheckCheck } from 'lucide-react';
+import { Send, MessageCircle, Paperclip, Smile, FileText, Film, Download, X, Check, CheckCheck, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -13,6 +13,16 @@ import { formatNumePrenume } from '@/utils/formatName';
 import { toast } from '@/hooks/use-toast';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Message {
   id: string;
@@ -26,10 +36,19 @@ interface Message {
   attachment_name?: string | null;
 }
 
+interface Reaction {
+  emoji: string;
+  count: number;
+  users: string[];
+  hasOwn: boolean;
+}
+
 interface Props {
   conversationId: string | null;
   onMessagesRead?: () => void;
 }
+
+const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
 const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
   const { user } = useAuth();
@@ -44,6 +63,9 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
   const [uploading, setUploading] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
+  const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
+  const [unsendMsgId, setUnsendMsgId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const profileCache = useRef<Record<string, { name: string; avatar: string | null }>>({});
@@ -100,6 +122,100 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
     onMessagesRead?.();
   }, [conversationId, user, onMessagesRead]);
 
+  // Fetch reactions for all messages in the conversation
+  const fetchReactions = useCallback(async (messageIds: string[]) => {
+    if (!messageIds.length || !user) return;
+    const { data: rxData } = await supabase
+      .from('chat_reactions' as any)
+      .select('message_id, emoji, user_id')
+      .in('message_id', messageIds);
+    if (!rxData) return;
+    
+    const grouped: Record<string, Reaction[]> = {};
+    const byMsg: Record<string, Record<string, string[]>> = {};
+    
+    for (const r of rxData as any[]) {
+      if (!byMsg[r.message_id]) byMsg[r.message_id] = {};
+      if (!byMsg[r.message_id][r.emoji]) byMsg[r.message_id][r.emoji] = [];
+      byMsg[r.message_id][r.emoji].push(r.user_id);
+    }
+    
+    for (const [msgId, emojis] of Object.entries(byMsg)) {
+      grouped[msgId] = Object.entries(emojis).map(([emoji, users]) => ({
+        emoji,
+        count: users.length,
+        users,
+        hasOwn: users.includes(user.id),
+      }));
+    }
+    
+    setReactions(grouped);
+  }, [user]);
+
+  const toggleReaction = async (messageId: string, emoji: string) => {
+    if (!user) return;
+    const existing = reactions[messageId]?.find(r => r.emoji === emoji && r.hasOwn);
+    if (existing) {
+      await supabase
+        .from('chat_reactions' as any)
+        .delete()
+        .eq('message_id', messageId)
+        .eq('user_id', user.id)
+        .eq('emoji', emoji);
+    } else {
+      await supabase
+        .from('chat_reactions' as any)
+        .insert({ message_id: messageId, user_id: user.id, emoji } as any);
+    }
+    // Refetch reactions for this message
+    const { data: rxData } = await supabase
+      .from('chat_reactions' as any)
+      .select('message_id, emoji, user_id')
+      .eq('message_id', messageId);
+    
+    if (rxData) {
+      const byEmoji: Record<string, string[]> = {};
+      for (const r of rxData as any[]) {
+        if (!byEmoji[r.emoji]) byEmoji[r.emoji] = [];
+        byEmoji[r.emoji].push(r.user_id);
+      }
+      setReactions(prev => ({
+        ...prev,
+        [messageId]: Object.entries(byEmoji).map(([em, users]) => ({
+          emoji: em, count: users.length, users, hasOwn: users.includes(user.id),
+        })),
+      }));
+    } else {
+      setReactions(prev => {
+        const copy = { ...prev };
+        delete copy[messageId];
+        return copy;
+      });
+    }
+  };
+
+  const handleUnsend = async () => {
+    if (!unsendMsgId || !user) return;
+    const msg = messages.find(m => m.id === unsendMsgId);
+    if (!msg || msg.sender_id !== user.id) return;
+    
+    // Delete from storage if attachment exists
+    if (msg.attachment_url) {
+      try {
+        const url = new URL(msg.attachment_url);
+        const storagePath = url.pathname.split('/chat-attachments/')[1];
+        if (storagePath) {
+          await supabase.storage.from('chat-attachments').remove([decodeURIComponent(storagePath)]);
+        }
+      } catch {}
+    }
+    
+    await supabase.from('chat_messages').delete().eq('id', unsendMsgId);
+    setMessages(prev => prev.filter(m => m.id !== unsendMsgId));
+    setUnsendMsgId(null);
+    toast({ title: 'Mesaj șters', description: 'Mesajul a fost eliminat.' });
+  };
+
   const fetchMessages = async () => {
     if (!conversationId) return;
 
@@ -142,6 +258,7 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
         })
       );
       setMessages(enriched);
+      fetchReactions(msgData.map(m => m.id));
     }
 
     await markAsRead();
@@ -157,6 +274,7 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
     setOtherLastRead(null);
     setPendingFile(null);
     setPendingPreview(null);
+    setReactions({});
     fetchMessages();
   }, [conversationId]);
 
@@ -170,7 +288,7 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
     return () => clearInterval(interval);
   }, [otherUserId, conversationId, fetchPresence, fetchOtherLastRead]);
 
-  // Realtime subscription
+  // Realtime subscription for messages
   useEffect(() => {
     if (!conversationId) return;
     const channel = supabase
@@ -187,6 +305,15 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
         if (user && msg.sender_id !== user.id) {
           await markAsRead();
         }
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      }, (payload) => {
+        const deleted = payload.old as any;
+        setMessages(prev => prev.filter(m => m.id !== deleted.id));
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -294,46 +421,42 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
     setNewMessage(prev => prev + emoji.native);
   };
 
-  // Message status: sent → delivered (online) → seen (read)
-  const getMessageStatus = (msg: Message, isLast: boolean) => {
-    if (msg.sender_id !== user?.id) return null; // only show for own messages
+  // Download file with original name
+  const handleDownload = async (url: string, fileName: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    } catch {
+      // Fallback: open in new tab
+      window.open(url, '_blank');
+    }
+  };
 
-    // Seen: other user has read this message
-    if (otherLastRead && msg.created_at <= otherLastRead) {
-      return 'seen';
-    }
-    // Delivered: other user is online
-    if (isOnline) {
-      return 'delivered';
-    }
-    // Sent: message exists in DB
+  // Message status
+  const getMessageStatus = (msg: Message, isLast: boolean) => {
+    if (msg.sender_id !== user?.id) return null;
+    if (otherLastRead && msg.created_at <= otherLastRead) return 'seen';
+    if (isOnline) return 'delivered';
     return 'sent';
   };
 
   const renderMessageStatus = (status: string | null) => {
     if (!status) return null;
-    
     switch (status) {
       case 'sent':
-        return (
-          <span className="inline-flex items-center gap-0.5 text-muted-foreground" title="Trimis">
-            <Check className="h-3 w-3" />
-          </span>
-        );
+        return <span className="inline-flex items-center gap-0.5 text-muted-foreground" title="Trimis"><Check className="h-3 w-3" /></span>;
       case 'delivered':
-        return (
-          <span className="inline-flex items-center text-muted-foreground" title="Livrat">
-            <CheckCheck className="h-3.5 w-3.5" />
-          </span>
-        );
+        return <span className="inline-flex items-center text-muted-foreground" title="Livrat"><CheckCheck className="h-3.5 w-3.5" /></span>;
       case 'seen':
-        return (
-          <span className="inline-flex items-center text-primary" title="Văzut">
-            <CheckCheck className="h-3.5 w-3.5" />
-          </span>
-        );
-      default:
-        return null;
+        return <span className="inline-flex items-center text-primary" title="Văzut"><CheckCheck className="h-3.5 w-3.5" /></span>;
+      default: return null;
     }
   };
 
@@ -350,11 +473,38 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
       return <video src={msg.attachment_url} controls className="max-w-[280px] max-h-[200px] rounded-lg mt-1" />;
     }
     return (
-      <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-1 px-3 py-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors text-xs">
+      <button
+        onClick={() => handleDownload(msg.attachment_url!, msg.attachment_name || 'document')}
+        className="flex items-center gap-2 mt-1 px-3 py-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors text-xs w-full text-left"
+      >
         <FileText className="h-4 w-4 flex-shrink-0" />
         <span className="truncate flex-1">{msg.attachment_name || 'Document'}</span>
         <Download className="h-3.5 w-3.5 flex-shrink-0 opacity-60" />
-      </a>
+      </button>
+    );
+  };
+
+  const renderReactions = (msgId: string) => {
+    const msgReactions = reactions[msgId];
+    if (!msgReactions?.length) return null;
+    return (
+      <div className="flex flex-wrap gap-1 mt-1">
+        {msgReactions.map(r => (
+          <button
+            key={r.emoji}
+            onClick={() => toggleReaction(msgId, r.emoji)}
+            className={cn(
+              "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs border transition-colors",
+              r.hasOwn
+                ? "bg-primary/15 border-primary/30 text-primary"
+                : "bg-muted/50 border-border hover:bg-muted"
+            )}
+          >
+            <span>{r.emoji}</span>
+            <span className="text-[10px] font-medium">{r.count}</span>
+          </button>
+        ))}
+      </div>
     );
   };
 
@@ -399,9 +549,15 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
           const showAvatar = !isOwn && (i === 0 || messages[i - 1]?.sender_id !== msg.sender_id);
           const isLastOwnInGroup = isOwn && (i === messages.length - 1 || messages[i + 1]?.sender_id !== msg.sender_id);
           const msgStatus = getMessageStatus(msg, isLastOwnInGroup);
+          const isHovered = hoveredMsg === msg.id;
 
           return (
-            <div key={msg.id} className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}>
+            <div
+              key={msg.id}
+              className={cn("flex gap-2 group", isOwn ? "justify-end" : "justify-start")}
+              onMouseEnter={() => setHoveredMsg(msg.id)}
+              onMouseLeave={() => setHoveredMsg(null)}
+            >
               {!isOwn && (
                 <div className="w-8 flex-shrink-0">
                   {showAvatar && (
@@ -418,21 +574,53 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
                 {showAvatar && !isOwn && (
                   <p className="text-[11px] text-muted-foreground mb-0.5 ml-1">{msg.sender_name}</p>
                 )}
-                <div
-                  className={cn(
-                    "inline-block rounded-2xl text-sm overflow-hidden",
-                    isOwn ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md",
-                    (msg.content || msg.attachment_type !== 'image') && "px-3 py-2"
+                <div className="relative">
+                  <div
+                    className={cn(
+                      "inline-block rounded-2xl text-sm overflow-hidden",
+                      isOwn ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md",
+                      (msg.content || msg.attachment_type !== 'image') && "px-3 py-2"
+                    )}
+                  >
+                    {msg.attachment_url && msg.attachment_type === 'image' && !msg.content && (
+                      <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
+                        <img src={msg.attachment_url} alt={msg.attachment_name || 'Imagine'} className="max-w-[240px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" />
+                      </a>
+                    )}
+                    {msg.content && <span>{msg.content}</span>}
+                    {msg.attachment_url && (msg.content || msg.attachment_type !== 'image') && renderAttachment(msg)}
+                  </div>
+
+                  {/* Quick reaction bar on hover */}
+                  {isHovered && (
+                    <div className={cn(
+                      "absolute -top-8 flex items-center gap-0.5 bg-popover border border-border rounded-full px-1 py-0.5 shadow-md z-10",
+                      isOwn ? "right-0" : "left-0"
+                    )}>
+                      {QUICK_REACTIONS.map(emoji => (
+                        <button
+                          key={emoji}
+                          onClick={() => toggleReaction(msg.id, emoji)}
+                          className="hover:scale-125 transition-transform px-0.5 text-sm"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                      {isOwn && (
+                        <button
+                          onClick={() => setUnsendMsgId(msg.id)}
+                          className="hover:scale-110 transition-transform px-1 text-destructive"
+                          title="Șterge mesajul"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
                   )}
-                >
-                  {msg.attachment_url && msg.attachment_type === 'image' && !msg.content && (
-                    <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
-                      <img src={msg.attachment_url} alt={msg.attachment_name || 'Imagine'} className="max-w-[240px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" />
-                    </a>
-                  )}
-                  {msg.content && <span>{msg.content}</span>}
-                  {msg.attachment_url && (msg.content || msg.attachment_type !== 'image') && renderAttachment(msg)}
                 </div>
+
+                {renderReactions(msg.id)}
+
                 <div className={cn("flex items-center gap-1 mt-0.5 mx-1", isOwn ? "justify-end" : "justify-start")}>
                   <span className="text-[10px] text-muted-foreground">
                     {format(new Date(msg.created_at), 'HH:mm', { locale: ro })}
@@ -488,6 +676,24 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
         </div>
         {uploading && <p className="text-xs text-muted-foreground mt-1 ml-2">Se încarcă fișierul...</p>}
       </div>
+
+      {/* Unsend confirmation dialog */}
+      <AlertDialog open={!!unsendMsgId} onOpenChange={(open) => !open && setUnsendMsgId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Șterge mesajul?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Mesajul va fi eliminat pentru toți participanții. Această acțiune nu poate fi anulată.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anulează</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnsend} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Șterge
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
