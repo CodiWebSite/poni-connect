@@ -805,6 +805,15 @@ const ChatWindow = ({ conversationId, onMessagesRead }: Props) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Shared media panel */}
+      {conversationId && (
+        <SharedMediaPanel
+          conversationId={conversationId}
+          open={showMediaPanel}
+          onOpenChange={setShowMediaPanel}
+          convName={convName}
+        />
+      )}
     </div>
   );
 };
