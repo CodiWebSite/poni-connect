@@ -166,16 +166,30 @@ const Kiosk = () => {
     return () => { clearInterval(poll); clearInterval(weatherPoll); };
   }, [fetchAnnouncements, fetchEvents, fetchSettings, fetchWeather]);
 
-  // Auto-rotate announcements
+  // Auto-rotate announcements with fade
   useEffect(() => {
     if (announcements.length <= 1) return;
     const t = setInterval(() => {
       setCurrentSlide(p => (p + 1) % announcements.length);
+      setFadeKey(k => k + 1);
     }, 10_000);
     return () => clearInterval(t);
   }, [announcements.length]);
 
   const currentAnnouncement = announcements[currentSlide];
+
+  // Kiosk disabled screen
+  if (!kioskEnabled) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <Monitor className="w-16 h-16 text-slate-700 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-500">Mod Kiosk dezactivat</h1>
+          <p className="text-slate-600 mt-2">Ecranul TV este momentan oprit de administrator.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-white flex flex-col overflow-hidden select-none">
