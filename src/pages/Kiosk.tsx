@@ -79,6 +79,7 @@ const Kiosk = () => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [kioskEnabled, setKioskEnabled] = useState(true);
   const [kioskMessage, setKioskMessage] = useState('');
+  const [tickerMessages, setTickerMessages] = useState<string[]>([]);
   const [mode, setMode] = useState<CarouselMode>('video');
   const [announcementTime, setAnnouncementTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
