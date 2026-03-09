@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, Save, Clock, X } from 'lucide-react';
+import { Settings, Loader2, Save, Clock, X, Monitor } from 'lucide-react';
 
 interface SettingsState {
   leave_module_beta: boolean;
