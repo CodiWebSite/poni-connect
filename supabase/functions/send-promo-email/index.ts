@@ -78,8 +78,7 @@ Deno.serve(async (req) => {
           <li>Apasă pe <strong>„Înregistrare"</strong></li>
           <li>Folosește adresa ta de email instituțională (<strong>@icmpp.ro</strong>)</li>
           <li>Alege o parolă sigură (min. 6 caractere)</li>
-          <li>Verifică email-ul și apasă pe link-ul de confirmare</li>
-          <li>Gata! Te poți autentifica cu email-ul și parola aleasă</li>
+          <li>Gata! Te poți autentifica imediat cu email-ul și parola aleasă</li>
         </ol>
       </div>
 
@@ -128,13 +127,31 @@ Deno.serve(async (req) => {
         <tr>
           <td style="padding:12px 16px;background:#f7fafc;border-bottom:1px solid #e2e8f0;">
             <strong style="color:#2b6cb0;">💬 Mesagerie internă</strong>
-            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Comunică rapid cu colegii prin chat direct sau grupuri de departament.</p>
+            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Comunică rapid cu colegii prin chat direct sau grupuri de departament. Poți trimite mesaje, fișiere și imagini.</p>
           </td>
         </tr>
         <tr>
-          <td style="padding:12px 16px;background:#ebf8ff;border-radius:0 0 8px 8px;">
+          <td style="padding:12px 16px;background:#ebf8ff;border-bottom:1px solid #bee3f8;">
+            <strong style="color:#2b6cb0;">🏛️ Programări Săli</strong>
+            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Rezervă Sala de Conferințe sau Biblioteca direct din platformă, cu calendar săptămânal și detectare automată a conflictelor.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 16px;background:#f7fafc;border-bottom:1px solid #e2e8f0;">
+            <strong style="color:#2b6cb0;">📄 Adeverințe</strong>
+            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Accesează direct modulul de adeverințe al institutului (<a href="https://adeverinte.icmpp.ro" style="color:#2b6cb0;">adeverinte.icmpp.ro</a>), disponibil și din meniul platformei.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 16px;background:#ebf8ff;border-bottom:1px solid #bee3f8;">
             <strong style="color:#2b6cb0;">🔔 Notificări în timp real</strong>
             <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Primește notificări instant pe platformă și pe email când o cerere necesită atenție.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 16px;background:#f7fafc;border-radius:0 0 8px 8px;">
+            <strong style="color:#2b6cb0;">🛠️ Contact IT & HelpDesk</strong>
+            <p style="margin:4px 0 0;color:#4a5568;font-size:13px;">Pentru orice problemă tehnică, poți trimite un mesaj pe mesageria internă sau un tichet prin modulul HelpDesk direct din platformă.</p>
           </td>
         </tr>
       </table>
