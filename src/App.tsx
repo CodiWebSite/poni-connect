@@ -42,8 +42,8 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const { isSuperAdmin, role, loading: roleLoading } = useUserRole();
   const location = useLocation();
 
-  // Allow auth routes always
-  if (location.pathname.startsWith('/auth')) return <>{children}</>;
+  // Allow auth and kiosk routes always
+  if (location.pathname.startsWith('/auth') || location.pathname === '/kiosk') return <>{children}</>;
 
   // Wait for settings to load before making any maintenance decision
   if (settingsLoading) return <>{children}</>;
