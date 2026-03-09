@@ -46,6 +46,7 @@ const Announcements = () => {
   const { canManageContent, isSuperAdmin } = useUserRole();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [isPublisher, setIsPublisher] = useState(false);
 
   const [formData, setFormData] = useState<{
     title: string;
