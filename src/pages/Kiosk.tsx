@@ -182,9 +182,6 @@ const Kiosk = () => {
           </div>
           <div className="flex items-center gap-2">
             <Phone className="w-3.5 h-3.5 text-slate-400" />
-            <span>Recepție: <strong>100</strong></span>
-          </div>
-          <div className="flex items-center gap-2">
             <span>Secretariat: <strong>101</strong></span>
           </div>
           <div className="flex items-center gap-2">
