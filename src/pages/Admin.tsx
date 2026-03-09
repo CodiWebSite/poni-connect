@@ -23,6 +23,7 @@ import EquipmentRegistry from '@/components/admin/EquipmentRegistry';
 import AppSettingsPanel from '@/components/admin/AppSettingsPanel';
 import InvitePlatformPanel from '@/components/admin/InvitePlatformPanel';
 import HelpdeskPanel from '@/components/admin/HelpdeskPanel';
+import AnnouncementPublishersPanel from '@/components/admin/AnnouncementPublishersPanel';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
