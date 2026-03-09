@@ -49,6 +49,7 @@ const AppSettingsPanel = () => {
           maintenance_eta: typeof map.maintenance_eta === 'string' ? map.maintenance_eta : '',
           kiosk_enabled: map.kiosk_enabled !== false,
           kiosk_message: typeof map.kiosk_message === 'string' ? map.kiosk_message : '',
+          kiosk_ticker_messages: Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [],
         });
       }
       setLoading(false);
