@@ -201,6 +201,7 @@ const Admin = () => {
              <TabsTrigger value="invitations" className="text-xs sm:text-sm">Invitații</TabsTrigger>
               <TabsTrigger value="helpdesk" className="text-xs sm:text-sm">HelpDesk</TabsTrigger>
               <TabsTrigger value="publishers" className="text-xs sm:text-sm">Anunțuri</TabsTrigger>
+              <TabsTrigger value="event-publishers" className="text-xs sm:text-sm">Evenimente</TabsTrigger>
               <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
           </TabsList>
         <TabsContent value="roles" className="space-y-6">
