@@ -136,6 +136,27 @@ export type Database = {
         }
         Relationships: []
       }
+      announcement_publishers: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           attachments: Json | null
@@ -1904,6 +1925,10 @@ export type Database = {
       can_manage_library: { Args: { _user_id: string }; Returns: boolean }
       can_manage_procurement: { Args: { _user_id: string }; Returns: boolean }
       can_manage_salarizare: { Args: { _user_id: string }; Returns: boolean }
+      can_publish_announcements: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       can_view_sensitive_profile_data: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
