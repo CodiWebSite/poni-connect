@@ -67,9 +67,12 @@ const Kiosk = () => {
   const [now, setNow] = useState(new Date());
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [fadeKey, setFadeKey] = useState(0);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [events, setEvents] = useState<EventData[]>([]);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [kioskEnabled, setKioskEnabled] = useState(true);
+  const [kioskMessage, setKioskMessage] = useState('');
 
   // Clock
   useEffect(() => {
