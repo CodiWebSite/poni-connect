@@ -210,6 +210,13 @@ const Kiosk = () => {
         </div>
       </header>
 
+      {/* ── Custom Kiosk Message ───────────────── */}
+      {kioskMessage && (
+        <div className="px-8 py-3 bg-blue-600/20 border-b border-blue-500/30 shrink-0">
+          <p className="text-sm text-blue-200 text-center font-medium">{kioskMessage}</p>
+        </div>
+      )}
+
       {/* ── Main Grid ──────────────────────────── */}
       <main className="flex-1 grid grid-cols-3 gap-0 min-h-0">
         {/* Left 2/3 — Announcements carousel */}
