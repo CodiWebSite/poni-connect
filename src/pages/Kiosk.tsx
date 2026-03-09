@@ -126,6 +126,8 @@ const Kiosk = () => {
       const map: Record<string, any> = {};
       data.forEach(r => { map[r.key] = r.value; });
       setMaintenanceMode(map.maintenance_mode === true);
+      setKioskEnabled(map.kiosk_enabled !== false);
+      setKioskMessage(typeof map.kiosk_message === 'string' ? map.kiosk_message : '');
     }
   }, []);
 
