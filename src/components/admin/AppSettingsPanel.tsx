@@ -15,6 +15,8 @@ interface SettingsState {
   maintenance_mode: boolean;
   homepage_message: string;
   maintenance_eta: string;
+  kiosk_enabled: boolean;
+  kiosk_message: string;
 }
 
 const AppSettingsPanel = () => {
