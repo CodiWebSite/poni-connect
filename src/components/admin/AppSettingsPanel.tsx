@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, Save, Clock, X, Monitor } from 'lucide-react';
+import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2 } from 'lucide-react';
 
 interface SettingsState {
   leave_module_beta: boolean;
@@ -17,6 +17,7 @@ interface SettingsState {
   maintenance_eta: string;
   kiosk_enabled: boolean;
   kiosk_message: string;
+  kiosk_ticker_messages: string[];
 }
 
 const AppSettingsPanel = () => {
@@ -29,7 +30,9 @@ const AppSettingsPanel = () => {
     maintenance_eta: '',
     kiosk_enabled: true,
     kiosk_message: '',
+    kiosk_ticker_messages: [],
   });
+  const [newTickerMsg, setNewTickerMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -46,6 +49,7 @@ const AppSettingsPanel = () => {
           maintenance_eta: typeof map.maintenance_eta === 'string' ? map.maintenance_eta : '',
           kiosk_enabled: map.kiosk_enabled !== false,
           kiosk_message: typeof map.kiosk_message === 'string' ? map.kiosk_message : '',
+          kiosk_ticker_messages: Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [],
         });
       }
       setLoading(false);
@@ -98,6 +102,20 @@ const AppSettingsPanel = () => {
 
   const saveKioskMessage = async () => {
     await updateSetting('kiosk_message', settings.kiosk_message || '');
+  };
+
+  const addTickerMessage = async () => {
+    if (!newTickerMsg.trim()) return;
+    const updated = [...settings.kiosk_ticker_messages, newTickerMsg.trim()];
+    setSettings(prev => ({ ...prev, kiosk_ticker_messages: updated }));
+    setNewTickerMsg('');
+    await updateSetting('kiosk_ticker_messages', updated);
+  };
+
+  const removeTickerMessage = async (index: number) => {
+    const updated = settings.kiosk_ticker_messages.filter((_, i) => i !== index);
+    setSettings(prev => ({ ...prev, kiosk_ticker_messages: updated }));
+    await updateSetting('kiosk_ticker_messages', updated);
   };
 
   const saveEta = async () => {
@@ -217,6 +235,41 @@ const AppSettingsPanel = () => {
                 {saving === 'kiosk_message' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                 Salvează mesaj TV
               </Button>
+
+              {/* Ticker messages */}
+              <div className="pt-3 border-t border-border space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Newspaper className="w-4 h-4 text-primary" />
+                  Bandă de știri (ticker)
+                </Label>
+                <p className="text-xs text-muted-foreground">Mesajele vor defila orizontal în footer-ul ecranului Kiosk. Dacă lista e goală, banda nu se afișează.</p>
+                
+                {settings.kiosk_ticker_messages.length > 0 && (
+                  <ul className="space-y-1">
+                    {settings.kiosk_ticker_messages.map((msg, i) => (
+                      <li key={i} className="flex items-center gap-2 rounded bg-muted px-3 py-1.5 text-sm">
+                        <span className="flex-1 truncate">{msg}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => removeTickerMessage(i)} disabled={saving === 'kiosk_ticker_messages'}>
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ex: Înscrierile pentru conferință se încheie vineri"
+                    value={newTickerMsg}
+                    onChange={(e) => setNewTickerMsg(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTickerMessage(); } }}
+                    className="flex-1"
+                  />
+                  <Button size="sm" onClick={addTickerMessage} disabled={!newTickerMsg.trim() || saving === 'kiosk_ticker_messages'}>
+                    <Plus className="w-4 h-4 mr-1" /> Adaugă
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>

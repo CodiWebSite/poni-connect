@@ -55,6 +55,11 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
 .event-card .ev-date{font-size:12px;color:#94a3b8;margin-top:4px}
 .event-card .ev-loc{font-size:12px;color:#94a3b8;margin-top:2px}
 .no-data{font-size:14px;color:#94a3b8}
+.ticker-wrap{background:#0f172a;color:#fff;height:36px;overflow:hidden;flex-shrink:0;display:none}
+.ticker-inner{display:flex;align-items:center;height:100%;white-space:nowrap;animation:ticker-scroll 20s linear infinite}
+.ticker-item{display:inline-flex;align-items:center;gap:8px;padding:0 24px;font-size:14px}
+.ticker-dot{width:6px;height:6px;border-radius:50%;background:#1e40af;flex-shrink:0}
+@keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 footer{display:flex;align-items:center;justify-content:space-between;padding:12px 32px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8;flex-shrink:0}
 .hidden{display:none}
 </style>
@@ -111,6 +116,10 @@ footer{display:flex;align-items:center;justify-content:space-between;padding:12p
         <div id="eventsList"><p class="no-data">Se încarcă...</p></div>
       </div>
     </div>
+  </div>
+
+  <div class="ticker-wrap" id="tickerWrap">
+    <div class="ticker-inner" id="tickerInner"></div>
   </div>
 
   <footer>
@@ -184,6 +193,23 @@ function fetchSettings() {
         msgEl.style.display = 'block';
       } else {
         msgEl.style.display = 'none';
+      }
+      // Ticker
+      var tickerWrap = document.getElementById('tickerWrap');
+      var tickerInner = document.getElementById('tickerInner');
+      var msgs = Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [];
+      if (msgs.length > 0) {
+        var html = '';
+        for (var j = 0; j < 2; j++) {
+          for (var k = 0; k < msgs.length; k++) {
+            html += '<span class="ticker-item"><span class="ticker-dot"></span>' + msgs[k] + '</span>';
+          }
+        }
+        tickerInner.innerHTML = html;
+        tickerInner.style.animationDuration = Math.max(msgs.length * 8, 20) + 's';
+        tickerWrap.style.display = 'block';
+      } else {
+        tickerWrap.style.display = 'none';
       }
       if (map.kiosk_enabled === false) {
         document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center"><div><h1 style="color:#94a3b8;font-size:24px">Mod Kiosk dezactivat</h1><p style="color:#94a3b8;margin-top:8px">Ecranul TV este momentan oprit de administrator.</p></div></div>';
