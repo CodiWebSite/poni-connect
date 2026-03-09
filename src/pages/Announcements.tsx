@@ -46,6 +46,7 @@ const Announcements = () => {
   const { canManageContent, isSuperAdmin } = useUserRole();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [isPublisher, setIsPublisher] = useState(false);
 
   const [formData, setFormData] = useState<{
     title: string;
@@ -67,7 +68,11 @@ const Announcements = () => {
 
   useEffect(() => {
     fetchAnnouncements();
-  }, []);
+    if (user) {
+      supabase.from('announcement_publishers').select('id').eq('user_id', user.id).maybeSingle()
+        .then(({ data }) => { if (data) setIsPublisher(true); });
+    }
+  }, [user]);
 
   const fetchAnnouncements = async () => {
     const { data } = await supabase
@@ -182,13 +187,15 @@ const Announcements = () => {
     }
   };
 
+  const canPost = canManageContent || isPublisher;
+
   const canEditDelete = (a: Announcement) => {
     return isSuperAdmin || (user && a.author_id === user.id);
   };
 
   return (
     <MainLayout title="Anunțuri" description="Comunicate și informații importante">
-      {canManageContent && (
+      {canPost && (
         <div className="flex justify-end mb-6">
           <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>

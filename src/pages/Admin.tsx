@@ -23,6 +23,7 @@ import EquipmentRegistry from '@/components/admin/EquipmentRegistry';
 import AppSettingsPanel from '@/components/admin/AppSettingsPanel';
 import InvitePlatformPanel from '@/components/admin/InvitePlatformPanel';
 import HelpdeskPanel from '@/components/admin/HelpdeskPanel';
+import AnnouncementPublishersPanel from '@/components/admin/AnnouncementPublishersPanel';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -197,8 +198,9 @@ const Admin = () => {
            <TabsTrigger value="auth-log" className="text-xs sm:text-sm">Autentificări</TabsTrigger>
            <TabsTrigger value="inventory" className="text-xs sm:text-sm">Inventar</TabsTrigger>
              <TabsTrigger value="invitations" className="text-xs sm:text-sm">Invitații</TabsTrigger>
-             <TabsTrigger value="helpdesk" className="text-xs sm:text-sm">HelpDesk</TabsTrigger>
-             <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
+              <TabsTrigger value="helpdesk" className="text-xs sm:text-sm">HelpDesk</TabsTrigger>
+              <TabsTrigger value="publishers" className="text-xs sm:text-sm">Anunțuri</TabsTrigger>
+              <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
           </TabsList>
         <TabsContent value="roles" className="space-y-6">
           <Card>
@@ -291,6 +293,9 @@ const Admin = () => {
         </TabsContent>
         <TabsContent value="helpdesk">
           <HelpdeskPanel />
+        </TabsContent>
+        <TabsContent value="publishers">
+          <AnnouncementPublishersPanel />
         </TabsContent>
         <TabsContent value="settings">
           <AppSettingsPanel />
