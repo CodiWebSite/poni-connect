@@ -54,6 +54,9 @@ const Dashboard = () => {
         )}
         <DashboardAnnouncements />
         <EmployeeDashboard />
+        <div className="mt-6">
+          <ChangelogWidget />
+        </div>
       </MainLayout>
     );
   }
