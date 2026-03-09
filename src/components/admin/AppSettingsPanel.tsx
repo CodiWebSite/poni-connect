@@ -235,6 +235,41 @@ const AppSettingsPanel = () => {
                 {saving === 'kiosk_message' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                 Salvează mesaj TV
               </Button>
+
+              {/* Ticker messages */}
+              <div className="pt-3 border-t border-border space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Newspaper className="w-4 h-4 text-primary" />
+                  Bandă de știri (ticker)
+                </Label>
+                <p className="text-xs text-muted-foreground">Mesajele vor defila orizontal în footer-ul ecranului Kiosk. Dacă lista e goală, banda nu se afișează.</p>
+                
+                {settings.kiosk_ticker_messages.length > 0 && (
+                  <ul className="space-y-1">
+                    {settings.kiosk_ticker_messages.map((msg, i) => (
+                      <li key={i} className="flex items-center gap-2 rounded bg-muted px-3 py-1.5 text-sm">
+                        <span className="flex-1 truncate">{msg}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => removeTickerMessage(i)} disabled={saving === 'kiosk_ticker_messages'}>
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ex: Înscrierile pentru conferință se încheie vineri"
+                    value={newTickerMsg}
+                    onChange={(e) => setNewTickerMsg(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTickerMessage(); } }}
+                    className="flex-1"
+                  />
+                  <Button size="sm" onClick={addTickerMessage} disabled={!newTickerMsg.trim() || saving === 'kiosk_ticker_messages'}>
+                    <Plus className="w-4 h-4 mr-1" /> Adaugă
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>
