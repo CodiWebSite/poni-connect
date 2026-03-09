@@ -194,6 +194,23 @@ function fetchSettings() {
       } else {
         msgEl.style.display = 'none';
       }
+      // Ticker
+      var tickerWrap = document.getElementById('tickerWrap');
+      var tickerInner = document.getElementById('tickerInner');
+      var msgs = Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [];
+      if (msgs.length > 0) {
+        var html = '';
+        for (var j = 0; j < 2; j++) {
+          for (var k = 0; k < msgs.length; k++) {
+            html += '<span class="ticker-item"><span class="ticker-dot"></span>' + msgs[k] + '</span>';
+          }
+        }
+        tickerInner.innerHTML = html;
+        tickerInner.style.animationDuration = Math.max(msgs.length * 8, 20) + 's';
+        tickerWrap.style.display = 'block';
+      } else {
+        tickerWrap.style.display = 'none';
+      }
       if (map.kiosk_enabled === false) {
         document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center"><div><h1 style="color:#94a3b8;font-size:24px">Mod Kiosk dezactivat</h1><p style="color:#94a3b8;margin-top:8px">Ecranul TV este momentan oprit de administrator.</p></div></div>';
       }

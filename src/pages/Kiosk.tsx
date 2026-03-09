@@ -397,6 +397,32 @@ const Kiosk = () => {
         </aside>
       </main>
 
+      {/* ── Ticker ───────────────────────────── */}
+      {tickerMessages.length > 0 && (
+        <div className="bg-slate-900 text-white overflow-hidden shrink-0" style={{ height: 36 }}>
+          <div
+            className="flex items-center whitespace-nowrap h-full"
+            style={{
+              animation: `ticker-scroll ${Math.max(tickerMessages.length * 8, 20)}s linear infinite`,
+            }}
+          >
+            {tickerMessages.map((msg, i) => (
+              <span key={i} className="inline-flex items-center gap-3 px-6 text-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                {msg}
+              </span>
+            ))}
+            {/* Duplicate for seamless loop */}
+            {tickerMessages.map((msg, i) => (
+              <span key={`dup-${i}`} className="inline-flex items-center gap-3 px-6 text-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                {msg}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Footer ─────────────────────────────── */}
       <footer className="flex items-center justify-between px-8 py-3 bg-white border-t border-slate-200 text-xs text-slate-400 shrink-0">
         <div className="flex items-center gap-2">
@@ -408,6 +434,13 @@ const Kiosk = () => {
           intranet.icmpp.ro
         </div>
       </footer>
+
+      <style>{`
+        @keyframes ticker-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
     </div>
   );
 };
