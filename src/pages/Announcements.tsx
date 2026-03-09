@@ -68,7 +68,11 @@ const Announcements = () => {
 
   useEffect(() => {
     fetchAnnouncements();
-  }, []);
+    if (user) {
+      supabase.from('announcement_publishers').select('id').eq('user_id', user.id).maybeSingle()
+        .then(({ data }) => { if (data) setIsPublisher(true); });
+    }
+  }, [user]);
 
   const fetchAnnouncements = async () => {
     const { data } = await supabase
