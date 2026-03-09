@@ -23,10 +23,12 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
 .section-title{font-size:14px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:3px;display:flex;align-items:center;gap:8px}
 .pulse{width:8px;height:8px;border-radius:50%;background:#1e40af;display:inline-block;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeIn{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{0%{opacity:0;transform:scale(0.97)}100%{opacity:1;transform:scale(1)}}
 .content-body{flex:1;padding:0 32px 24px;display:flex;align-items:center;justify-content:center;min-height:0}
-.content-body video{max-width:100%;max-height:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
-.slide{animation:fadeIn .8s;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center}
+.content-body video{max-width:100%;max-height:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);animation:scaleIn .8s cubic-bezier(.22,1,.36,1) both}
+.slide{animation:fadeIn .6s cubic-bezier(.22,1,.36,1) both;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center}
+.analog-clock{flex-shrink:0}
 .slide-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:#fef2f2;color:#dc2626;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;width:fit-content}
 .slide h3{font-size:28px;font-weight:bold;color:#1e293b;margin-bottom:16px;line-height:1.3}
 .slide p{font-size:18px;color:#475569;line-height:1.6}
@@ -76,9 +78,12 @@ footer{display:flex;align-items:center;justify-content:space-between;padding:12p
         </div>
       </div>
     </div>
-    <div class="clock-box">
-      <div class="clock" id="clock">--:--</div>
-      <div class="date" id="date"></div>
+    <div class="clock-box" style="display:flex;align-items:center;gap:20px">
+      <svg id="analogClock" class="analog-clock" width="100" height="100" viewBox="0 0 100 100" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.1))"></svg>
+      <div>
+        <div class="clock" id="clock">--:--</div>
+        <div class="date" id="date"></div>
+      </div>
     </div>
   </header>
 
@@ -150,6 +155,31 @@ function updateClock() {
   var d = new Date();
   document.getElementById('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
   document.getElementById('date').textContent = DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  drawAnalogClock(d);
+}
+
+function drawAnalogClock(d) {
+  var svg = document.getElementById('analogClock');
+  if (!svg) return;
+  var s = d.getSeconds(), m = d.getMinutes(), h = d.getHours() % 12;
+  var sDeg = s * 6, mDeg = m * 6 + s * 0.1, hDeg = h * 30 + m * 0.5;
+  var cx = 50, cy = 50, r = 49;
+  var marks = '';
+  for (var i = 0; i < 12; i++) {
+    var angle = (i * 30 - 90) * Math.PI / 180;
+    var o = r - 4, inner = r - (i % 3 === 0 ? 14 : 9);
+    var sw = i % 3 === 0 ? 2.5 : 1.2;
+    var col = i % 3 === 0 ? '#1e293b' : '#94a3b8';
+    marks += '<line x1="'+(cx+inner*Math.cos(angle))+'" y1="'+(cy+inner*Math.sin(angle))+'" x2="'+(cx+o*Math.cos(angle))+'" y2="'+(cy+o*Math.sin(angle))+'" stroke="'+col+'" stroke-width="'+sw+'" stroke-linecap="round"/>';
+  }
+  svg.innerHTML = '<circle cx="50" cy="50" r="48" fill="#fff" stroke="#e2e8f0" stroke-width="2"/>'
+    + '<circle cx="50" cy="50" r="43" fill="none" stroke="#e2e8f0" stroke-width="0.5" opacity="0.3"/>'
+    + marks
+    + '<line x1="50" y1="50" x2="50" y2="28" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round" style="transform:rotate('+hDeg+'deg);transform-origin:50px 50px;transition:transform .3s cubic-bezier(.4,2.08,.55,.44)"/>'
+    + '<line x1="50" y1="50" x2="50" y2="18" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" style="transform:rotate('+mDeg+'deg);transform-origin:50px 50px;transition:transform .3s cubic-bezier(.4,2.08,.55,.44)"/>'
+    + '<line x1="50" y1="56" x2="50" y2="15" stroke="#1e40af" stroke-width="1.2" stroke-linecap="round" style="transform:rotate('+sDeg+'deg);transform-origin:50px 50px;transition:transform .3s cubic-bezier(.4,2.08,.55,.44)"/>'
+    + '<circle cx="50" cy="50" r="3.5" fill="#1e40af"/>'
+    + '<circle cx="50" cy="50" r="1.5" fill="#fff"/>';
 }
 
 function sbFetch(table, query) {
