@@ -50,12 +50,12 @@ export function useTrackAction() {
 
   return useCallback((action: string, page?: string, metadata?: Record<string, unknown>) => {
     if (!user) return;
-    supabase.from('analytics_events').insert({
+    supabase.from('analytics_events').insert([{
       user_id: user.id,
       event_type: 'action',
       page: page || window.location.pathname,
       action,
       metadata: metadata || {},
-    }).then(() => {});
+    }]).then(() => {});
   }, [user]);
 }
