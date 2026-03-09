@@ -6,6 +6,8 @@ import PersonalCalendarWidget from '@/components/dashboard/PersonalCalendarWidge
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
 import ActivityHistory from '@/components/dashboard/ActivityHistory';
 import ActivationChart from '@/components/dashboard/ActivationChart';
+import AnalyticsWidget from '@/components/dashboard/AnalyticsWidget';
+import ChangelogWidget from '@/components/dashboard/ChangelogWidget';
 import AdoptionTrendChart from '@/components/dashboard/AdoptionTrendChart';
 import LeaveByDepartment from '@/components/dashboard/LeaveByDepartment';
 import HRAlerts from '@/components/dashboard/HRAlerts';
