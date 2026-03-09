@@ -30,7 +30,9 @@ const AppSettingsPanel = () => {
     maintenance_eta: '',
     kiosk_enabled: true,
     kiosk_message: '',
+    kiosk_ticker_messages: [],
   });
+  const [newTickerMsg, setNewTickerMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
