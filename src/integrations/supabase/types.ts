@@ -106,6 +106,36 @@ export type Database = {
           },
         ]
       }
+      analytics_events: {
+        Row: {
+          action: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          page: string
+          user_id: string
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          page: string
+          user_id: string
+        }
+        Update: {
+          action?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          page?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           attachments: Json | null
@@ -256,6 +286,51 @@ export type Database = {
           size_info?: string | null
           status?: string
           type?: string
+        }
+        Relationships: []
+      }
+      changelog_entries: {
+        Row: {
+          action_label: string | null
+          action_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          impact_level: string
+          module: string | null
+          target_roles: string[] | null
+          title: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          impact_level?: string
+          module?: string | null
+          target_roles?: string[] | null
+          title: string
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          action_label?: string | null
+          action_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          impact_level?: string
+          module?: string | null
+          target_roles?: string[] | null
+          title?: string
+          updated_at?: string
+          version?: string
         }
         Relationships: []
       }

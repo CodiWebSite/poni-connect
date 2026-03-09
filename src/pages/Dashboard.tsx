@@ -6,6 +6,8 @@ import PersonalCalendarWidget from '@/components/dashboard/PersonalCalendarWidge
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
 import ActivityHistory from '@/components/dashboard/ActivityHistory';
 import ActivationChart from '@/components/dashboard/ActivationChart';
+import AnalyticsWidget from '@/components/dashboard/AnalyticsWidget';
+import ChangelogWidget from '@/components/dashboard/ChangelogWidget';
 import AdoptionTrendChart from '@/components/dashboard/AdoptionTrendChart';
 import LeaveByDepartment from '@/components/dashboard/LeaveByDepartment';
 import HRAlerts from '@/components/dashboard/HRAlerts';
@@ -52,6 +54,9 @@ const Dashboard = () => {
         )}
         <DashboardAnnouncements />
         <EmployeeDashboard />
+        <div className="mt-6">
+          <ChangelogWidget />
+        </div>
       </MainLayout>
     );
   }
@@ -98,6 +103,13 @@ const Dashboard = () => {
         {isSuperAdmin && <OnlineUsersWidget />}
       </div>
 
+      {/* Analytics de adopție - doar admin */}
+      {(isSuperAdmin || role === 'admin') && (
+        <div className="mb-6">
+          <AnalyticsWidget />
+        </div>
+      )}
+
       {/* HR Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
@@ -110,15 +122,21 @@ const Dashboard = () => {
         <div className="lg:col-span-2">
           <LeaveByDepartment />
         </div>
-        <WeatherWidget />
+        <ChangelogWidget />
       </div>
 
-      {/* Calendar & Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
           <PersonalCalendarWidget />
         </div>
-        <ActivityHistory />
+        <WeatherWidget />
+      </div>
+
+      {/* Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <ActivityHistory />
+        </div>
       </div>
     </MainLayout>
   );
