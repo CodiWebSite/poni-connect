@@ -48,7 +48,7 @@ export function usePageTracking() {
 export function useTrackAction() {
   const { user } = useAuth();
 
-  return useCallback((action: string, page?: string, metadata?: Record<string, string | number | boolean>) => {
+  return useCallback((action: string, page?: string, metadata?: Record<string, string | number | boolean | null>) => {
     if (!user) return;
     supabase.from('analytics_events').insert([{
       user_id: user.id,

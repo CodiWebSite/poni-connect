@@ -21,6 +21,7 @@ const MainLayout = ({ children, title, description }: MainLayoutProps) => {
   const { isCollapsed } = useSidebarContext();
   const { settings } = useAppSettings();
   usePresence();
+  usePageTracking();
 
   return (
     <div className="min-h-screen bg-background">
