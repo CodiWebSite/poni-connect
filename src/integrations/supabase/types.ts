@@ -870,6 +870,27 @@ export type Database = {
         }
         Relationships: []
       }
+      event_publishers: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string
@@ -1929,6 +1950,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      can_publish_events: { Args: { _user_id: string }; Returns: boolean }
       can_view_sensitive_profile_data: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
