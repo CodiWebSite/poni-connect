@@ -66,7 +66,9 @@ const formatEventDate = (iso: string) => {
 };
 
 // Video URL from public folder — replace with your uploaded video
-const KIOSK_VIDEO_URL = '/kiosk-video.mp4';
+const KIOSK_VIDEO_URL = 'https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4';
+const ANNOUNCEMENTS_DISPLAY_SECONDS = 90; // Total seconds to show announcements before switching back to video
+const SLIDE_INTERVAL_SECONDS = 10; // Seconds per announcement slide
 
 // ── Main component ─────────────────────────────────────
 const Kiosk = () => {
