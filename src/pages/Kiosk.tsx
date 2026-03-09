@@ -81,31 +81,11 @@ const Kiosk = () => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [kioskEnabled, setKioskEnabled] = useState(true);
   const [kioskMessage, setKioskMessage] = useState('');
-  const [hasVideo, setHasVideo] = useState(false);
+  const [carouselMode, setCarouselMode] = useState<CarouselMode>('video');
+  const [announcementsElapsed, setAnnouncementsElapsed] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Check if video exists
-  useEffect(() => {
-    fetch(KIOSK_VIDEO_URL, { method: 'HEAD' })
-      .then(r => setHasVideo(r.ok))
-      .catch(() => setHasVideo(false));
-  }, []);
-
-  // Build slides array: announcements interleaved with video
-  const slides: SlideItem[] = [];
-  announcements.forEach((a, i) => {
-    slides.push({ type: 'announcement', data: a });
-    // Insert video after every 2 announcements (or after last one)
-    if (hasVideo && (i === announcements.length - 1 || (i + 1) % 2 === 0)) {
-      slides.push({ type: 'video' });
-    }
-  });
-  // If no announcements but video exists, just show video
-  if (announcements.length === 0 && hasVideo) {
-    slides.push({ type: 'video' });
-  }
-
-  const currentSlide = slides[currentSlideIndex] || null;
+  const currentAnnouncement = announcements[currentSlideIndex] || null;
 
   // Clock
   useEffect(() => {
