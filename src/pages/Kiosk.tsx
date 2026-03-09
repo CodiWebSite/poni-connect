@@ -238,11 +238,14 @@ const Kiosk = () => {
             </h1>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-4xl font-mono font-bold tabular-nums text-slate-800 tracking-wider">
-            {formatTime(now)}
+        <div className="flex items-center gap-5">
+          <AnalogClock size={100} />
+          <div className="text-right">
+            <div className="text-4xl font-mono font-bold tabular-nums text-foreground tracking-wider">
+              {formatTime(now)}
+            </div>
+            <div className="text-sm text-muted-foreground mt-0.5">{formatDateRo(now)}</div>
           </div>
-          <div className="text-sm text-slate-500 mt-0.5">{formatDateRo(now)}</div>
         </div>
       </header>
 
