@@ -23,6 +23,15 @@ const Kiosk = () => {
   const [tickerMessages, setTickerMessages] = useState<string[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Unregister service worker on kiosk route to avoid stale cache
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(reg => reg.unregister());
+      });
+    }
+  }, []);
+
   // Clock tick
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
