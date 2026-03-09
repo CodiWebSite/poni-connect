@@ -42,7 +42,11 @@ const CalendarPage = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+    if (user) {
+      supabase.from('event_publishers').select('id').eq('user_id', user.id).maybeSingle()
+        .then(({ data }) => { if (data) setIsEventPublisher(true); });
+    }
+  }, [user]);
 
   const fetchEvents = async () => {
     const { data } = await supabase
