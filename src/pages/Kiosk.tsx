@@ -178,19 +178,19 @@ const Kiosk = () => {
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <Clock className="w-3.5 h-3.5 text-slate-400" />
-            <span className="font-medium">Program: L–V 08:00–16:00</span>
+            <span className="font-medium">Program: L–V 7:30–16:00</span>
           </div>
           <div className="flex items-center gap-2">
             <Phone className="w-3.5 h-3.5 text-slate-400" />
-            <span>Secretariat: <strong>101</strong></span>
+            <span>Secretariat: <strong>0332 880 220</strong></span>
           </div>
           <div className="flex items-center gap-2">
-            <span>IT: <strong>150</strong></span>
+            <span>pponi@icmpp.ro</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Building2 className="w-3.5 h-3.5 text-slate-400" />
-          <span className="font-medium">intranet.icmpp.ro</span>
+          <span className="font-medium">Aleea Grigore Ghica Vodă 41A, 700487 Iași</span>
         </div>
       </footer>
 
