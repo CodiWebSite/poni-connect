@@ -284,7 +284,7 @@ const Kiosk = () => {
 
           <div className="flex-1 px-8 pb-6 flex items-center justify-center min-h-0">
             {mode === 'video' ? (
-              <div className="w-full h-full flex items-center justify-center animate-fade-in" style={{ animationDuration: '0.8s' }}>
+              <div className="w-full h-full flex items-center justify-center kiosk-fade-in">
                 <video
                   ref={videoRef}
                   src={KIOSK_VIDEO_URL}
@@ -296,27 +296,27 @@ const Kiosk = () => {
                 />
               </div>
             ) : (
-              <div className="w-full h-full animate-fade-in" key={`slide-${fadeKey}`} style={{ animationDuration: '0.8s' }}>
+              <div className="w-full h-full kiosk-slide-in" key={`slide-${fadeKey}`}>
                 {currentAnnouncement ? (
                   <div className="flex flex-col justify-center h-full">
                     {currentAnnouncement.priority === 'urgent' && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-600 text-xs font-semibold uppercase tracking-wider mb-4 w-fit">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-xs font-semibold uppercase tracking-wider mb-4 w-fit">
                         <AlertTriangle className="w-3.5 h-3.5" /> Urgent
                       </span>
                     )}
-                    <h3 className="text-3xl font-bold text-slate-800 leading-tight mb-4">
+                    <h3 className="text-3xl font-bold text-foreground leading-tight mb-4">
                       {currentAnnouncement.title}
                     </h3>
-                    <p className="text-lg text-slate-600 leading-relaxed line-clamp-6 whitespace-pre-line">
+                    <p className="text-lg text-muted-foreground leading-relaxed line-clamp-6 whitespace-pre-line">
                       {currentAnnouncement.content}
                     </p>
-                    <p className="text-sm text-slate-400 mt-6">
+                    <p className="text-sm text-muted-foreground/60 mt-6">
                       {new Date(currentAnnouncement.created_at).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-slate-400 text-xl">Nu există anunțuri de afișat.</p>
+                    <p className="text-muted-foreground text-xl">Nu există anunțuri de afișat.</p>
                   </div>
                 )}
               </div>
