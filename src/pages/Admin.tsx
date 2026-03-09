@@ -299,6 +299,9 @@ const Admin = () => {
         <TabsContent value="publishers">
           <AnnouncementPublishersPanel />
         </TabsContent>
+        <TabsContent value="event-publishers">
+          <EventPublishersPanel />
+        </TabsContent>
         <TabsContent value="settings">
           <AppSettingsPanel />
         </TabsContent>
