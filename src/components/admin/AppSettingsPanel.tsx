@@ -44,6 +44,8 @@ const AppSettingsPanel = () => {
           maintenance_mode: map.maintenance_mode === true,
           homepage_message: typeof map.homepage_message === 'string' ? map.homepage_message : '',
           maintenance_eta: typeof map.maintenance_eta === 'string' ? map.maintenance_eta : '',
+          kiosk_enabled: map.kiosk_enabled !== false,
+          kiosk_message: typeof map.kiosk_message === 'string' ? map.kiosk_message : '',
         });
       }
       setLoading(false);
