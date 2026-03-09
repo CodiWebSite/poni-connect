@@ -245,7 +245,7 @@ const Kiosk = () => {
 
           <div className="flex-1 px-8 pb-6 flex items-center min-h-0">
             {currentAnnouncement ? (
-              <div className="w-full animate-in fade-in duration-700" key={currentAnnouncement.id}>
+              <div className="w-full animate-fade-in" key={`slide-${fadeKey}`} style={{ animationDuration: '0.8s' }}>
                 {currentAnnouncement.priority === 'urgent' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-semibold uppercase tracking-wider mb-4">
                     <AlertTriangle className="w-3.5 h-3.5" /> Urgent
