@@ -227,9 +227,9 @@ const Kiosk = () => {
       {/* ── Header ─────────────────────────────── */}
       <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 shrink-0">
         <div className="flex items-center gap-4">
-          <img src="/logo-icmpp.png" alt="ICMPP" className="h-12 w-auto" />
+          <img src="/logo-icmpp.png" alt="ICMPP" className="h-20 w-auto" />
           <div>
-            <h1 className="text-lg font-bold tracking-wide text-slate-800 leading-tight">
+            <h1 className="text-3xl font-bold tracking-wide text-slate-800 leading-tight">
               Institutul de Chimie Macromoleculară<br />
               <span className="text-primary">„Petru Poni"</span> Iași
             </h1>
