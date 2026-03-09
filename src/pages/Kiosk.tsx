@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets, AlertTriangle, ChevronLeft, ChevronRight, MapPin, Calendar, Clock, Building2, Monitor } from 'lucide-react';
+import AnalogClock from '@/components/kiosk/AnalogClock';
 
 // ── Types ──────────────────────────────────────────────
 interface Announcement {
