@@ -37,11 +37,11 @@ export function usePageTracking() {
     lastTracked.current = path;
 
     const pageName = PAGE_NAMES[path] || path;
-    supabase.from('analytics_events').insert({
+    supabase.from('analytics_events').insert([{
       user_id: user.id,
       event_type: 'page_view',
       page: pageName,
-    }).then(() => {});
+    }]).then(() => {});
   }, [location.pathname, user]);
 }
 
