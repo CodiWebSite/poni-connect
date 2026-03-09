@@ -17,6 +17,7 @@ interface SettingsState {
   maintenance_eta: string;
   kiosk_enabled: boolean;
   kiosk_message: string;
+  kiosk_ticker_messages: string[];
 }
 
 const AppSettingsPanel = () => {
