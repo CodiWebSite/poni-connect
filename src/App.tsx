@@ -32,6 +32,7 @@ import RoomBookings from "./pages/RoomBookings";
 import RecreationalActivities from "./pages/RecreationalActivities";
 import Chat from "./pages/Chat";
 import InstallApp from "./pages/InstallApp";
+import Kiosk from "./pages/Kiosk";
 
 const queryClient = new QueryClient();
 
