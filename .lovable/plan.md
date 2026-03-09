@@ -1,60 +1,60 @@
 
 
-## Mod Kiosk / TV — Plan de implementare
+# Chat Intern / Mesagerie — Modul Beta
 
-Da, se poate face și este destul de simplu. Ideea: o pagină publică dedicată (fără login, fără sidebar, fullscreen) care afișează în buclă informații utile pe un TV din hol.
+## Descriere
+Sistem de mesagerie internă cu conversații directe (1-la-1) și grupuri pe departament, marcat ca **Beta v0.9** similar cu modulul de concedii.
 
-### Ce se construiește
+## Structura bazei de date
 
-**O pagină nouă `/kiosk`** — rută publică, fără autentificare, fără layout standard. Conține:
+**3 tabele noi:**
 
-1. **Header**: logo ICMPP + ceas live + data curentă
-2. **Anunțuri pinned** — preluate din tabela `announcements` (cele pinned + urgente), auto-refresh la 60s
-3. **Meteo Iași** — reutilizăm logica din `WeatherWidget`, afișaj mare
-4. **Status mentenanță** — dacă `maintenance_mode` e activ, banner vizibil
-5. **Ora / program** — ceas digital mare, eventual „Program: L-V 08:00–16:00"
+1. **`chat_conversations`** — conversațiile (direct sau grup)
+   - `id`, `type` (direct/group), `name` (pentru grupuri), `department` (pentru grupuri auto), `created_by`, `created_at`, `updated_at`
 
-**Auto-rotate**: conținutul se rotește automat între secțiuni (carousel) sau totul e afișat simultan pe un layout split-screen optimizat pentru TV (16:9).
+2. **`chat_participants`** — cine participă la fiecare conversație
+   - `id`, `conversation_id`, `user_id`, `joined_at`, `last_read_at`
 
-### Detalii tehnice
+3. **`chat_messages`** — mesajele propriu-zise
+   - `id`, `conversation_id`, `sender_id`, `content` (text), `created_at`, `updated_at`, `is_edited`
 
-| Element | Detalii |
-|---------|---------|
-| Ruta | `/kiosk` în `App.tsx`, exclusă din `MaintenanceGuard` (ca `/auth`) |
-| Auth | Fără — datele afișate sunt publice (anunțuri, meteo, status) |
-| RLS | Politică `SELECT` pentru `anon` pe `announcements` (doar `is_pinned = true` sau `priority = 'urgent'`) |
-| Refresh | Polling la fiecare 60 secunde pentru anunțuri + realtime pe `app_settings` |
-| Layout | Fullscreen, fără scroll, font-uri mari, dark mode implicit |
-| Anti-sleep | `wakeLock` API + meta refresh fallback pentru a preveni oprirea ecranului |
+Realtime activat pe `chat_messages` pentru primire instantanee.
 
-### Structura paginii (layout TV)
+## RLS (securitate)
+- Participanții pot vedea/trimite mesaje doar în conversațiile la care participă
+- Funcție `is_chat_participant(user_id, conversation_id)` SECURITY DEFINER pentru a evita recursivitate
 
-```text
-┌─────────────────────────────────────────────────┐
-│  🏛 ICMPP Iași          Luni, 10 Mar    14:32   │
-├───────────────────────────┬─────────────────────┤
-│                           │   ☀ 18°C            │
-│   ANUNȚURI                │   Parțial noros      │
-│   (carousel auto-scroll)  │   Umiditate: 65%    │
-│                           ├─────────────────────┤
-│                           │   📅 EVENIMENTE     │
-│                           │   (dacă există)     │
-│                           ├─────────────────────┤
-│                           │   ⚠ MENTENANȚĂ      │
-│                           │   (dacă e activ)    │
-├───────────────────────────┴─────────────────────┤
-│  Program: L-V 08:00 – 16:00 │ intranet.icmpp.ro │
-└─────────────────────────────────────────────────┘
-```
+## Funcționalități
+1. **Conversații directe** — click pe un coleg din director/profil → deschide chat 1-la-1
+2. **Grupuri departament** — create automat pe baza departamentului din `profiles`
+3. **Indicatori necitite** — badge pe sidebar cu nr. mesaje necitite
+4. **Typing indicator** — via Supabase Realtime Presence (fără tabel)
+5. **Banner Beta** — controlat din `app_settings` (`chat_beta` key), identic cu cel de pe concedii
 
-### Fișiere noi/modificate
+## Pagini și componente noi
 
-- **Nou**: `src/pages/Kiosk.tsx` — pagina completă, standalone
-- **Modificat**: `src/App.tsx` — adăugare rută `/kiosk`, exclusă din MaintenanceGuard
-- **Migrație SQL**: politică RLS `anon SELECT` pe `announcements` (filtrată pe pinned/urgent)
-- **Opțional**: toggle în Admin → Settings pentru activare/dezactivare mod Kiosk
+- **`src/pages/Chat.tsx`** — pagina principală cu layout split (lista conversații + zona mesaje)
+- **`src/components/chat/ConversationList.tsx`** — lista conversațiilor cu search, badge necitite
+- **`src/components/chat/ChatWindow.tsx`** — zona de mesaje cu scroll infinit, input, timestamp-uri
+- **`src/components/chat/NewConversationDialog.tsx`** — dialog pentru conversație nouă (selectare utilizator)
+- **`src/components/chat/ChatBetaBanner.tsx`** — banner Beta reutilizabil
 
-### Utilizare
+## Modificări existente
+- **Sidebar.tsx** — adăugare link „Mesagerie" cu iconiță `MessageCircle` + badge necitite
+- **App.tsx** — rută nouă `/chat`
+- **app_settings** — inserare rând `chat_beta = true`
 
-Deschizi pe TV-ul din hol: `https://intranet.icmpp.ro/kiosk` — fără login, fullscreen (F11), rulează non-stop.
+## Design UI
+- Layout responsive: pe desktop split 30/70 (listă/mesaje), pe mobil navigare între ecrane
+- Mesajele proprii aliniate la dreapta (albastru), cele primite la stânga (gri)
+- Avatar + nume expeditor + timestamp
+- ScrollArea pentru istoric mesaje
+- Input cu buton Send în partea de jos
+
+## Ordine implementare
+1. Migrare DB (tabele + RLS + realtime)
+2. Inserare setting `chat_beta`
+3. Pagina Chat cu componentele
+4. Integrare sidebar + routing
+5. Badge necitite în sidebar
 

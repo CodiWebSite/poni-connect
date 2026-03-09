@@ -32,6 +32,7 @@ import RoomBookings from "./pages/RoomBookings";
 import RecreationalActivities from "./pages/RecreationalActivities";
 import Chat from "./pages/Chat";
 import InstallApp from "./pages/InstallApp";
+import Kiosk from "./pages/Kiosk";
 
 const queryClient = new QueryClient();
 
@@ -41,8 +42,8 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const { isSuperAdmin, role, loading: roleLoading } = useUserRole();
   const location = useLocation();
 
-  // Allow auth routes always
-  if (location.pathname.startsWith('/auth')) return <>{children}</>;
+  // Allow auth and kiosk routes always
+  if (location.pathname.startsWith('/auth') || location.pathname === '/kiosk') return <>{children}</>;
 
   // Wait for settings to load before making any maintenance decision
   if (settingsLoading) return <>{children}</>;
@@ -96,6 +97,7 @@ const App = () => (
           <BrowserRouter>
             <MaintenanceGuard>
               <Routes>
+                <Route path="/kiosk" element={<Kiosk />} />
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/reset-password" element={<ResetPassword />} />
