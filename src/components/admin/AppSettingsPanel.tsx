@@ -27,6 +27,8 @@ const AppSettingsPanel = () => {
     maintenance_mode: false,
     homepage_message: '',
     maintenance_eta: '',
+    kiosk_enabled: true,
+    kiosk_message: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
