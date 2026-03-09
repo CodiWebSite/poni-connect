@@ -97,6 +97,7 @@ const App = () => (
           <BrowserRouter>
             <MaintenanceGuard>
               <Routes>
+                <Route path="/kiosk" element={<Kiosk />} />
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/reset-password" element={<ResetPassword />} />
