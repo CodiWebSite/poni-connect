@@ -96,6 +96,10 @@ const AppSettingsPanel = () => {
     await updateSetting('homepage_message', settings.homepage_message);
   };
 
+  const saveKioskMessage = async () => {
+    await updateSetting('kiosk_message', settings.kiosk_message || '');
+  };
+
   const saveEta = async () => {
     const val = settings.maintenance_eta ? settings.maintenance_eta : null;
     await updateSetting('maintenance_eta', val);
