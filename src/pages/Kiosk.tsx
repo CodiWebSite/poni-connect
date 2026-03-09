@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets, AlertTriangle, ChevronLeft, ChevronRight, MapPin, Calendar, Clock, Building2, Monitor, Play } from 'lucide-react';
+import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets, AlertTriangle, ChevronLeft, ChevronRight, MapPin, Calendar, Clock, Building2, Monitor } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────
 interface Announcement {
@@ -27,7 +27,6 @@ interface EventData {
   location: string | null;
 }
 
-// Carousel mode: 'video' plays full video, then 'announcements' rotates for ~90s
 type CarouselMode = 'video' | 'announcements';
 
 // ── Weather helpers ────────────────────────────────────
@@ -65,27 +64,26 @@ const formatEventDate = (iso: string) => {
   return `${d.getDate()} ${MONTHS_RO[d.getMonth()].substring(0, 3)} · ${formatTime(d)}`;
 };
 
-// Video URL from public folder — replace with your uploaded video
 const KIOSK_VIDEO_URL = 'https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4';
-const ANNOUNCEMENTS_DISPLAY_SECONDS = 90; // Total seconds to show announcements before switching back to video
-const SLIDE_INTERVAL_SECONDS = 10; // Seconds per announcement slide
+const ANNOUNCEMENTS_TOTAL_SECONDS = 90;
+const SLIDE_SECONDS = 10;
 
 // ── Main component ─────────────────────────────────────
 const Kiosk = () => {
   const [now, setNow] = useState(new Date());
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [slideIndex, setSlideIndex] = useState(0);
   const [fadeKey, setFadeKey] = useState(0);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [events, setEvents] = useState<EventData[]>([]);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [kioskEnabled, setKioskEnabled] = useState(true);
   const [kioskMessage, setKioskMessage] = useState('');
-  const [carouselMode, setCarouselMode] = useState<CarouselMode>('video');
-  const [announcementsElapsed, setAnnouncementsElapsed] = useState(0);
+  const [mode, setMode] = useState<CarouselMode>('video');
+  const [announcementTime, setAnnouncementTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const currentAnnouncement = announcements[currentSlideIndex] || null;
+  const currentAnnouncement = announcements[slideIndex] || null;
 
   // Clock
   useEffect(() => {
@@ -97,11 +95,7 @@ const Kiosk = () => {
   useEffect(() => {
     let wl: any = null;
     const acquire = async () => {
-      try {
-        if ('wakeLock' in navigator) {
-          wl = await (navigator as any).wakeLock.request('screen');
-        }
-      } catch { /* ignore */ }
+      try { if ('wakeLock' in navigator) wl = await (navigator as any).wakeLock.request('screen'); } catch {}
     };
     acquire();
     const handler = () => { if (document.visibilityState === 'visible') acquire(); };
@@ -158,7 +152,7 @@ const Kiosk = () => {
         windSpeed: Math.round(c.wind_speed_10m),
         weatherCode: c.weather_code,
       });
-    } catch { /* silent */ }
+    } catch {}
   }, []);
 
   // Initial + polling
@@ -167,44 +161,53 @@ const Kiosk = () => {
     fetchEvents();
     fetchSettings();
     fetchWeather();
-
-    const poll = setInterval(() => {
-      fetchAnnouncements();
-      fetchEvents();
-      fetchSettings();
-    }, 60_000);
-
+    const poll = setInterval(() => { fetchAnnouncements(); fetchEvents(); fetchSettings(); }, 60_000);
     const weatherPoll = setInterval(fetchWeather, 10 * 60_000);
     return () => { clearInterval(poll); clearInterval(weatherPoll); };
   }, [fetchAnnouncements, fetchEvents, fetchSettings, fetchWeather]);
 
-  // Auto-rotate slides
+  // Play video when mode switches to 'video'
   useEffect(() => {
-    if (slides.length <= 1) return;
-
-    // If current slide is video, wait for it to end naturally
-    if (currentSlide?.type === 'video') return;
-
-    const t = setInterval(() => {
-      setCurrentSlideIndex(p => (p + 1) % slides.length);
-      setFadeKey(k => k + 1);
-    }, 10_000);
-    return () => clearInterval(t);
-  }, [slides.length, currentSlide?.type]);
-
-  // When video ends, advance to next slide
-  const handleVideoEnd = () => {
-    setCurrentSlideIndex(p => (p + 1) % slides.length);
-    setFadeKey(k => k + 1);
-  };
-
-  // Play video when it becomes current slide
-  useEffect(() => {
-    if (currentSlide?.type === 'video' && videoRef.current) {
+    if (mode === 'video' && videoRef.current) {
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {});
     }
-  }, [currentSlideIndex, currentSlide?.type]);
+  }, [mode]);
+
+  // When video ends → switch to announcements mode
+  const handleVideoEnd = () => {
+    setMode('announcements');
+    setSlideIndex(0);
+    setAnnouncementTime(0);
+    setFadeKey(k => k + 1);
+  };
+
+  // Announcements auto-rotate + timer to switch back to video
+  useEffect(() => {
+    if (mode !== 'announcements') return;
+    if (announcements.length === 0) {
+      // No announcements, go back to video
+      setMode('video');
+      return;
+    }
+
+    const t = setInterval(() => {
+      setAnnouncementTime(prev => {
+        const next = prev + SLIDE_SECONDS;
+        if (next >= ANNOUNCEMENTS_TOTAL_SECONDS) {
+          // Time's up, switch back to video
+          setMode('video');
+          return 0;
+        }
+        // Advance to next announcement slide
+        setSlideIndex(p => (p + 1) % announcements.length);
+        setFadeKey(k => k + 1);
+        return next;
+      });
+    }, SLIDE_SECONDS * 1000);
+
+    return () => clearInterval(t);
+  }, [mode, announcements.length]);
 
   // Kiosk disabled screen
   if (!kioskEnabled) {
@@ -249,23 +252,23 @@ const Kiosk = () => {
 
       {/* ── Main Grid ──────────────────────────── */}
       <main className="flex-1 grid grid-cols-3 gap-0 min-h-0">
-        {/* Left 2/3 — Carousel (announcements + video) */}
+        {/* Left 2/3 — Video or Announcements */}
         <section className="col-span-2 flex flex-col border-r border-slate-200">
           <div className="px-8 pt-6 pb-3 flex items-center justify-between shrink-0">
             <h2 className="text-lg font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              {currentSlide?.type === 'video' ? 'Prezentare' : 'Anunțuri'}
+              {mode === 'video' ? 'Prezentare Institut' : 'Anunțuri'}
             </h2>
-            {slides.length > 1 && (
+            {mode === 'announcements' && announcements.length > 1 && (
               <div className="flex items-center gap-3">
-                <button onClick={() => { setCurrentSlideIndex(p => (p - 1 + slides.length) % slides.length); setFadeKey(k => k + 1); }}
+                <button onClick={() => { setSlideIndex(p => (p - 1 + announcements.length) % announcements.length); setFadeKey(k => k + 1); }}
                   className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <span className="text-xs text-slate-400 tabular-nums">
-                  {currentSlideIndex + 1} / {slides.length}
+                  {slideIndex + 1} / {announcements.length}
                 </span>
-                <button onClick={() => { setCurrentSlideIndex(p => (p + 1) % slides.length); setFadeKey(k => k + 1); }}
+                <button onClick={() => { setSlideIndex(p => (p + 1) % announcements.length); setFadeKey(k => k + 1); }}
                   className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
                   <ChevronRight className="w-5 h-5" />
                 </button>
@@ -274,47 +277,63 @@ const Kiosk = () => {
           </div>
 
           <div className="flex-1 px-8 pb-6 flex items-center justify-center min-h-0">
-            <div className="w-full h-full animate-fade-in" key={`slide-${fadeKey}`} style={{ animationDuration: '0.8s' }}>
-              {currentSlide?.type === 'video' ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <video
-                    ref={videoRef}
-                    src={KIOSK_VIDEO_URL}
-                    onEnded={handleVideoEnd}
-                    muted
-                    playsInline
-                    className="max-w-full max-h-full rounded-xl shadow-lg"
-                  />
-                </div>
-              ) : currentSlide?.type === 'announcement' ? (
-                <div className="flex flex-col justify-center h-full">
-                  {currentSlide.data.priority === 'urgent' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-600 text-xs font-semibold uppercase tracking-wider mb-4 w-fit">
-                      <AlertTriangle className="w-3.5 h-3.5" /> Urgent
-                    </span>
-                  )}
-                  <h3 className="text-3xl font-bold text-slate-800 leading-tight mb-4">
-                    {currentSlide.data.title}
-                  </h3>
-                  <p className="text-lg text-slate-600 leading-relaxed line-clamp-6 whitespace-pre-line">
-                    {currentSlide.data.content}
-                  </p>
-                  <p className="text-sm text-slate-400 mt-6">
-                    {new Date(currentSlide.data.created_at).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-slate-400 text-xl">Nu există anunțuri de afișat.</p>
-              )}
-            </div>
+            {mode === 'video' ? (
+              <div className="w-full h-full flex items-center justify-center animate-fade-in" style={{ animationDuration: '0.8s' }}>
+                <video
+                  ref={videoRef}
+                  src={KIOSK_VIDEO_URL}
+                  onEnded={handleVideoEnd}
+                  muted
+                  playsInline
+                  autoPlay
+                  className="max-w-full max-h-full rounded-xl shadow-lg"
+                />
+              </div>
+            ) : (
+              <div className="w-full h-full animate-fade-in" key={`slide-${fadeKey}`} style={{ animationDuration: '0.8s' }}>
+                {currentAnnouncement ? (
+                  <div className="flex flex-col justify-center h-full">
+                    {currentAnnouncement.priority === 'urgent' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-600 text-xs font-semibold uppercase tracking-wider mb-4 w-fit">
+                        <AlertTriangle className="w-3.5 h-3.5" /> Urgent
+                      </span>
+                    )}
+                    <h3 className="text-3xl font-bold text-slate-800 leading-tight mb-4">
+                      {currentAnnouncement.title}
+                    </h3>
+                    <p className="text-lg text-slate-600 leading-relaxed line-clamp-6 whitespace-pre-line">
+                      {currentAnnouncement.content}
+                    </p>
+                    <p className="text-sm text-slate-400 mt-6">
+                      {new Date(currentAnnouncement.created_at).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-slate-400 text-xl">Nu există anunțuri de afișat.</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Slide dots */}
-          {slides.length > 1 && (
-            <div className="flex justify-center gap-2 pb-4 shrink-0">
-              {slides.map((s, i) => (
-                <div key={i} className={`w-2 h-2 rounded-full transition-colors ${i === currentSlideIndex ? 'bg-primary' : s.type === 'video' ? 'bg-primary/30' : 'bg-slate-300'}`} />
-              ))}
+          {/* Progress bar for announcements mode */}
+          {mode === 'announcements' && (
+            <div className="px-8 pb-4 shrink-0">
+              <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary/50 transition-all duration-1000 ease-linear rounded-full"
+                  style={{ width: `${(announcementTime / ANNOUNCEMENTS_TOTAL_SECONDS) * 100}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-1">
+                <div className="flex gap-1.5">
+                  {announcements.map((_, i) => (
+                    <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === slideIndex ? 'bg-primary' : 'bg-slate-300'}`} />
+                  ))}
+                </div>
+                <span className="text-xs text-slate-400">Video în {ANNOUNCEMENTS_TOTAL_SECONDS - announcementTime}s</span>
+              </div>
             </div>
           )}
         </section>
