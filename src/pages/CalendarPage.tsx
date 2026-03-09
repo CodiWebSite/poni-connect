@@ -30,6 +30,7 @@ const CalendarPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const { canManageContent } = useUserRole();
+  const [isEventPublisher, setIsEventPublisher] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
