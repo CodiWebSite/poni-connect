@@ -7,21 +7,59 @@ import KioskSidebarAnnouncements from '@/components/kiosk/KioskSidebarAnnounceme
 import KioskSidebarEvents from '@/components/kiosk/KioskSidebarEvents';
 import KioskSidebarRoomBookings from '@/components/kiosk/KioskSidebarRoomBookings';
 
-// ── Date helpers ───────────────────────────────────────
+// ── i18n helpers ───────────────────────────────────────
 const DAYS_RO = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
 const MONTHS_RO = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
-const formatDateRo = (d: Date) => `${DAYS_RO[d.getDay()]}, ${d.getDate()} ${MONTHS_RO[d.getMonth()]} ${d.getFullYear()}`;
+const DAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+type Lang = 'ro' | 'en';
+
+const t = {
+  ro: {
+    instituteName: 'Institutul de Chimie Macromoleculară',
+    instituteAccent: '„Petru Poni"',
+    instituteCity: 'Iași',
+    presentationLabel: 'Prezentare Institut',
+    maintenanceTitle: 'Mentenanță în curs',
+    maintenanceDesc: 'Platforma este temporar indisponibilă.',
+    disabledTitle: 'Mod Kiosk dezactivat',
+    disabledDesc: 'Ecranul TV este momentan oprit de administrator.',
+    schedule: 'Program: L–V 7:30–16:00',
+    secretariat: 'Secretariat:',
+    address: 'Aleea Grigore Ghica Vodă 41A, 700487 Iași',
+    formatDate: (d: Date) => `${DAYS_RO[d.getDay()]}, ${d.getDate()} ${MONTHS_RO[d.getMonth()]} ${d.getFullYear()}`,
+  },
+  en: {
+    instituteName: 'Institute of Macromolecular Chemistry',
+    instituteAccent: '"Petru Poni"',
+    instituteCity: 'Iași',
+    presentationLabel: 'Institute Presentation',
+    maintenanceTitle: 'Maintenance in progress',
+    maintenanceDesc: 'The platform is temporarily unavailable.',
+    disabledTitle: 'Kiosk Mode disabled',
+    disabledDesc: 'The TV screen is currently turned off by the administrator.',
+    schedule: 'Schedule: Mon–Fri 7:30–16:00',
+    secretariat: 'Front Desk:',
+    address: 'Aleea Grigore Ghica Vodă 41A, 700487 Iași, Romania',
+    formatDate: (d: Date) => `${DAYS_EN[d.getDay()]}, ${MONTHS_EN[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`,
+  },
+};
+
 const formatTime = (d: Date) => d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
 
 const KIOSK_VIDEO_URL = 'https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4';
 
 const Kiosk = () => {
   const [now, setNow] = useState(new Date());
+  const [lang, setLang] = useState<Lang>('ro');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [kioskEnabled, setKioskEnabled] = useState(true);
   const [kioskMessage, setKioskMessage] = useState('');
   const [tickerMessages, setTickerMessages] = useState<string[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const i = t[lang];
 
   // Unregister service worker on kiosk route to avoid stale cache
   useEffect(() => {
@@ -32,10 +70,23 @@ const Kiosk = () => {
     }
   }, []);
 
+  // Toggle language every time the video ends (loops)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const handleEnded = () => {
+      setLang(prev => (prev === 'ro' ? 'en' : 'ro'));
+      // Restart playback for the next cycle
+      video.play().catch(() => {});
+    };
+    video.addEventListener('ended', handleEnded);
+    return () => video.removeEventListener('ended', handleEnded);
+  }, []);
+
   // Clock tick
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // Wake Lock
@@ -65,8 +116,8 @@ const Kiosk = () => {
 
   useEffect(() => {
     fetchSettings();
-    const t = setInterval(fetchSettings, 60_000);
-    return () => clearInterval(t);
+    const interval = setInterval(fetchSettings, 60_000);
+    return () => clearInterval(interval);
   }, [fetchSettings]);
 
   if (!kioskEnabled) {
@@ -74,8 +125,8 @@ const Kiosk = () => {
       <div className="h-screen w-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <Monitor className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-slate-400">Mod Kiosk dezactivat</h1>
-          <p className="text-slate-400 mt-2">Ecranul TV este momentan oprit de administrator.</p>
+          <h1 className="text-2xl font-bold text-slate-400">{i.disabledTitle}</h1>
+          <p className="text-slate-400 mt-2">{i.disabledDesc}</p>
         </div>
       </div>
     );
@@ -83,14 +134,21 @@ const Kiosk = () => {
 
   return (
     <div className="h-screen w-screen bg-white text-slate-900 flex flex-col overflow-hidden select-none">
+      {/* ── Language indicator ─────────────────── */}
+      <div className="absolute top-3 right-36 z-10">
+        <span className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+          {lang === 'ro' ? '🇷🇴 RO' : '🇬🇧 EN'}
+        </span>
+      </div>
+
       {/* ── Header ─────────────────────────────── */}
       <header className="flex items-center justify-between px-8 py-3 bg-white border-b border-slate-200 shrink-0">
         <div className="flex items-center gap-4">
           <img src="/logo-icmpp.png" alt="ICMPP" className="h-16 w-auto" />
           <div>
             <h1 className="text-2xl font-bold tracking-wide text-slate-800 leading-tight">
-              Institutul de Chimie Macromoleculară{' '}
-              <span className="text-primary">„Petru Poni"</span> Iași
+              {i.instituteName}{' '}
+              <span className="text-primary">{i.instituteAccent}</span> {i.instituteCity}
             </h1>
           </div>
         </div>
@@ -100,7 +158,7 @@ const Kiosk = () => {
             <div className="text-3xl font-mono font-bold tabular-nums text-foreground tracking-wider">
               {formatTime(now)}
             </div>
-            <div className="text-xs text-muted-foreground mt-0.5">{formatDateRo(now)}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{i.formatDate(now)}</div>
           </div>
         </div>
       </header>
@@ -119,7 +177,7 @@ const Kiosk = () => {
           <div className="px-8 pt-4 pb-2 flex items-center shrink-0">
             <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              Prezentare Institut
+              {i.presentationLabel}
             </h2>
           </div>
           <div className="flex-1 px-8 pb-4 flex items-center justify-center min-h-0">
@@ -130,7 +188,6 @@ const Kiosk = () => {
                 muted
                 playsInline
                 autoPlay
-                loop
                 className="max-w-full max-h-full rounded-xl shadow-lg"
               />
             </div>
@@ -149,9 +206,9 @@ const Kiosk = () => {
             <div className="p-4 bg-amber-50 border-t border-amber-200 shrink-0">
               <div className="flex items-center gap-2 text-amber-700 font-semibold text-sm">
                 <AlertTriangle className="w-4 h-4" />
-                Mentenanță în curs
+                {i.maintenanceTitle}
               </div>
-              <p className="text-xs text-amber-600 mt-1">Platforma este temporar indisponibilă.</p>
+              <p className="text-xs text-amber-600 mt-1">{i.maintenanceDesc}</p>
             </div>
           )}
         </aside>
@@ -166,14 +223,14 @@ const Kiosk = () => {
               animation: `ticker-scroll ${Math.max(tickerMessages.length * 8, 20)}s linear infinite`,
             }}
           >
-            {tickerMessages.map((msg, i) => (
-              <span key={i} className="inline-flex items-center gap-3 px-6 text-sm">
+            {tickerMessages.map((msg, idx) => (
+              <span key={idx} className="inline-flex items-center gap-3 px-6 text-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                 {msg}
               </span>
             ))}
-            {tickerMessages.map((msg, i) => (
-              <span key={`dup-${i}`} className="inline-flex items-center gap-3 px-6 text-sm">
+            {tickerMessages.map((msg, idx) => (
+              <span key={`dup-${idx}`} className="inline-flex items-center gap-3 px-6 text-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                 {msg}
               </span>
@@ -187,11 +244,11 @@ const Kiosk = () => {
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <Clock className="w-3.5 h-3.5 text-slate-400" />
-            <span className="font-medium">Program: L–V 7:30–16:00</span>
+            <span className="font-medium">{i.schedule}</span>
           </div>
           <div className="flex items-center gap-2">
             <Phone className="w-3.5 h-3.5 text-slate-400" />
-            <span>Secretariat: <strong>0332 880 220</strong></span>
+            <span>{i.secretariat} <strong>0332 880 220</strong></span>
           </div>
           <div className="flex items-center gap-2">
             <span>pponi@icmpp.ro</span>
@@ -199,7 +256,7 @@ const Kiosk = () => {
         </div>
         <div className="flex items-center gap-2">
           <Building2 className="w-3.5 h-3.5 text-slate-400" />
-          <span className="font-medium">Aleea Grigore Ghica Vodă 41A, 700487 Iași</span>
+          <span className="font-medium">{i.address}</span>
         </div>
       </footer>
 
@@ -212,15 +269,8 @@ const Kiosk = () => {
           0% { opacity: 0; transform: scale(0.97); }
           100% { opacity: 1; transform: scale(1); }
         }
-        @keyframes kiosk-slide-in {
-          0% { opacity: 0; transform: translateY(16px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
         .kiosk-fade-in {
           animation: kiosk-fade-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
-        .kiosk-slide-in {
-          animation: kiosk-slide-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
       `}</style>
     </div>
