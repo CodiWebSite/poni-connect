@@ -104,6 +104,20 @@ const AppSettingsPanel = () => {
     await updateSetting('kiosk_message', settings.kiosk_message || '');
   };
 
+  const addTickerMessage = async () => {
+    if (!newTickerMsg.trim()) return;
+    const updated = [...settings.kiosk_ticker_messages, newTickerMsg.trim()];
+    setSettings(prev => ({ ...prev, kiosk_ticker_messages: updated }));
+    setNewTickerMsg('');
+    await updateSetting('kiosk_ticker_messages', updated);
+  };
+
+  const removeTickerMessage = async (index: number) => {
+    const updated = settings.kiosk_ticker_messages.filter((_, i) => i !== index);
+    setSettings(prev => ({ ...prev, kiosk_ticker_messages: updated }));
+    await updateSetting('kiosk_ticker_messages', updated);
+  };
+
   const saveEta = async () => {
     const val = settings.maintenance_eta ? settings.maintenance_eta : null;
     await updateSetting('maintenance_eta', val);
