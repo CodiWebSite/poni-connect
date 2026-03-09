@@ -27,10 +27,8 @@ interface EventData {
   location: string | null;
 }
 
-// Slide can be announcement or video
-type SlideItem =
-  | { type: 'announcement'; data: Announcement }
-  | { type: 'video' };
+// Carousel mode: 'video' plays full video, then 'announcements' rotates for ~90s
+type CarouselMode = 'video' | 'announcements';
 
 // ── Weather helpers ────────────────────────────────────
 const getConditionRo = (code: number): string => {
