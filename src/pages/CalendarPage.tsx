@@ -97,7 +97,7 @@ const CalendarPage = () => {
 
   return (
     <MainLayout title="Calendar" description="Evenimente și programări">
-      {canManageContent && (
+      {(canManageContent || isEventPublisher) && (
         <div className="flex justify-end mb-6">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
