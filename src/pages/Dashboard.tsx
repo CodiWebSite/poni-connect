@@ -103,6 +103,13 @@ const Dashboard = () => {
         {isSuperAdmin && <OnlineUsersWidget />}
       </div>
 
+      {/* Analytics de adopție - doar admin */}
+      {(isSuperAdmin || role === 'admin') && (
+        <div className="mb-6">
+          <AnalyticsWidget />
+        </div>
+      )}
+
       {/* HR Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
@@ -114,6 +121,13 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
           <LeaveByDepartment />
+        </div>
+        <ChangelogWidget />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <PersonalCalendarWidget />
         </div>
         <WeatherWidget />
       </div>
