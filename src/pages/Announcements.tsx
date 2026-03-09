@@ -187,13 +187,15 @@ const Announcements = () => {
     }
   };
 
+  const canPost = canManageContent || isPublisher;
+
   const canEditDelete = (a: Announcement) => {
     return isSuperAdmin || (user && a.author_id === user.id);
   };
 
   return (
     <MainLayout title="Anunțuri" description="Comunicate și informații importante">
-      {canManageContent && (
+      {canPost && (
         <div className="flex justify-end mb-6">
           <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
