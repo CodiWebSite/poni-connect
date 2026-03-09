@@ -27,21 +27,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
 @keyframes scaleIn{0%{opacity:0;transform:scale(0.97)}100%{opacity:1;transform:scale(1)}}
 .content-body{flex:1;padding:0 32px 24px;display:flex;align-items:center;justify-content:center;min-height:0}
 .content-body video{max-width:100%;max-height:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);animation:scaleIn .8s cubic-bezier(.22,1,.36,1) both}
-.slide{animation:fadeIn .6s cubic-bezier(.22,1,.36,1) both;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center}
 .analog-clock{flex-shrink:0}
-.slide-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:#fef2f2;color:#dc2626;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;width:fit-content}
-.slide h3{font-size:28px;font-weight:bold;color:#1e293b;margin-bottom:16px;line-height:1.3}
-.slide p{font-size:18px;color:#475569;line-height:1.6}
-.slide .slide-date{font-size:13px;color:#94a3b8;margin-top:24px}
-.slide-nav{font-size:12px;color:#94a3b8}
-.progress-bar{padding:0 32px 16px;flex-shrink:0}
-.progress-track{width:100%;height:4px;background:#e2e8f0;border-radius:4px;overflow:hidden}
-.progress-fill{height:100%;background:rgba(30,64,175,0.4);border-radius:4px;transition:width 1s linear}
-.progress-info{display:flex;justify-content:space-between;margin-top:4px}
-.dots{display:flex;gap:6px}
-.dot{width:6px;height:6px;border-radius:50%;background:#cbd5e1}
-.dot.active{background:#1e40af}
-.progress-timer{font-size:12px;color:#94a3b8}
 .sidebar{flex:1;display:flex;flex-direction:column;background:#f8fafc;min-height:0}
 .weather{padding:24px;flex-shrink:0;border-bottom:1px solid #e2e8f0}
 .weather-row{display:flex;align-items:center;gap:16px}
@@ -57,6 +43,18 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
 .event-card .ev-date{font-size:12px;color:#94a3b8;margin-top:4px}
 .event-card .ev-loc{font-size:12px;color:#94a3b8;margin-top:2px}
 .no-data{font-size:14px;color:#94a3b8}
+/* Announcements sidebar section */
+.ann-section{padding:24px;flex-shrink:0;border-bottom:1px solid #e2e8f0;overflow:hidden}
+.ann-section h3{font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:3px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.ann-counter{font-size:11px;color:#94a3b8;font-weight:400;letter-spacing:0}
+.ann-card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);animation:fadeIn .6s cubic-bezier(.22,1,.36,1) both}
+.ann-card .ann-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:#fef2f2;color:#dc2626;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.ann-card .ann-title{font-size:14px;font-weight:500;color:#334155;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ann-card .ann-content{font-size:12px;color:#64748b;margin-top:4px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ann-card .ann-date{font-size:10px;color:#94a3b8;margin-top:8px}
+.ann-dots{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.ann-dot{width:6px;height:6px;border-radius:50%;background:#cbd5e1}
+.ann-dot.active{background:#1e40af}
 .ticker-wrap{background:#0f172a;color:#fff;height:36px;overflow:hidden;flex-shrink:0;display:none}
 .ticker-inner{display:flex;align-items:center;height:100%;white-space:nowrap;animation:ticker-scroll 20s linear infinite}
 .ticker-item{display:inline-flex;align-items:center;gap:8px;padding:0 24px;font-size:14px}
@@ -94,21 +92,13 @@ footer{display:flex;align-items:center;justify-content:space-between;padding:12p
       <div class="content-header">
         <div class="section-title">
           <span class="pulse"></span>
-          <span id="modeLabel">Prezentare Institut</span>
+          <span>Prezentare Institut</span>
         </div>
-        <div class="slide-nav" id="slideNav"></div>
       </div>
       <div class="content-body" id="contentBody">
-        <video id="kioskVideo" muted playsinline autoplay>
+        <video id="kioskVideo" muted playsinline autoplay loop>
           <source src="https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4" type="video/mp4">
         </video>
-      </div>
-      <div class="progress-bar hidden" id="progressBar">
-        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-        <div class="progress-info">
-          <div class="dots" id="dots"></div>
-          <span class="progress-timer" id="progressTimer"></span>
-        </div>
       </div>
     </div>
 
@@ -119,6 +109,11 @@ footer{display:flex;align-items:center;justify-content:space-between;padding:12p
       <div class="events">
         <h3>📅 Evenimente</h3>
         <div id="eventsList"><p class="no-data">Se încarcă...</p></div>
+      </div>
+      <div class="ann-section" id="annSection" style="display:none">
+        <h3>📢 Anunțuri <span class="ann-counter" id="annCounter"></span></h3>
+        <div id="annCard"></div>
+        <div class="ann-dots" id="annDots"></div>
       </div>
     </div>
   </div>
@@ -139,14 +134,10 @@ var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 var DAYS = ['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă'];
 var MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
 var MONTHS_SHORT = ['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'];
-var SLIDE_SEC = 10;
-var ANN_TOTAL_SEC = 90;
+var ANN_ROTATE_SEC = 8;
 
 var announcements = [];
-var events = [];
-var slideIndex = 0;
-var annTime = 0;
-var mode = 'video';
+var annIndex = 0;
 var annTimer = null;
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -195,20 +186,78 @@ function sbFetch(table, query) {
 
 function fetchAnnouncements() {
   sbFetch('announcements', 'select=id,title,content,priority,is_pinned,created_at&or=(is_pinned.eq.true,priority.eq.urgent)&order=created_at.desc&limit=10')
-    .then(function(data) { if (data && data.length) announcements = data; })
+    .then(function(data) {
+      if (data && data.length) {
+        announcements = data;
+        annIndex = 0;
+        renderSidebarAnn();
+        startAnnRotation();
+        document.getElementById('annSection').style.display = 'block';
+      } else {
+        announcements = [];
+        document.getElementById('annSection').style.display = 'none';
+      }
+    })
     .catch(function() {});
+}
+
+function renderSidebarAnn() {
+  if (!announcements.length) return;
+  var ann = announcements[annIndex];
+  var created = new Date(ann.created_at);
+  var dateStr = created.getDate() + ' ' + MONTHS_SHORT[created.getMonth()] + ' ' + created.getFullYear();
+  var html = '<div class="ann-card">';
+  if (ann.priority === 'urgent') html += '<div class="ann-badge">⚠️ Urgent</div>';
+  html += '<div class="ann-title">' + ann.title + '</div>';
+  html += '<div class="ann-content">' + (ann.content || '').replace(/\n/g, '<br>') + '</div>';
+  html += '<div class="ann-date">' + dateStr + '</div>';
+  html += '</div>';
+  document.getElementById('annCard').innerHTML = html;
+  document.getElementById('annCounter').textContent = (annIndex + 1) + '/' + announcements.length;
+
+  // Dots
+  if (announcements.length > 1) {
+    var dotsHtml = '';
+    for (var i = 0; i < announcements.length; i++) {
+      dotsHtml += '<span class="ann-dot' + (i === annIndex ? ' active' : '') + '"></span>';
+    }
+    document.getElementById('annDots').innerHTML = dotsHtml;
+  } else {
+    document.getElementById('annDots').innerHTML = '';
+  }
+}
+
+function startAnnRotation() {
+  if (annTimer) clearInterval(annTimer);
+  if (announcements.length <= 1) return;
+  annTimer = setInterval(function() {
+    annIndex = (annIndex + 1) % announcements.length;
+    renderSidebarAnn();
+  }, ANN_ROTATE_SEC * 1000);
 }
 
 function fetchEvents() {
   var now = new Date().toISOString();
   sbFetch('events', 'select=id,title,start_date,location&start_date=gte.' + now + '&order=start_date.asc&limit=5')
     .then(function(data) {
-      if (data) {
-        events = data;
-        renderEvents();
-      }
+      if (data) renderEvents(data);
     })
     .catch(function() {});
+}
+
+function renderEvents(events) {
+  var el = document.getElementById('eventsList');
+  if (!events.length) { el.innerHTML = '<p class="no-data">Niciun eveniment programat.</p>'; return; }
+  var html = '';
+  for (var i = 0; i < Math.min(events.length, 4); i++) {
+    var ev = events[i];
+    var d = new Date(ev.start_date);
+    var dateStr = d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()] + ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    html += '<div class="event-card"><div class="ev-title">' + ev.title + '</div><div class="ev-date">' + dateStr + '</div>';
+    if (ev.location) html += '<div class="ev-loc">📍 ' + ev.location + '</div>';
+    html += '</div>';
+  }
+  el.innerHTML = html;
 }
 
 function fetchSettings() {
@@ -224,7 +273,6 @@ function fetchSettings() {
       } else {
         msgEl.style.display = 'none';
       }
-      // Ticker
       var tickerWrap = document.getElementById('tickerWrap');
       var tickerInner = document.getElementById('tickerInner');
       var msgs = Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [];
@@ -272,83 +320,6 @@ function fetchWeather() {
     .catch(function() {});
 }
 
-function renderEvents() {
-  var el = document.getElementById('eventsList');
-  if (!events.length) { el.innerHTML = '<p class="no-data">Niciun eveniment programat.</p>'; return; }
-  var html = '';
-  for (var i = 0; i < Math.min(events.length, 4); i++) {
-    var ev = events[i];
-    var d = new Date(ev.start_date);
-    var dateStr = d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()] + ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-    html += '<div class="event-card"><div class="ev-title">' + ev.title + '</div><div class="ev-date">' + dateStr + '</div>';
-    if (ev.location) html += '<div class="ev-loc">📍 ' + ev.location + '</div>';
-    html += '</div>';
-  }
-  el.innerHTML = html;
-}
-
-function showVideo() {
-  mode = 'video';
-  document.getElementById('modeLabel').textContent = 'Prezentare Institut';
-  document.getElementById('slideNav').textContent = '';
-  document.getElementById('progressBar').className = 'progress-bar hidden';
-  var body = document.getElementById('contentBody');
-  body.innerHTML = '<video id="kioskVideo" muted playsinline autoplay><source src="https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4" type="video/mp4"></video>';
-  var vid = document.getElementById('kioskVideo');
-  vid.style.maxWidth = '100%';
-  vid.style.maxHeight = '100%';
-  vid.style.borderRadius = '12px';
-  vid.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
-  vid.addEventListener('ended', function() { showAnnouncements(); });
-  vid.play();
-}
-
-function showAnnouncements() {
-  if (!announcements.length) { showVideo(); return; }
-  mode = 'announcements';
-  slideIndex = 0;
-  annTime = 0;
-  document.getElementById('modeLabel').textContent = 'Anunțuri';
-  document.getElementById('progressBar').className = 'progress-bar';
-  renderSlide();
-  if (annTimer) clearInterval(annTimer);
-  annTimer = setInterval(function() {
-    annTime += SLIDE_SEC;
-    if (annTime >= ANN_TOTAL_SEC) {
-      clearInterval(annTimer);
-      annTimer = null;
-      showVideo();
-      return;
-    }
-    slideIndex = (slideIndex + 1) % announcements.length;
-    renderSlide();
-  }, SLIDE_SEC * 1000);
-}
-
-function renderSlide() {
-  var ann = announcements[slideIndex];
-  var body = document.getElementById('contentBody');
-  var created = new Date(ann.created_at);
-  var dateStr = created.getDate() + ' ' + MONTHS[created.getMonth()] + ' ' + created.getFullYear();
-  var html = '<div class="slide">';
-  if (ann.priority === 'urgent') html += '<div class="slide-badge">⚠️ Urgent</div>';
-  html += '<h3>' + ann.title + '</h3>';
-  html += '<p>' + (ann.content || '').replace(/\n/g, '<br>') + '</p>';
-  html += '<p class="slide-date">' + dateStr + '</p>';
-  html += '</div>';
-  body.innerHTML = html;
-
-  document.getElementById('slideNav').textContent = (slideIndex + 1) + ' / ' + announcements.length;
-  document.getElementById('progressFill').style.width = Math.round((annTime / ANN_TOTAL_SEC) * 100) + '%';
-  document.getElementById('progressTimer').textContent = 'Video în ' + (ANN_TOTAL_SEC - annTime) + 's';
-
-  var dotsHtml = '';
-  for (var i = 0; i < announcements.length; i++) {
-    dotsHtml += '<span class="dot' + (i === slideIndex ? ' active' : '') + '"></span>';
-  }
-  document.getElementById('dots').innerHTML = dotsHtml;
-}
-
 // Init
 updateClock();
 setInterval(updateClock, 1000);
@@ -358,12 +329,6 @@ fetchSettings();
 fetchWeather();
 setInterval(function() { fetchAnnouncements(); fetchEvents(); fetchSettings(); }, 60000);
 setInterval(fetchWeather, 600000);
-
-// Video ended handler for initial video
-var initVid = document.getElementById('kioskVideo');
-if (initVid) {
-  initVid.addEventListener('ended', function() { showAnnouncements(); });
-}
 
 // Wake lock
 try {

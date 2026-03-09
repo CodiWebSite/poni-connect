@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets, AlertTriangle, ChevronLeft, ChevronRight, MapPin, Calendar, Clock, Building2, Monitor } from 'lucide-react';
+import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets, AlertTriangle, MapPin, Calendar, Clock, Building2, Monitor, Megaphone } from 'lucide-react';
 import AnalogClock from '@/components/kiosk/AnalogClock';
 
 // ── Types ──────────────────────────────────────────────
@@ -27,8 +27,6 @@ interface EventData {
   start_date: string;
   location: string | null;
 }
-
-type CarouselMode = 'video' | 'announcements';
 
 // ── Weather helpers ────────────────────────────────────
 const getConditionRo = (code: number): string => {
@@ -66,26 +64,21 @@ const formatEventDate = (iso: string) => {
 };
 
 const KIOSK_VIDEO_URL = 'https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4';
-const ANNOUNCEMENTS_TOTAL_SECONDS = 90;
-const SLIDE_SECONDS = 10;
+const SIDEBAR_ANN_ROTATE_SEC = 8;
 
 // ── Main component ─────────────────────────────────────
 const Kiosk = () => {
   const [now, setNow] = useState(new Date());
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [slideIndex, setSlideIndex] = useState(0);
-  const [fadeKey, setFadeKey] = useState(0);
+  const [sidebarAnnIndex, setSidebarAnnIndex] = useState(0);
+  const [annFadeKey, setAnnFadeKey] = useState(0);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [events, setEvents] = useState<EventData[]>([]);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [kioskEnabled, setKioskEnabled] = useState(true);
   const [kioskMessage, setKioskMessage] = useState('');
   const [tickerMessages, setTickerMessages] = useState<string[]>([]);
-  const [mode, setMode] = useState<CarouselMode>('video');
-  const [announcementTime, setAnnouncementTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  const currentAnnouncement = announcements[slideIndex] || null;
 
   // Clock
   useEffect(() => {
@@ -169,48 +162,15 @@ const Kiosk = () => {
     return () => { clearInterval(poll); clearInterval(weatherPoll); };
   }, [fetchAnnouncements, fetchEvents, fetchSettings, fetchWeather]);
 
-  // Play video when mode switches to 'video'
+  // Sidebar announcements auto-rotate
   useEffect(() => {
-    if (mode === 'video' && videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
-    }
-  }, [mode]);
-
-  // When video ends → switch to announcements mode
-  const handleVideoEnd = () => {
-    setMode('announcements');
-    setSlideIndex(0);
-    setAnnouncementTime(0);
-    setFadeKey(k => k + 1);
-  };
-
-  // Announcements auto-rotate + timer to switch back to video
-  useEffect(() => {
-    if (mode !== 'announcements') return;
-    if (announcements.length === 0) {
-      // No announcements, go back to video
-      setMode('video');
-      return;
-    }
-
+    if (announcements.length <= 1) return;
     const t = setInterval(() => {
-      setAnnouncementTime(prev => {
-        const next = prev + SLIDE_SECONDS;
-        if (next >= ANNOUNCEMENTS_TOTAL_SECONDS) {
-          // Time's up, switch back to video
-          setMode('video');
-          return 0;
-        }
-        // Advance to next announcement slide
-        setSlideIndex(p => (p + 1) % announcements.length);
-        setFadeKey(k => k + 1);
-        return next;
-      });
-    }, SLIDE_SECONDS * 1000);
-
+      setSidebarAnnIndex(p => (p + 1) % announcements.length);
+      setAnnFadeKey(k => k + 1);
+    }, SIDEBAR_ANN_ROTATE_SEC * 1000);
     return () => clearInterval(t);
-  }, [mode, announcements.length]);
+  }, [announcements.length]);
 
   // Kiosk disabled screen
   if (!kioskEnabled) {
@@ -224,6 +184,8 @@ const Kiosk = () => {
       </div>
     );
   }
+
+  const currentSidebarAnn = announcements[sidebarAnnIndex] || null;
 
   return (
     <div className="h-screen w-screen bg-white text-slate-900 flex flex-col overflow-hidden select-none">
@@ -258,90 +220,28 @@ const Kiosk = () => {
 
       {/* ── Main Grid ──────────────────────────── */}
       <main className="flex-1 grid grid-cols-3 gap-0 min-h-0">
-        {/* Left 2/3 — Video or Announcements */}
+        {/* Left 2/3 — Video (loops continuously) */}
         <section className="col-span-2 flex flex-col border-r border-slate-200">
           <div className="px-8 pt-6 pb-3 flex items-center justify-between shrink-0">
             <h2 className="text-lg font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              {mode === 'video' ? 'Prezentare Institut' : 'Anunțuri'}
+              Prezentare Institut
             </h2>
-            {mode === 'announcements' && announcements.length > 1 && (
-              <div className="flex items-center gap-3">
-                <button onClick={() => { setSlideIndex(p => (p - 1 + announcements.length) % announcements.length); setFadeKey(k => k + 1); }}
-                  className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <span className="text-xs text-slate-400 tabular-nums">
-                  {slideIndex + 1} / {announcements.length}
-                </span>
-                <button onClick={() => { setSlideIndex(p => (p + 1) % announcements.length); setFadeKey(k => k + 1); }}
-                  className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="flex-1 px-8 pb-6 flex items-center justify-center min-h-0">
-            {mode === 'video' ? (
-              <div className="w-full h-full flex items-center justify-center kiosk-fade-in">
-                <video
-                  ref={videoRef}
-                  src={KIOSK_VIDEO_URL}
-                  onEnded={handleVideoEnd}
-                  muted
-                  playsInline
-                  autoPlay
-                  className="max-w-full max-h-full rounded-xl shadow-lg"
-                />
-              </div>
-            ) : (
-              <div className="w-full h-full kiosk-slide-in" key={`slide-${fadeKey}`}>
-                {currentAnnouncement ? (
-                  <div className="flex flex-col justify-center h-full">
-                    {currentAnnouncement.priority === 'urgent' && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-xs font-semibold uppercase tracking-wider mb-4 w-fit">
-                        <AlertTriangle className="w-3.5 h-3.5" /> Urgent
-                      </span>
-                    )}
-                    <h3 className="text-3xl font-bold text-foreground leading-tight mb-4">
-                      {currentAnnouncement.title}
-                    </h3>
-                    <p className="text-lg text-muted-foreground leading-relaxed line-clamp-6 whitespace-pre-line">
-                      {currentAnnouncement.content}
-                    </p>
-                    <p className="text-sm text-muted-foreground/60 mt-6">
-                      {new Date(currentAnnouncement.created_at).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-muted-foreground text-xl">Nu există anunțuri de afișat.</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Progress bar for announcements mode */}
-          {mode === 'announcements' && (
-            <div className="px-8 pb-4 shrink-0">
-              <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary/50 transition-all duration-1000 ease-linear rounded-full"
-                  style={{ width: `${(announcementTime / ANNOUNCEMENTS_TOTAL_SECONDS) * 100}%` }}
-                />
-              </div>
-              <div className="flex justify-between mt-1">
-                <div className="flex gap-1.5">
-                  {announcements.map((_, i) => (
-                    <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === slideIndex ? 'bg-primary' : 'bg-slate-300'}`} />
-                  ))}
-                </div>
-                <span className="text-xs text-slate-400">Video în {ANNOUNCEMENTS_TOTAL_SECONDS - announcementTime}s</span>
-              </div>
+            <div className="w-full h-full flex items-center justify-center kiosk-fade-in">
+              <video
+                ref={videoRef}
+                src={KIOSK_VIDEO_URL}
+                muted
+                playsInline
+                autoPlay
+                loop
+                className="max-w-full max-h-full rounded-xl shadow-lg"
+              />
             </div>
-          )}
+          </div>
         </section>
 
         {/* Right 1/3 — Sidebar */}
@@ -388,6 +288,44 @@ const Kiosk = () => {
             )}
           </div>
 
+          {/* Announcements in sidebar */}
+          {announcements.length > 0 && (
+            <div className="p-6 shrink-0 overflow-hidden">
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Megaphone className="w-4 h-4" /> Anunțuri
+                {announcements.length > 1 && (
+                  <span className="text-xs text-slate-400 font-normal ml-auto tabular-nums">
+                    {sidebarAnnIndex + 1}/{announcements.length}
+                  </span>
+                )}
+              </h3>
+              <div key={`ann-${annFadeKey}`} className="kiosk-slide-in">
+                {currentSidebarAnn && (
+                  <div className="rounded-lg bg-white border border-slate-200 p-3 shadow-sm">
+                    {currentSidebarAnn.priority === 'urgent' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-semibold uppercase tracking-wider mb-2">
+                        <AlertTriangle className="w-3 h-3" /> Urgent
+                      </span>
+                    )}
+                    <p className="text-sm font-medium text-slate-700 line-clamp-2">{currentSidebarAnn.title}</p>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-3">{currentSidebarAnn.content}</p>
+                    <p className="text-[10px] text-slate-400 mt-2">
+                      {new Date(currentSidebarAnn.created_at).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {/* Progress dots */}
+              {announcements.length > 1 && (
+                <div className="flex gap-1.5 mt-2 justify-center">
+                  {announcements.map((_, i) => (
+                    <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === sidebarAnnIndex ? 'bg-primary' : 'bg-slate-300'}`} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Maintenance banner */}
           {maintenanceMode && (
             <div className="p-4 bg-amber-50 border-t border-amber-200 shrink-0">
@@ -416,7 +354,6 @@ const Kiosk = () => {
                 {msg}
               </span>
             ))}
-            {/* Duplicate for seamless loop */}
             {tickerMessages.map((msg, i) => (
               <span key={`dup-${i}`} className="inline-flex items-center gap-3 px-6 text-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
