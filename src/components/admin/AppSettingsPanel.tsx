@@ -189,6 +189,37 @@ const AppSettingsPanel = () => {
             Salvează mesaj
           </Button>
         </div>
+
+        {/* Kiosk / TV Mode */}
+        <div className="rounded-lg border p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="kiosk-toggle" className="text-base font-medium flex items-center gap-2">
+                <Monitor className="w-4 h-4 text-primary" />
+                Mod Kiosk / TV
+              </Label>
+              <p className="text-sm text-muted-foreground">Activează pagina publică <code className="text-xs bg-muted px-1 py-0.5 rounded">/kiosk</code> pentru ecranele TV din instituție</p>
+            </div>
+            <Switch id="kiosk-toggle" checked={settings.kiosk_enabled} onCheckedChange={(c) => toggleSetting('kiosk_enabled', c)} disabled={saving === 'kiosk_enabled'} />
+          </div>
+          {settings.kiosk_enabled && (
+            <div className="space-y-2 pt-2 border-t border-border">
+              <Label htmlFor="kiosk-msg" className="text-sm font-medium">Mesaj personalizat pe ecranul TV</Label>
+              <p className="text-xs text-muted-foreground">Apare ca banner în partea de sus a ecranului Kiosk. Lasă gol pentru a nu afișa.</p>
+              <Textarea
+                id="kiosk-msg"
+                placeholder="Ex: Ședința generală — 15 Martie, Sala Mare, ora 10:00"
+                value={settings.kiosk_message}
+                onChange={(e) => setSettings(prev => ({ ...prev, kiosk_message: e.target.value }))}
+                rows={2}
+              />
+              <Button size="sm" onClick={saveKioskMessage} disabled={saving === 'kiosk_message'}>
+                {saving === 'kiosk_message' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                Salvează mesaj TV
+              </Button>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
