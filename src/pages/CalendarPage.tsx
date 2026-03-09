@@ -30,6 +30,7 @@ const CalendarPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const { canManageContent } = useUserRole();
+  const [isEventPublisher, setIsEventPublisher] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -41,7 +42,11 @@ const CalendarPage = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+    if (user) {
+      supabase.from('event_publishers').select('id').eq('user_id', user.id).maybeSingle()
+        .then(({ data }) => { if (data) setIsEventPublisher(true); });
+    }
+  }, [user]);
 
   const fetchEvents = async () => {
     const { data } = await supabase
@@ -92,7 +97,7 @@ const CalendarPage = () => {
 
   return (
     <MainLayout title="Calendar" description="Evenimente și programări">
-      {canManageContent && (
+      {(canManageContent || isEventPublisher) && (
         <div className="flex justify-end mb-6">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>

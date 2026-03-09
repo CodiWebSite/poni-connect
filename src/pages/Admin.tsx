@@ -24,6 +24,7 @@ import AppSettingsPanel from '@/components/admin/AppSettingsPanel';
 import InvitePlatformPanel from '@/components/admin/InvitePlatformPanel';
 import HelpdeskPanel from '@/components/admin/HelpdeskPanel';
 import AnnouncementPublishersPanel from '@/components/admin/AnnouncementPublishersPanel';
+import EventPublishersPanel from '@/components/admin/EventPublishersPanel';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -200,6 +201,7 @@ const Admin = () => {
              <TabsTrigger value="invitations" className="text-xs sm:text-sm">Invitații</TabsTrigger>
               <TabsTrigger value="helpdesk" className="text-xs sm:text-sm">HelpDesk</TabsTrigger>
               <TabsTrigger value="publishers" className="text-xs sm:text-sm">Anunțuri</TabsTrigger>
+              <TabsTrigger value="event-publishers" className="text-xs sm:text-sm">Evenimente</TabsTrigger>
               <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
           </TabsList>
         <TabsContent value="roles" className="space-y-6">
@@ -296,6 +298,9 @@ const Admin = () => {
         </TabsContent>
         <TabsContent value="publishers">
           <AnnouncementPublishersPanel />
+        </TabsContent>
+        <TabsContent value="event-publishers">
+          <EventPublishersPanel />
         </TabsContent>
         <TabsContent value="settings">
           <AppSettingsPanel />
