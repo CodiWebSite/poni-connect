@@ -135,6 +135,7 @@ const Kiosk = () => {
       setMaintenanceMode(map.maintenance_mode === true);
       setKioskEnabled(map.kiosk_enabled !== false);
       setKioskMessage(typeof map.kiosk_message === 'string' ? map.kiosk_message : '');
+      setTickerMessages(Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : []);
     }
   }, []);
 
