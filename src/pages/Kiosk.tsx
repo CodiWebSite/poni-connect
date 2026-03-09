@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets, AlertTriangle, ChevronLeft, ChevronRight, MapPin, Calendar, Clock, Building2 } from 'lucide-react';
+import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets, AlertTriangle, ChevronLeft, ChevronRight, MapPin, Calendar, Clock, Building2, Monitor } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────
 interface Announcement {
@@ -67,9 +67,12 @@ const Kiosk = () => {
   const [now, setNow] = useState(new Date());
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [fadeKey, setFadeKey] = useState(0);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [events, setEvents] = useState<EventData[]>([]);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [kioskEnabled, setKioskEnabled] = useState(true);
+  const [kioskMessage, setKioskMessage] = useState('');
 
   // Clock
   useEffect(() => {
@@ -123,6 +126,8 @@ const Kiosk = () => {
       const map: Record<string, any> = {};
       data.forEach(r => { map[r.key] = r.value; });
       setMaintenanceMode(map.maintenance_mode === true);
+      setKioskEnabled(map.kiosk_enabled !== false);
+      setKioskMessage(typeof map.kiosk_message === 'string' ? map.kiosk_message : '');
     }
   }, []);
 
@@ -161,16 +166,30 @@ const Kiosk = () => {
     return () => { clearInterval(poll); clearInterval(weatherPoll); };
   }, [fetchAnnouncements, fetchEvents, fetchSettings, fetchWeather]);
 
-  // Auto-rotate announcements
+  // Auto-rotate announcements with fade
   useEffect(() => {
     if (announcements.length <= 1) return;
     const t = setInterval(() => {
       setCurrentSlide(p => (p + 1) % announcements.length);
+      setFadeKey(k => k + 1);
     }, 10_000);
     return () => clearInterval(t);
   }, [announcements.length]);
 
   const currentAnnouncement = announcements[currentSlide];
+
+  // Kiosk disabled screen
+  if (!kioskEnabled) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <Monitor className="w-16 h-16 text-slate-700 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-500">Mod Kiosk dezactivat</h1>
+          <p className="text-slate-600 mt-2">Ecranul TV este momentan oprit de administrator.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-white flex flex-col overflow-hidden select-none">
@@ -190,6 +209,13 @@ const Kiosk = () => {
           <div className="text-sm text-slate-400 mt-0.5">{formatDateRo(now)}</div>
         </div>
       </header>
+
+      {/* ── Custom Kiosk Message ───────────────── */}
+      {kioskMessage && (
+        <div className="px-8 py-3 bg-blue-600/20 border-b border-blue-500/30 shrink-0">
+          <p className="text-sm text-blue-200 text-center font-medium">{kioskMessage}</p>
+        </div>
+      )}
 
       {/* ── Main Grid ──────────────────────────── */}
       <main className="flex-1 grid grid-cols-3 gap-0 min-h-0">
@@ -219,7 +245,7 @@ const Kiosk = () => {
 
           <div className="flex-1 px-8 pb-6 flex items-center min-h-0">
             {currentAnnouncement ? (
-              <div className="w-full animate-in fade-in duration-700" key={currentAnnouncement.id}>
+              <div className="w-full animate-fade-in" key={`slide-${fadeKey}`} style={{ animationDuration: '0.8s' }}>
                 {currentAnnouncement.priority === 'urgent' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-semibold uppercase tracking-wider mb-4">
                     <AlertTriangle className="w-3.5 h-3.5" /> Urgent

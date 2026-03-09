@@ -8,13 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, Save, Clock, X } from 'lucide-react';
+import { Settings, Loader2, Save, Clock, X, Monitor } from 'lucide-react';
 
 interface SettingsState {
   leave_module_beta: boolean;
   maintenance_mode: boolean;
   homepage_message: string;
   maintenance_eta: string;
+  kiosk_enabled: boolean;
+  kiosk_message: string;
 }
 
 const AppSettingsPanel = () => {
@@ -25,6 +27,8 @@ const AppSettingsPanel = () => {
     maintenance_mode: false,
     homepage_message: '',
     maintenance_eta: '',
+    kiosk_enabled: true,
+    kiosk_message: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -40,6 +44,8 @@ const AppSettingsPanel = () => {
           maintenance_mode: map.maintenance_mode === true,
           homepage_message: typeof map.homepage_message === 'string' ? map.homepage_message : '',
           maintenance_eta: typeof map.maintenance_eta === 'string' ? map.maintenance_eta : '',
+          kiosk_enabled: map.kiosk_enabled !== false,
+          kiosk_message: typeof map.kiosk_message === 'string' ? map.kiosk_message : '',
         });
       }
       setLoading(false);
@@ -88,6 +94,10 @@ const AppSettingsPanel = () => {
 
   const saveMessage = async () => {
     await updateSetting('homepage_message', settings.homepage_message);
+  };
+
+  const saveKioskMessage = async () => {
+    await updateSetting('kiosk_message', settings.kiosk_message || '');
   };
 
   const saveEta = async () => {
@@ -178,6 +188,37 @@ const AppSettingsPanel = () => {
             {saving === 'homepage_message' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Salvează mesaj
           </Button>
+        </div>
+
+        {/* Kiosk / TV Mode */}
+        <div className="rounded-lg border p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="kiosk-toggle" className="text-base font-medium flex items-center gap-2">
+                <Monitor className="w-4 h-4 text-primary" />
+                Mod Kiosk / TV
+              </Label>
+              <p className="text-sm text-muted-foreground">Activează pagina publică <code className="text-xs bg-muted px-1 py-0.5 rounded">/kiosk</code> pentru ecranele TV din instituție</p>
+            </div>
+            <Switch id="kiosk-toggle" checked={settings.kiosk_enabled} onCheckedChange={(c) => toggleSetting('kiosk_enabled', c)} disabled={saving === 'kiosk_enabled'} />
+          </div>
+          {settings.kiosk_enabled && (
+            <div className="space-y-2 pt-2 border-t border-border">
+              <Label htmlFor="kiosk-msg" className="text-sm font-medium">Mesaj personalizat pe ecranul TV</Label>
+              <p className="text-xs text-muted-foreground">Apare ca banner în partea de sus a ecranului Kiosk. Lasă gol pentru a nu afișa.</p>
+              <Textarea
+                id="kiosk-msg"
+                placeholder="Ex: Ședința generală — 15 Martie, Sala Mare, ora 10:00"
+                value={settings.kiosk_message}
+                onChange={(e) => setSettings(prev => ({ ...prev, kiosk_message: e.target.value }))}
+                rows={2}
+              />
+              <Button size="sm" onClick={saveKioskMessage} disabled={saving === 'kiosk_message'}>
+                {saving === 'kiosk_message' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                Salvează mesaj TV
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
