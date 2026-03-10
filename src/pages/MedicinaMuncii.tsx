@@ -417,6 +417,47 @@ const MedicinaMuncii = () => {
     setShowRecordDialog(true);
   };
 
+  const exportExcel = async () => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Status Avize Medicale');
+
+    ws.columns = [
+      { header: 'Nume', key: 'name', width: 30 },
+      { header: 'Departament', key: 'dept', width: 25 },
+      { header: 'Funcție', key: 'position', width: 25 },
+      { header: 'Status Aviz', key: 'fitness', width: 18 },
+      { header: 'Valabil până la', key: 'valid_until', width: 18 },
+      { header: 'Zile rămase', key: 'days_left', width: 14 },
+      { header: 'Restricții', key: 'restrictions', width: 35 },
+    ];
+
+    // Style header
+    ws.getRow(1).eachCell(cell => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1a365d' } };
+    });
+
+    filteredEmployees.forEach(emp => {
+      const record = records[emp.id];
+      const daysLeft = record?.fitness_valid_until
+        ? differenceInDays(parseISO(record.fitness_valid_until), new Date())
+        : null;
+      ws.addRow({
+        name: `${emp.last_name} ${emp.first_name}`,
+        dept: emp.department || '',
+        position: emp.position || '',
+        fitness: record ? fitnessLabels[record.medical_fitness] : 'Fără fișă',
+        valid_until: record?.fitness_valid_until || '',
+        days_left: daysLeft !== null ? daysLeft : '',
+        restrictions: record?.restrictions || '',
+      });
+    });
+
+    const buf = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buf]), `avize_medicale_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    toast.success('Export generat');
+  };
+
   return (
     <MainLayout title="Medicină a Muncii">
       <div className="space-y-6">
