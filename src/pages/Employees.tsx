@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Building2, Users } from 'lucide-react';
+import { Search, Building2, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Interface for employee directory view (excludes phone for privacy)
 interface EmployeeDirectoryProfile {
@@ -15,26 +16,41 @@ interface EmployeeDirectoryProfile {
   user_id: string;
 }
 
+const ITEMS_PER_PAGE = 18;
+
 const Employees = () => {
   const [profiles, setProfiles] = useState<EmployeeDirectoryProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchProfiles();
   }, []);
 
   const fetchProfiles = async () => {
-    // Use employee_directory view which excludes sensitive phone data
-    // Phone numbers are only visible to HR or the user themselves via their profile
-    const { data } = await supabase
-      .from('employee_directory')
-      .select('id, user_id, full_name, department, position, avatar_url')
-      .order('full_name') as { data: EmployeeDirectoryProfile[] | null };
+    let allProfiles: EmployeeDirectoryProfile[] = [];
+    let from = 0;
+    const batchSize = 1000;
+    let hasMore = true;
 
-    if (data) {
-      setProfiles(data);
+    while (hasMore) {
+      const { data } = await supabase
+        .from('employee_directory')
+        .select('id, user_id, full_name, department, position, avatar_url')
+        .order('full_name')
+        .range(from, from + batchSize - 1) as { data: EmployeeDirectoryProfile[] | null };
+
+      if (data && data.length > 0) {
+        allProfiles = [...allProfiles, ...data];
+        from += batchSize;
+        if (data.length < batchSize) hasMore = false;
+      } else {
+        hasMore = false;
+      }
     }
+
+    setProfiles(allProfiles);
     setIsLoading(false);
   };
 
@@ -42,6 +58,17 @@ const Employees = () => {
     profile.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     profile.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     profile.position?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const totalPages = Math.ceil(filteredProfiles.length / ITEMS_PER_PAGE);
+  const paginatedProfiles = filteredProfiles.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   const getInitials = (name: string) => {
@@ -90,38 +117,66 @@ const Employees = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProfiles.map((profile) => (
-            <div
-              key={profile.id}
-              className="bg-card rounded-xl p-5 border border-border hover:shadow-md transition-all duration-200"
-            >
-              <div className="flex items-start gap-4">
-                <Avatar className="w-14 h-14 border-2 border-primary/20">
-                  <AvatarImage src={profile.avatar_url || ''} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                    {getInitials(profile.full_name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">{profile.full_name}</h3>
-                  {profile.position && (
-                    <p className="text-sm text-muted-foreground truncate">{profile.position}</p>
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {paginatedProfiles.map((profile) => (
+              <div
+                key={profile.id}
+                className="bg-card rounded-xl p-5 border border-border hover:shadow-md transition-all duration-200"
+              >
+                <div className="flex items-start gap-4">
+                  <Avatar className="w-14 h-14 border-2 border-primary/20">
+                    <AvatarImage src={profile.avatar_url || ''} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                      {getInitials(profile.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground truncate">{profile.full_name}</h3>
+                    {profile.position && (
+                      <p className="text-sm text-muted-foreground truncate">{profile.position}</p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-border space-y-2">
+                  {profile.department && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Building2 className="w-4 h-4" />
+                      <span className="truncate">{profile.department}</span>
+                    </div>
                   )}
                 </div>
               </div>
-              
-              <div className="mt-4 pt-4 border-t border-border space-y-2">
-                {profile.department && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Building2 className="w-4 h-4" />
-                    <span className="truncate">{profile.department}</span>
-                  </div>
-                )}
-              </div>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Anterior
+              </Button>
+              <span className="text-sm text-muted-foreground px-3">
+                Pagina {currentPage} din {totalPages} ({filteredProfiles.length} angajați)
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Următor
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </MainLayout>
   );
