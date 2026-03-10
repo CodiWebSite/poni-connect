@@ -17,12 +17,18 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+    // Check for test mode
+    let testEmail: string | null = null;
+    try {
+      const body = await req.json();
+      testEmail = body?.test_email || null;
+    } catch { /* no body is fine for cron */ }
+
     // Allow both authenticated calls (manual) and cron calls (no auth)
     const authHeader = req.headers.get("Authorization");
     let isManual = false;
 
     if (authHeader?.startsWith("Bearer ")) {
-      // Verify caller for manual triggers
       const supabaseAuth = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: authHeader } },
       });
@@ -36,6 +42,92 @@ Deno.serve(async (req) => {
         });
       }
       isManual = true;
+    }
+
+    // If test mode, send a demo email and return
+    if (testEmail) {
+      const smtpHost = Deno.env.get("SMTP_HOST");
+      const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
+      const smtpUser = Deno.env.get("SMTP_USER");
+      const smtpPass = Deno.env.get("SMTP_PASS");
+      const smtpFrom = Deno.env.get("SMTP_FROM") || "";
+      const fromAddress = smtpFrom.includes("@") ? smtpFrom : `"${smtpFrom}" <${smtpUser}>`;
+
+      if (!smtpHost || !smtpUser || !smtpPass) {
+        return new Response(JSON.stringify({ error: "SMTP not configured" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const transporter = nodemailer.createTransport({
+        host: smtpHost, port: smtpPort, secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+
+      const demoHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #1a365d; border-bottom: 2px solid #3182ce; padding-bottom: 10px;">
+            🔔 Reminder — Cereri de Concediu în Așteptare
+          </h2>
+          <p>Bună ziua,</p>
+          <p>Aveți <strong>3</strong> cereri de concediu care necesită aprobarea dumneavoastră:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px;">
+            <thead>
+              <tr style="background: #1a365d; color: white;">
+                <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Nr.</th>
+                <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Angajat</th>
+                <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Departament</th>
+                <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Perioada</th>
+                <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Zile</th>
+                <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">CO-2026-0042</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Popescu Ion</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Laborator Polimeri Funcționali</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">2026-03-10 — 2026-03-14</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">5 zile</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Așteaptă Șef Dept.</td>
+              </tr>
+              <tr style="background: #f7fafc;">
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">CO-2026-0043</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Ionescu Maria</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Laborator Polimeri Funcționali</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">2026-03-17 — 2026-03-21</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">5 zile</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Așteaptă Șef Dept.</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">CO-2026-0044</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Georgescu Ana</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Laborator Polimeri Funcționali</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">2026-03-24 — 2026-03-28</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">5 zile</td>
+                <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Așteaptă SRUS</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>Vă rugăm să accesați platforma pentru a procesa aceste cereri.</p>
+          <p style="color: #718096; font-size: 12px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+            ⚠️ Acesta este un email DEMO. Acest email a fost trimis automat de sistemul Intranet ICMPP.
+          </p>
+        </div>
+      `;
+
+      await transporter.sendMail({
+        from: fromAddress,
+        to: testEmail,
+        subject: `🔔 Reminder: 3 cereri de concediu așteaptă aprobare`,
+        html: demoHtml,
+      });
+
+      console.log(`Demo reminder sent to: ${testEmail}`);
+      return new Response(
+        JSON.stringify({ success: true, sent_to: testEmail, mode: "demo" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
