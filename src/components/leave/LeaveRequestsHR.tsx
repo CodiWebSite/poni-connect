@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck, FileSpreadsheet, CheckCircle } from 'lucide-react';
+import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck, FileSpreadsheet, CheckCircle, Bell } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -85,6 +85,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const [srusApproveOfficer, setSrusApproveOfficer] = useState<string>('Cătălina Bălan');
   const [srusApproveSig, setSrusApproveSig] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   useEffect(() => {
     fetchAllRequests();
@@ -454,6 +455,28 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     setExportingXls(false);
   };
 
+  const handleSendReminder = async () => {
+    setSendingReminder(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('remind-leave-approvers', {
+        body: {},
+      });
+      if (error) throw error;
+      toast({
+        title: 'Reminder-uri trimise',
+        description: `${data?.sent_to || 0} email(uri) trimise către aprobatori pentru ${data?.pending_requests || 0} cereri pendinte.`,
+      });
+    } catch (err) {
+      console.error('Error sending reminders:', err);
+      toast({
+        title: 'Eroare',
+        description: 'Nu s-au putut trimite reminder-urile.',
+        variant: 'destructive',
+      });
+    }
+    setSendingReminder(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -469,10 +492,16 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           <FileText className="w-5 h-5" />
           Centralizare Cereri Concediu ({filtered.length})
         </CardTitle>
-        <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={exportingXls || filtered.length === 0}>
-          {exportingXls ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
-          Export Excel
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleSendReminder} disabled={sendingReminder}>
+            {sendingReminder ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bell className="w-4 h-4 mr-2" />}
+            Reminder Aprobatori
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={exportingXls || filtered.length === 0}>
+            {exportingXls ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
+            Export Excel
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col md:flex-row gap-3 mb-4">
