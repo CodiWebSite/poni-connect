@@ -549,6 +549,7 @@ const Auth = () => {
           )}
         </CardContent>
       </Card>
+      <GDPRNotice context="auth" className="mt-4 max-w-md mx-auto" />
     </div>
   );
 };
