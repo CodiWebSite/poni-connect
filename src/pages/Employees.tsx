@@ -39,13 +39,13 @@ const Employees = () => {
 
     while (hasMore) {
       const { data } = await supabase
-        .from('employee_directory')
-        .select('id, user_id, full_name, department, position, avatar_url')
+        .from('employee_directory_full' as any)
+        .select('id, user_id, full_name, first_name, last_name, department, position, avatar_url')
         .order('full_name')
-        .range(from, from + batchSize - 1) as { data: EmployeeDirectoryProfile[] | null };
+        .range(from, from + batchSize - 1);
 
       if (data && data.length > 0) {
-        allProfiles = [...allProfiles, ...data];
+        allProfiles = [...allProfiles, ...(data as any as EmployeeDirectoryProfile[])];
         from += batchSize;
         if (data.length < batchSize) hasMore = false;
       } else {
