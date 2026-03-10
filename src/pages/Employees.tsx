@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Building2, Users } from 'lucide-react';
+import { Search, Building2, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Interface for employee directory view (excludes phone for privacy)
 interface EmployeeDirectoryProfile {
