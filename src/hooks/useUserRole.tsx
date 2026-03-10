@@ -25,7 +25,7 @@ export function useUserRole() {
 
       if (data && !error) {
         const r = data.role as string;
-        if (['admin', 'super_admin', 'hr', 'sef', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'bibliotecar', 'salarizare', 'achizitii', 'contabilitate', 'oficiu_juridic', 'compartiment_comunicare', 'secretariat'].includes(r)) {
+        if (['admin', 'super_admin', 'hr', 'sef', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'bibliotecar', 'salarizare', 'achizitii', 'contabilitate', 'oficiu_juridic', 'compartiment_comunicare', 'secretariat', 'medic_medicina_muncii'].includes(r)) {
           setRole(r as AppRole);
         } else {
           setRole('user');
