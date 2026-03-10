@@ -455,6 +455,28 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     setExportingXls(false);
   };
 
+  const handleSendReminder = async () => {
+    setSendingReminder(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('remind-leave-approvers', {
+        body: {},
+      });
+      if (error) throw error;
+      toast({
+        title: 'Reminder-uri trimise',
+        description: `${data?.sent_to || 0} email(uri) trimise către aprobatori pentru ${data?.pending_requests || 0} cereri pendinte.`,
+      });
+    } catch (err) {
+      console.error('Error sending reminders:', err);
+      toast({
+        title: 'Eroare',
+        description: 'Nu s-au putut trimite reminder-urile.',
+        variant: 'destructive',
+      });
+    }
+    setSendingReminder(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
