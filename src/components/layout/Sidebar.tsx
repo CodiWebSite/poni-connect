@@ -433,6 +433,24 @@ const Sidebar = () => {
 
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
+            <Link
+              to="/privacy"
+              className={cn(
+                "w-full text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent inline-flex items-center rounded-md text-sm font-medium h-9 px-3",
+                isCollapsed ? "justify-center" : "justify-start"
+              )}
+            >
+              <Shield className="w-4 h-4" />
+              {!isCollapsed && <span className="ml-3">GDPR</span>}
+            </Link>
+          </TooltipTrigger>
+          {isCollapsed && (
+            <TooltipContent side="right" className="font-medium">Politica GDPR</TooltipContent>
+          )}
+        </Tooltip>
+
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
