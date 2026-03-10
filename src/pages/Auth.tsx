@@ -13,7 +13,7 @@ import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '@/integrations/supabase/client';
 import AccountHelpForm from '@/components/auth/AccountHelpForm';
 import HelpdeskContactForm from '@/components/auth/HelpdeskContactForm';
-import { GDPRNotice } from '@/components/shared/GDPRNotice';
+
 
 const TURNSTILE_SITE_KEY = '0x4AAAAAACGNQ32sLxuYBXgD';
 
