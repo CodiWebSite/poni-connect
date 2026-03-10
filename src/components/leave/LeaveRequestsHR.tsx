@@ -492,10 +492,16 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           <FileText className="w-5 h-5" />
           Centralizare Cereri Concediu ({filtered.length})
         </CardTitle>
-        <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={exportingXls || filtered.length === 0}>
-          {exportingXls ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
-          Export Excel
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleSendReminder} disabled={sendingReminder}>
+            {sendingReminder ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bell className="w-4 h-4 mr-2" />}
+            Reminder Aprobatori
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={exportingXls || filtered.length === 0}>
+            {exportingXls ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
+            Export Excel
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col md:flex-row gap-3 mb-4">
