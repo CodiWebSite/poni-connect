@@ -15,6 +15,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const to = body.to;
     const type = body.type || "leave";
+    const isReminder = type === "reminder";
+
     const smtpHost = Deno.env.get("SMTP_HOST");
     const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
     const smtpUser = Deno.env.get("SMTP_USER");
@@ -30,22 +32,15 @@ Deno.serve(async (req) => {
 
     const fromAddress = smtpFrom.includes("@") ? smtpFrom : `"${smtpFrom}" <${smtpUser}>`;
 
-    console.log(`Connecting to SMTP: ${smtpHost}:${smtpPort}`);
+    console.log(`Connecting to SMTP: ${smtpHost}:${smtpPort}, type: ${type}`);
 
     const transporter = nodemailer.createTransport({
       host: smtpHost,
       port: smtpPort,
       secure: smtpPort === 465,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
+      auth: { user: smtpUser, pass: smtpPass },
     });
 
-    const { type } = await req.json().then(b => ({ ...b, type: b.type || "leave" })).catch(() => ({ type: "leave", to: "" }));
-    
-    const isReminder = type === "reminder";
-    
     const subject = isReminder
       ? `🔔 Reminder: 3 cereri de concediu așteaptă aprobare`
       : `🧪 [TEST] Cerere concediu nouă — Popescu Ion (CO-2026-TEST)`;
