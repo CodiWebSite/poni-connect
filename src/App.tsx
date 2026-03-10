@@ -34,7 +34,6 @@ import Chat from "./pages/Chat";
 import MedicinaMuncii from "./pages/MedicinaMuncii";
 import InstallApp from "./pages/InstallApp";
 import Kiosk from "./pages/Kiosk";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -123,7 +122,6 @@ const App = () => (
                 <Route path="/install" element={<InstallApp />} />
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
