@@ -473,9 +473,19 @@ const MedicinaMuncii = () => {
             </p>
           </div>
           {isDoctor && (
-            <Badge variant="outline" className="text-xs">
-              <ShieldCheck className="w-3 h-3 mr-1" /> Medic
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={exportExcel}>
+                <Download className="w-4 h-4 mr-1" /> Export Excel
+              </Button>
+              <Badge variant="outline" className="text-xs">
+                <ShieldCheck className="w-3 h-3 mr-1" /> Medic
+              </Badge>
+            </div>
+          )}
+          {!isDoctor && isHR && (
+            <Button variant="outline" size="sm" onClick={exportExcel}>
+              <Download className="w-4 h-4 mr-1" /> Export Excel
+            </Button>
           )}
         </div>
 
