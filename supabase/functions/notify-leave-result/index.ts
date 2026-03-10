@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
         const { data: hrRoles } = await supabaseAdmin
           .from("user_roles")
           .select("user_id")
-          .in("role", ["hr", "sef_srus"]);
+          .eq("role", "hr");
 
         const hrEmails: string[] = [];
         if (hrRoles) {
