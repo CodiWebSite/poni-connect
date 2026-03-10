@@ -279,7 +279,7 @@ setInterval(fetchWeather, 600000);
 // ── Announcements ──
 function fetchAnnouncements() {
   sbFetch('announcements', 'select=id,title,content,priority,is_pinned,created_at&or=(is_pinned.eq.true,priority.eq.urgent,priority.eq.high)&order=created_at.desc&limit=6', function(data) {
-    if (!data || !data.length) { document.getElementById('annContent').innerHTML = '<div style="color:#94a3b8;font-size:13px">Niciun anunț important</div>'; return; }
+    if (!data || !data.length) { document.getElementById('annContent').innerHTML = '<div style="color:#94a3b8;font-size:18px">Niciun anunț important</div>'; return; }
     var html = '';
     data.forEach(function(a) {
       var cls = a.priority === 'urgent' ? ' card-urgent' : a.priority === 'high' ? ' card-high' : '';
