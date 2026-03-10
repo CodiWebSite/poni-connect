@@ -235,7 +235,7 @@ export default function ArchivePage() {
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <Shield className="h-8 w-8 text-blue-500" />
+              <Shield className="h-8 w-8 text-primary" />
               <div>
                 <p className="text-2xl font-bold">{permanentDocs}</p>
                 <p className="text-sm text-muted-foreground">Permanente</p>
