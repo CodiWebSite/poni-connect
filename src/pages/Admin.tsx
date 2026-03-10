@@ -60,6 +60,7 @@ const roleBadgeColors: Record<string, string> = {
   contabilitate: 'bg-lime-700 text-white',
   oficiu_juridic: 'bg-slate-600 text-white',
   compartiment_comunicare: 'bg-fuchsia-600 text-white',
+  medic_medicina_muncii: 'bg-pink-600 text-white',
   user: 'bg-muted text-muted-foreground',
 };
 
