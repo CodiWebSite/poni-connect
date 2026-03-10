@@ -2,10 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, Clock, Building2, Monitor, Phone } from 'lucide-react';
 import AnalogClock from '@/components/kiosk/AnalogClock';
-import KioskSidebarWeather from '@/components/kiosk/KioskSidebarWeather';
-import KioskSidebarAnnouncements from '@/components/kiosk/KioskSidebarAnnouncements';
-import KioskSidebarEvents from '@/components/kiosk/KioskSidebarEvents';
-import KioskSidebarRoomBookings from '@/components/kiosk/KioskSidebarRoomBookings';
+import KioskRotatingSidebar from '@/components/kiosk/KioskRotatingSidebar';
 
 // ── i18n helpers ───────────────────────────────────────
 const DAYS_RO = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
@@ -76,7 +73,6 @@ const Kiosk = () => {
     if (!video) return;
     const handleEnded = () => {
       setLang(prev => (prev === 'ro' ? 'en' : 'ro'));
-      // Restart playback for the next cycle
       video.play().catch(() => {});
     };
     video.addEventListener('ended', handleEnded);
@@ -122,33 +118,36 @@ const Kiosk = () => {
 
   if (!kioskEnabled) {
     return (
-      <div className="h-screen w-screen bg-white flex items-center justify-center">
+      <div className="h-screen w-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Monitor className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-slate-400">{i.disabledTitle}</h1>
-          <p className="text-slate-400 mt-2">{i.disabledDesc}</p>
+          <Monitor className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-muted-foreground">{i.disabledTitle}</h1>
+          <p className="text-muted-foreground mt-2">{i.disabledDesc}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-screen bg-white text-slate-900 flex flex-col overflow-hidden select-none">
+    <div className="h-screen w-screen bg-slate-50 text-foreground flex flex-col overflow-hidden select-none">
       {/* ── Language indicator ─────────────────── */}
       <div className="absolute top-3 right-36 z-10">
-        <span className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+        <span className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full backdrop-blur-sm">
           {lang === 'ro' ? '🇷🇴 RO' : '🇬🇧 EN'}
         </span>
       </div>
 
-      {/* ── Header ─────────────────────────────── */}
-      <header className="flex items-center justify-between px-8 py-3 bg-white border-b border-slate-200 shrink-0">
+      {/* ── Header with gradient ───────────────── */}
+      <header className="flex items-center justify-between px-8 py-3 bg-gradient-to-r from-white via-white to-primary/5 border-b border-slate-200/80 shrink-0 relative">
+        {/* Subtle top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-primary/60 via-primary/30 to-transparent" />
+        
         <div className="flex items-center gap-4">
-          <img src="/logo-icmpp.png" alt="ICMPP" className="h-16 w-auto" />
+          <img src="/logo-icmpp.png" alt="ICMPP" className="h-16 w-auto drop-shadow-sm" />
           <div>
             <h1 className="text-2xl font-bold tracking-wide text-slate-800 leading-tight">
               {i.instituteName}{' '}
-              <span className="text-primary">{i.instituteAccent}</span> {i.instituteCity}
+              <span className="text-primary drop-shadow-[0_0_10px_hsl(var(--primary)/0.3)]">{i.instituteAccent}</span> {i.instituteCity}
             </h1>
           </div>
         </div>
@@ -165,7 +164,7 @@ const Kiosk = () => {
 
       {/* ── Custom Kiosk Message ───────────────── */}
       {kioskMessage && (
-        <div className="px-8 py-2 bg-primary/10 border-b border-primary/20 shrink-0">
+        <div className="px-8 py-2 bg-primary/10 border-b border-primary/20 shrink-0 backdrop-blur-sm">
           <p className="text-sm text-primary text-center font-medium">{kioskMessage}</p>
         </div>
       )}
@@ -173,10 +172,10 @@ const Kiosk = () => {
       {/* ── Main Grid ──────────────────────────── */}
       <main className="flex-1 grid grid-cols-3 gap-0 min-h-0">
         {/* Left 2/3 — Video */}
-        <section className="col-span-2 flex flex-col border-r border-slate-200">
+        <section className="col-span-2 flex flex-col relative">
           <div className="px-8 pt-4 pb-2 flex items-center shrink-0">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
               {i.presentationLabel}
             </h2>
           </div>
@@ -188,22 +187,27 @@ const Kiosk = () => {
                 muted
                 playsInline
                 autoPlay
-                className="max-w-full max-h-full rounded-xl shadow-lg"
+                className="max-w-full max-h-full rounded-xl shadow-2xl ring-1 ring-black/5"
               />
             </div>
           </div>
+
+          {/* ── Animated vertical separator ────── */}
+          <div className="absolute top-0 right-0 bottom-0 w-[2px]">
+            <div className="h-full w-full kiosk-separator" />
+          </div>
         </section>
 
-        {/* Right 1/3 — Sidebar */}
-        <aside className="flex flex-col divide-y divide-slate-200 min-h-0 bg-slate-50 overflow-y-auto">
-          <KioskSidebarWeather />
-          <KioskSidebarAnnouncements />
-          <KioskSidebarEvents />
-          <KioskSidebarRoomBookings />
+        {/* Right 1/3 — Rotating Sidebar */}
+        <aside className="min-h-0 bg-gradient-to-b from-slate-50 via-white to-slate-50 overflow-hidden relative">
+          {/* Subtle glow effect at top */}
+          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none" />
+          
+          <KioskRotatingSidebar />
 
           {/* Maintenance banner */}
           {maintenanceMode && (
-            <div className="p-4 bg-amber-50 border-t border-amber-200 shrink-0">
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-amber-50/95 border-t border-amber-200 backdrop-blur-sm">
               <div className="flex items-center gap-2 text-amber-700 font-semibold text-sm">
                 <AlertTriangle className="w-4 h-4" />
                 {i.maintenanceTitle}
@@ -216,7 +220,9 @@ const Kiosk = () => {
 
       {/* ── Ticker ───────────────────────────── */}
       {tickerMessages.length > 0 && (
-        <div className="bg-slate-900 text-white overflow-hidden shrink-0" style={{ height: 36 }}>
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden shrink-0 relative" style={{ height: 36 }}>
+          {/* Ticker glow line */}
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
           <div
             className="flex items-center whitespace-nowrap h-full"
             style={{
@@ -225,13 +231,13 @@ const Kiosk = () => {
           >
             {tickerMessages.map((msg, idx) => (
               <span key={idx} className="inline-flex items-center gap-3 px-6 text-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.6)] shrink-0" />
                 {msg}
               </span>
             ))}
             {tickerMessages.map((msg, idx) => (
               <span key={`dup-${idx}`} className="inline-flex items-center gap-3 px-6 text-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.6)] shrink-0" />
                 {msg}
               </span>
             ))}
@@ -239,8 +245,11 @@ const Kiosk = () => {
         </div>
       )}
 
-      {/* ── Footer ─────────────────────────────── */}
-      <footer className="flex items-center justify-between px-8 py-2.5 bg-slate-800 text-slate-300 text-xs shrink-0">
+      {/* ── Footer with gradient ───────────────── */}
+      <footer className="flex items-center justify-between px-8 py-2.5 bg-gradient-to-r from-slate-800 via-slate-800 to-slate-900 text-slate-300 text-xs shrink-0 relative">
+        {/* Bottom accent line */}
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -248,10 +257,10 @@ const Kiosk = () => {
           </div>
           <div className="flex items-center gap-2">
             <Phone className="w-3.5 h-3.5 text-slate-400" />
-            <span>{i.secretariat} <strong>0332 880 220</strong></span>
+            <span>{i.secretariat} <strong className="text-slate-200">0332 880 220</strong></span>
           </div>
           <div className="flex items-center gap-2">
-            <span>pponi@icmpp.ro</span>
+            <span className="text-primary/80">pponi@icmpp.ro</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -271,6 +280,29 @@ const Kiosk = () => {
         }
         .kiosk-fade-in {
           animation: kiosk-fade-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes kiosk-separator-flow {
+          0% { background-position: 0% 0%; }
+          100% { background-position: 0% 200%; }
+        }
+        .kiosk-separator {
+          background: linear-gradient(
+            180deg,
+            transparent 0%,
+            hsl(var(--primary) / 0.15) 20%,
+            hsl(var(--primary) / 0.4) 50%,
+            hsl(var(--primary) / 0.15) 80%,
+            transparent 100%
+          );
+          background-size: 100% 200%;
+          animation: kiosk-separator-flow 4s ease-in-out infinite;
+        }
+        .kiosk-slide-in {
+          animation: kiosk-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes kiosk-slide-in {
+          0% { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
