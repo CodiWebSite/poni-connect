@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ICMPP Kiosk</title>
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f8fafc; }
+    iframe { width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
+  <iframe src="/kiosk" allow="autoplay; wake-lock" allowfullscreen></iframe>
+  <script>
+    // Reload page every 6 hours to avoid memory leaks on Samsung TVs
+    setTimeout(function() { location.reload(); }, 6 * 60 * 60 * 1000);
+  </script>
+</body>
+</html>
