@@ -296,7 +296,7 @@ setInterval(fetchAnnouncements, 60000);
 function fetchEvents() {
   var now = new Date().toISOString();
   sbFetch('events', 'select=id,title,start_date,location&start_date=gte.' + now + '&order=start_date.asc&limit=5', function(data) {
-    if (!data || !data.length) { document.getElementById('eventsContent').innerHTML = '<div style="color:#94a3b8;font-size:13px">Niciun eveniment programat</div>'; return; }
+    if (!data || !data.length) { document.getElementById('eventsContent').innerHTML = '<div style="color:#94a3b8;font-size:18px">Niciun eveniment programat</div>'; return; }
     var html = '';
     data.forEach(function(e) {
       var d = new Date(e.start_date);
