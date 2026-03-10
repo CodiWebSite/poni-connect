@@ -16,26 +16,41 @@ interface EmployeeDirectoryProfile {
   user_id: string;
 }
 
+const ITEMS_PER_PAGE = 18;
+
 const Employees = () => {
   const [profiles, setProfiles] = useState<EmployeeDirectoryProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchProfiles();
   }, []);
 
   const fetchProfiles = async () => {
-    // Use employee_directory view which excludes sensitive phone data
-    // Phone numbers are only visible to HR or the user themselves via their profile
-    const { data } = await supabase
-      .from('employee_directory')
-      .select('id, user_id, full_name, department, position, avatar_url')
-      .order('full_name') as { data: EmployeeDirectoryProfile[] | null };
+    let allProfiles: EmployeeDirectoryProfile[] = [];
+    let from = 0;
+    const batchSize = 1000;
+    let hasMore = true;
 
-    if (data) {
-      setProfiles(data);
+    while (hasMore) {
+      const { data } = await supabase
+        .from('employee_directory')
+        .select('id, user_id, full_name, department, position, avatar_url')
+        .order('full_name')
+        .range(from, from + batchSize - 1) as { data: EmployeeDirectoryProfile[] | null };
+
+      if (data && data.length > 0) {
+        allProfiles = [...allProfiles, ...data];
+        from += batchSize;
+        if (data.length < batchSize) hasMore = false;
+      } else {
+        hasMore = false;
+      }
     }
+
+    setProfiles(allProfiles);
     setIsLoading(false);
   };
 
@@ -43,6 +58,17 @@ const Employees = () => {
     profile.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     profile.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     profile.position?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const totalPages = Math.ceil(filteredProfiles.length / ITEMS_PER_PAGE);
+  const paginatedProfiles = filteredProfiles.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   const getInitials = (name: string) => {
