@@ -122,7 +122,6 @@ const App = () => (
                 <Route path="/install" element={<InstallApp />} />
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
