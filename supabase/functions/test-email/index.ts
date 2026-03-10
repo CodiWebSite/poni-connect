@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
       from: fromAddress,
       to: to,
       subject,
-      html: leaveHtml,
+      html: isReminder ? reminderHtml : leaveHtml,
     });
 
     console.log(`Test email sent to: ${to}, messageId: ${info.messageId}`);
