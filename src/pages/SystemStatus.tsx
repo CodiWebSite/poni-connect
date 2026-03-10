@@ -70,6 +70,7 @@ function HealthCheckTab() {
   const [lastCheck, setLastCheck] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [sendingDemo, setSendingDemo] = useState(false);
 
   const runHealthCheck = useCallback(async () => {
     setLoading(true);
@@ -78,12 +79,25 @@ function HealthCheckTab() {
       if (error) throw error;
       setHealth(data as HealthResult);
       setLastCheck(new Date().toISOString());
-      // Refresh history after new check
       fetchHistory();
     } catch {
       toast.error('Eroare la verificarea stării');
     }
     setLoading(false);
+  }, []);
+
+  const sendDemoReminder = useCallback(async () => {
+    setSendingDemo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('remind-leave-approvers', {
+        body: { test_email: 'condrea.codrin@icmpp.ro' },
+      });
+      if (error) throw error;
+      toast.success('Email demo trimis pe condrea.codrin@icmpp.ro');
+    } catch (err: any) {
+      toast.error('Eroare la trimiterea emailului demo: ' + (err?.message || 'necunoscută'));
+    }
+    setSendingDemo(false);
   }, []);
 
   const fetchHistory = useCallback(async () => {
