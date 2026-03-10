@@ -24,6 +24,7 @@ const roleLabels: Record<string, string> = {
   contabilitate: 'Contabilitate',
   oficiu_juridic: 'Oficiu Juridic',
   compartiment_comunicare: 'Compartiment Comunicare',
+  medic_medicina_muncii: 'Medic Medicina Muncii',
   user: 'Angajat',
 };
 
