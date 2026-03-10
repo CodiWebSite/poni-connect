@@ -35,6 +35,7 @@ import {
   Mail,
   Download,
   Activity,
+  Archive,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -198,6 +199,7 @@ const Sidebar = () => {
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat', badge: unreadChat || undefined },
     ...(canAccessMedical ? [{ icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' }] : []),
+    { icon: Archive, label: 'Arhivă Online', path: '/arhiva' },
     { icon: ExternalLink, label: 'Adeverințe', path: 'https://adeverinte.icmpp.ro/', external: true },
     { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
