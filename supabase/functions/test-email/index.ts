@@ -12,7 +12,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { to } = await req.json();
+    const body = await req.json();
+    const to = body.to;
+    const type = body.type || "leave";
+    const isReminder = type === "reminder";
 
     const smtpHost = Deno.env.get("SMTP_HOST");
     const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
@@ -29,21 +32,70 @@ Deno.serve(async (req) => {
 
     const fromAddress = smtpFrom.includes("@") ? smtpFrom : `"${smtpFrom}" <${smtpUser}>`;
 
-    console.log(`Connecting to SMTP: ${smtpHost}:${smtpPort}`);
+    console.log(`Connecting to SMTP: ${smtpHost}:${smtpPort}, type: ${type}`);
 
     const transporter = nodemailer.createTransport({
       host: smtpHost,
       port: smtpPort,
       secure: smtpPort === 465,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
+      auth: { user: smtpUser, pass: smtpPass },
     });
 
-    const subject = to === "condrea.codrin@icmpp.ro" 
-      ? `🧪 [TEST] Cerere concediu nouă — Popescu Ion (CO-2026-TEST)`
-      : "Test Email — Intranet ICMPP";
+    const subject = isReminder
+      ? `🔔 Reminder: 3 cereri de concediu așteaptă aprobare`
+      : `🧪 [TEST] Cerere concediu nouă — Popescu Ion (CO-2026-TEST)`;
+
+    const reminderHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #1a365d; border-bottom: 2px solid #3182ce; padding-bottom: 10px;">
+          🔔 Reminder — Cereri de Concediu în Așteptare
+        </h2>
+        <p>Bună ziua,</p>
+        <p>Aveți <strong>3</strong> cereri de concediu care necesită aprobarea dumneavoastră:</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px;">
+          <thead>
+            <tr style="background: #1a365d; color: white;">
+              <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Nr.</th>
+              <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Angajat</th>
+              <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Departament</th>
+              <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Perioada</th>
+              <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Zile</th>
+              <th style="padding: 10px 12px; border: 1px solid #1a365d; text-align: left;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">CO-2026-0042</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Popescu Ion</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Laborator Polimeri Funcționali</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">2026-03-10 — 2026-03-14</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">5 zile</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Așteaptă Șef Dept.</td>
+            </tr>
+            <tr style="background: #f7fafc;">
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">CO-2026-0043</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Ionescu Maria</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Laborator Polimeri Funcționali</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">2026-03-17 — 2026-03-21</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">5 zile</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Așteaptă Șef Dept.</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">CO-2026-0044</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Georgescu Ana</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Laborator Polimeri Funcționali</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">2026-03-24 — 2026-03-28</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">5 zile</td>
+              <td style="padding: 8px 12px; border: 1px solid #bee3f8;">Așteaptă SRUS</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Vă rugăm să accesați platforma pentru a procesa aceste cereri.</p>
+        <p style="color: #718096; font-size: 12px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+          ⚠️ Acesta este un email de test. Acest email a fost trimis automat de sistemul Intranet ICMPP.
+        </p>
+      </div>
+    `;
 
     const leaveHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -81,7 +133,7 @@ Deno.serve(async (req) => {
       from: fromAddress,
       to: to,
       subject,
-      html: leaveHtml,
+      html: isReminder ? reminderHtml : leaveHtml,
     });
 
     console.log(`Test email sent to: ${to}, messageId: ${info.messageId}`);
