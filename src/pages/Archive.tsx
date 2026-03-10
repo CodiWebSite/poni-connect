@@ -244,7 +244,7 @@ export default function ArchivePage() {
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <Scale className="h-8 w-8 text-orange-500" />
+              <Scale className="h-8 w-8 text-destructive" />
               <div>
                 <p className="text-2xl font-bold">{expiredDocs}</p>
                 <p className="text-sm text-muted-foreground">Termen expirat</p>
