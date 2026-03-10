@@ -31,6 +31,7 @@ import MyTeam from "./pages/MyTeam";
 import RoomBookings from "./pages/RoomBookings";
 import RecreationalActivities from "./pages/RecreationalActivities";
 import Chat from "./pages/Chat";
+import MedicinaMuncii from "./pages/MedicinaMuncii";
 import InstallApp from "./pages/InstallApp";
 import Kiosk from "./pages/Kiosk";
 
