@@ -35,3 +35,5 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = false
   [functions.health-check]
     verify_jwt = true
+  [functions.remind-leave-approvers]
+    verify_jwt = false
