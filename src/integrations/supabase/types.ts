@@ -217,6 +217,86 @@ export type Database = {
         }
         Relationships: []
       }
+      archive_access_log: {
+        Row: {
+          accessed_at: string
+          action: string
+          document_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          accessed_at?: string
+          action?: string
+          document_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          accessed_at?: string
+          action?: string
+          document_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archive_access_log_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "archive_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      archive_documents: {
+        Row: {
+          archived_at: string
+          created_at: string
+          department: string
+          description: string | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          nomenclator_category: string
+          registration_number: string | null
+          retention_expires_at: string | null
+          retention_years: number
+          uploaded_by: string | null
+        }
+        Insert: {
+          archived_at?: string
+          created_at?: string
+          department: string
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          nomenclator_category: string
+          registration_number?: string | null
+          retention_expires_at?: string | null
+          retention_years?: number
+          uploaded_by?: string | null
+        }
+        Update: {
+          archived_at?: string
+          created_at?: string
+          department?: string
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          nomenclator_category?: string
+          registration_number?: string | null
+          retention_expires_at?: string | null
+          retention_years?: number
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -2152,6 +2232,10 @@ export type Database = {
       }
     }
     Functions: {
+      archive_same_department: {
+        Args: { _doc_department: string }
+        Returns: boolean
+      }
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
       can_manage_library: { Args: { _user_id: string }; Returns: boolean }
