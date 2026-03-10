@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-export type AppRole = 'user' | 'admin' | 'super_admin' | 'hr' | 'sef' | 'sef_srus' | 'director_institut' | 'director_adjunct' | 'secretar_stiintific' | 'bibliotecar' | 'salarizare' | 'achizitii' | 'contabilitate' | 'oficiu_juridic' | 'compartiment_comunicare' | 'secretariat';
+export type AppRole = 'user' | 'admin' | 'super_admin' | 'hr' | 'sef' | 'sef_srus' | 'director_institut' | 'director_adjunct' | 'secretar_stiintific' | 'bibliotecar' | 'salarizare' | 'achizitii' | 'contabilitate' | 'oficiu_juridic' | 'compartiment_comunicare' | 'secretariat' | 'medic_medicina_muncii';
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -25,7 +25,7 @@ export function useUserRole() {
 
       if (data && !error) {
         const r = data.role as string;
-        if (['admin', 'super_admin', 'hr', 'sef', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'bibliotecar', 'salarizare', 'achizitii', 'contabilitate', 'oficiu_juridic', 'compartiment_comunicare', 'secretariat'].includes(r)) {
+        if (['admin', 'super_admin', 'hr', 'sef', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'bibliotecar', 'salarizare', 'achizitii', 'contabilitate', 'oficiu_juridic', 'compartiment_comunicare', 'secretariat', 'medic_medicina_muncii'].includes(r)) {
           setRole(r as AppRole);
         } else {
           setRole('user');
@@ -45,11 +45,13 @@ export function useUserRole() {
   const isSefSRUS = role === 'sef_srus';
   const isBibliotecar = role === 'bibliotecar';
   const isSalarizare = role === 'salarizare';
+  const isMedicMuncii = role === 'medic_medicina_muncii';
   const isStaff = isSuperAdmin || isHR || isSefSRUS;
   
   const canManageHR = isSuperAdmin || isHR || isSefSRUS;
   const canManageContent = role !== null && role !== 'user';
   const canManageLibrary = isSuperAdmin || isBibliotecar;
+  const canAccessMedical = isMedicMuncii || isHR || isSefSRUS || isSuperAdmin;
 
   return { 
     role, 
@@ -59,10 +61,12 @@ export function useUserRole() {
     isSefSRUS,
     isBibliotecar,
     isSalarizare,
+    isMedicMuncii,
     isStaff,
     canManageContent,
     canManageHR,
     canManageLibrary,
+    canAccessMedical,
     loading 
   };
 }

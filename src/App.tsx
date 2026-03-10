@@ -31,6 +31,7 @@ import MyTeam from "./pages/MyTeam";
 import RoomBookings from "./pages/RoomBookings";
 import RecreationalActivities from "./pages/RecreationalActivities";
 import Chat from "./pages/Chat";
+import MedicinaMuncii from "./pages/MedicinaMuncii";
 import InstallApp from "./pages/InstallApp";
 import Kiosk from "./pages/Kiosk";
 
@@ -117,6 +118,7 @@ const App = () => (
                 <Route path="/room-bookings" element={<RoomBookings />} />
                 <Route path="/activitati" element={<RecreationalActivities />} />
                 <Route path="/chat" element={<Chat />} />
+                <Route path="/medicina-muncii" element={<MedicinaMuncii />} />
                 <Route path="/install" element={<InstallApp />} />
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />

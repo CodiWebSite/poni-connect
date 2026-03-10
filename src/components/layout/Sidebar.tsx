@@ -34,6 +34,7 @@ import {
   ExternalLink,
   Mail,
   Download,
+  Activity,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -44,7 +45,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { role, isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare } = useUserRole();
+  const { role, isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
   const { isDemo, toggleDemo } = useDemoMode();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -196,6 +197,7 @@ const Sidebar = () => {
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat', badge: unreadChat || undefined },
+    ...(canAccessMedical ? [{ icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' }] : []),
     { icon: ExternalLink, label: 'Adeverințe', path: 'https://adeverinte.icmpp.ro/', external: true },
     { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
