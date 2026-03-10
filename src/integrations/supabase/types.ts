@@ -2035,6 +2035,7 @@ export type Database = {
         | "contabilitate"
         | "oficiu_juridic"
         | "compartiment_comunicare"
+        | "medic_medicina_muncii"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
       document_direction: "incoming" | "outgoing"
       hr_request_status: "pending" | "approved" | "rejected"
@@ -2220,6 +2221,7 @@ export const Constants = {
         "contabilitate",
         "oficiu_juridic",
         "compartiment_comunicare",
+        "medic_medicina_muncii",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
       document_direction: ["incoming", "outgoing"],
