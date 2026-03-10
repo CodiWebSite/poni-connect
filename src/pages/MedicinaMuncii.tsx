@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,9 +20,9 @@ import { saveAs } from 'file-saver';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import {
-  Search, Plus, FileText, Calendar, BarChart3, AlertTriangle,
+  Search, Plus, FileText, Calendar, AlertTriangle,
   CheckCircle, XCircle, Clock, Upload, Trash2, Eye, Activity,
-  Users, ShieldCheck, Download
+  Users, ShieldCheck, Download, ChevronLeft, ChevronRight, FolderOpen
 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
@@ -111,6 +111,20 @@ const examStatusLabels: Record<ExamStatus, string> = {
   cancelled: 'Anulat',
 };
 
+const documentTypes = [
+  { value: 'aviz', label: 'Aviz medical' },
+  { value: 'fisa_aptitudine', label: 'Fișă de aptitudine' },
+  { value: 'analize', label: 'Rezultate analize' },
+  { value: 'radiografie', label: 'Radiografie' },
+  { value: 'examen_oftalmologic', label: 'Examen oftalmologic' },
+  { value: 'examen_orl', label: 'Examen ORL' },
+  { value: 'electrocardiograma', label: 'Electrocardiogramă' },
+  { value: 'scrisoare_medicala', label: 'Scrisoare medicală' },
+  { value: 'altele', label: 'Altele' },
+];
+
+const ITEMS_PER_PAGE = 20;
+
 const MedicinaMuncii = () => {
   const { user } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
@@ -122,6 +136,7 @@ const MedicinaMuncii = () => {
   const [records, setRecords] = useState<Record<string, MedicalRecord>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [scheduledExams, setScheduledExams] = useState<ScheduledExam[]>([]);
@@ -129,8 +144,14 @@ const MedicinaMuncii = () => {
   const [showRecordDialog, setShowRecordDialog] = useState(false);
   const [showConsultationDialog, setShowConsultationDialog] = useState(false);
   const [showExamDialog, setShowExamDialog] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [detailTab, setDetailTab] = useState('info');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [uploading, setUploading] = useState(false);
+  const [uploadDocType, setUploadDocType] = useState('aviz');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Form states
   const [recordForm, setRecordForm] = useState({
@@ -160,6 +181,8 @@ const MedicinaMuncii = () => {
     fetchAllRecords();
     fetchAllExams();
   }, [canAccess]);
+
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, deptFilter, statusFilter]);
 
   const fetchEmployees = async () => {
     const { data } = await supabase
@@ -193,7 +216,6 @@ const MedicinaMuncii = () => {
     setDetailTab('info');
     const record = records[emp.id];
     if (record) {
-      // Fetch consultations
       const { data: consData } = await supabase
         .from('medical_consultations' as any)
         .select('*')
@@ -201,7 +223,6 @@ const MedicinaMuncii = () => {
         .order('consultation_date', { ascending: false });
       if (consData) setConsultations(consData as any[]);
 
-      // Fetch documents (only for doctor)
       if (isDoctor) {
         const { data: docsData } = await supabase
           .from('medical_documents' as any)
@@ -215,7 +236,6 @@ const MedicinaMuncii = () => {
       setDocuments([]);
     }
 
-    // Fetch exams for this employee
     const { data: examData } = await supabase
       .from('medical_scheduled_exams' as any)
       .select('*')
@@ -261,7 +281,7 @@ const MedicinaMuncii = () => {
 
     toast.success('Fișă medicală salvată');
     setShowRecordDialog(false);
-    fetchAllRecords();
+    await fetchAllRecords();
   };
 
   const saveConsultation = async () => {
@@ -315,34 +335,35 @@ const MedicinaMuncii = () => {
     fetchAllExams();
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length || !selectedEmployee || !user) return;
+  const handleUploadDocument = async () => {
+    if (!selectedFile || !selectedEmployee || !user) return;
     const record = records[selectedEmployee.id];
-    if (!record) { toast.error('Creați mai întâi fișa medicală'); return; }
+    if (!record) { toast.error('Creați mai întâi fișa medicală pentru acest angajat'); return; }
 
-    const file = e.target.files[0];
-    const filePath = `${selectedEmployee.id}/${Date.now()}_${file.name}`;
+    setUploading(true);
+    const filePath = `${selectedEmployee.id}/${Date.now()}_${selectedFile.name}`;
 
     const { error: uploadErr } = await supabase.storage
       .from('medical-documents')
-      .upload(filePath, file);
-    if (uploadErr) { toast.error('Eroare upload: ' + uploadErr.message); return; }
-
-    const { data: urlData } = supabase.storage
-      .from('medical-documents')
-      .getPublicUrl(filePath);
+      .upload(filePath, selectedFile);
+    if (uploadErr) { toast.error('Eroare upload: ' + uploadErr.message); setUploading(false); return; }
 
     const { error } = await supabase
       .from('medical_documents' as any)
       .insert({
         medical_record_id: record.id,
-        document_type: 'aviz',
+        document_type: uploadDocType,
         file_url: filePath,
-        file_name: file.name,
+        file_name: selectedFile.name,
         uploaded_by: user.id,
       });
-    if (error) { toast.error('Eroare: ' + error.message); return; }
-    toast.success('Document încărcat');
+    if (error) { toast.error('Eroare: ' + error.message); setUploading(false); return; }
+
+    toast.success('Document încărcat cu succes');
+    setShowUploadDialog(false);
+    setSelectedFile(null);
+    setUploadDocType('aviz');
+    setUploading(false);
     fetchEmployeeDetails(selectedEmployee);
   };
 
@@ -382,10 +403,10 @@ const MedicinaMuncii = () => {
   // Stats
   const departments = [...new Set(employees.map(e => e.department).filter(Boolean))] as string[];
   const totalEmployees = employees.length;
-  const withRecord = employees.filter(e => records[e.id]).length;
   const aptCount = employees.filter(e => records[e.id]?.medical_fitness === 'apt').length;
   const condCount = employees.filter(e => records[e.id]?.medical_fitness === 'apt_conditionat').length;
   const inaptCount = employees.filter(e => records[e.id]?.medical_fitness === 'inapt').length;
+  const noRecordCount = employees.filter(e => !records[e.id]).length;
   const expiringSoon = employees.filter(e => {
     const r = records[e.id];
     if (!r?.fitness_valid_until) return false;
@@ -401,8 +422,31 @@ const MedicinaMuncii = () => {
   const filteredEmployees = employees.filter(e => {
     const matchSearch = `${e.first_name} ${e.last_name} ${e.email}`.toLowerCase().includes(searchTerm.toLowerCase());
     const matchDept = deptFilter === 'all' || e.department === deptFilter;
-    return matchSearch && matchDept;
+    let matchStatus = true;
+    if (statusFilter !== 'all') {
+      const rec = records[e.id];
+      if (statusFilter === 'no_record') {
+        matchStatus = !rec;
+      } else if (statusFilter === 'expired') {
+        matchStatus = !!rec?.fitness_valid_until && differenceInDays(parseISO(rec.fitness_valid_until), new Date()) < 0;
+      } else if (statusFilter === 'expiring') {
+        if (!rec?.fitness_valid_until) { matchStatus = false; }
+        else {
+          const days = differenceInDays(parseISO(rec.fitness_valid_until), new Date());
+          matchStatus = days >= 0 && days <= 30;
+        }
+      } else {
+        matchStatus = rec?.medical_fitness === statusFilter;
+      }
+    }
+    return matchSearch && matchDept && matchStatus;
   });
+
+  const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE);
+  const paginatedEmployees = filteredEmployees.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const openRecordDialog = (emp: Employee) => {
     const existing = records[emp.id];
@@ -415,6 +459,12 @@ const MedicinaMuncii = () => {
       notes: existing?.notes || '',
     });
     setShowRecordDialog(true);
+  };
+
+  const openUploadDialog = () => {
+    setSelectedFile(null);
+    setUploadDocType('aviz');
+    setShowUploadDialog(true);
   };
 
   const exportExcel = async () => {
@@ -431,7 +481,6 @@ const MedicinaMuncii = () => {
       { header: 'Restricții', key: 'restrictions', width: 35 },
     ];
 
-    // Style header
     ws.getRow(1).eachCell(cell => {
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1a365d' } };
@@ -462,7 +511,7 @@ const MedicinaMuncii = () => {
     <MainLayout title="Medicină a Muncii">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <Activity className="w-7 h-7 text-primary" />
@@ -472,21 +521,16 @@ const MedicinaMuncii = () => {
               {isDoctor ? 'Gestionare dosare medicale și programări' : 'Vizualizare status avize medicale'}
             </p>
           </div>
-          {isDoctor && (
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={exportExcel}>
-                <Download className="w-4 h-4 mr-1" /> Export Excel
-              </Button>
-              <Badge variant="outline" className="text-xs">
-                <ShieldCheck className="w-3 h-3 mr-1" /> Medic
-              </Badge>
-            </div>
-          )}
-          {!isDoctor && isHR && (
+          <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={exportExcel}>
               <Download className="w-4 h-4 mr-1" /> Export Excel
             </Button>
-          )}
+            {isDoctor && (
+              <Badge variant="outline" className="text-xs">
+                <ShieldCheck className="w-3 h-3 mr-1" /> Medic
+              </Badge>
+            )}
+          </div>
         </div>
 
         {activeTab === 'detail' && selectedEmployee ? (
@@ -498,16 +542,30 @@ const MedicinaMuncii = () => {
 
             <Card>
               <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <CardTitle>{selectedEmployee.last_name} {selectedEmployee.first_name}</CardTitle>
                     <CardDescription>{selectedEmployee.department} — {selectedEmployee.position}</CardDescription>
                   </div>
-                  {records[selectedEmployee.id] && (
-                    <Badge className={fitnessColors[records[selectedEmployee.id].medical_fitness]}>
-                      {fitnessLabels[records[selectedEmployee.id].medical_fitness]}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {records[selectedEmployee.id] && (
+                      <Badge className={fitnessColors[records[selectedEmployee.id].medical_fitness]}>
+                        {fitnessLabels[records[selectedEmployee.id].medical_fitness]}
+                      </Badge>
+                    )}
+                    {isDoctor && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => openRecordDialog(selectedEmployee)}>
+                          <FileText className="w-4 h-4 mr-1" />
+                          {records[selectedEmployee.id] ? 'Editează fișa' : 'Creează fișă'}
+                        </Button>
+                        <Button size="sm" variant="default" onClick={openUploadDialog}>
+                          <Upload className="w-4 h-4 mr-1" />
+                          Încarcă document
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
             </Card>
@@ -527,7 +585,7 @@ const MedicinaMuncii = () => {
                 </TabsTrigger>
                 {isDoctor && (
                   <TabsTrigger value="documents">
-                    <FileText className="w-4 h-4 mr-1" /> Documente
+                    <FolderOpen className="w-4 h-4 mr-1" /> Documente ({documents.length})
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -570,19 +628,15 @@ const MedicinaMuncii = () => {
                           </>
                         )}
                       </div>
-                      {isDoctor && (
-                        <Button size="sm" onClick={() => openRecordDialog(selectedEmployee)}>
-                          Editează fișa
-                        </Button>
-                      )}
                     </CardContent>
                   </Card>
                 ) : (
                   <Card>
                     <CardContent className="pt-6 text-center text-muted-foreground">
-                      <p>Nu există fișă medicală.</p>
+                      <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                      <p className="mb-3">Nu există fișă medicală pentru acest angajat.</p>
                       {isDoctor && (
-                        <Button className="mt-3" size="sm" onClick={() => openRecordDialog(selectedEmployee)}>
+                        <Button size="sm" onClick={() => openRecordDialog(selectedEmployee)}>
                           <Plus className="w-4 h-4 mr-1" /> Creează fișă medicală
                         </Button>
                       )}
@@ -651,78 +705,87 @@ const MedicinaMuncii = () => {
                 {scheduledExams.length === 0 ? (
                   <Card><CardContent className="pt-6 text-center text-muted-foreground">Nicio programare.</CardContent></Card>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Tip</TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Note</TableHead>
-                        {isDoctor && <TableHead>Acțiuni</TableHead>}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {scheduledExams.map(ex => (
-                        <TableRow key={ex.id}>
-                          <TableCell className="font-medium">{ex.exam_type}</TableCell>
-                          <TableCell>{format(parseISO(ex.scheduled_date), 'dd MMM yyyy', { locale: ro })}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{examStatusLabels[ex.status]}</Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{ex.notes || '—'}</TableCell>
-                          {isDoctor && (
-                            <TableCell>
-                              <div className="flex gap-1">
-                                {ex.status === 'scheduled' && (
-                                  <>
-                                    <Button size="sm" variant="ghost" onClick={() => updateExamStatus(ex.id, 'completed')}>
-                                      <CheckCircle className="w-4 h-4 text-green-600" />
-                                    </Button>
-                                    <Button size="sm" variant="ghost" onClick={() => updateExamStatus(ex.id, 'missed')}>
-                                      <XCircle className="w-4 h-4 text-red-600" />
-                                    </Button>
-                                  </>
-                                )}
-                              </div>
-                            </TableCell>
-                          )}
+                  <Card>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tip</TableHead>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Note</TableHead>
+                          {isDoctor && <TableHead>Acțiuni</TableHead>}
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {scheduledExams.map(ex => (
+                          <TableRow key={ex.id}>
+                            <TableCell className="font-medium">{ex.exam_type}</TableCell>
+                            <TableCell>{format(parseISO(ex.scheduled_date), 'dd MMM yyyy', { locale: ro })}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{examStatusLabels[ex.status]}</Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{ex.notes || '—'}</TableCell>
+                            {isDoctor && (
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  {ex.status === 'scheduled' && (
+                                    <>
+                                      <Button size="sm" variant="ghost" onClick={() => updateExamStatus(ex.id, 'completed')} title="Marcare efectuat">
+                                        <CheckCircle className="w-4 h-4 text-green-600" />
+                                      </Button>
+                                      <Button size="sm" variant="ghost" onClick={() => updateExamStatus(ex.id, 'missed')} title="Marcare ratat">
+                                        <XCircle className="w-4 h-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Card>
                 )}
               </TabsContent>
 
               {isDoctor && (
                 <TabsContent value="documents" className="space-y-4">
                   <div className="flex justify-end">
-                    <label className="cursor-pointer">
-                      <input type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.jpg,.png,.doc,.docx" />
-                      <Button size="sm" asChild>
-                        <span><Upload className="w-4 h-4 mr-1" /> Încarcă document</span>
-                      </Button>
-                    </label>
+                    <Button size="sm" onClick={openUploadDialog}>
+                      <Upload className="w-4 h-4 mr-1" /> Încarcă document
+                    </Button>
                   </div>
                   {documents.length === 0 ? (
-                    <Card><CardContent className="pt-6 text-center text-muted-foreground">Niciun document.</CardContent></Card>
+                    <Card>
+                      <CardContent className="pt-8 pb-8 text-center text-muted-foreground">
+                        <FolderOpen className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                        <p className="mb-3">Niciun document medical încărcat.</p>
+                        <Button size="sm" variant="outline" onClick={openUploadDialog}>
+                          <Upload className="w-4 h-4 mr-1" /> Încarcă primul document
+                        </Button>
+                      </CardContent>
+                    </Card>
                   ) : (
                     <div className="space-y-2">
                       {documents.map(doc => (
                         <Card key={doc.id}>
                           <CardContent className="pt-3 pb-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <FileText className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-sm font-medium">{doc.file_name || doc.document_type}</span>
-                              <Badge variant="outline" className="text-xs">{doc.document_type}</Badge>
-                              <span className="text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                              <span className="text-sm font-medium truncate">{doc.file_name || doc.document_type}</span>
+                              <Badge variant="outline" className="text-xs flex-shrink-0">
+                                {documentTypes.find(dt => dt.value === doc.document_type)?.label || doc.document_type}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground flex-shrink-0">
                                 {format(parseISO(doc.created_at), 'dd MMM yyyy', { locale: ro })}
                               </span>
                             </div>
-                            <div className="flex gap-1">
-                              <Button size="sm" variant="ghost" onClick={() => downloadDocument(doc)}>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <Button size="sm" variant="ghost" onClick={() => downloadDocument(doc)} title="Descarcă">
                                 <Download className="w-4 h-4" />
                               </Button>
-                              <Button size="sm" variant="ghost" onClick={() => deleteDocument(doc)}>
+                              <Button size="sm" variant="ghost" onClick={() => deleteDocument(doc)} title="Șterge">
                                 <Trash2 className="w-4 h-4 text-destructive" />
                               </Button>
                             </div>
@@ -739,47 +802,54 @@ const MedicinaMuncii = () => {
           /* Dashboard / List View */
           <div className="space-y-6">
             {/* Stats cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              <Card>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter('all')}>
                 <CardContent className="pt-4 pb-4 text-center">
                   <Users className="w-5 h-5 mx-auto text-primary mb-1" />
                   <p className="text-2xl font-bold">{totalEmployees}</p>
-                  <p className="text-xs text-muted-foreground">Total angajați</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter('apt')}>
                 <CardContent className="pt-4 pb-4 text-center">
                   <CheckCircle className="w-5 h-5 mx-auto text-green-600 mb-1" />
                   <p className="text-2xl font-bold text-green-600">{aptCount}</p>
                   <p className="text-xs text-muted-foreground">Apt</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter('apt_conditionat')}>
                 <CardContent className="pt-4 pb-4 text-center">
                   <AlertTriangle className="w-5 h-5 mx-auto text-yellow-600 mb-1" />
                   <p className="text-2xl font-bold text-yellow-600">{condCount}</p>
                   <p className="text-xs text-muted-foreground">Condiționat</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter('inapt')}>
                 <CardContent className="pt-4 pb-4 text-center">
                   <XCircle className="w-5 h-5 mx-auto text-red-600 mb-1" />
                   <p className="text-2xl font-bold text-red-600">{inaptCount}</p>
                   <p className="text-xs text-muted-foreground">Inapt</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter('expiring')}>
                 <CardContent className="pt-4 pb-4 text-center">
                   <Clock className="w-5 h-5 mx-auto text-orange-500 mb-1" />
                   <p className="text-2xl font-bold text-orange-500">{expiringSoon}</p>
-                  <p className="text-xs text-muted-foreground">Expiră în 30 zile</p>
+                  <p className="text-xs text-muted-foreground">Expiră 30 zile</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter('expired')}>
                 <CardContent className="pt-4 pb-4 text-center">
                   <AlertTriangle className="w-5 h-5 mx-auto text-destructive mb-1" />
                   <p className="text-2xl font-bold text-destructive">{expired}</p>
                   <p className="text-xs text-muted-foreground">Expirate</p>
+                </CardContent>
+              </Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter('no_record')}>
+                <CardContent className="pt-4 pb-4 text-center">
+                  <FileText className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+                  <p className="text-2xl font-bold">{noRecordCount}</p>
+                  <p className="text-xs text-muted-foreground">Fără fișă</p>
                 </CardContent>
               </Card>
             </div>
@@ -796,7 +866,7 @@ const MedicinaMuncii = () => {
                 />
               </div>
               <Select value={deptFilter} onValueChange={setDeptFilter}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder="Departament" />
                 </SelectTrigger>
                 <SelectContent>
@@ -806,63 +876,116 @@ const MedicinaMuncii = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toate statusurile</SelectItem>
+                  <SelectItem value="apt">Apt</SelectItem>
+                  <SelectItem value="apt_conditionat">Apt condiționat</SelectItem>
+                  <SelectItem value="inapt">Inapt</SelectItem>
+                  <SelectItem value="pending">În așteptare</SelectItem>
+                  <SelectItem value="no_record">Fără fișă</SelectItem>
+                  <SelectItem value="expiring">Expiră în 30 zile</SelectItem>
+                  <SelectItem value="expired">Expirate</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Employee table */}
             <Card>
-              <ScrollArea className="max-h-[60vh]">
-                <Table>
-                  <TableHeader>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Angajat</TableHead>
+                    <TableHead>Departament</TableHead>
+                    <TableHead>Status Aviz</TableHead>
+                    <TableHead>Valabil până la</TableHead>
+                    <TableHead>Restricții</TableHead>
+                    <TableHead>Acțiuni</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedEmployees.length === 0 ? (
                     <TableRow>
-                      <TableHead>Angajat</TableHead>
-                      <TableHead>Departament</TableHead>
-                      <TableHead>Status Aviz</TableHead>
-                      <TableHead>Valabil până la</TableHead>
-                      <TableHead>Restricții</TableHead>
-                      <TableHead>Acțiuni</TableHead>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        Niciun angajat găsit cu filtrele selectate.
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredEmployees.map(emp => {
-                      const record = records[emp.id];
-                      const daysLeft = record?.fitness_valid_until
-                        ? differenceInDays(parseISO(record.fitness_valid_until), new Date())
-                        : null;
-                      return (
-                        <TableRow key={emp.id} className="cursor-pointer hover:bg-muted/50" onClick={() => fetchEmployeeDetails(emp)}>
-                          <TableCell className="font-medium">{emp.last_name} {emp.first_name}</TableCell>
-                          <TableCell className="text-muted-foreground">{emp.department || '—'}</TableCell>
-                          <TableCell>
-                            {record ? (
-                              <Badge className={fitnessColors[record.medical_fitness]}>
-                                {fitnessLabels[record.medical_fitness]}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-muted-foreground">Fără fișă</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {record?.fitness_valid_until ? (
-                              <span className={daysLeft !== null && daysLeft < 0 ? 'text-destructive font-medium' : daysLeft !== null && daysLeft <= 30 ? 'text-orange-500 font-medium' : ''}>
-                                {format(parseISO(record.fitness_valid_until), 'dd MMM yyyy', { locale: ro })}
-                                {daysLeft !== null && daysLeft < 0 && ' (expirat)'}
-                                {daysLeft !== null && daysLeft >= 0 && daysLeft <= 30 && ` (${daysLeft} zile)`}
-                              </span>
-                            ) : '—'}
-                          </TableCell>
-                          <TableCell className="text-sm">{record?.restrictions || '—'}</TableCell>
-                          <TableCell>
-                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); fetchEmployeeDetails(emp); }}>
+                  ) : paginatedEmployees.map(emp => {
+                    const record = records[emp.id];
+                    const daysLeft = record?.fitness_valid_until
+                      ? differenceInDays(parseISO(record.fitness_valid_until), new Date())
+                      : null;
+                    return (
+                      <TableRow key={emp.id} className="cursor-pointer hover:bg-muted/50" onClick={() => fetchEmployeeDetails(emp)}>
+                        <TableCell className="font-medium">{emp.last_name} {emp.first_name}</TableCell>
+                        <TableCell className="text-muted-foreground">{emp.department || '—'}</TableCell>
+                        <TableCell>
+                          {record ? (
+                            <Badge className={fitnessColors[record.medical_fitness]}>
+                              {fitnessLabels[record.medical_fitness]}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">Fără fișă</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {record?.fitness_valid_until ? (
+                            <span className={daysLeft !== null && daysLeft < 0 ? 'text-destructive font-medium' : daysLeft !== null && daysLeft <= 30 ? 'text-orange-500 font-medium' : ''}>
+                              {format(parseISO(record.fitness_valid_until), 'dd MMM yyyy', { locale: ro })}
+                              {daysLeft !== null && daysLeft < 0 && ' (expirat)'}
+                              {daysLeft !== null && daysLeft >= 0 && daysLeft <= 30 && ` (${daysLeft} zile)`}
+                            </span>
+                          ) : '—'}
+                        </TableCell>
+                        <TableCell className="text-sm max-w-[200px] truncate">{record?.restrictions || '—'}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); fetchEmployeeDetails(emp); }} title="Vezi detalii">
                               <Eye className="w-4 h-4" />
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
+                            {isDoctor && !record && (
+                              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); openRecordDialog(emp); }} title="Creează fișă">
+                                <Plus className="w-4 h-4 text-primary" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </Card>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Anterior
+                </Button>
+                <span className="text-sm text-muted-foreground px-3">
+                  Pagina {currentPage} din {totalPages} ({filteredEmployees.length} angajați)
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Următor
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -983,6 +1106,101 @@ const MedicinaMuncii = () => {
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowExamDialog(false)}>Anulează</Button>
               <Button onClick={saveExam}>Programează</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Upload Document Dialog */}
+        <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Upload className="w-5 h-5" />
+                Încarcă document medical
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {selectedEmployee && (
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <p className="text-sm font-medium">{selectedEmployee.last_name} {selectedEmployee.first_name}</p>
+                  <p className="text-xs text-muted-foreground">{selectedEmployee.department} — {selectedEmployee.position}</p>
+                </div>
+              )}
+              {selectedEmployee && !records[selectedEmployee.id] && (
+                <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2.5">
+                  <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-destructive">
+                    Trebuie mai întâi să creați o fișă medicală pentru acest angajat înainte de a încărca documente.
+                  </p>
+                </div>
+              )}
+              <div>
+                <Label>Tip document</Label>
+                <Select value={uploadDocType} onValueChange={setUploadDocType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {documentTypes.map(dt => (
+                      <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Fișier</Label>
+                <div className="mt-1">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                    onChange={e => {
+                      if (e.target.files?.length) setSelectedFile(e.target.files[0]);
+                    }}
+                  />
+                  <div
+                    className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {selectedFile ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">{selectedFile.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Click pentru a selecta un fișier
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          PDF, JPG, PNG, DOC, DOCX, XLS, XLSX (max 20MB)
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowUploadDialog(false)}>Anulează</Button>
+              <Button
+                onClick={handleUploadDocument}
+                disabled={!selectedFile || uploading || !selectedEmployee || !records[selectedEmployee?.id || '']}
+              >
+                {uploading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                    Se încarcă...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-1" /> Încarcă
+                  </>
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
