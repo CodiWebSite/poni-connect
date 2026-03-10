@@ -416,7 +416,7 @@ const MedicinaMuncii = () => {
   };
 
   return (
-    <MainLayout>
+    <MainLayout title="Medicină a Muncii">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
