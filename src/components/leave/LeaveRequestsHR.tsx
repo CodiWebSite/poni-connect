@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck, FileSpreadsheet, CheckCircle } from 'lucide-react';
+import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck, FileSpreadsheet, CheckCircle, Bell } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
