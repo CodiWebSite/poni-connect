@@ -117,65 +117,65 @@ const Employees = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {paginatedProfiles.map((profile) => (
-            <div
-              key={profile.id}
-              className="bg-card rounded-xl p-5 border border-border hover:shadow-md transition-all duration-200"
-            >
-              <div className="flex items-start gap-4">
-                <Avatar className="w-14 h-14 border-2 border-primary/20">
-                  <AvatarImage src={profile.avatar_url || ''} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                    {getInitials(profile.full_name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">{profile.full_name}</h3>
-                  {profile.position && (
-                    <p className="text-sm text-muted-foreground truncate">{profile.position}</p>
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {paginatedProfiles.map((profile) => (
+              <div
+                key={profile.id}
+                className="bg-card rounded-xl p-5 border border-border hover:shadow-md transition-all duration-200"
+              >
+                <div className="flex items-start gap-4">
+                  <Avatar className="w-14 h-14 border-2 border-primary/20">
+                    <AvatarImage src={profile.avatar_url || ''} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                      {getInitials(profile.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground truncate">{profile.full_name}</h3>
+                    {profile.position && (
+                      <p className="text-sm text-muted-foreground truncate">{profile.position}</p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-border space-y-2">
+                  {profile.department && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Building2 className="w-4 h-4" />
+                      <span className="truncate">{profile.department}</span>
+                    </div>
                   )}
                 </div>
               </div>
-              
-              <div className="mt-4 pt-4 border-t border-border space-y-2">
-                {profile.department && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Building2 className="w-4 h-4" />
-                    <span className="truncate">{profile.department}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-6">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Anterior
-            </Button>
-            <span className="text-sm text-muted-foreground px-3">
-              Pagina {currentPage} din {totalPages} ({filteredProfiles.length} angajați)
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Următor
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
+            ))}
           </div>
-        )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Anterior
+              </Button>
+              <span className="text-sm text-muted-foreground px-3">
+                Pagina {currentPage} din {totalPages} ({filteredProfiles.length} angajați)
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Următor
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          )}
         </>
       )}
     </MainLayout>
