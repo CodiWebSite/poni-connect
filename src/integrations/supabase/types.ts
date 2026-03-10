@@ -1460,6 +1460,182 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_consultations: {
+        Row: {
+          consultation_date: string
+          consultation_type: Database["public"]["Enums"]["consultation_type"]
+          created_at: string
+          diagnosis: string | null
+          doctor_id: string | null
+          id: string
+          medical_record_id: string
+          next_consultation_date: string | null
+          recommendations: string | null
+        }
+        Insert: {
+          consultation_date?: string
+          consultation_type?: Database["public"]["Enums"]["consultation_type"]
+          created_at?: string
+          diagnosis?: string | null
+          doctor_id?: string | null
+          id?: string
+          medical_record_id: string
+          next_consultation_date?: string | null
+          recommendations?: string | null
+        }
+        Update: {
+          consultation_date?: string
+          consultation_type?: Database["public"]["Enums"]["consultation_type"]
+          created_at?: string
+          diagnosis?: string | null
+          doctor_id?: string | null
+          id?: string
+          medical_record_id?: string
+          next_consultation_date?: string | null
+          recommendations?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_consultations_medical_record_id_fkey"
+            columns: ["medical_record_id"]
+            isOneToOne: false
+            referencedRelation: "medical_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          file_name: string | null
+          file_url: string
+          id: string
+          medical_record_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_type?: string
+          file_name?: string | null
+          file_url: string
+          id?: string
+          medical_record_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          medical_record_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_documents_medical_record_id_fkey"
+            columns: ["medical_record_id"]
+            isOneToOne: false
+            referencedRelation: "medical_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_records: {
+        Row: {
+          chronic_conditions: string | null
+          created_at: string
+          created_by: string | null
+          epd_id: string
+          fitness_valid_until: string | null
+          id: string
+          medical_fitness: Database["public"]["Enums"]["medical_fitness_status"]
+          notes: string | null
+          restrictions: string | null
+          risk_category: string | null
+          updated_at: string
+        }
+        Insert: {
+          chronic_conditions?: string | null
+          created_at?: string
+          created_by?: string | null
+          epd_id: string
+          fitness_valid_until?: string | null
+          id?: string
+          medical_fitness?: Database["public"]["Enums"]["medical_fitness_status"]
+          notes?: string | null
+          restrictions?: string | null
+          risk_category?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chronic_conditions?: string | null
+          created_at?: string
+          created_by?: string | null
+          epd_id?: string
+          fitness_valid_until?: string | null
+          id?: string
+          medical_fitness?: Database["public"]["Enums"]["medical_fitness_status"]
+          notes?: string | null
+          restrictions?: string | null
+          risk_category?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_records_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: true
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_scheduled_exams: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          epd_id: string
+          exam_type: string
+          id: string
+          notes: string | null
+          scheduled_date: string
+          status: Database["public"]["Enums"]["exam_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          epd_id: string
+          exam_type?: string
+          id?: string
+          notes?: string | null
+          scheduled_date: string
+          status?: Database["public"]["Enums"]["exam_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          epd_id?: string
+          exam_type?: string
+          id?: string
+          notes?: string | null
+          scheduled_date?: string
+          status?: Database["public"]["Enums"]["exam_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_scheduled_exams_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1944,6 +2120,7 @@ export type Database = {
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
       can_manage_library: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_medical: { Args: { _user_id: string }; Returns: boolean }
       can_manage_procurement: { Args: { _user_id: string }; Returns: boolean }
       can_manage_salarizare: { Args: { _user_id: string }; Returns: boolean }
       can_publish_announcements: {
@@ -1951,6 +2128,7 @@ export type Database = {
         Returns: boolean
       }
       can_publish_events: { Args: { _user_id: string }; Returns: boolean }
+      can_view_medical_status: { Args: { _user_id: string }; Returns: boolean }
       can_view_sensitive_profile_data: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
@@ -2037,7 +2215,14 @@ export type Database = {
         | "compartiment_comunicare"
         | "medic_medicina_muncii"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
+      consultation_type:
+        | "angajare"
+        | "periodic"
+        | "reluare"
+        | "urgenta"
+        | "altele"
       document_direction: "incoming" | "outgoing"
+      exam_status: "scheduled" | "completed" | "missed" | "cancelled"
       hr_request_status: "pending" | "approved" | "rejected"
       hr_request_type: "concediu" | "adeverinta" | "delegatie" | "demisie"
       leave_request_status:
@@ -2047,6 +2232,7 @@ export type Database = {
         | "pending_srus"
         | "approved"
         | "rejected"
+      medical_fitness_status: "apt" | "apt_conditionat" | "inapt" | "pending"
       procurement_category:
         | "consumabile_laborator"
         | "echipamente_it"
@@ -2224,7 +2410,15 @@ export const Constants = {
         "medic_medicina_muncii",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
+      consultation_type: [
+        "angajare",
+        "periodic",
+        "reluare",
+        "urgenta",
+        "altele",
+      ],
       document_direction: ["incoming", "outgoing"],
+      exam_status: ["scheduled", "completed", "missed", "cancelled"],
       hr_request_status: ["pending", "approved", "rejected"],
       hr_request_type: ["concediu", "adeverinta", "delegatie", "demisie"],
       leave_request_status: [
@@ -2235,6 +2429,7 @@ export const Constants = {
         "approved",
         "rejected",
       ],
+      medical_fitness_status: ["apt", "apt_conditionat", "inapt", "pending"],
       procurement_category: [
         "consumabile_laborator",
         "echipamente_it",
