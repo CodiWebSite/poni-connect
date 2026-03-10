@@ -1,4 +1,4 @@
-import nodemailer from "npm:nodemailer@6.9.10";
+import nodemailer from "nodemailer";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
