@@ -118,7 +118,7 @@ const Employees = () => {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProfiles.map((profile) => (
+          {paginatedProfiles.map((profile) => (
             <div
               key={profile.id}
               className="bg-card rounded-xl p-5 border border-border hover:shadow-md transition-all duration-200"
@@ -149,6 +149,33 @@ const Employees = () => {
             </div>
           ))}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Anterior
+            </Button>
+            <span className="text-sm text-muted-foreground px-3">
+              Pagina {currentPage} din {totalPages} ({filteredProfiles.length} angajați)
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Următor
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        )}
       )}
     </MainLayout>
   );
