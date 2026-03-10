@@ -12,8 +12,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { to } = await req.json();
-
+    const body = await req.json();
+    const to = body.to;
+    const type = body.type || "leave";
     const smtpHost = Deno.env.get("SMTP_HOST");
     const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
     const smtpUser = Deno.env.get("SMTP_USER");
