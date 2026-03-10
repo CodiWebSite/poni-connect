@@ -15,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import {
