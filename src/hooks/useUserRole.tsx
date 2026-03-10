@@ -45,11 +45,13 @@ export function useUserRole() {
   const isSefSRUS = role === 'sef_srus';
   const isBibliotecar = role === 'bibliotecar';
   const isSalarizare = role === 'salarizare';
+  const isMedicMuncii = role === 'medic_medicina_muncii';
   const isStaff = isSuperAdmin || isHR || isSefSRUS;
   
   const canManageHR = isSuperAdmin || isHR || isSefSRUS;
   const canManageContent = role !== null && role !== 'user';
   const canManageLibrary = isSuperAdmin || isBibliotecar;
+  const canAccessMedical = isMedicMuncii || isHR || isSefSRUS || isSuperAdmin;
 
   return { 
     role, 
@@ -59,10 +61,12 @@ export function useUserRole() {
     isSefSRUS,
     isBibliotecar,
     isSalarizare,
+    isMedicMuncii,
     isStaff,
     canManageContent,
     canManageHR,
     canManageLibrary,
+    canAccessMedical,
     loading 
   };
 }
