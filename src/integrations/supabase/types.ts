@@ -1320,6 +1320,13 @@ export type Database = {
             foreignKeyName: "leave_requests_epd_id_fkey"
             columns: ["epd_id"]
             isOneToOne: false
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: false
             referencedRelation: "employee_personal_data"
             referencedColumns: ["id"]
           },
@@ -1587,6 +1594,13 @@ export type Database = {
             foreignKeyName: "medical_records_epd_id_fkey"
             columns: ["epd_id"]
             isOneToOne: true
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_records_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: true
             referencedRelation: "employee_personal_data"
             referencedColumns: ["id"]
           },
@@ -1627,6 +1641,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "medical_scheduled_exams_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "medical_scheduled_exams_epd_id_fkey"
             columns: ["epd_id"]
@@ -2112,6 +2133,20 @@ export type Database = {
           position?: string | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      employee_directory_full: {
+        Row: {
+          avatar_url: string | null
+          department: string | null
+          email: string | null
+          first_name: string | null
+          full_name: string | null
+          id: string | null
+          last_name: string | null
+          position: string | null
+          user_id: string | null
         }
         Relationships: []
       }

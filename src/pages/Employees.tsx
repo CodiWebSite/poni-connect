@@ -6,14 +6,17 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, Building2, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Interface for employee directory view (excludes phone for privacy)
+// Uses employee_directory_full view which pulls from employee_personal_data (all 267+ active employees)
+// Only exposes non-sensitive fields: name, department, position, avatar
 interface EmployeeDirectoryProfile {
   id: string;
   full_name: string;
+  first_name: string;
+  last_name: string;
   department: string | null;
   position: string | null;
   avatar_url: string | null;
-  user_id: string;
+  user_id: string | null;
 }
 
 const ITEMS_PER_PAGE = 18;
@@ -36,13 +39,13 @@ const Employees = () => {
 
     while (hasMore) {
       const { data } = await supabase
-        .from('employee_directory')
-        .select('id, user_id, full_name, department, position, avatar_url')
+        .from('employee_directory_full' as any)
+        .select('id, user_id, full_name, first_name, last_name, department, position, avatar_url')
         .order('full_name')
-        .range(from, from + batchSize - 1) as { data: EmployeeDirectoryProfile[] | null };
+        .range(from, from + batchSize - 1);
 
       if (data && data.length > 0) {
-        allProfiles = [...allProfiles, ...data];
+        allProfiles = [...allProfiles, ...(data as any as EmployeeDirectoryProfile[])];
         from += batchSize;
         if (data.length < batchSize) hasMore = false;
       } else {
