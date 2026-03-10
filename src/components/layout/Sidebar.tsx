@@ -200,7 +200,7 @@ const Sidebar = () => {
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat', badge: unreadChat || undefined },
     ...(canAccessMedical ? [{ icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' }] : []),
     { icon: Archive, label: 'Arhivă Online', path: '/arhiva' },
-    { icon: ExternalLink, label: 'Adeverințe', path: 'https://adeverinte.icmpp.ro/', external: true },
+    { icon: ExternalLink, label: 'Adeverințe SCTP', path: 'https://adeverinte.icmpp.ro/', external: true },
     { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
     { icon: Download, label: 'Instalează App', path: '/install' },
