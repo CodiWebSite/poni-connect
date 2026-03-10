@@ -192,10 +192,16 @@ function HealthCheckTab() {
                 )}
               </div>
             </div>
-            <Button variant="outline" onClick={runHealthCheck} disabled={loading}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Verifică acum
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" onClick={sendDemoReminder} disabled={sendingDemo}>
+                {sendingDemo ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
+                Trimite email demo reminder
+              </Button>
+              <Button variant="outline" onClick={runHealthCheck} disabled={loading}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Verifică acum
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
