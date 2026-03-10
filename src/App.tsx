@@ -34,6 +34,7 @@ import Chat from "./pages/Chat";
 import MedicinaMuncii from "./pages/MedicinaMuncii";
 import InstallApp from "./pages/InstallApp";
 import Kiosk from "./pages/Kiosk";
+import Archive from "./pages/Archive";
 
 const queryClient = new QueryClient();
 
