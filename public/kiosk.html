@@ -326,7 +326,7 @@ function fetchRooms() {
         var cs = new Date(current.start_time), ce = new Date(current.end_time);
         html += '<div style="display:flex;align-items:center;gap:10px"><span class="status-dot status-occupied"></span><span class="status-label" style="color:#dc2626">Ocupat: ' + String(cs.getHours()).padStart(2,'0')+':'+String(cs.getMinutes()).padStart(2,'0') + '–' + String(ce.getHours()).padStart(2,'0')+':'+String(ce.getMinutes()).padStart(2,'0') + '</span></div>';
       } else {
-        html += '<div style="display:flex;align-items:center;gap:8px"><span class="status-dot status-available"></span><span class="status-label" style="color:#059669">Disponibil acum</span></div>';
+        html += '<div style="display:flex;align-items:center;gap:10px"><span class="status-dot status-available"></span><span class="status-label" style="color:#059669">Disponibil acum</span></div>';
       }
       if (next.length) {
         html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">';
