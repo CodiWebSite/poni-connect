@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, Clock, Building2, Monitor, Phone } from 'lucide-react';
 import AnalogClock from '@/components/kiosk/AnalogClock';
