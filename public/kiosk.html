@@ -505,8 +505,8 @@ function fetchSettings() {
 fetchSettings();
 setInterval(fetchSettings, 60000);
 
-// Auto-reload every 6 hours
-setTimeout(function() { location.reload(); }, 6 * 3600000);
+// No full page reload — data refreshes via individual fetch intervals
+// (weather: 10min, announcements/events/rooms/settings: 1min)
 </script>
 </body>
 </html>
