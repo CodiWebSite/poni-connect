@@ -60,7 +60,7 @@ const AnnouncementCard = ({
             <Badge className={config.className} variant="secondary">{config.label}</Badge>
           </div>
           <h3 className={cn("font-semibold text-foreground", compact ? "text-sm" : "text-base")}>{title}</h3>
-          <p className={cn("text-muted-foreground whitespace-pre-line mt-1", compact ? "text-xs line-clamp-3" : "text-sm")}>{content}</p>
+          <p className={cn("text-muted-foreground whitespace-pre-line mt-1", compact ? "text-xs" : "text-sm")}>{content}</p>
         </div>
 
         {canEdit && !compact && (
