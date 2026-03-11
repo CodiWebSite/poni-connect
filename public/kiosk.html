@@ -350,7 +350,7 @@ function fetchRooms() {
       var rb = (data || []).filter(function(b) { return b.room === room; });
       var current = rb.find(function(b) { return new Date(b.start_time) <= now && new Date(b.end_time) > now; });
       var next = rb.filter(function(b) { return new Date(b.start_time) > now; }).slice(0, 2);
-      html += '<div class="card"><div style="font-size:17px;font-weight:600;color:#334155;margin-bottom:10px">' + room + '</div>';
+      html += '<div class="card"><div style="font-size:22px;font-weight:600;color:#334155;margin-bottom:12px">' + room + '</div>';
       if (current) {
         var cs = new Date(current.start_time), ce = new Date(current.end_time);
         html += '<div style="display:flex;align-items:center;gap:10px"><span class="status-dot status-occupied"></span><span class="status-label" style="color:#dc2626">Ocupat: ' + String(cs.getHours()).padStart(2,'0')+':'+String(cs.getMinutes()).padStart(2,'0') + '–' + String(ce.getHours()).padStart(2,'0')+':'+String(ce.getMinutes()).padStart(2,'0') + '</span></div>';
