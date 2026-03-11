@@ -226,7 +226,7 @@ const Kiosk = () => {
           <div
             className="flex items-center whitespace-nowrap h-full"
             style={{
-              animation: `ticker-scroll ${Math.max(tickerMessages.reduce((sum, m) => sum + m.length, 0) * 0.15, tickerMessages.length * 8, 20)}s linear infinite`,
+              animation: `ticker-scroll ${tickerMessages.reduce((sum, m) => sum + m.length, 0) * 0.2 + tickerMessages.length * 3}s linear infinite`,
             }}
           >
             {tickerMessages.map((msg, idx) => (
