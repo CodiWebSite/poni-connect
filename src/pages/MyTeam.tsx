@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useIsApprover } from '@/hooks/useIsApprover';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,16 +26,17 @@ interface TeamMember {
 const MyTeam = () => {
   const { user } = useAuth();
   const { isSef, isSefSRUS, isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { isDesignatedApprover, loading: approverLoading } = useIsApprover();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [department, setDepartment] = useState<string | null>(null);
 
-  const isDeptHead = isSef || isSefSRUS || isSuperAdmin;
+  const isDeptHead = isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover;
 
   useEffect(() => {
-    if (!user || roleLoading || !isDeptHead) return;
+    if (!user || roleLoading || approverLoading || !isDeptHead) return;
     fetchTeam();
-  }, [user, roleLoading, isDeptHead]);
+  }, [user, roleLoading, approverLoading, isDeptHead]);
 
   const fetchTeam = async () => {
     if (!user) return;
@@ -134,7 +136,7 @@ const MyTeam = () => {
     setLoading(false);
   };
 
-  if (roleLoading) {
+  if (roleLoading || approverLoading) {
     return (
       <MainLayout title="Echipa Mea">
         <div className="flex items-center justify-center py-16">

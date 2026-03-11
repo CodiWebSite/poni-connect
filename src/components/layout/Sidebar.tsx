@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useIsApprover } from '@/hooks/useIsApprover';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +48,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { role, isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
+  const { isDesignatedApprover } = useIsApprover();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
   const { isDemo, toggleDemo } = useDemoMode();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -193,7 +195,7 @@ const Sidebar = () => {
     { icon: Calendar, label: 'Calendar Evenimente', path: '/calendar' },
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request', badge: (isSef || isSefSRUS || isSuperAdmin) ? pendingHR : undefined },
-    ...((isSef || isSefSRUS || isSuperAdmin) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
+    ...((isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },

@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useIsApprover } from '@/hooks/useIsApprover';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,6 +38,7 @@ const MobileNav = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare } = useUserRole();
+  const { isDesignatedApprover } = useIsApprover();
   const [isOpen, setIsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
@@ -63,7 +65,7 @@ const MobileNav = () => {
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
-    ...((isSef || isSefSRUS || canManageHR || isSuperAdmin) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
+    ...((isSef || isSefSRUS || canManageHR || isSuperAdmin || isDesignatedApprover) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request' },
