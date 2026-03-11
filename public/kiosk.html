@@ -479,19 +479,30 @@ function fetchSettings() {
     }
     // Ticker
     var ticker = document.getElementById('ticker');
+    var tickerInner = document.getElementById('tickerInner');
     var msgs = Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [];
     if (msgs.length) {
-      var html = '';
-      for (var i = 0; i < 2; i++) {
-        msgs.forEach(function(m) {
-          html += '<span class="ticker-msg"><span class="ticker-dot"></span>' + m + '</span>';
-        });
+      var signature = JSON.stringify(msgs);
+      if (tickerInner.dataset.signature !== signature) {
+        var html = '';
+        for (var i = 0; i < 2; i++) {
+          msgs.forEach(function(m) {
+            html += '<span class="ticker-msg"><span class="ticker-dot"></span>' + m + '</span>';
+          });
+        }
+        var totalChars = msgs.reduce(function(sum, m) { return sum + String(m).length; }, 0);
+        var longestMessage = msgs.reduce(function(max, m) { return Math.max(max, String(m).length); }, 0);
+        var animationDuration = Math.max(longestMessage * 0.12, totalChars * 0.045, msgs.length * 6, 24);
+
+        tickerInner.innerHTML = html;
+        tickerInner.style.animationDuration = animationDuration + 's';
+        tickerInner.dataset.signature = signature;
       }
-      document.getElementById('tickerInner').innerHTML = html;
       ticker.style.display = 'block';
-      document.getElementById('tickerInner').style.animationDuration = Math.max(msgs.length * 8, 20) + 's';
     } else {
       ticker.style.display = 'none';
+      tickerInner.innerHTML = '';
+      tickerInner.dataset.signature = '';
     }
     // Slideshow images
     var imgs = Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [];
