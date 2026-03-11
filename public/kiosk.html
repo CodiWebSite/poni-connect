@@ -199,6 +199,32 @@ var lang = 'ro';
 var activeSection = 0;
 var totalSections = 4;
 
+// ── Greeting ──
+var greetings = {
+  ro: [
+    { from: 5, to: 12, text: '☀️ Bună dimineața! Bine ați venit!' },
+    { from: 12, to: 18, text: '🌤️ Bună ziua! Bine ați venit!' },
+    { from: 18, to: 22, text: '🌆 Bună seara! Bine ați venit!' },
+    { from: 22, to: 5, text: '🌙 Noapte bună!' }
+  ],
+  en: [
+    { from: 5, to: 12, text: '☀️ Good morning! Welcome!' },
+    { from: 12, to: 18, text: '🌤️ Good afternoon! Welcome!' },
+    { from: 18, to: 22, text: '🌆 Good evening! Welcome!' },
+    { from: 22, to: 5, text: '🌙 Good night!' }
+  ]
+};
+function getGreeting() {
+  var h = new Date().getHours();
+  var list = greetings[lang] || greetings.ro;
+  for (var i = 0; i < list.length; i++) {
+    var g = list[i];
+    if (g.from < g.to) { if (h >= g.from && h < g.to) return g.text; }
+    else { if (h >= g.from || h < g.to) return g.text; }
+  }
+  return list[0].text;
+}
+
 // ── Clock ──
 function updateClock() {
   var now = new Date();
@@ -207,6 +233,7 @@ function updateClock() {
   document.getElementById('clock').textContent = h + ':' + m;
   document.getElementById('dateStr').textContent =
     DAYS_RO[now.getDay()] + ', ' + now.getDate() + ' ' + MONTHS_RO[now.getMonth()] + ' ' + now.getFullYear();
+  document.getElementById('greeting').textContent = getGreeting();
 }
 setInterval(updateClock, 1000);
 updateClock();
