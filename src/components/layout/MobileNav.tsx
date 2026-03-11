@@ -65,7 +65,7 @@ const MobileNav = () => {
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
-    ...((isSef || isSefSRUS || canManageHR || isSuperAdmin) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
+    ...((isSef || isSefSRUS || canManageHR || isSuperAdmin || isDesignatedApprover) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request' },
