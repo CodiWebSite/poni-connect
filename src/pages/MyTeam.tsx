@@ -34,9 +34,9 @@ const MyTeam = () => {
   const isDeptHead = isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover;
 
   useEffect(() => {
-    if (!user || roleLoading || !isDeptHead) return;
+    if (!user || roleLoading || approverLoading || !isDeptHead) return;
     fetchTeam();
-  }, [user, roleLoading, isDeptHead]);
+  }, [user, roleLoading, approverLoading, isDeptHead]);
 
   const fetchTeam = async () => {
     if (!user) return;
