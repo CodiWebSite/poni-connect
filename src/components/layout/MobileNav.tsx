@@ -38,6 +38,7 @@ const MobileNav = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare } = useUserRole();
+  const { isDesignatedApprover } = useIsApprover();
   const [isOpen, setIsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
