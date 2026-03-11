@@ -250,9 +250,9 @@ const Kiosk = () => {
           {/* Ticker glow line */}
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
           <div
-            className="flex items-center whitespace-nowrap h-full"
+            className="flex w-max min-w-max items-center whitespace-nowrap h-full will-change-transform"
             style={{
-              animation: `ticker-scroll ${tickerMessages.reduce((sum, m) => sum + m.length, 0) * 0.2 + tickerMessages.length * 3}s linear infinite`,
+              animation: `ticker-scroll ${tickerDuration}s linear infinite`,
             }}
           >
             {tickerMessages.map((msg, idx) => (
