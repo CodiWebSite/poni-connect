@@ -79,7 +79,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
 /* Ticker */
 .ticker{background:linear-gradient(90deg,#0a0f1e,#111b30,#0a0f1e);color:#e2e8f0;height:52px;overflow:hidden;flex-shrink:0;position:relative;display:none}
 .ticker::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,162,39,0.3),transparent)}
-.ticker-inner{display:flex;align-items:center;white-space:nowrap;height:100%;animation:ticker-scroll 30s linear infinite}
+.ticker-inner{display:inline-flex;align-items:center;white-space:nowrap;height:100%;width:max-content;min-width:max-content;will-change:transform;animation:ticker-scroll 30s linear infinite}
 .ticker-msg{display:inline-flex;align-items:center;gap:16px;padding:0 40px;font-size:24px}
 .ticker-dot{width:8px;height:8px;border-radius:50%;background:#c9a227;flex-shrink:0}
 
@@ -479,19 +479,30 @@ function fetchSettings() {
     }
     // Ticker
     var ticker = document.getElementById('ticker');
+    var tickerInner = document.getElementById('tickerInner');
     var msgs = Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [];
     if (msgs.length) {
-      var html = '';
-      for (var i = 0; i < 2; i++) {
-        msgs.forEach(function(m) {
-          html += '<span class="ticker-msg"><span class="ticker-dot"></span>' + m + '</span>';
-        });
+      var signature = JSON.stringify(msgs);
+      if (tickerInner.dataset.signature !== signature) {
+        var html = '';
+        for (var i = 0; i < 2; i++) {
+          msgs.forEach(function(m) {
+            html += '<span class="ticker-msg"><span class="ticker-dot"></span>' + m + '</span>';
+          });
+        }
+        var totalChars = msgs.reduce(function(sum, m) { return sum + String(m).length; }, 0);
+        var longestMessage = msgs.reduce(function(max, m) { return Math.max(max, String(m).length); }, 0);
+        var animationDuration = Math.max(longestMessage * 0.12, totalChars * 0.045, msgs.length * 6, 24);
+
+        tickerInner.innerHTML = html;
+        tickerInner.style.animationDuration = animationDuration + 's';
+        tickerInner.dataset.signature = signature;
       }
-      document.getElementById('tickerInner').innerHTML = html;
       ticker.style.display = 'block';
-      document.getElementById('tickerInner').style.animationDuration = Math.max(msgs.length * 8, 20) + 's';
     } else {
       ticker.style.display = 'none';
+      tickerInner.innerHTML = '';
+      tickerInner.dataset.signature = '';
     }
     // Slideshow images
     var imgs = Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [];

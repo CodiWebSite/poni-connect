@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, Clock, Building2, Monitor, Phone } from 'lucide-react';
 import AnalogClock from '@/components/kiosk/AnalogClock';
@@ -57,6 +57,20 @@ const Kiosk = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const i = t[lang];
+
+  const tickerDuration = useMemo(() => {
+    if (tickerMessages.length === 0) return 0;
+
+    const totalChars = tickerMessages.reduce((sum, msg) => sum + msg.length, 0);
+    const longestMessage = tickerMessages.reduce((max, msg) => Math.max(max, msg.length), 0);
+
+    return Math.max(
+      longestMessage * 0.12,
+      totalChars * 0.045,
+      tickerMessages.length * 6,
+      24
+    );
+  }, [tickerMessages]);
 
   // Unregister service worker on kiosk route to avoid stale cache
   useEffect(() => {
@@ -236,9 +250,9 @@ const Kiosk = () => {
           {/* Ticker glow line */}
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
           <div
-            className="flex items-center whitespace-nowrap h-full"
+            className="flex w-max min-w-max items-center whitespace-nowrap h-full will-change-transform"
             style={{
-              animation: `ticker-scroll ${tickerMessages.reduce((sum, m) => sum + m.length, 0) * 0.2 + tickerMessages.length * 3}s linear infinite`,
+              animation: `ticker-scroll ${tickerDuration}s linear infinite`,
             }}
           >
             {tickerMessages.map((msg, idx) => (
