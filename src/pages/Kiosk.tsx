@@ -103,10 +103,22 @@ const Kiosk = () => {
     if (data) {
       const map: Record<string, any> = {};
       data.forEach(r => { map[r.key] = r.value; });
-      setMaintenanceMode(map.maintenance_mode === true);
-      setKioskEnabled(map.kiosk_enabled !== false);
-      setKioskMessage(typeof map.kiosk_message === 'string' ? map.kiosk_message : '');
-      setTickerMessages(Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : []);
+
+      const nextMaintenanceMode = map.maintenance_mode === true;
+      const nextKioskEnabled = map.kiosk_enabled !== false;
+      const nextKioskMessage = typeof map.kiosk_message === 'string' ? map.kiosk_message : '';
+      const nextTickerMessages = Array.isArray(map.kiosk_ticker_messages)
+        ? map.kiosk_ticker_messages.filter((m): m is string => typeof m === 'string')
+        : [];
+
+      setMaintenanceMode(nextMaintenanceMode);
+      setKioskEnabled(nextKioskEnabled);
+      setKioskMessage(nextKioskMessage);
+      setTickerMessages(prev =>
+        prev.length === nextTickerMessages.length && prev.every((msg, i) => msg === nextTickerMessages[i])
+          ? prev
+          : nextTickerMessages
+      );
     }
   }, []);
 
