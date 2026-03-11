@@ -308,12 +308,12 @@ setInterval(fetchWeather, 600000);
 // ── Announcements ──
 function fetchAnnouncements() {
   sbFetch('announcements', 'select=id,title,content,priority,is_pinned,created_at&or=(is_pinned.eq.true,priority.eq.urgent,priority.eq.high)&order=created_at.desc&limit=6', function(data) {
-    if (!data || !data.length) { document.getElementById('annContent').innerHTML = '<div style="color:#94a3b8;font-size:18px">Niciun anunț important</div>'; return; }
+    if (!data || !data.length) { document.getElementById('annContent').innerHTML = '<div style="color:#94a3b8;font-size:22px">Niciun anunț important</div>'; return; }
     var html = '';
     data.forEach(function(a) {
       var cls = a.priority === 'urgent' ? ' card-urgent' : a.priority === 'high' ? ' card-high' : '';
       var short = a.content.length > 120 ? a.content.substring(0,120).replace(/\s+\S*$/, '') + '…' : a.content;
-      html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:15px;color:#64748b;margin-top:6px">' + short + '</div></div>';
+      html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#64748b;margin-top:8px">' + short + '</div></div>';
     });
     document.getElementById('annContent').innerHTML = html;
   });
