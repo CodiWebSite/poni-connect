@@ -58,6 +58,20 @@ const Kiosk = () => {
 
   const i = t[lang];
 
+  const tickerDuration = useMemo(() => {
+    if (tickerMessages.length === 0) return 0;
+
+    const totalChars = tickerMessages.reduce((sum, msg) => sum + msg.length, 0);
+    const longestMessage = tickerMessages.reduce((max, msg) => Math.max(max, msg.length), 0);
+
+    return Math.max(
+      longestMessage * 0.12,
+      totalChars * 0.045,
+      tickerMessages.length * 6,
+      24
+    );
+  }, [tickerMessages]);
+
   // Unregister service worker on kiosk route to avoid stale cache
   useEffect(() => {
     if ('serviceWorker' in navigator) {
