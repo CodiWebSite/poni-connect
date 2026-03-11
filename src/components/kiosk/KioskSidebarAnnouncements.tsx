@@ -46,10 +46,7 @@ const KioskSidebarAnnouncements = () => {
   if (announcements.length === 0) return null;
 
   const current = announcements[index];
-  // Truncate content to ~1 sentence
-  const shortContent = current.content.length > 120
-    ? current.content.substring(0, 120).replace(/\s+\S*$/, '') + '…'
-    : current.content;
+  const shortContent = current.content;
 
   return (
     <div className="p-5 shrink-0 overflow-hidden">
@@ -77,7 +74,7 @@ const KioskSidebarAnnouncements = () => {
             )}
             <div className="min-w-0">
               <p className="text-sm font-semibold text-slate-800 line-clamp-1">{current.title}</p>
-              <p className="text-xs text-slate-500 mt-1 line-clamp-2">{shortContent}</p>
+              <p className="text-xs text-slate-500 mt-1 whitespace-pre-line">{shortContent}</p>
             </div>
           </div>
         </div>
