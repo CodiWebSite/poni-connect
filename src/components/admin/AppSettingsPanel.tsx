@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2 } from 'lucide-react';
+import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload } from 'lucide-react';
 
 interface SettingsState {
   leave_module_beta: boolean;
@@ -18,6 +18,7 @@ interface SettingsState {
   kiosk_enabled: boolean;
   kiosk_message: string;
   kiosk_ticker_messages: string[];
+  kiosk_slideshow_images: string[];
 }
 
 const AppSettingsPanel = () => {
@@ -31,10 +32,12 @@ const AppSettingsPanel = () => {
     kiosk_enabled: true,
     kiosk_message: '',
     kiosk_ticker_messages: [],
+    kiosk_slideshow_images: [],
   });
   const [newTickerMsg, setNewTickerMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -50,6 +53,7 @@ const AppSettingsPanel = () => {
           kiosk_enabled: map.kiosk_enabled !== false,
           kiosk_message: typeof map.kiosk_message === 'string' ? map.kiosk_message : '',
           kiosk_ticker_messages: Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [],
+          kiosk_slideshow_images: Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [],
         });
       }
       setLoading(false);
@@ -77,7 +81,6 @@ const AppSettingsPanel = () => {
     setSettings(prev => ({ ...prev, [key]: checked }));
     await updateSetting(key, checked);
 
-    // When maintenance is turned OFF, notify email subscribers
     if (key === 'maintenance_mode' && wasMaintenance && !checked) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -126,6 +129,58 @@ const AppSettingsPanel = () => {
   const clearEta = async () => {
     setSettings(prev => ({ ...prev, maintenance_eta: '' }));
     await updateSetting('maintenance_eta', null);
+  };
+
+  // ── Slideshow image management ──
+  const handleSlideshowUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingImage(true);
+
+    const newUrls: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const ext = file.name.split('.').pop();
+      const fileName = `slideshow-${Date.now()}-${i}.${ext}`;
+      const { data, error } = await supabase.storage
+        .from('kiosk-images')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+      if (error) {
+        toast({ title: 'Eroare upload', description: `Nu s-a putut încărca ${file.name}`, variant: 'destructive' });
+        continue;
+      }
+
+      const { data: urlData } = supabase.storage.from('kiosk-images').getPublicUrl(data.path);
+      newUrls.push(urlData.publicUrl);
+    }
+
+    if (newUrls.length > 0) {
+      const updated = [...settings.kiosk_slideshow_images, ...newUrls];
+      setSettings(prev => ({ ...prev, kiosk_slideshow_images: updated }));
+      await updateSetting('kiosk_slideshow_images', updated);
+      toast({ title: 'Succes', description: `${newUrls.length} imagine(i) adăugată(e) în slideshow.` });
+    }
+
+    setUploadingImage(false);
+    // Reset file input
+    e.target.value = '';
+  };
+
+  const removeSlideshowImage = async (index: number) => {
+    const url = settings.kiosk_slideshow_images[index];
+    // Try to delete from storage
+    try {
+      const pathMatch = url.split('/kiosk-images/').pop();
+      if (pathMatch) {
+        await supabase.storage.from('kiosk-images').remove([pathMatch]);
+      }
+    } catch (err) {
+      console.warn('Could not delete file from storage:', err);
+    }
+    const updated = settings.kiosk_slideshow_images.filter((_, i) => i !== index);
+    setSettings(prev => ({ ...prev, kiosk_slideshow_images: updated }));
+    await updateSetting('kiosk_slideshow_images', updated);
   };
 
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
@@ -269,6 +324,71 @@ const AppSettingsPanel = () => {
                     <Plus className="w-4 h-4 mr-1" /> Adaugă
                   </Button>
                 </div>
+              </div>
+
+              {/* Slideshow images */}
+              <div className="pt-3 border-t border-border space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Image className="w-4 h-4 text-primary" />
+                  Slideshow Kiosk (poze)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Pozele se afișează pe ecranul TV <strong>după terminarea videoclipului de prezentare</strong>, câte 90 de secunde fiecare. 
+                  După ce se termină toate pozele, videoclipul reîncepe automat.
+                </p>
+
+                {settings.kiosk_slideshow_images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {settings.kiosk_slideshow_images.map((url, i) => (
+                      <div key={i} className="relative group rounded-lg overflow-hidden border border-border aspect-video bg-muted">
+                        <img src={url} alt={`Slide ${i + 1}`} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="h-8 w-8"
+                            onClick={() => removeSlideshowImage(i)}
+                            disabled={saving === 'kiosk_slideshow_images'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
+                          {i + 1}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div>
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleSlideshowUpload}
+                      disabled={uploadingImage}
+                    />
+                    <div className="flex items-center gap-2 border-2 border-dashed border-border rounded-lg p-4 hover:border-primary/50 hover:bg-muted/50 transition-colors text-center justify-center">
+                      {uploadingImage ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      ) : (
+                        <Upload className="w-5 h-5 text-muted-foreground" />
+                      )}
+                      <span className="text-sm text-muted-foreground">
+                        {uploadingImage ? 'Se încarcă...' : 'Click pentru a adăuga imagini (poze instituție, evenimente, etc.)'}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+
+                {settings.kiosk_slideshow_images.length > 0 && (
+                  <p className="text-xs text-muted-foreground italic">
+                    📸 {settings.kiosk_slideshow_images.length} imagine(i) · Fiecare se afișează 90 secunde pe ecranul TV
+                  </p>
+                )}
               </div>
             </div>
           )}
