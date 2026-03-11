@@ -136,7 +136,7 @@ const MyTeam = () => {
     setLoading(false);
   };
 
-  if (roleLoading) {
+  if (roleLoading || approverLoading) {
     return (
       <MainLayout title="Echipa Mea">
         <div className="flex items-center justify-center py-16">
