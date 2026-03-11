@@ -74,7 +74,7 @@ const KioskSidebarAnnouncements = () => {
             )}
             <div className="min-w-0">
               <p className="text-sm font-semibold text-slate-800 line-clamp-1">{current.title}</p>
-              <p className="text-xs text-slate-500 mt-1 line-clamp-2">{shortContent}</p>
+              <p className="text-xs text-slate-500 mt-1 whitespace-pre-line">{shortContent}</p>
             </div>
           </div>
         </div>

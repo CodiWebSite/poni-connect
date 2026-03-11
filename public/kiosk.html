@@ -401,8 +401,7 @@ function fetchAnnouncements() {
     var html = '';
     data.forEach(function(a) {
       var cls = a.priority === 'urgent' ? ' card-urgent' : a.priority === 'high' ? ' card-high' : '';
-      var short = a.content.length > 120 ? a.content.substring(0,120).replace(/\s+\S*$/, '') + '…' : a.content;
-      html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#94a3b8;margin-top:8px">' + short + '</div></div>';
+      html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#94a3b8;margin-top:8px;white-space:pre-line">' + a.content + '</div></div>';
     });
     document.getElementById('annContent').innerHTML = html;
   });
