@@ -46,10 +46,7 @@ const KioskSidebarAnnouncements = () => {
   if (announcements.length === 0) return null;
 
   const current = announcements[index];
-  // Truncate content to ~1 sentence
-  const shortContent = current.content.length > 120
-    ? current.content.substring(0, 120).replace(/\s+\S*$/, '') + '…'
-    : current.content;
+  const shortContent = current.content;
 
   return (
     <div className="p-5 shrink-0 overflow-hidden">
