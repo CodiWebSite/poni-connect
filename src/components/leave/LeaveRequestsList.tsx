@@ -10,6 +10,7 @@ import { ro } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { generateLeaveDocx } from '@/utils/generateLeaveDocx';
 import { useDemoMode } from '@/contexts/DemoModeContext';
+import { isLeaveRequestOwnedByUser } from '@/utils/leaveOwnership';
 
 const statusLabels: Record<string, string> = {
   draft: 'Ciornă',
@@ -51,10 +52,27 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-    
-    const { data } = await (query as any).eq('is_demo', isDemo);
 
-    setRequests(data || []);
+    const [{ data }, { data: recordData }] = await Promise.all([
+      (query as any).eq('is_demo', isDemo),
+      supabase.from('employee_records').select('id').eq('user_id', user.id).maybeSingle(),
+    ]);
+
+    let ownEpdId: string | null = null;
+    if (recordData?.id) {
+      const { data: epdData } = await supabase
+        .from('employee_personal_data')
+        .select('id')
+        .eq('employee_record_id', recordData.id)
+        .maybeSingle();
+      ownEpdId = epdData?.id ?? null;
+    }
+
+    const filteredRequests = (data || []).filter((request: any) =>
+      isLeaveRequestOwnedByUser({ requestEpdId: request.epd_id, ownerEpdId: ownEpdId })
+    );
+
+    setRequests(filteredRequests);
     setLoading(false);
   };
 

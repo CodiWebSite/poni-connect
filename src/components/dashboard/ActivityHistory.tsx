@@ -17,6 +17,7 @@ import {
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { isHrRequestOwnedByUser } from '@/utils/leaveOwnership';
 
 interface ActivityItem {
   id: string;
@@ -44,37 +45,58 @@ const ActivityHistory = () => {
     try {
       setLoading(true);
 
-      // Fetch HR requests
-      const { data: hrData } = await supabase
-        .from('hr_requests')
-        .select('id, request_type, status, created_at, details')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+      const [{ data: profileData }, { data: recordData }, { data: hrData }, { data: documentsData }] = await Promise.all([
+        supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle(),
+        supabase.from('employee_records').select('id').eq('user_id', user.id).maybeSingle(),
+        supabase
+          .from('hr_requests')
+          .select('id, request_type, status, created_at, details')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('documents')
+          .select('id, name, created_at')
+          .eq('uploaded_by', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5),
+      ]);
 
-      // Fetch uploaded documents
-      const { data: documentsData } = await supabase
-        .from('documents')
-        .select('id, name, created_at')
-        .eq('uploaded_by', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+      let ownEpdId: string | null = null;
+      if (recordData?.id) {
+        const { data: epdData } = await supabase
+          .from('employee_personal_data')
+          .select('id')
+          .eq('employee_record_id', recordData.id)
+          .maybeSingle();
+        ownEpdId = epdData?.id ?? null;
+      }
+
+      const ownerFullName = profileData?.full_name ?? null;
 
       const allActivities: ActivityItem[] = [];
 
       // Map HR requests
       if (hrData) {
-        hrData.forEach((hr) => {
-          const details = hr.details as Record<string, unknown>;
-          allActivities.push({
-            id: hr.id,
-            type: 'hr_request',
-            title: getHRRequestTitle(hr.request_type),
-            status: hr.status,
-            createdAt: hr.created_at,
-            details: details?.startDate as string || undefined,
+        hrData
+          .filter((hr) =>
+            isHrRequestOwnedByUser({
+              details: hr.details,
+              ownerEpdId: ownEpdId,
+              ownerFullName,
+            })
+          )
+          .forEach((hr) => {
+            const details = hr.details as Record<string, unknown>;
+            allActivities.push({
+              id: hr.id,
+              type: 'hr_request',
+              title: getHRRequestTitle(hr.request_type),
+              status: hr.status,
+              createdAt: hr.created_at,
+              details: (details?.startDate as string) || undefined,
+            });
           });
-        });
       }
 
       // Map documents
