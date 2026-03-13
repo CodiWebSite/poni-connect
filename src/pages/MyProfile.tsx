@@ -181,18 +181,23 @@ const MyProfile = () => {
     }
 
     // Merge leave history from both hr_requests and leave_requests
+    const ownerFullName = profileRes.data?.full_name ?? null;
+
     const hrItems: LeaveHistoryItem[] = (leaveRes.data || [])
-      .filter((r: any) => {
-        const targetEpdId = typeof r?.details?.epd_id === 'string' ? r.details.epd_id : null;
-        return ownEpdId ? !targetEpdId || targetEpdId === ownEpdId : !targetEpdId;
-      })
+      .filter((r: any) =>
+        isHrRequestOwnedByUser({
+          details: r.details,
+          ownerEpdId: ownEpdId,
+          ownerFullName,
+        })
+      )
       .map((r: any) => ({
         ...r,
         source: 'hr_requests' as const,
       }));
 
     const leaveReqItems: LeaveHistoryItem[] = (leaveReqRes.data || [])
-      .filter((r: any) => (ownEpdId ? !r.epd_id || r.epd_id === ownEpdId : !r.epd_id))
+      .filter((r: any) => isLeaveRequestOwnedByUser({ requestEpdId: r.epd_id, ownerEpdId: ownEpdId }))
       .map((r: any) => ({
         id: r.id,
         status: r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending',
