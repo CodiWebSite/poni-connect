@@ -205,7 +205,8 @@ const Admin = () => {
               <TabsTrigger value="helpdesk" className="text-xs sm:text-sm">HelpDesk</TabsTrigger>
               <TabsTrigger value="publishers" className="text-xs sm:text-sm">Anunțuri</TabsTrigger>
               <TabsTrigger value="event-publishers" className="text-xs sm:text-sm">Evenimente</TabsTrigger>
-              <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
+               <TabsTrigger value="reminders" className="text-xs sm:text-sm">Remindere</TabsTrigger>
+               <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
           </TabsList>
         <TabsContent value="roles" className="space-y-6">
           <Card>
