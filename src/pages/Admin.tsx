@@ -306,6 +306,9 @@ const Admin = () => {
         <TabsContent value="event-publishers">
           <EventPublishersPanel />
         </TabsContent>
+        <TabsContent value="reminders">
+          <AccountReminderPanel />
+        </TabsContent>
         <TabsContent value="settings">
           <AppSettingsPanel />
         </TabsContent>
