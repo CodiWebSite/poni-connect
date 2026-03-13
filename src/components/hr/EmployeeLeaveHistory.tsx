@@ -59,12 +59,14 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
         .eq('request_type', 'concediu')
         .order('created_at', { ascending: false });
       if (data) {
-        // Filter out records created BY this user FOR other employees (manual HR entries)
+        // Filter out manual HR entries created BY this user FOR other employees
+        // A manual entry has details.manualEntry=true and details.epd_id pointing to the target employee
         const filtered = data.filter(item => {
           const d = item.details as any;
-          if (d?.epd_id && epdId && d.epd_id !== epdId) return false;
-          if (d?.manualEntry && d?.epd_id && !epdId) return false;
-          return true;
+          if (!d?.manualEntry) return true; // Not a manual entry, keep it
+          // Manual entry: only keep if epd_id matches the employee we're viewing
+          if (!d?.epd_id) return true; // No epd_id stored, can't determine, keep it
+          return epdId ? d.epd_id === epdId : false; // If we have epdId, match; if not, exclude (it's for someone else)
         });
         allLeaves = [...allLeaves, ...filtered];
       }
