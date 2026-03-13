@@ -151,27 +151,14 @@ const MyProfile = () => {
       supabase.from('employee_records').select('*').eq('user_id', user.id).single(),
       supabase.from('employee_documents').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('hr_requests').select('id, status, details, created_at').eq('user_id', user.id).eq('request_type', 'concediu').order('created_at', { ascending: false }),
-      supabase.from('leave_requests').select('id, status, start_date, end_date, working_days, year, request_number, created_at, replacement_name').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('leave_requests').select('id, status, start_date, end_date, working_days, year, request_number, created_at, replacement_name, epd_id').eq('user_id', user.id).order('created_at', { ascending: false }),
     ]);
 
     if (profileRes.data) setProfile(profileRes.data);
     if (recordRes.data) setEmployeeRecord(recordRes.data);
     if (docsRes.data) setDocuments(docsRes.data);
 
-    // Merge leave history from both hr_requests and leave_requests
-    const hrItems: LeaveHistoryItem[] = (leaveRes.data || []).map((r: any) => ({
-      ...r, source: 'hr_requests' as const,
-    }));
-    const leaveReqItems: LeaveHistoryItem[] = (leaveReqRes.data || []).map((r: any) => ({
-      id: r.id,
-      status: r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending',
-      details: { startDate: r.start_date, endDate: r.end_date, numberOfDays: r.working_days, year: r.year, replacementName: r.replacement_name },
-      created_at: r.created_at,
-      source: 'leave_requests' as const,
-      request_number: r.request_number,
-    }));
-    const allHistory = [...hrItems, ...leaveReqItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    setLeaveHistory(allHistory);
+    let ownEpdId: string | null = null;
 
     if (recordRes.data) {
       const { data: pd } = await supabase
@@ -180,6 +167,7 @@ const MyProfile = () => {
         .eq('employee_record_id', recordRes.data.id)
         .maybeSingle();
       if (pd) {
+        ownEpdId = pd.id;
         setPersonalData(pd);
         // Fetch carryover and bonus data using EPD id
         const [carryRes, bonusRes] = await Promise.all([
@@ -190,6 +178,31 @@ const MyProfile = () => {
         setBonuses((bonusRes.data as LeaveBonus[]) || []);
       }
     }
+
+    // Merge leave history from both hr_requests and leave_requests
+    const hrItems: LeaveHistoryItem[] = (leaveRes.data || [])
+      .filter((r: any) => {
+        const targetEpdId = typeof r?.details?.epd_id === 'string' ? r.details.epd_id : null;
+        return ownEpdId ? !targetEpdId || targetEpdId === ownEpdId : !targetEpdId;
+      })
+      .map((r: any) => ({
+        ...r,
+        source: 'hr_requests' as const,
+      }));
+
+    const leaveReqItems: LeaveHistoryItem[] = (leaveReqRes.data || [])
+      .filter((r: any) => (ownEpdId ? !r.epd_id || r.epd_id === ownEpdId : !r.epd_id))
+      .map((r: any) => ({
+        id: r.id,
+        status: r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending',
+        details: { startDate: r.start_date, endDate: r.end_date, numberOfDays: r.working_days, year: r.year, replacementName: r.replacement_name },
+        created_at: r.created_at,
+        source: 'leave_requests' as const,
+        request_number: r.request_number,
+      }));
+
+    const allHistory = [...hrItems, ...leaveReqItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setLeaveHistory(allHistory);
 
     // Fetch approver info — check by user_id first, then by email
     let foundApproverId: string | null = null;
