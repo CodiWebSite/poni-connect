@@ -58,16 +58,21 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
         .eq('user_id', userId)
         .eq('request_type', 'concediu')
         .order('created_at', { ascending: false });
+
       if (data) {
-        // Filter out manual HR entries created BY this user FOR other employees
-        // A manual entry has details.manualEntry=true and details.epd_id pointing to the target employee
-        const filtered = data.filter(item => {
+        const filtered = data.filter((item) => {
           const d = item.details as any;
-          if (!d?.manualEntry) return true; // Not a manual entry, keep it
-          // Manual entry: only keep if epd_id matches the employee we're viewing
-          if (!d?.epd_id) return true; // No epd_id stored, can't determine, keep it
-          return epdId ? d.epd_id === epdId : false; // If we have epdId, match; if not, exclude (it's for someone else)
+          const targetEpdId = typeof d?.epd_id === 'string' ? d.epd_id : null;
+
+          // Exclude requests explicitly linked to another employee
+          if (epdId && targetEpdId && targetEpdId !== epdId) return false;
+
+          // Manual entries with explicit employee target are not shown without employee context
+          if (d?.manualEntry && targetEpdId && !epdId) return false;
+
+          return true;
         });
+
         allLeaves = [...allLeaves, ...filtered];
       }
     }
@@ -90,25 +95,30 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
     if (userId) {
       const { data } = await supabase
         .from('leave_requests')
-        .select('id, status, start_date, end_date, working_days, year, created_at, request_number')
+        .select('id, status, start_date, end_date, working_days, year, created_at, request_number, epd_id')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
+
       if (data) {
         const existingIds = new Set(allLeaves.map(l => l.id));
-        const mapped = data.filter(l => !existingIds.has(l.id)).map(lr => ({
-          id: lr.id,
-          status: lr.status === 'approved' ? 'approved' : lr.status === 'rejected' ? 'rejected' : 'pending',
-          details: {
-            startDate: lr.start_date,
-            endDate: lr.end_date,
-            numberOfDays: lr.working_days,
-            leaveType: 'co',
-            source: 'leave_requests',
-            request_number: lr.request_number,
-            year: (lr as any).year,
-          },
-          created_at: lr.created_at,
-        }));
+        const mapped = data
+          .filter((lr) => !epdId || !lr.epd_id || lr.epd_id === epdId)
+          .filter((lr) => !existingIds.has(lr.id))
+          .map((lr) => ({
+            id: lr.id,
+            status: lr.status === 'approved' ? 'approved' : lr.status === 'rejected' ? 'rejected' : 'pending',
+            details: {
+              startDate: lr.start_date,
+              endDate: lr.end_date,
+              numberOfDays: lr.working_days,
+              leaveType: 'co',
+              source: 'leave_requests',
+              request_number: lr.request_number,
+              year: (lr as any).year,
+            },
+            created_at: lr.created_at,
+          }));
+
         allLeaves = [...allLeaves, ...mapped];
       }
     }
