@@ -262,12 +262,12 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 6. For pending_srus status, also notify HR/SRUS users
+      // 6. For pending_srus status, notify only HR users (not sef_srus)
       if (req.status === "pending_srus") {
         const { data: hrUsers } = await supabaseAdmin
           .from("user_roles")
           .select("user_id")
-          .in("role", ["hr", "sef_srus"]);
+          .eq("role", "hr");
 
         if (hrUsers) {
           for (const hr of hrUsers) {
