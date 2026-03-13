@@ -17,6 +17,7 @@ import {
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { isHrRequestOwnedByUser } from '@/utils/leaveOwnership';
 
 interface ActivityItem {
   id: string;

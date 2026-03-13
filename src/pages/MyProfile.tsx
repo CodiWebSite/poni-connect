@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { formatNumePrenume } from '@/utils/formatName';
+import { isHrRequestOwnedByUser, isLeaveRequestOwnedByUser } from '@/utils/leaveOwnership';
 
 interface Profile {
   full_name: string;

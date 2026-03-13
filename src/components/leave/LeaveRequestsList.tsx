@@ -10,6 +10,7 @@ import { ro } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { generateLeaveDocx } from '@/utils/generateLeaveDocx';
 import { useDemoMode } from '@/contexts/DemoModeContext';
+import { isLeaveRequestOwnedByUser } from '@/utils/leaveOwnership';
 
 const statusLabels: Record<string, string> = {
   draft: 'Ciornă',
