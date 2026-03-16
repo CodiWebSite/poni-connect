@@ -55,12 +55,18 @@ const PersonalCalendarWidget = () => {
     (holidays || []).forEach(h => { holidayMap[h.holiday_date] = h.name; });
     setCustomHolidays(holidayMap);
 
-    // Fetch all approved leaves
+    // Fetch all approved leaves from hr_requests
     const { data: allLeaves } = await supabase
       .from('hr_requests')
       .select('user_id, details')
       .eq('request_type', 'concediu')
       .eq('status', 'approved');
+
+    // Also fetch approved leave_requests (formal workflow)
+    const { data: leaveReqs } = await supabase
+      .from('leave_requests')
+      .select('user_id, epd_id, start_date, end_date, status')
+      .eq('status', 'approved' as any);
 
     // Fetch profiles for department matching
     const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department');
@@ -76,6 +82,12 @@ const PersonalCalendarWidget = () => {
     const monthEnd = endOfMonth(currentMonth);
 
     const entries: DepartmentLeave[] = [];
+    // Track seen leaves by normalized key to avoid duplicates across tables
+    const seenLeaveKeys = new Set<string>();
+    const makeDedupeKey = (name: string, start: string, end: string) =>
+      `${name.toLowerCase().trim()}|${start}|${end}`;
+
+    // Process hr_requests
     (allLeaves || []).forEach((lr: any) => {
       const d = lr.details || {};
       if (!d.startDate || !d.endDate) return;
@@ -90,6 +102,10 @@ const PersonalCalendarWidget = () => {
 
       if (!empInfo) return;
 
+      const key = makeDedupeKey(empInfo.name, d.startDate, d.endDate);
+      if (seenLeaveKeys.has(key)) return;
+      seenLeaveKeys.add(key);
+
       const isCurrentUser = lr.user_id === user.id && !d.epd_id;
       // Show if: it's the current user OR same department
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
@@ -98,6 +114,34 @@ const PersonalCalendarWidget = () => {
           startDate: d.startDate,
           endDate: d.endDate,
           leaveType: d.leaveType || d.leave_type || 'co',
+          isCurrentUser,
+        });
+      }
+    });
+
+    // Process leave_requests (formal workflow)
+    (leaveReqs || []).forEach((lr: any) => {
+      if (!lr.start_date || !lr.end_date) return;
+      const leaveStart = parseISO(lr.start_date);
+      const leaveEnd = parseISO(lr.end_date);
+      if (leaveEnd < monthStart || leaveStart > monthEnd) return;
+
+      let empInfo: { name: string; department: string | null } | undefined;
+      if (lr.epd_id && epdMap[lr.epd_id]) empInfo = epdMap[lr.epd_id];
+      else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      if (!empInfo) return;
+
+      const key = makeDedupeKey(empInfo.name, lr.start_date, lr.end_date);
+      if (seenLeaveKeys.has(key)) return;
+      seenLeaveKeys.add(key);
+
+      const isCurrentUser = lr.user_id === user.id && !lr.epd_id;
+      if (isCurrentUser || (userDept && empInfo.department === userDept)) {
+        entries.push({
+          employeeName: empInfo.name,
+          startDate: lr.start_date,
+          endDate: lr.end_date,
+          leaveType: 'co',
           isCurrentUser,
         });
       }
