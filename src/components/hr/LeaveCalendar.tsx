@@ -115,6 +115,11 @@ const LeaveCalendar = () => {
     });
 
     const entries: LeaveEntry[] = [];
+    // Track seen leaves by normalized key to avoid duplicates across tables
+    const seenLeaveKeys = new Set<string>();
+
+    const makeDedupeKey = (name: string, start: string, end: string) =>
+      `${name.toLowerCase().trim()}|${start}|${end}`;
 
     // Process hr_requests leaves
     (hrLeaves || []).forEach((lr: any) => {
@@ -130,15 +135,19 @@ const LeaveCalendar = () => {
       else if (d.employee_name) empInfo = { name: d.employee_name, department: null, avatarUrl: null };
 
       if (empInfo) {
-        entries.push({
-          employeeName: empInfo.name,
-          department: empInfo.department,
-          startDate: d.startDate,
-          endDate: d.endDate,
-          numberOfDays: d.numberOfDays || 0,
-          leaveType: d.leaveType || d.leave_type || 'co',
-          avatarUrl: empInfo.avatarUrl || null,
-        });
+        const key = makeDedupeKey(empInfo.name, d.startDate, d.endDate);
+        if (!seenLeaveKeys.has(key)) {
+          seenLeaveKeys.add(key);
+          entries.push({
+            employeeName: empInfo.name,
+            department: empInfo.department,
+            startDate: d.startDate,
+            endDate: d.endDate,
+            numberOfDays: d.numberOfDays || 0,
+            leaveType: d.leaveType || d.leave_type || 'co',
+            avatarUrl: empInfo.avatarUrl || null,
+          });
+        }
       }
     });
 
@@ -154,23 +163,24 @@ const LeaveCalendar = () => {
       else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
 
       if (empInfo) {
-        entries.push({
-          employeeName: empInfo.name,
-          department: empInfo.department,
-          startDate: lr.start_date,
-          endDate: lr.end_date,
-          numberOfDays: lr.working_days || 0,
-          leaveType: 'co',
-          avatarUrl: empInfo.avatarUrl || null,
-        });
+        const key = makeDedupeKey(empInfo.name, lr.start_date, lr.end_date);
+        if (!seenLeaveKeys.has(key)) {
+          seenLeaveKeys.add(key);
+          entries.push({
+            employeeName: empInfo.name,
+            department: empInfo.department,
+            startDate: lr.start_date,
+            endDate: lr.end_date,
+            numberOfDays: lr.working_days || 0,
+            leaveType: 'co',
+            avatarUrl: empInfo.avatarUrl || null,
+          });
+        }
       }
     });
 
     entries.sort((a, b) => a.employeeName.localeCompare(b.employeeName));
-    const unique = entries.filter((e, i, arr) =>
-      arr.findIndex(x => x.employeeName === e.employeeName && x.startDate === e.startDate && x.endDate === e.endDate) === i
-    );
-    setLeaves(unique);
+    setLeaves(entries);
     setLoading(false);
   };
 

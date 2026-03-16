@@ -81,6 +81,11 @@ const LeaveCalendar = () => {
     const monthEnd = endOfMonth(currentMonth);
 
     const entries: DepartmentLeave[] = [];
+    // Track seen leaves by normalized key (name lowercase + dates) to avoid duplicates across tables
+    const seenLeaveKeys = new Set<string>();
+
+    const makeDedupeKey = (name: string, start: string, end: string) =>
+      `${name.toLowerCase().trim()}|${start}|${end}`;
 
     // Process hr_requests leaves
     (allLeaves || []).forEach((lr: any) => {
@@ -95,6 +100,10 @@ const LeaveCalendar = () => {
       else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
       else if (d.employee_name) empInfo = { name: d.employee_name, department: null, avatarUrl: null };
       if (!empInfo) return;
+
+      const key = makeDedupeKey(empInfo.name, d.startDate, d.endDate);
+      if (seenLeaveKeys.has(key)) return;
+      seenLeaveKeys.add(key);
 
       // If leave was submitted for another employee (epd_id), it's not the current user's leave
       const isCurrentUser = lr.user_id === user.id && !d.epd_id;
@@ -115,9 +124,10 @@ const LeaveCalendar = () => {
       else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
       if (!empInfo) return;
 
-      // Avoid duplicates (same employee, overlapping period)
-      const isDuplicate = entries.some(e => e.employeeName === empInfo!.name && e.startDate === lr.start_date && e.endDate === lr.end_date);
-      if (isDuplicate) return;
+      // Avoid duplicates using normalized key
+      const key = makeDedupeKey(empInfo.name, lr.start_date, lr.end_date);
+      if (seenLeaveKeys.has(key)) return;
+      seenLeaveKeys.add(key);
 
       const isCurrentUser = lr.user_id === user.id && !lr.epd_id;
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
