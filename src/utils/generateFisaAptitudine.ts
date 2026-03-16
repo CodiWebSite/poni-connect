@@ -201,7 +201,7 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   y += 3;
   doc.text('', left, y);
   bold();
-  doc.text(params.doctorName || '________________________', left + CONTENT_W / 2 - 10, y);
+  doc.text(params.doctorName || cfg.doctorName || '________________________', left + CONTENT_W / 2 - 10, y);
   normal();
   y += 3;
   doc.text('(semnătura și parafa)', left + CONTENT_W / 2 - 10, y);
