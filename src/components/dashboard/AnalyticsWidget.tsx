@@ -38,15 +38,31 @@ const AnalyticsWidget = () => {
     const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
     const sevenDaysAgo = subDays(new Date(), 7).toISOString();
 
-    // Fetch all events from last 30 days (up to 1000)
-    const { data: events } = await supabase
-      .from('analytics_events')
-      .select('*')
-      .gte('created_at', thirtyDaysAgo)
-      .order('created_at', { ascending: false })
-      .limit(1000);
+    // Fetch ALL events from last 30 days with pagination (1000 per page)
+    let allEvents: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    if (!events) { setLoading(false); return; }
+    while (hasMore) {
+      const { data: batch } = await supabase
+        .from('analytics_events')
+        .select('*')
+        .gte('created_at', thirtyDaysAgo)
+        .order('created_at', { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (!batch || batch.length === 0) {
+        hasMore = false;
+      } else {
+        allEvents = allEvents.concat(batch);
+        if (batch.length < pageSize) hasMore = false;
+        page++;
+      }
+    }
+
+    const events = allEvents;
+    if (events.length === 0) { setLoading(false); return; }
 
     // Module stats (page views)
     const pageViews = events.filter(e => e.event_type === 'page_view');
