@@ -197,7 +197,7 @@ const MedicinaMuncii = () => {
   const fetchEmployees = async () => {
     const { data } = await supabase
       .from('employee_personal_data')
-      .select('id, first_name, last_name, cnp, department, position, email')
+      .select('id, first_name, last_name, cnp, department, position, email, address_street, address_number, address_city, address_county, employment_date')
       .eq('is_archived', false)
       .order('last_name');
     if (data) setEmployees(data);
