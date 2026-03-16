@@ -6,6 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { generateFisaAptitudine, type FisaAptitudineParams, type MedicalCabinetConfig } from '@/utils/generateFisaAptitudine';
 import { generateDosarMedical, type DosarMedicalParams } from '@/utils/generateDosarMedical';
 import MedicalSettingsPanel, { useMedicalConfig } from '@/components/medical/MedicalSettingsPanel';
+import DossierDataForm from '@/components/medical/DossierDataForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +26,7 @@ import { ro } from 'date-fns/locale';
 import {
   Search, Plus, FileText, Calendar, AlertTriangle,
   CheckCircle, XCircle, Clock, Upload, Trash2, Eye, Activity,
-  Users, ShieldCheck, Download, ChevronLeft, ChevronRight, FolderOpen, Settings
+  Users, ShieldCheck, Download, ChevronLeft, ChevronRight, FolderOpen, Settings, ClipboardList
 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
@@ -685,6 +686,11 @@ const MedicinaMuncii = () => {
                     <Activity className="w-4 h-4 mr-1" /> Consultații
                   </TabsTrigger>
                 )}
+                {isDoctor && (
+                  <TabsTrigger value="dossier">
+                    <ClipboardList className="w-4 h-4 mr-1" /> Date Dosar
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="exams">
                   <Calendar className="w-4 h-4 mr-1" /> Programări
                 </TabsTrigger>
@@ -853,6 +859,15 @@ const MedicinaMuncii = () => {
                   </Card>
                 )}
               </TabsContent>
+
+              {isDoctor && (
+                <TabsContent value="dossier">
+                  <DossierDataForm
+                    epdId={selectedEmployee.id}
+                    employeeName={`${selectedEmployee.last_name} ${selectedEmployee.first_name}`}
+                  />
+                </TabsContent>
+              )}
 
               {isDoctor && (
                 <TabsContent value="documents" className="space-y-4">
