@@ -867,6 +867,16 @@ const MedicinaMuncii = () => {
               </TabsContent>
 
               {isDoctor && (
+                <TabsContent value="dossier-view">
+                  <DossierViewer
+                    employee={selectedEmployee}
+                    config={medicalConfig}
+                    onEditClick={() => setDetailTab('dossier')}
+                  />
+                </TabsContent>
+              )}
+
+              {isDoctor && (
                 <TabsContent value="dossier">
                   <DossierDataForm
                     epdId={selectedEmployee.id}
