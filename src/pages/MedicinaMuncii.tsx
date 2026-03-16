@@ -588,7 +588,7 @@ const MedicinaMuncii = () => {
                           {records[selectedEmployee.id] ? 'Editează fișa' : 'Creează fișă'}
                         </Button>
                         {records[selectedEmployee.id] && records[selectedEmployee.id].medical_fitness !== 'pending' && (
-                          <Button size="sm" variant="outline" onClick={() => {
+                          <Button size="sm" variant="outline" onClick={async () => {
                             const rec = records[selectedEmployee.id];
                             const lastConsult = consultations[0];
                             const fitnessMap: Record<string, FisaAptitudineParams['medicalFitness']> = {
@@ -604,7 +604,7 @@ const MedicinaMuncii = () => {
                               const [y, m, day] = d.split('-');
                               return `${day}.${m}.${y}`;
                             };
-                            generateFisaAptitudine({
+                            await generateFisaAptitudine({
                               lastName: selectedEmployee.last_name,
                               firstName: selectedEmployee.first_name,
                               cnp: selectedEmployee.cnp || '',
