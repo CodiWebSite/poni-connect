@@ -53,8 +53,8 @@ function drawCheckbox(doc: jsPDF, x: number, y: number, checked: boolean, size =
 }
 
 function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: number) {
+  const cfg = params.config || DEFAULT_MEDICAL_CONFIG;
   const left = MARGIN_LEFT;
-  const right = PAGE_W - MARGIN_RIGHT;
   let y = offsetY + 3;
 
   const fontSize = (s: number) => doc.setFontSize(s);
@@ -66,13 +66,13 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   normal();
   doc.text('Unitatea medicală:', left, y);
   bold();
-  doc.text(MEDICAL_UNIT, left + 24, y);
+  doc.text(cfg.medicalUnitName, left + 24, y);
   normal();
   y += 3;
-  doc.text(CABINET, left, y);
+  doc.text('Cabinet de medicina muncii', left, y);
   y += 3;
-  doc.text(CABINET_ADDRESS, left, y);
-  doc.text(CABINET_PHONE, left + CONTENT_W / 2, y);
+  doc.text(`Adresa: ${cfg.cabinetAddress}`, left, y);
+  doc.text(`Telefon/Fax: ${cfg.cabinetPhone}`, left + CONTENT_W / 2, y);
   y += 4;
 
   // ─── CHECKBOXES FOR TYPE ───
