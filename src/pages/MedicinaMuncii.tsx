@@ -41,6 +41,11 @@ interface Employee {
   department: string | null;
   position: string | null;
   email: string;
+  address_street: string | null;
+  address_number: string | null;
+  address_city: string | null;
+  address_county: string | null;
+  employment_date: string;
 }
 
 interface MedicalRecord {
