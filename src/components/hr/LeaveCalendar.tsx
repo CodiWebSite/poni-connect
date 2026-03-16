@@ -133,7 +133,11 @@ const LeaveCalendar = () => {
 
       let empInfo: { name: string; department: string | null; avatarUrl?: string | null } | undefined;
       if (d.epd_id && epdMap[d.epd_id]) empInfo = epdMap[d.epd_id];
-      else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      else if (lr.user_id) {
+        const linkedEpdId = userIdToEpdId[lr.user_id];
+        if (linkedEpdId && epdMap[linkedEpdId]) empInfo = epdMap[linkedEpdId];
+        else if (profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      }
       else if (d.employee_name) empInfo = { name: d.employee_name, department: null, avatarUrl: null };
 
       if (empInfo) {
