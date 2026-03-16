@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
+import { generateFisaAptitudine, type FisaAptitudineParams } from '@/utils/generateFisaAptitudine';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,7 @@ interface Employee {
   id: string;
   first_name: string;
   last_name: string;
+  cnp: string;
   department: string | null;
   position: string | null;
   email: string;
@@ -187,7 +189,7 @@ const MedicinaMuncii = () => {
   const fetchEmployees = async () => {
     const { data } = await supabase
       .from('employee_personal_data')
-      .select('id, first_name, last_name, department, position, email')
+      .select('id, first_name, last_name, cnp, department, position, email')
       .eq('is_archived', false)
       .order('last_name');
     if (data) setEmployees(data);
@@ -559,6 +561,41 @@ const MedicinaMuncii = () => {
                           <FileText className="w-4 h-4 mr-1" />
                           {records[selectedEmployee.id] ? 'Editează fișa' : 'Creează fișă'}
                         </Button>
+                        {records[selectedEmployee.id] && records[selectedEmployee.id].medical_fitness !== 'pending' && (
+                          <Button size="sm" variant="outline" onClick={() => {
+                            const rec = records[selectedEmployee.id];
+                            const lastConsult = consultations[0];
+                            const fitnessMap: Record<string, FisaAptitudineParams['medicalFitness']> = {
+                              apt: 'apt', apt_conditionat: 'apt_conditionat', inapt: 'inapt',
+                            };
+                            const consultTypeMap: Record<string, FisaAptitudineParams['consultationType']> = {
+                              angajare: 'angajare', periodic: 'periodic', reluare: 'reluare',
+                              urgenta: 'urgenta', altele: 'altele',
+                            };
+                            const today = new Date();
+                            const formatDMY = (d: string | null) => {
+                              if (!d) return '';
+                              const [y, m, day] = d.split('-');
+                              return `${day}.${m}.${y}`;
+                            };
+                            generateFisaAptitudine({
+                              lastName: selectedEmployee.last_name,
+                              firstName: selectedEmployee.first_name,
+                              cnp: selectedEmployee.cnp || '',
+                              position: selectedEmployee.position || '',
+                              department: selectedEmployee.department || '',
+                              consultationType: lastConsult ? (consultTypeMap[lastConsult.consultation_type] || 'periodic') : 'periodic',
+                              medicalFitness: fitnessMap[rec.medical_fitness] || 'apt',
+                              recommendations: rec.restrictions || lastConsult?.recommendations || '',
+                              consultationDate: lastConsult ? formatDMY(lastConsult.consultation_date) : format(today, 'dd.MM.yyyy'),
+                              nextExamDate: rec.fitness_valid_until ? formatDMY(rec.fitness_valid_until) : '',
+                            });
+                            toast.success('Fișa de aptitudine a fost descărcată');
+                          }}>
+                            <Download className="w-4 h-4 mr-1" />
+                            Fișă Aptitudine
+                          </Button>
+                        )}
                         <Button size="sm" variant="default" onClick={openUploadDialog}>
                           <Upload className="w-4 h-4 mr-1" />
                           Încarcă document
