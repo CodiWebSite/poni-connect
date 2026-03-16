@@ -581,7 +581,7 @@ const MedicinaMuncii = () => {
                             generateFisaAptitudine({
                               lastName: selectedEmployee.last_name,
                               firstName: selectedEmployee.first_name,
-                              cnp: '', // CNP not loaded in Employee interface for privacy
+                              cnp: selectedEmployee.cnp || '',
                               position: selectedEmployee.position || '',
                               department: selectedEmployee.department || '',
                               consultationType: lastConsult ? (consultTypeMap[lastConsult.consultation_type] || 'periodic') : 'periodic',
