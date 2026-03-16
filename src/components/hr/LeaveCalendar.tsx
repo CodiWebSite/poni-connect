@@ -166,7 +166,11 @@ const LeaveCalendar = () => {
 
       let empInfo: { name: string; department: string | null; avatarUrl?: string | null } | undefined;
       if (lr.epd_id && epdMap[lr.epd_id]) empInfo = epdMap[lr.epd_id];
-      else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      else if (lr.user_id) {
+        const linkedEpdId = userIdToEpdId[lr.user_id];
+        if (linkedEpdId && epdMap[linkedEpdId]) empInfo = epdMap[linkedEpdId];
+        else if (profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      }
 
       if (empInfo) {
         const key = makeDedupeKey(empInfo.name, lr.start_date, lr.end_date);
