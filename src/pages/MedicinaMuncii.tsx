@@ -35,6 +35,7 @@ interface Employee {
   id: string;
   first_name: string;
   last_name: string;
+  cnp: string;
   department: string | null;
   position: string | null;
   email: string;
