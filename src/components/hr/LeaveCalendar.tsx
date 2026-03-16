@@ -108,10 +108,12 @@ const LeaveCalendar = () => {
     (records || []).forEach(r => { recordUserMap[r.id] = r.user_id; });
 
     const epdMap: Record<string, { name: string; department: string | null; avatarUrl: string | null }> = {};
+    const userIdToEpdId: Record<string, string> = {};
     (epdData || []).forEach(e => {
       const userId = e.employee_record_id ? recordUserMap[e.employee_record_id] : null;
       const avatar = userId ? profileMap[userId]?.avatarUrl || null : null;
       epdMap[e.id] = { name: `${e.last_name} ${e.first_name}`, department: e.department, avatarUrl: avatar };
+      if (userId) userIdToEpdId[userId] = e.id;
     });
 
     const entries: LeaveEntry[] = [];
@@ -131,7 +133,11 @@ const LeaveCalendar = () => {
 
       let empInfo: { name: string; department: string | null; avatarUrl?: string | null } | undefined;
       if (d.epd_id && epdMap[d.epd_id]) empInfo = epdMap[d.epd_id];
-      else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      else if (lr.user_id) {
+        const linkedEpdId = userIdToEpdId[lr.user_id];
+        if (linkedEpdId && epdMap[linkedEpdId]) empInfo = epdMap[linkedEpdId];
+        else if (profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      }
       else if (d.employee_name) empInfo = { name: d.employee_name, department: null, avatarUrl: null };
 
       if (empInfo) {
@@ -160,7 +166,11 @@ const LeaveCalendar = () => {
 
       let empInfo: { name: string; department: string | null; avatarUrl?: string | null } | undefined;
       if (lr.epd_id && epdMap[lr.epd_id]) empInfo = epdMap[lr.epd_id];
-      else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      else if (lr.user_id) {
+        const linkedEpdId = userIdToEpdId[lr.user_id];
+        if (linkedEpdId && epdMap[linkedEpdId]) empInfo = epdMap[linkedEpdId];
+        else if (profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      }
 
       if (empInfo) {
         const key = makeDedupeKey(empInfo.name, lr.start_date, lr.end_date);

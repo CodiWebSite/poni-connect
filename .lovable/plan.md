@@ -1,34 +1,38 @@
 
 
-## Problema
+# Modul Medicină a Muncii — Implementat ✅
 
-Când un concediu este rezolvat prin `profileMap` (fallback pe `user_id`, linia 100/124), numele vine din `profiles.full_name` — care poate fi "CATALINA BALAN" (PRENUME NUME). Dar când alt concediu al aceleiași persoane are `epd_id`, numele vine din `epdMap` — "BALAN CATALINA" (NUME PRENUME, formatul corect).
+## Ce s-a creat
 
-Rezultat: cheia de deduplicare `"catalina balan|..."` ≠ `"balan catalina|..."` → persoana apare dublu.
+### Bază de date
+- Rol nou `medic_medicina_muncii` în enum-ul `app_role`
+- Enum-uri: `medical_fitness_status`, `consultation_type`, `exam_status`
+- Funcții RLS: `can_manage_medical()`, `can_view_medical_status()`
+- 4 tabele: `medical_records`, `medical_consultations`, `medical_scheduled_exams`, `medical_documents`
+- Storage bucket privat: `medical-documents`
+- RLS strict: medicul — acces complet; HR — doar status avize (SELECT)
 
-## Soluția
+### Pagini & componente
+- `/medicina-muncii` — pagină principală cu dashboard, statistici, tabel angajați
+- Fișă medicală per angajat cu tab-uri (info, consultații, programări, documente)
+- Formulare CRUD: creare/editare fișă, adăugare consultație, programare examen
+- Upload/descărcare/ștergere documente medicale
 
-**Fișier**: `src/pages/LeaveCalendar.tsx`
+### Sidebar & routing
+- Intrare „Medicină Muncii" vizibilă doar pentru `medic_medicina_muncii` și HR
+- Rută `/medicina-muncii` în App.tsx
 
-1. **Construiesc o hartă `userIdToEpdId`** din `epdData` + `records` (date deja fetch-uite):
-   ```typescript
-   const userIdToEpdId: Record<string, string> = {};
-   (epdData || []).forEach(e => {
-     const userId = e.employee_record_id ? recordUserMap[e.employee_record_id] : null;
-     if (userId) userIdToEpdId[userId] = e.id;
-   });
-   ```
+## Funcționalități implementate
+1. ✅ Fișe medicale per angajat (apt/apt_conditionat/inapt/pending)
+2. ✅ Istoric consultații medicale
+3. ✅ Programări controale periodice cu status tracking
+4. ✅ Upload documente medicale (bucket privat)
+5. ✅ Statistici dashboard (total, apt, condiționat, inapt, expirate, expiră curând)
+6. ✅ Filtrare pe departament și căutare
+7. ✅ HR vede doar status avize, fără diagnostice/note
 
-2. **Modific fallback-ul de la `profileMap`** (liniile 100 și 124): înainte de a folosi `profileMap`, verific dacă `user_id` are un EPD asociat și folosesc `epdMap` (formatul NUME PRENUME):
-   ```typescript
-   // Instead of: else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
-   // Do:
-   else if (lr.user_id) {
-     const linkedEpdId = userIdToEpdId[lr.user_id];
-     if (linkedEpdId && epdMap[linkedEpdId]) empInfo = epdMap[linkedEpdId];
-     else if (profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
-   }
-   ```
-
-Astfel, toate concediile unei persoane se rezolvă la același nume canonical (NUME PRENUME din EPD), iar deduplicarea funcționează corect.
-
+## De implementat ulterior
+- Edge function `check-medical-expirations` (cron zilnic)
+- Notificări email la expirare avize
+- Export Excel rapoarte
+- Calendar vizual programări
