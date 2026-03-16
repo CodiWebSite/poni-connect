@@ -133,6 +133,7 @@ const MedicinaMuncii = () => {
   const { role, loading: roleLoading } = useUserRole();
   const isDoctor = role === 'medic_medicina_muncii' || role === 'super_admin';
   const isHR = role === 'hr' || role === 'sef_srus' || role === 'super_admin';
+  const { config: medicalConfig } = useMedicalConfig();
   const canAccess = isDoctor || isHR;
 
   const [employees, setEmployees] = useState<Employee[]>([]);
