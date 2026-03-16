@@ -546,7 +546,14 @@ const MedicinaMuncii = () => {
           </div>
         </div>
 
-        {activeTab === 'detail' && selectedEmployee ? (
+        {activeTab === 'settings' ? (
+          <div className="space-y-4">
+            <Button variant="outline" size="sm" onClick={() => setActiveTab('dashboard')}>
+              ← Înapoi la listă
+            </Button>
+            <MedicalSettingsPanel />
+          </div>
+        ) : activeTab === 'detail' && selectedEmployee ? (
           /* Employee Detail View */
           <div className="space-y-4">
             <Button variant="outline" size="sm" onClick={() => { setActiveTab('dashboard'); setSelectedEmployee(null); }}>
