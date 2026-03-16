@@ -130,7 +130,7 @@ const ITEMS_PER_PAGE = 20;
 const MedicinaMuncii = () => {
   const { user } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
-  const isDoctor = role === 'medic_medicina_muncii';
+  const isDoctor = role === 'medic_medicina_muncii' || role === 'super_admin';
   const isHR = role === 'hr' || role === 'sef_srus' || role === 'super_admin';
   const canAccess = isDoctor || isHR;
 
