@@ -1,5 +1,25 @@
 import jsPDF from 'jspdf';
 
+export interface MedicalCabinetConfig {
+  medicalUnitName: string;
+  cabinetAddress: string;
+  cabinetPhone: string;
+  doctorName: string;
+  companyName: string;
+  companyAddress: string;
+  companyPhone: string;
+}
+
+export const DEFAULT_MEDICAL_CONFIG: MedicalCabinetConfig = {
+  medicalUnitName: 'S.C. ______________________ S.R.L.',
+  cabinetAddress: '______________________________',
+  cabinetPhone: '__________________________',
+  doctorName: '',
+  companyName: 'INSTITUTUL DE CHIMIE MACROMOLECULARĂ "PETRU PONI"',
+  companyAddress: 'Aleea Grigore Ghica Vodă, nr. 41A, 700487 IAȘI',
+  companyPhone: 'Tel: 0232-217454, Fax: 0232-211299',
+};
+
 export interface FisaAptitudineParams {
   lastName: string;
   firstName: string;
@@ -9,20 +29,12 @@ export interface FisaAptitudineParams {
   consultationType: 'angajare' | 'periodic' | 'reluare' | 'urgenta' | 'altele';
   medicalFitness: 'apt' | 'apt_conditionat' | 'inapt_temporar' | 'inapt';
   recommendations?: string;
-  consultationDate: string; // dd.mm.yyyy
-  nextExamDate?: string;    // dd.mm.yyyy
+  consultationDate: string;
+  nextExamDate?: string;
   doctorName?: string;
   fisaNumber?: string;
+  config?: MedicalCabinetConfig;
 }
-
-// Institutional config — can be moved to app_settings later
-const MEDICAL_UNIT = 'S.C. ______________________ S.R.L.';
-const CABINET = 'Cabinet de medicina muncii';
-const CABINET_ADDRESS = 'Adresa: ______________________________';
-const CABINET_PHONE = 'Telefon/Fax: __________________________';
-const COMPANY_NAME = 'INSTITUTUL DE CHIMIE MACROMOLECULARĂ "PETRU PONI"';
-const COMPANY_ADDRESS = 'Aleea Grigore Ghica Vodă, nr. 41A, 700487 IAȘI';
-const COMPANY_PHONE = 'Tel: 0232-217454, Fax: 0232-211299';
 
 const COPY_HEIGHT = 93; // mm per copy
 const PAGE_W = 210;
@@ -41,8 +53,8 @@ function drawCheckbox(doc: jsPDF, x: number, y: number, checked: boolean, size =
 }
 
 function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: number) {
+  const cfg = params.config || DEFAULT_MEDICAL_CONFIG;
   const left = MARGIN_LEFT;
-  const right = PAGE_W - MARGIN_RIGHT;
   let y = offsetY + 3;
 
   const fontSize = (s: number) => doc.setFontSize(s);
@@ -54,13 +66,13 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   normal();
   doc.text('Unitatea medicală:', left, y);
   bold();
-  doc.text(MEDICAL_UNIT, left + 24, y);
+  doc.text(cfg.medicalUnitName, left + 24, y);
   normal();
   y += 3;
-  doc.text(CABINET, left, y);
+  doc.text('Cabinet de medicina muncii', left, y);
   y += 3;
-  doc.text(CABINET_ADDRESS, left, y);
-  doc.text(CABINET_PHONE, left + CONTENT_W / 2, y);
+  doc.text(`Adresa: ${cfg.cabinetAddress}`, left, y);
+  doc.text(`Telefon/Fax: ${cfg.cabinetPhone}`, left + CONTENT_W / 2, y);
   y += 4;
 
   // ─── CHECKBOXES FOR TYPE ───
@@ -104,11 +116,11 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   normal();
   doc.text('Societatea:', left, y);
   bold();
-  doc.text(COMPANY_NAME, left + 16, y);
+  doc.text(cfg.companyName, left + 16, y);
   normal();
   y += 3;
-  doc.text(`Adresa: ${COMPANY_ADDRESS}`, left, y);
-  doc.text(`${COMPANY_PHONE}`, left + CONTENT_W / 2 + 10, y);
+  doc.text(`Adresa: ${cfg.companyAddress}`, left, y);
+  doc.text(cfg.companyPhone, left + CONTENT_W / 2 + 10, y);
   y += 4;
 
   // ─── EMPLOYEE DATA BOX ───
@@ -189,7 +201,7 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   y += 3;
   doc.text('', left, y);
   bold();
-  doc.text(params.doctorName || '________________________', left + CONTENT_W / 2 - 10, y);
+  doc.text(params.doctorName || cfg.doctorName || '________________________', left + CONTENT_W / 2 - 10, y);
   normal();
   y += 3;
   doc.text('(semnătura și parafa)', left + CONTENT_W / 2 - 10, y);

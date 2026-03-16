@@ -3,7 +3,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
-import { generateFisaAptitudine, type FisaAptitudineParams } from '@/utils/generateFisaAptitudine';
+import { generateFisaAptitudine, type FisaAptitudineParams, type MedicalCabinetConfig } from '@/utils/generateFisaAptitudine';
+import MedicalSettingsPanel, { useMedicalConfig } from '@/components/medical/MedicalSettingsPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,7 @@ import { ro } from 'date-fns/locale';
 import {
   Search, Plus, FileText, Calendar, AlertTriangle,
   CheckCircle, XCircle, Clock, Upload, Trash2, Eye, Activity,
-  Users, ShieldCheck, Download, ChevronLeft, ChevronRight, FolderOpen
+  Users, ShieldCheck, Download, ChevronLeft, ChevronRight, FolderOpen, Settings
 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
@@ -132,6 +133,7 @@ const MedicinaMuncii = () => {
   const { role, loading: roleLoading } = useUserRole();
   const isDoctor = role === 'medic_medicina_muncii' || role === 'super_admin';
   const isHR = role === 'hr' || role === 'sef_srus' || role === 'super_admin';
+  const { config: medicalConfig } = useMedicalConfig();
   const canAccess = isDoctor || isHR;
 
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -528,14 +530,30 @@ const MedicinaMuncii = () => {
               <Download className="w-4 h-4 mr-1" /> Export Excel
             </Button>
             {isDoctor && (
-              <Badge variant="outline" className="text-xs">
-                <ShieldCheck className="w-3 h-3 mr-1" /> Medic
-              </Badge>
+              <>
+                <Button
+                  variant={activeTab === 'settings' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveTab(activeTab === 'settings' ? 'dashboard' : 'settings')}
+                >
+                  <Settings className="w-4 h-4 mr-1" /> Setări cabinet
+                </Button>
+                <Badge variant="outline" className="text-xs">
+                  <ShieldCheck className="w-3 h-3 mr-1" /> Medic
+                </Badge>
+              </>
             )}
           </div>
         </div>
 
-        {activeTab === 'detail' && selectedEmployee ? (
+        {activeTab === 'settings' ? (
+          <div className="space-y-4">
+            <Button variant="outline" size="sm" onClick={() => setActiveTab('dashboard')}>
+              ← Înapoi la listă
+            </Button>
+            <MedicalSettingsPanel />
+          </div>
+        ) : activeTab === 'detail' && selectedEmployee ? (
           /* Employee Detail View */
           <div className="space-y-4">
             <Button variant="outline" size="sm" onClick={() => { setActiveTab('dashboard'); setSelectedEmployee(null); }}>
@@ -589,6 +607,7 @@ const MedicinaMuncii = () => {
                               recommendations: rec.restrictions || lastConsult?.recommendations || '',
                               consultationDate: lastConsult ? formatDMY(lastConsult.consultation_date) : format(today, 'dd.MM.yyyy'),
                               nextExamDate: rec.fitness_valid_until ? formatDMY(rec.fitness_valid_until) : '',
+                              config: medicalConfig,
                             });
                             toast.success('Fișa de aptitudine a fost descărcată');
                           }}>
