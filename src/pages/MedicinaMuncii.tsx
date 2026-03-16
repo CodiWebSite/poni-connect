@@ -683,13 +683,18 @@ const MedicinaMuncii = () => {
                   <FileText className="w-4 h-4 mr-1" /> Fișă Medicală
                 </TabsTrigger>
                 {isDoctor && (
+                  <TabsTrigger value="dossier-view">
+                    <Eye className="w-4 h-4 mr-1" /> Dosar Medical
+                  </TabsTrigger>
+                )}
+                {isDoctor && (
                   <TabsTrigger value="consultations">
                     <Activity className="w-4 h-4 mr-1" /> Consultații
                   </TabsTrigger>
                 )}
                 {isDoctor && (
                   <TabsTrigger value="dossier">
-                    <ClipboardList className="w-4 h-4 mr-1" /> Date Dosar
+                    <ClipboardList className="w-4 h-4 mr-1" /> Editare Dosar
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="exams">
