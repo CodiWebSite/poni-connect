@@ -686,6 +686,11 @@ const MedicinaMuncii = () => {
                     <Activity className="w-4 h-4 mr-1" /> Consultații
                   </TabsTrigger>
                 )}
+                {isDoctor && (
+                  <TabsTrigger value="dossier">
+                    <ClipboardList className="w-4 h-4 mr-1" /> Date Dosar
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="exams">
                   <Calendar className="w-4 h-4 mr-1" /> Programări
                 </TabsTrigger>
