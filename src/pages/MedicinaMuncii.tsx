@@ -591,6 +591,7 @@ const MedicinaMuncii = () => {
                               recommendations: rec.restrictions || lastConsult?.recommendations || '',
                               consultationDate: lastConsult ? formatDMY(lastConsult.consultation_date) : format(today, 'dd.MM.yyyy'),
                               nextExamDate: rec.fitness_valid_until ? formatDMY(rec.fitness_valid_until) : '',
+                              config: medicalConfig,
                             });
                             toast.success('Fișa de aptitudine a fost descărcată');
                           }}>
