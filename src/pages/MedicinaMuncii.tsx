@@ -861,6 +861,15 @@ const MedicinaMuncii = () => {
               </TabsContent>
 
               {isDoctor && (
+                <TabsContent value="dossier">
+                  <DossierDataForm
+                    epdId={selectedEmployee.id}
+                    employeeName={`${selectedEmployee.last_name} ${selectedEmployee.first_name}`}
+                  />
+                </TabsContent>
+              )}
+
+              {isDoctor && (
                 <TabsContent value="documents" className="space-y-4">
                   <div className="flex justify-end">
                     <Button size="sm" onClick={openUploadDialog}>
