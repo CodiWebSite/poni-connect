@@ -7,6 +7,7 @@ import { generateFisaAptitudine, type FisaAptitudineParams, type MedicalCabinetC
 import { generateDosarMedical, type DosarMedicalParams } from '@/utils/generateDosarMedical';
 import MedicalSettingsPanel, { useMedicalConfig } from '@/components/medical/MedicalSettingsPanel';
 import DossierDataForm from '@/components/medical/DossierDataForm';
+import DossierViewer from '@/components/medical/DossierViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -587,7 +588,7 @@ const MedicinaMuncii = () => {
                           {records[selectedEmployee.id] ? 'Editează fișa' : 'Creează fișă'}
                         </Button>
                         {records[selectedEmployee.id] && records[selectedEmployee.id].medical_fitness !== 'pending' && (
-                          <Button size="sm" variant="outline" onClick={() => {
+                          <Button size="sm" variant="outline" onClick={async () => {
                             const rec = records[selectedEmployee.id];
                             const lastConsult = consultations[0];
                             const fitnessMap: Record<string, FisaAptitudineParams['medicalFitness']> = {
@@ -603,7 +604,7 @@ const MedicinaMuncii = () => {
                               const [y, m, day] = d.split('-');
                               return `${day}.${m}.${y}`;
                             };
-                            generateFisaAptitudine({
+                            await generateFisaAptitudine({
                               lastName: selectedEmployee.last_name,
                               firstName: selectedEmployee.first_name,
                               cnp: selectedEmployee.cnp || '',
@@ -636,7 +637,7 @@ const MedicinaMuncii = () => {
                             selectedEmployee.address_city,
                             selectedEmployee.address_county ? `jud. ${selectedEmployee.address_county}` : '',
                           ].filter(Boolean).join(', ');
-                          generateDosarMedical({
+                          await generateDosarMedical({
                             lastName: selectedEmployee.last_name,
                             firstName: selectedEmployee.first_name,
                             cnp: selectedEmployee.cnp || '',
@@ -682,13 +683,18 @@ const MedicinaMuncii = () => {
                   <FileText className="w-4 h-4 mr-1" /> Fișă Medicală
                 </TabsTrigger>
                 {isDoctor && (
+                  <TabsTrigger value="dossier-view">
+                    <Eye className="w-4 h-4 mr-1" /> Dosar Medical
+                  </TabsTrigger>
+                )}
+                {isDoctor && (
                   <TabsTrigger value="consultations">
                     <Activity className="w-4 h-4 mr-1" /> Consultații
                   </TabsTrigger>
                 )}
                 {isDoctor && (
                   <TabsTrigger value="dossier">
-                    <ClipboardList className="w-4 h-4 mr-1" /> Date Dosar
+                    <ClipboardList className="w-4 h-4 mr-1" /> Editare Dosar
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="exams">
@@ -859,6 +865,16 @@ const MedicinaMuncii = () => {
                   </Card>
                 )}
               </TabsContent>
+
+              {isDoctor && (
+                <TabsContent value="dossier-view">
+                  <DossierViewer
+                    employee={selectedEmployee}
+                    config={medicalConfig}
+                    onEditClick={() => setDetailTab('dossier')}
+                  />
+                </TabsContent>
+              )}
 
               {isDoctor && (
                 <TabsContent value="dossier">

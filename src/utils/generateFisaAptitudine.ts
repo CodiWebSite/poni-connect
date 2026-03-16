@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { loadRobotoFonts, applyRobotoFont } from './pdfFontLoader';
 
 export interface MedicalCabinetConfig {
   medicalUnitName: string;
@@ -36,7 +37,8 @@ export interface FisaAptitudineParams {
   config?: MedicalCabinetConfig;
 }
 
-const COPY_HEIGHT = 93; // mm per copy
+const FONT = 'Roboto';
+const COPY_HEIGHT = 93;
 const PAGE_W = 210;
 const MARGIN_LEFT = 8;
 const MARGIN_RIGHT = 8;
@@ -45,10 +47,10 @@ const CONTENT_W = PAGE_W - MARGIN_LEFT - MARGIN_RIGHT;
 function drawCheckbox(doc: jsPDF, x: number, y: number, checked: boolean, size = 3) {
   doc.rect(x, y, size, size);
   if (checked) {
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(FONT, 'bold');
     doc.setFontSize(8);
     doc.text('X', x + 0.4, y + size - 0.3);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(FONT, 'normal');
   }
 }
 
@@ -58,10 +60,10 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   let y = offsetY + 3;
 
   const fontSize = (s: number) => doc.setFontSize(s);
-  const bold = () => doc.setFont('helvetica', 'bold');
-  const normal = () => doc.setFont('helvetica', 'normal');
+  const bold = () => doc.setFont(FONT, 'bold');
+  const normal = () => doc.setFont(FONT, 'normal');
 
-  // ─── HEADER ───
+  // HEADER
   fontSize(7);
   normal();
   doc.text('Unitatea medicală:', left, y);
@@ -75,7 +77,7 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   doc.text(`Telefon/Fax: ${cfg.cabinetPhone}`, left + CONTENT_W / 2, y);
   y += 4;
 
-  // ─── CHECKBOXES FOR TYPE ───
+  // CHECKBOXES FOR TYPE
   fontSize(6.5);
   const types: { label: string; key: string }[] = [
     { label: 'Angajare', key: 'angajare' },
@@ -97,7 +99,7 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   });
   y += 4;
 
-  // ─── TITLE ───
+  // TITLE
   fontSize(8);
   bold();
   doc.text('Medicina muncii - FIȘĂ DE APTITUDINE', PAGE_W / 2, y, { align: 'center' });
@@ -111,7 +113,7 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   doc.text('(Un exemplar la angajator, un exemplar la salariat, un exemplar rămâne la medicul de medicina muncii)', PAGE_W / 2, y, { align: 'center' });
   y += 3.5;
 
-  // ─── COMPANY ───
+  // COMPANY
   fontSize(6.5);
   normal();
   doc.text('Societatea:', left, y);
@@ -123,7 +125,7 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   doc.text(cfg.companyPhone, left + CONTENT_W / 2 + 10, y);
   y += 4;
 
-  // ─── EMPLOYEE DATA BOX ───
+  // EMPLOYEE DATA BOX
   const boxY = y;
   const boxH = 14;
   doc.setDrawColor(0);
@@ -159,7 +161,7 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
 
   y = boxY + boxH + 3;
 
-  // ─── MEDICAL VERDICT ───
+  // MEDICAL VERDICT
   fontSize(7);
   bold();
   doc.text('AVIZ MEDICAL:', left, y);
@@ -183,23 +185,21 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
     if (checked) bold(); else normal();
     doc.text(v.label, left + 6, y);
     
-    // Recommendation line on the right
     normal();
     fontSize(6.5);
-    const recLine = recLines[i] || (i === 0 ? '___________________________' : '___________________________');
+    const recLine = recLines[i] || '___________________________';
     doc.text(recLine, left + CONTENT_W / 2 + 5, y);
     y += 3.5;
   });
 
   y += 1;
 
-  // ─── FOOTER ───
+  // FOOTER
   fontSize(6.5);
   normal();
   doc.text(`Data: ${params.consultationDate}`, left, y);
   doc.text('Medic de medicina muncii:', left + CONTENT_W / 2 - 10, y);
   y += 3;
-  doc.text('', left, y);
   bold();
   doc.text(params.doctorName || cfg.doctorName || '________________________', left + CONTENT_W / 2 - 10, y);
   normal();
@@ -209,16 +209,17 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   doc.text(`Data următorului examen medical: ${params.nextExamDate || '___/___/______'}`, left, y);
 }
 
-export function generateFisaAptitudine(params: FisaAptitudineParams) {
+export async function generateFisaAptitudine(params: FisaAptitudineParams) {
+  await loadRobotoFonts();
+  
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  doc.setFont('helvetica', 'normal');
+  applyRobotoFont(doc);
 
   // Draw 3 copies
   for (let i = 0; i < 3; i++) {
     const offsetY = i * COPY_HEIGHT + 4;
     drawSingleCopy(doc, params, offsetY);
 
-    // Dotted separator line between copies
     if (i < 2) {
       const lineY = (i + 1) * COPY_HEIGHT + 4;
       doc.setDrawColor(100);
