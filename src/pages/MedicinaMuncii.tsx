@@ -24,7 +24,7 @@ import { ro } from 'date-fns/locale';
 import {
   Search, Plus, FileText, Calendar, AlertTriangle,
   CheckCircle, XCircle, Clock, Upload, Trash2, Eye, Activity,
-  Users, ShieldCheck, Download, ChevronLeft, ChevronRight, FolderOpen
+  Users, ShieldCheck, Download, ChevronLeft, ChevronRight, FolderOpen, Settings
 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
