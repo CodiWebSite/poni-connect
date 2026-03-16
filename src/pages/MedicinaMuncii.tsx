@@ -530,9 +530,18 @@ const MedicinaMuncii = () => {
               <Download className="w-4 h-4 mr-1" /> Export Excel
             </Button>
             {isDoctor && (
-              <Badge variant="outline" className="text-xs">
-                <ShieldCheck className="w-3 h-3 mr-1" /> Medic
-              </Badge>
+              <>
+                <Button
+                  variant={activeTab === 'settings' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveTab(activeTab === 'settings' ? 'dashboard' : 'settings')}
+                >
+                  <Settings className="w-4 h-4 mr-1" /> Setări cabinet
+                </Button>
+                <Badge variant="outline" className="text-xs">
+                  <ShieldCheck className="w-3 h-3 mr-1" /> Medic
+                </Badge>
+              </>
             )}
           </div>
         </div>
