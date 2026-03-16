@@ -1629,6 +1629,87 @@ export type Database = {
           },
         ]
       }
+      medical_dossier_data: {
+        Row: {
+          alcohol: string | null
+          created_at: string
+          created_by: string | null
+          current_activities: string | null
+          epd_id: string
+          family_doctor: string | null
+          heredo_collateral: string | null
+          id: string
+          personal_pathological: string | null
+          personal_physiological: string | null
+          professional_diseases: boolean | null
+          professional_diseases_details: string | null
+          professional_route: string | null
+          professional_training: string | null
+          smoking: string | null
+          updated_at: string
+          work_accidents: boolean | null
+          work_accidents_details: string | null
+          work_history: Json | null
+        }
+        Insert: {
+          alcohol?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_activities?: string | null
+          epd_id: string
+          family_doctor?: string | null
+          heredo_collateral?: string | null
+          id?: string
+          personal_pathological?: string | null
+          personal_physiological?: string | null
+          professional_diseases?: boolean | null
+          professional_diseases_details?: string | null
+          professional_route?: string | null
+          professional_training?: string | null
+          smoking?: string | null
+          updated_at?: string
+          work_accidents?: boolean | null
+          work_accidents_details?: string | null
+          work_history?: Json | null
+        }
+        Update: {
+          alcohol?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_activities?: string | null
+          epd_id?: string
+          family_doctor?: string | null
+          heredo_collateral?: string | null
+          id?: string
+          personal_pathological?: string | null
+          personal_physiological?: string | null
+          professional_diseases?: boolean | null
+          professional_diseases_details?: string | null
+          professional_route?: string | null
+          professional_training?: string | null
+          smoking?: string | null
+          updated_at?: string
+          work_accidents?: boolean | null
+          work_accidents_details?: string | null
+          work_history?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_dossier_data_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: true
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_dossier_data_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: true
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medical_records: {
         Row: {
           chronic_conditions: string | null
