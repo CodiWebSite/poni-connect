@@ -116,11 +116,11 @@ function drawSingleCopy(doc: jsPDF, params: FisaAptitudineParams, offsetY: numbe
   normal();
   doc.text('Societatea:', left, y);
   bold();
-  doc.text(COMPANY_NAME, left + 16, y);
+  doc.text(cfg.companyName, left + 16, y);
   normal();
   y += 3;
-  doc.text(`Adresa: ${COMPANY_ADDRESS}`, left, y);
-  doc.text(`${COMPANY_PHONE}`, left + CONTENT_W / 2 + 10, y);
+  doc.text(`Adresa: ${cfg.companyAddress}`, left, y);
+  doc.text(cfg.companyPhone, left + CONTENT_W / 2 + 10, y);
   y += 4;
 
   // ─── EMPLOYEE DATA BOX ───
