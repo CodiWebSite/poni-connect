@@ -621,6 +621,49 @@ const MedicinaMuncii = () => {
                             Fișă Aptitudine
                           </Button>
                         )}
+                        <Button size="sm" variant="outline" onClick={async () => {
+                          // Fetch dossier supplementary data
+                          const { data: dossierData } = await supabase
+                            .from('medical_dossier_data' as any)
+                            .select('*')
+                            .eq('epd_id', selectedEmployee.id)
+                            .maybeSingle();
+                          const d = dossierData as any;
+                          const addr = [
+                            selectedEmployee.address_street,
+                            selectedEmployee.address_number ? `nr. ${selectedEmployee.address_number}` : '',
+                            selectedEmployee.address_city,
+                            selectedEmployee.address_county ? `jud. ${selectedEmployee.address_county}` : '',
+                          ].filter(Boolean).join(', ');
+                          generateDosarMedical({
+                            lastName: selectedEmployee.last_name,
+                            firstName: selectedEmployee.first_name,
+                            cnp: selectedEmployee.cnp || '',
+                            position: selectedEmployee.position || '',
+                            department: selectedEmployee.department || '',
+                            address: addr,
+                            employmentDate: selectedEmployee.employment_date || '',
+                            config: medicalConfig,
+                            professionalTraining: d?.professional_training || undefined,
+                            professionalRoute: d?.professional_route || undefined,
+                            workHistory: d?.work_history || undefined,
+                            currentActivities: d?.current_activities || undefined,
+                            professionalDiseases: d?.professional_diseases ?? undefined,
+                            professionalDiseasesDetails: d?.professional_diseases_details || undefined,
+                            workAccidents: d?.work_accidents ?? undefined,
+                            workAccidentsDetails: d?.work_accidents_details || undefined,
+                            familyDoctor: d?.family_doctor || undefined,
+                            heredoCollateral: d?.heredo_collateral || undefined,
+                            personalPhysiological: d?.personal_physiological || undefined,
+                            personalPathological: d?.personal_pathological || undefined,
+                            smoking: d?.smoking || undefined,
+                            alcohol: d?.alcohol || undefined,
+                          });
+                          toast.success('Dosarul medical a fost descărcat');
+                        }}>
+                          <Download className="w-4 h-4 mr-1" />
+                          Dosar Medical
+                        </Button>
                         <Button size="sm" variant="default" onClick={openUploadDialog}>
                           <Upload className="w-4 h-4 mr-1" />
                           Încarcă document
