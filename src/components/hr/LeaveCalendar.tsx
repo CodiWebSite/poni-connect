@@ -108,10 +108,12 @@ const LeaveCalendar = () => {
     (records || []).forEach(r => { recordUserMap[r.id] = r.user_id; });
 
     const epdMap: Record<string, { name: string; department: string | null; avatarUrl: string | null }> = {};
+    const userIdToEpdId: Record<string, string> = {};
     (epdData || []).forEach(e => {
       const userId = e.employee_record_id ? recordUserMap[e.employee_record_id] : null;
       const avatar = userId ? profileMap[userId]?.avatarUrl || null : null;
       epdMap[e.id] = { name: `${e.last_name} ${e.first_name}`, department: e.department, avatarUrl: avatar };
+      if (userId) userIdToEpdId[userId] = e.id;
     });
 
     const entries: LeaveEntry[] = [];
