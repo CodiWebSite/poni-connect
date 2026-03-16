@@ -637,7 +637,7 @@ const MedicinaMuncii = () => {
                             selectedEmployee.address_city,
                             selectedEmployee.address_county ? `jud. ${selectedEmployee.address_county}` : '',
                           ].filter(Boolean).join(', ');
-                          generateDosarMedical({
+                          await generateDosarMedical({
                             lastName: selectedEmployee.last_name,
                             firstName: selectedEmployee.first_name,
                             cnp: selectedEmployee.cnp || '',
