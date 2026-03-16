@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import type { MedicalCabinetConfig } from './generateFisaAptitudine';
 import { DEFAULT_MEDICAL_CONFIG } from './generateFisaAptitudine';
+import { loadRobotoFonts, applyRobotoFont } from './pdfFontLoader';
 
 export interface DosarMedicalParams {
   lastName: string;
@@ -12,7 +13,6 @@ export interface DosarMedicalParams {
   employmentDate: string;
   config?: MedicalCabinetConfig;
   dosarNumber?: string;
-  // Optional supplementary data
   professionalTraining?: string;
   professionalRoute?: string;
   workHistory?: { post: string; period: string; occupation: string; noxe: string }[];
@@ -29,6 +29,7 @@ export interface DosarMedicalParams {
   alcohol?: string;
 }
 
+const FONT = 'Roboto';
 const M = { left: 15, right: 15, top: 15, bottom: 15 };
 const PW = 210;
 const CW = PW - M.left - M.right;
@@ -60,19 +61,19 @@ function ln(doc: jsPDF, y: number, x1: number = M.left, x2: number = PW - M.righ
 }
 
 function field(doc: jsPDF, label: string, value: string, x: number, y: number, valueOffset: number = 0) {
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
   doc.setFontSize(8);
   doc.text(label, x, y);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(FONT, 'bold');
   doc.text(value || '___________________________', x + (valueOffset || doc.getTextWidth(label) + 2), y);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
 }
 
 function sectionTitle(doc: jsPDF, text: string, y: number) {
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(FONT, 'bold');
   doc.setFontSize(9);
   doc.text(text, M.left, y);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
   return y + 5;
 }
 
@@ -90,27 +91,25 @@ function emptyLines(doc: jsPDF, y: number, count: number, lineSpacing = 6): numb
 function checkboxLine(doc: jsPDF, label: string, checked: boolean | undefined, x: number, y: number, size = 3) {
   doc.rect(x, y - size + 0.5, size, size);
   if (checked) {
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(FONT, 'bold');
     doc.setFontSize(8);
     doc.text('X', x + 0.5, y);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(FONT, 'normal');
   }
   doc.setFontSize(8);
   doc.text(label, x + size + 2, y);
 }
 
-// ═══════════════════════════════════════
 // PAGE 1: COVER
-// ═══════════════════════════════════════
 function drawCover(doc: jsPDF, p: DosarMedicalParams) {
   const cfg = p.config || DEFAULT_MEDICAL_CONFIG;
   let y = M.top;
 
   doc.setFontSize(8);
   doc.text('Unitatea medicală:', M.left, y);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(FONT, 'bold');
   doc.text(cfg.medicalUnitName, M.left + 28, y);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
   y += 5;
   doc.text('Cabinet de medicina muncii', M.left, y);
   y += 5;
@@ -119,24 +118,23 @@ function drawCover(doc: jsPDF, p: DosarMedicalParams) {
   doc.text(`Telefon/Fax: ${cfg.cabinetPhone}`, M.left, y);
   y += 15;
 
-  // Big title
   doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(FONT, 'bold');
   doc.text('DOSAR MEDICAL', PW / 2, y, { align: 'center' });
   y += 8;
   doc.setFontSize(10);
   doc.text(`nr. ${p.dosarNumber || '________'}`, PW / 2, y, { align: 'center' });
   y += 15;
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
   doc.setFontSize(9);
 
   const fieldLine = (label: string, value: string, yPos: number) => {
     doc.text(label, M.left + 20, yPos);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(FONT, 'bold');
     const valX = M.left + 75;
     doc.text(value || '___________________________________________', valX, yPos);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(FONT, 'normal');
     return yPos + 10;
   };
 
@@ -144,9 +142,7 @@ function drawCover(doc: jsPDF, p: DosarMedicalParams) {
   y = fieldLine('Societatea Comercială:', cfg.companyName, y);
   y = fieldLine('Legitimația / Marca:', '', y);
   y = fieldLine('C.N.P.:', p.cnp, y);
-
-  const addressVal = p.address || '';
-  y = fieldLine('Domiciliul:', addressVal, y);
+  y = fieldLine('Domiciliul:', p.address || '', y);
 
   y += 20;
   doc.setFontSize(7);
@@ -155,13 +151,11 @@ function drawCover(doc: jsPDF, p: DosarMedicalParams) {
   doc.text('Se va completa de către medicul de medicina muncii.', PW / 2, y, { align: 'center' });
 }
 
-// ═══════════════════════════════════════
 // PAGE 2: LEGAL PAGE
-// ═══════════════════════════════════════
 function drawLegalPage(doc: jsPDF) {
   let y = M.top;
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
 
   const lines = [
     'DOSARUL MEDICAL se completează în temeiul prevederilor:',
@@ -196,25 +190,22 @@ function drawLegalPage(doc: jsPDF) {
   });
 }
 
-// ═══════════════════════════════════════
 // PAGE 3: PERSONAL DATA + WORK HISTORY (Anexa nr.4)
-// ═══════════════════════════════════════
 function drawPersonalDataPage(doc: jsPDF, p: DosarMedicalParams) {
   const { sex, birthDate, age } = parseCNP(p.cnp);
   let y = M.top;
 
   doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(FONT, 'bold');
   doc.text('Anexa nr. 4', PW - M.right, y, { align: 'right' });
   y += 8;
 
   doc.setFontSize(10);
   doc.text('DOSARUL MEDICAL - Date personale', PW / 2, y, { align: 'center' });
   y += 8;
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
   doc.setFontSize(8);
 
-  // Personal data fields
   const halfW = CW / 2;
   field(doc, 'Numele:', p.lastName.toUpperCase(), M.left, y, 16);
   field(doc, 'Prenumele:', p.firstName.toUpperCase(), M.left + halfW, y, 20);
@@ -234,7 +225,6 @@ function drawPersonalDataPage(doc: jsPDF, p: DosarMedicalParams) {
   ln(doc, y);
   y += 5;
 
-  // Professional training
   y = sectionTitle(doc, 'Formarea profesională:', y);
   doc.setFontSize(8);
   if (p.professionalTraining) {
@@ -244,7 +234,6 @@ function drawPersonalDataPage(doc: jsPDF, p: DosarMedicalParams) {
     y = emptyLines(doc, y, 2);
   }
 
-  // Professional route
   y = sectionTitle(doc, 'Ruta profesională:', y);
   if (p.professionalRoute) {
     doc.text(p.professionalRoute, M.left, y);
@@ -253,7 +242,6 @@ function drawPersonalDataPage(doc: jsPDF, p: DosarMedicalParams) {
     y = emptyLines(doc, y, 2);
   }
 
-  // Work history table
   y = sectionTitle(doc, 'Locuri de muncă anterioare:', y);
   
   const cols = [
@@ -265,7 +253,7 @@ function drawPersonalDataPage(doc: jsPDF, p: DosarMedicalParams) {
   ];
   
   doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(FONT, 'bold');
   let cx = M.left;
   const tableY = y;
   cols.forEach(c => {
@@ -273,7 +261,7 @@ function drawPersonalDataPage(doc: jsPDF, p: DosarMedicalParams) {
     doc.text(c.label, cx + 1, tableY);
     cx += c.w;
   });
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
   y = tableY + 3;
 
   const rows = p.workHistory && p.workHistory.length > 0 ? p.workHistory : Array(5).fill({ post: '', period: '', occupation: '', noxe: '' });
@@ -289,7 +277,6 @@ function drawPersonalDataPage(doc: jsPDF, p: DosarMedicalParams) {
   });
   y += 8;
 
-  // Current activities
   y = sectionTitle(doc, 'Activități la actualul loc de muncă / Noxe profesionale:', y);
   if (p.currentActivities) {
     doc.setFontSize(8);
@@ -299,7 +286,6 @@ function drawPersonalDataPage(doc: jsPDF, p: DosarMedicalParams) {
     y = emptyLines(doc, y, 2);
   }
 
-  // Professional diseases
   y += 3;
   doc.setFontSize(8);
   doc.text('Boli profesionale:', M.left, y);
@@ -312,13 +298,10 @@ function drawPersonalDataPage(doc: jsPDF, p: DosarMedicalParams) {
   y = emptyLines(doc, y, 1);
 }
 
-// ═══════════════════════════════════════
 // PAGE 4: ANTECEDENTS, HABITS, DECLARATION
-// ═══════════════════════════════════════
 function drawAntecedentsPage(doc: jsPDF, p: DosarMedicalParams) {
   let y = M.top;
 
-  // Work accidents
   doc.setFontSize(8);
   doc.text('Accidente de muncă:', M.left, y);
   checkboxLine(doc, 'DA', p.workAccidents === true, M.left + 35, y);
@@ -330,17 +313,15 @@ function drawAntecedentsPage(doc: jsPDF, p: DosarMedicalParams) {
   y = emptyLines(doc, y, 1);
   y += 3;
 
-  // Family doctor
   field(doc, 'Medic de familie:', p.familyDoctor || '', M.left, y, 32);
   y += 10;
   ln(doc, y);
   y += 5;
 
-  // Declaration
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(FONT, 'bold');
   doc.text('Declarație pe propria răspundere', PW / 2, y, { align: 'center' });
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
   y += 6;
   doc.text('Subsemnatul(a) declar pe propria răspundere că datele de mai sus sunt corecte.', M.left, y);
   y += 5;
@@ -349,7 +330,6 @@ function drawAntecedentsPage(doc: jsPDF, p: DosarMedicalParams) {
   ln(doc, y);
   y += 5;
 
-  // Heredocolateral antecedents
   y = sectionTitle(doc, 'Antecedente heredocolaterale:', y);
   doc.setFontSize(8);
   if (p.heredoCollateral) {
@@ -359,7 +339,6 @@ function drawAntecedentsPage(doc: jsPDF, p: DosarMedicalParams) {
     y = emptyLines(doc, y, 3);
   }
 
-  // Personal physiological antecedents
   y = sectionTitle(doc, 'Antecedente personale fiziologice:', y);
   if (p.personalPhysiological) {
     doc.setFontSize(8);
@@ -369,7 +348,6 @@ function drawAntecedentsPage(doc: jsPDF, p: DosarMedicalParams) {
     y = emptyLines(doc, y, 3);
   }
 
-  // Personal pathological antecedents
   y = sectionTitle(doc, 'Antecedente personale patologice:', y);
   if (p.personalPathological) {
     doc.setFontSize(8);
@@ -379,7 +357,6 @@ function drawAntecedentsPage(doc: jsPDF, p: DosarMedicalParams) {
     y = emptyLines(doc, y, 3);
   }
 
-  // Habits
   y += 3;
   doc.setFontSize(8);
   field(doc, 'Fumat:', p.smoking || '', M.left, y, 14);
@@ -387,20 +364,17 @@ function drawAntecedentsPage(doc: jsPDF, p: DosarMedicalParams) {
   field(doc, 'Consum alcool:', p.alcohol || '', M.left, y, 28);
 }
 
-// ═══════════════════════════════════════
-// PAGE 5: CLINICAL EXAM AT HIRE
-// ═══════════════════════════════════════
+// PAGE 5: CLINICAL EXAM
 function drawClinicalExamPage(doc: jsPDF, title: string) {
   let y = M.top;
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(FONT, 'bold');
   doc.text(title, PW / 2, y, { align: 'center' });
   y += 10;
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
   doc.setFontSize(8);
 
-  // Biometric data
   y = sectionTitle(doc, 'Date biometrice:', y);
   doc.setFontSize(8);
   doc.text('Talie: ______ cm          Greutate: ______ kg          IMC: ______          Obezitate: DA / NU', M.left, y);
@@ -408,7 +382,6 @@ function drawClinicalExamPage(doc: jsPDF, title: string) {
   ln(doc, y);
   y += 5;
 
-  // Clinical exam - systems
   y = sectionTitle(doc, 'Examen clinic pe aparate și sisteme:', y);
   
   const systems = [
@@ -426,14 +399,13 @@ function drawClinicalExamPage(doc: jsPDF, title: string) {
 
   systems.forEach(sys => {
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(FONT, 'bold');
     doc.text(sys, M.left, y);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(FONT, 'normal');
     y += 4;
     y = emptyLines(doc, y, 2, 5);
     y += 2;
 
-    // Check if we need a new page
     if (y > 270) {
       doc.addPage();
       y = M.top;
@@ -443,16 +415,13 @@ function drawClinicalExamPage(doc: jsPDF, title: string) {
   return y;
 }
 
-// ═══════════════════════════════════════
 // PAGE 6: CONCLUSIONS + VERDICT
-// ═══════════════════════════════════════
-function drawConclusionsPage(doc: jsPDF, y: number, examType: string) {
+function drawConclusionsPage(doc: jsPDF, y: number, _examType: string) {
   if (y > 200) {
     doc.addPage();
     y = M.top;
   }
 
-  // Optional exams
   y = sectionTitle(doc, 'Examene clinice și paraclinice suplimentare:', y);
   doc.setFontSize(7);
   doc.text('VDRL/RPA: _______________     Glicemie: _______________     Hemoleucogramă: _______________', M.left, y);
@@ -461,7 +430,6 @@ function drawConclusionsPage(doc: jsPDF, y: number, examType: string) {
   y += 5;
   y = emptyLines(doc, y, 2);
 
-  // Conclusions
   y += 3;
   y = sectionTitle(doc, 'Concluzii în urma examinării:', y);
   doc.setFontSize(8);
@@ -470,19 +438,18 @@ function drawConclusionsPage(doc: jsPDF, y: number, examType: string) {
   y += 5;
   y = emptyLines(doc, y, 2);
 
-  // Medical verdict
   y += 3;
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(FONT, 'bold');
   doc.setFontSize(10);
   doc.text('AVIZ MEDICAL:', M.left, y);
   y += 5;
   doc.setFontSize(8);
 
   const verdicts = ['APT', 'APT CONDIȚIONAT', 'INAPT TEMPORAR', 'INAPT'];
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
   doc.text('Recomandări:', M.left + CW / 2 + 5, y - 3);
 
-  verdicts.forEach((v, i) => {
+  verdicts.forEach(v => {
     y += 6;
     checkboxLine(doc, v, undefined, M.left + 5, y);
     doc.setDrawColor(180);
@@ -492,7 +459,6 @@ function drawConclusionsPage(doc: jsPDF, y: number, examType: string) {
   });
   y += 10;
 
-  // Footer
   doc.setFontSize(8);
   doc.text('Data: ___/___/______', M.left, y);
   doc.text('Medic de medicina muncii: ______________________', M.left + CW / 2 - 10, y);
@@ -504,12 +470,13 @@ function drawConclusionsPage(doc: jsPDF, y: number, examType: string) {
   return y;
 }
 
-// ═══════════════════════════════════════
 // MAIN EXPORT
-// ═══════════════════════════════════════
-export function generateDosarMedical(params: DosarMedicalParams) {
+export async function generateDosarMedical(params: DosarMedicalParams) {
+  // Load fonts first
+  await loadRobotoFonts();
+  
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  doc.setFont('helvetica', 'normal');
+  applyRobotoFont(doc);
 
   // Page 1: Cover
   drawCover(doc, params);
@@ -534,7 +501,7 @@ export function generateDosarMedical(params: DosarMedicalParams) {
   // Page 7-8: Periodic clinical exam
   doc.addPage();
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(FONT, 'normal');
   let py = M.top;
   doc.text('Simptome actuale:', M.left, py);
   py = emptyLines(doc, py + 2, 2);
