@@ -142,6 +142,8 @@ const MyProfile = () => {
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [approverName, setApproverName] = useState<string | null>(null);
+  const [approverAvatarUrl, setApproverAvatarUrl] = useState<string | null>(null);
+  const [delegateAvatarUrl, setDelegateAvatarUrl] = useState<string | null>(null);
   const [approverSource, setApproverSource] = useState<'individual' | 'department' | null>(null);
   const [delegateName, setDelegateName] = useState<string | null>(null);
   const [delegatePeriod, setDelegatePeriod] = useState<string | null>(null);
