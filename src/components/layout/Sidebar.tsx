@@ -284,9 +284,10 @@ const Sidebar = () => {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 z-50",
+        "fixed left-0 top-0 h-screen text-sidebar-foreground flex flex-col transition-all duration-300 z-50",
         isCollapsed ? "w-20" : "w-64"
       )}
+      style={{ background: 'var(--gradient-sidebar)' }}
     >
       {/* Header with collapse button */}
       <div className="p-4 border-b border-sidebar-border">
