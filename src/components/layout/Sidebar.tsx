@@ -392,15 +392,16 @@ const Sidebar = () => {
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-sidebar-border space-y-2">
+      <div className="p-3 space-y-1.5">
+        <div className="gradient-separator mx-2 mb-2" />
         {/* IT Contact */}
         <ITContactDialog
           trigger={
             isCollapsed ? (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
-                  <button className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors relative">
-                    <Headset className="w-5 h-5" />
+                  <button className="w-full flex items-center justify-center px-3 py-2 rounded-xl text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200 relative group">
+                    <Headset className="w-[18px] h-[18px] group-hover:scale-105 transition-transform" />
                     {isSuperAdmin && pendingHelpdesk > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center animate-scale-in">
                         {pendingHelpdesk > 9 ? '9+' : pendingHelpdesk}
@@ -408,13 +409,13 @@ const Sidebar = () => {
                     )}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">
+                <TooltipContent side="right" className="glass font-medium text-xs">
                   Contact IT{isSuperAdmin && pendingHelpdesk > 0 ? ` (${pendingHelpdesk} tichete)` : ''}
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors text-sm">
-                <Headset className="w-5 h-5 flex-shrink-0" />
+              <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200 text-[13px] group">
+                <Headset className="w-[18px] h-[18px] flex-shrink-0 group-hover:scale-105 transition-transform" />
                 <span className="font-medium flex-1 text-left">Contact IT</span>
                 {isSuperAdmin && pendingHelpdesk > 0 && (
                   <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-[20px] justify-center animate-scale-in">
@@ -425,21 +426,21 @@ const Sidebar = () => {
             )
           }
         />
-        {/* Demo Mode Toggle - only for Super Admin, HR/SRUS and Dept Heads */}
+        {/* Demo Mode Toggle */}
         {(isSuperAdmin || canManageHR || isSef) && (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <button
               onClick={toggleDemo}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm",
+                "w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 text-[13px] group",
                 isDemo
-                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                  ? "bg-warning/15 text-warning demo-neon-active"
+                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                 isCollapsed && "justify-center px-0"
               )}
             >
-              <FlaskConical className={cn("w-5 h-5 flex-shrink-0", isDemo && "text-amber-400")} />
+              <FlaskConical className={cn("w-[18px] h-[18px] flex-shrink-0 group-hover:scale-105 transition-transform", isDemo && "text-warning")} />
               {!isCollapsed && (
                 <>
                   <span className="flex-1 text-left font-medium">Mod Demo</span>
@@ -449,7 +450,7 @@ const Sidebar = () => {
             </button>
           </TooltipTrigger>
           {isCollapsed && (
-            <TooltipContent side="right" className="font-medium">
+            <TooltipContent side="right" className="glass font-medium text-xs">
               Mod Demo {isDemo ? '(Activ)' : '(Inactiv)'}
             </TooltipContent>
           )}
@@ -463,16 +464,16 @@ const Sidebar = () => {
               size="sm"
               onClick={handleSignOut}
               className={cn(
-                "w-full text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10",
+                "w-full text-sidebar-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-xl text-[13px] transition-all duration-200 group",
                 isCollapsed ? "justify-center" : "justify-start"
               )}
             >
-              <LogOut className="w-5 h-5" />
-              {!isCollapsed && <span className="ml-3">Deconectare</span>}
+              <LogOut className="w-[18px] h-[18px] group-hover:scale-105 transition-transform" />
+              {!isCollapsed && <span className="ml-2.5 font-medium">Deconectare</span>}
             </Button>
           </TooltipTrigger>
           {isCollapsed && (
-            <TooltipContent side="right" className="font-medium">Deconectare</TooltipContent>
+            <TooltipContent side="right" className="glass font-medium text-xs">Deconectare</TooltipContent>
           )}
         </Tooltip>
       </div>
