@@ -215,23 +215,27 @@ const Sidebar = () => {
     const isActive = !isExternal && location.pathname === item.path;
 
     const commonClasses = cn(
-      "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group",
+      "flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 relative group text-[13px] tracking-wide",
       isActive
-        ? "bg-sidebar-primary/15 text-sidebar-primary-foreground shadow-sm border-l-2 border-sidebar-primary"
-        : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground hover:translate-x-0.5"
+        ? "sidebar-item-active text-sidebar-primary font-semibold"
+        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+      isCollapsed && isActive && "sidebar-item-active-collapsed justify-center"
     );
 
     const innerContent = (
       <>
-        {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-sidebar-primary-foreground rounded-r-full -ml-3" />
-        )}
         <div className="relative">
-          <item.icon className="w-5 h-5 flex-shrink-0" />
+          <item.icon className={cn(
+            "w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-105",
+            isActive && "text-sidebar-primary"
+          )} />
           {item.badge && item.badge > 0 && isCollapsed && (
             <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center animate-scale-in">
               {item.badge > 9 ? '9+' : item.badge}
             </span>
+          )}
+          {isActive && isCollapsed && (
+            <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-sidebar-primary" />
           )}
         </div>
         {!isCollapsed && (
@@ -271,7 +275,7 @@ const Sidebar = () => {
       return (
         <Tooltip key={item.path} delayDuration={0}>
           <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-          <TooltipContent side="right" className="font-medium">
+          <TooltipContent side="right" className="glass font-medium text-xs">
             {item.label}
           </TooltipContent>
         </Tooltip>
