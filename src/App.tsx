@@ -40,7 +40,7 @@ const queryClient = new QueryClient();
 
 function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const { settings, loading: settingsLoading } = useAppSettings();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { isSuperAdmin, role, loading: roleLoading } = useUserRole();
   const location = useLocation();
 
@@ -59,9 +59,9 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Maintenance IS on from here
-  // If user is logged in but role is still loading, show a loading spinner
-  // instead of incorrectly redirecting admins to maintenance
-  if (user && roleLoading) {
+  // Wait for auth AND role to fully load before deciding — prevents
+  // incorrectly redirecting super_admin to /maintenance
+  if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -72,8 +72,8 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Role is loaded (or user is not logged in) — check bypass
-  const canBypassMaintenance = isSuperAdmin || role === 'admin' || role === 'hr' || role === 'sef_srus';
+  // Auth + role loaded — check bypass
+  const canBypassMaintenance = isSuperAdmin || role === 'admin' || role === 'hr' || role === 'sef_srus' || role === 'salarizare';
   
   if (canBypassMaintenance) {
     return <>{children}</>;
