@@ -103,26 +103,20 @@ const Sidebar = () => {
         .eq('user_id', user.id);
       if (!participantData?.length) { setUnreadChat(0); return; }
       let total = 0;
-      for (const p of participantData) {
-        const lastRead = p.last_read_at;
-        if (lastRead) {
-          const { count } = await supabase
-            .from('chat_messages')
-            .select('id', { count: 'exact', head: true })
-            .eq('conversation_id', p.conversation_id)
-            .neq('sender_id', user.id)
-            .gt('created_at', lastRead);
-          total += (count || 0);
-        } else {
-          // No last_read_at means all messages from others are unread
-          const { count } = await supabase
-            .from('chat_messages')
-            .select('id', { count: 'exact', head: true })
-            .eq('conversation_id', p.conversation_id)
-            .neq('sender_id', user.id);
-          total += (count || 0);
-        }
-      }
+      const convIds = participantData.map(p => p.conversation_id);
+      // Single query: fetch all unread messages across all conversations
+      const { data: allMessages } = await supabase
+        .from('chat_messages')
+        .select('conversation_id, created_at')
+        .in('conversation_id', convIds)
+        .neq('sender_id', user.id);
+      if (!allMessages?.length) { setUnreadChat(0); return; }
+      // Build lookup for last_read_at per conversation
+      const lastReadMap = new Map(participantData.map(p => [p.conversation_id, p.last_read_at]));
+      total = allMessages.filter(msg => {
+        const lastRead = lastReadMap.get(msg.conversation_id);
+        return !lastRead || msg.created_at > lastRead;
+      }).length;
       setUnreadChat(total);
     };
     fetchUnreadChat();
@@ -223,8 +217,8 @@ const Sidebar = () => {
     const commonClasses = cn(
       "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group",
       isActive
-        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        ? "bg-sidebar-primary/15 text-sidebar-primary-foreground shadow-sm border-l-2 border-sidebar-primary"
+        : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground hover:translate-x-0.5"
     );
 
     const innerContent = (
@@ -290,9 +284,10 @@ const Sidebar = () => {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 z-50",
+        "fixed left-0 top-0 h-screen text-sidebar-foreground flex flex-col transition-all duration-300 z-50",
         isCollapsed ? "w-20" : "w-64"
       )}
+      style={{ background: 'var(--gradient-sidebar)' }}
     >
       {/* Header with collapse button */}
       <div className="p-4 border-b border-sidebar-border">

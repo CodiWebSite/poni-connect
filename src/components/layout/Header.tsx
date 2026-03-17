@@ -1,17 +1,15 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { GlobalSearch } from '@/components/layout/GlobalSearch';
 import MobileNav from '@/components/layout/MobileNav';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, ChevronRight } from 'lucide-react';
+import { Sun, Moon, ChevronRight, FlaskConical, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useLocation, Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDemoMode } from '@/contexts/DemoModeContext';
-import { FlaskConical, X } from 'lucide-react';
 import { formatNumePrenume } from '@/utils/formatName';
 
 const routeLabels: Record<string, string> = {
@@ -61,7 +59,7 @@ const Header = ({ title, description }: HeaderProps) => {
 
   return (
     <>
-    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border px-4 md:px-6 py-3 md:py-4">
+    <header className="sticky top-0 z-40 bg-background/60 backdrop-blur-xl border-b border-border/40 px-4 md:px-6 py-2.5 md:py-3">
       <div className="flex items-center justify-between gap-2 md:gap-4">
         <div className="flex items-center gap-3">
           {/* Mobile menu button */}
@@ -107,7 +105,7 @@ const Header = ({ title, description }: HeaderProps) => {
       </div>
     </header>
     {isDemo && (
-      <div className="sticky top-[57px] z-39 bg-amber-500/90 backdrop-blur-sm text-amber-950 px-4 py-2 flex items-center justify-center gap-3 text-sm font-medium">
+      <div className="sticky top-[53px] z-[39] bg-amber-500/90 backdrop-blur-sm text-amber-950 px-4 py-2 flex items-center justify-center gap-3 text-sm font-medium">
         <FlaskConical className="w-4 h-4" />
         <span>MOD DEMO ACTIV — Acțiunile nu afectează datele reale</span>
         <Button variant="ghost" size="sm" onClick={toggleDemo} className="h-6 px-2 text-amber-950 hover:bg-amber-600/30">
