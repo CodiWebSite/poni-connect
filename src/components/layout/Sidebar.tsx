@@ -14,7 +14,6 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  ChevronRight,
   Shield,
   UserCircle,
   ClipboardList,
