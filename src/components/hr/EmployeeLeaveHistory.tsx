@@ -7,7 +7,7 @@ import { LeaveEditDialog } from '@/components/profile/LeaveEditDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { History, Pencil, Trash2, Loader2, Calendar } from 'lucide-react';
+import { History, Pencil, Trash2, Loader2, Calendar, Paperclip, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -294,6 +294,31 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
                         <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
                       </div>
                       {details.notes && <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>}
+                      {details.scannedDocumentUrl && (
+                        <button
+                          className="flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                          onClick={async () => {
+                            try {
+                              const { data, error } = await supabase.storage.from('employee-documents').download(details.scannedDocumentUrl);
+                              if (error) throw error;
+                              const url = URL.createObjectURL(data);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = details.scannedDocumentName || details.scannedDocumentUrl.split('/').pop() || 'document';
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            } catch (err) {
+                              console.error('Download error:', err);
+                            }
+                          }}
+                        >
+                          <Paperclip className="w-3 h-3" />
+                          {details.scannedDocumentName || 'Scanare atașată'}
+                          <Download className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <Button variant="ghost" size="sm" onClick={() => setEditingLeave(leave)}>

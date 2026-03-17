@@ -866,9 +866,15 @@ const HRManagement = () => {
     try {
       let fileUrl: string | null = null;
 
-      if (manualLeaveFile && employee.user_id) {
+      // Get leave type label for document naming
+      const leaveTypeConfig = LEAVE_TYPES.find(t => t.key === manualLeaveForm.leave_type);
+      const leaveTypeLabel = leaveTypeConfig?.description || 'Concediu';
+
+      if (manualLeaveFile) {
+        const targetUserId = employee.user_id || `epd-${epdId || employee.id}`;
         const fileExt = manualLeaveFile.name.split('.').pop();
-        const fileName = `${employee.user_id}/manual-leave-${Date.now()}.${fileExt}`;
+        const sanitizedOriginalName = manualLeaveFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const fileName = `${targetUserId}/${Date.now()}-${sanitizedOriginalName}`;
         
         const { error: uploadError } = await supabase.storage
           .from('employee-documents')
@@ -877,14 +883,16 @@ const HRManagement = () => {
         if (uploadError) throw uploadError;
         fileUrl = fileName;
 
-        await supabase.from('employee_documents').insert({
-          user_id: employee.user_id,
-          document_type: 'cerere_concediu_scanata',
-          name: `Cerere concediu ${format(new Date(manualLeaveForm.start_date), 'dd.MM.yyyy')} - ${format(new Date(manualLeaveForm.end_date), 'dd.MM.yyyy')}`,
-          description: manualLeaveForm.notes || 'Cerere de concediu scanată - înregistrare manuală',
-          file_url: fileName,
-          uploaded_by: user?.id
-        });
+        if (employee.user_id) {
+          await supabase.from('employee_documents').insert({
+            user_id: employee.user_id,
+            document_type: `scanare_${manualLeaveForm.leave_type}`,
+            name: manualLeaveFile.name,
+            description: `${leaveTypeLabel} — ${format(new Date(manualLeaveForm.start_date), 'dd.MM.yyyy')} - ${format(new Date(manualLeaveForm.end_date), 'dd.MM.yyyy')}${manualLeaveForm.notes ? ' • ' + manualLeaveForm.notes : ''}`,
+            file_url: fileName,
+            uploaded_by: user?.id
+          });
+        }
       }
 
       // Use the employee's user_id if they have an account, otherwise use the HR user's id
@@ -903,6 +911,7 @@ const HRManagement = () => {
           leaveType: manualLeaveForm.leave_type,
           manualEntry: true,
           scannedDocumentUrl: fileUrl,
+          scannedDocumentName: manualLeaveFile?.name || null,
           notes: manualLeaveForm.notes,
           deductFrom: manualLeaveForm.deduct_from,
           // Always store epd_id and employee_name for consistent history lookup
