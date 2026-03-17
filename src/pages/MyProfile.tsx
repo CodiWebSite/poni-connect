@@ -295,17 +295,22 @@ const MyProfile = () => {
         setDelegatePeriod(`${format(new Date(del.start_date), 'dd.MM.yyyy')} – ${format(new Date(del.end_date), 'dd.MM.yyyy')}`);
       } else {
         setDelegateName(null);
+        setDelegateAvatarUrl(null);
         setDelegatePeriod(null);
       }
     } else if (foundApproverEmail) {
       setApproverName(foundApproverEmail);
+      setApproverAvatarUrl(null);
       setApproverSource(foundApproverSource);
       setDelegateName(null);
+      setDelegateAvatarUrl(null);
       setDelegatePeriod(null);
     } else {
       setApproverName(null);
+      setApproverAvatarUrl(null);
       setApproverSource(null);
       setDelegateName(null);
+      setDelegateAvatarUrl(null);
       setDelegatePeriod(null);
     }
 
