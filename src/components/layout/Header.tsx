@@ -105,7 +105,7 @@ const Header = ({ title, description }: HeaderProps) => {
       </div>
     </header>
     {isDemo && (
-      <div className="sticky top-[57px] z-39 bg-amber-500/90 backdrop-blur-sm text-amber-950 px-4 py-2 flex items-center justify-center gap-3 text-sm font-medium">
+      <div className="sticky top-[53px] z-[39] bg-amber-500/90 backdrop-blur-sm text-amber-950 px-4 py-2 flex items-center justify-center gap-3 text-sm font-medium">
         <FlaskConical className="w-4 h-4" />
         <span>MOD DEMO ACTIV — Acțiunile nu afectează datele reale</span>
         <Button variant="ghost" size="sm" onClick={toggleDemo} className="h-6 px-2 text-amber-950 hover:bg-amber-600/30">
