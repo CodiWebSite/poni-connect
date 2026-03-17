@@ -264,14 +264,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
                 const startDate = details.startDate ? new Date(details.startDate) : null;
                 const endDate = details.endDate ? new Date(details.endDate) : null;
                 const leaveType = (details.leaveType || details.leave_type || 'co').toLowerCase();
-                const leaveTypeLabels: Record<string, { label: string; className: string }> = {
-                  co: { label: 'CO', className: 'bg-sky-500/20 text-sky-700 dark:text-sky-300' },
-                  bo: { label: 'CM', className: 'bg-rose-500/20 text-rose-700 dark:text-rose-300' },
-                  ccc: { label: 'CCC', className: 'bg-purple-500/20 text-purple-700 dark:text-purple-300' },
-                  cfp: { label: 'CFP', className: 'bg-amber-500/20 text-amber-700 dark:text-amber-300' },
-                  ev: { label: 'EV', className: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' },
-                };
-                const typeInfo = leaveTypeLabels[leaveType] || leaveTypeLabels.co;
+                const typeStyle = getLeaveStyle(leaveType);
 
                 return (
                   <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 border rounded-lg hover:bg-muted/40 transition-colors">
