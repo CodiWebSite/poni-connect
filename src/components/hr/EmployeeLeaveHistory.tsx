@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NON_DEDUCTIBLE_TYPES } from '@/utils/leaveTypes';
+import { NON_DEDUCTIBLE_TYPES, getLeaveStyle } from '@/utils/leaveTypes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
