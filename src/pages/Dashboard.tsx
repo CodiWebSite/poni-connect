@@ -30,7 +30,8 @@ const quickActions = [
 ];
 
 const Dashboard = () => {
-  const { role, isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { role, isSuperAdmin, isHR, isSefSRUS, loading: roleLoading } = useUserRole();
+  const isAdminDashboard = isSuperAdmin || role === 'admin' || isHR || isSefSRUS;
   const { settings } = useAppSettings();
   const [stats, setStats] = useState({ employees: 0 });
 
