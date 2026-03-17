@@ -217,8 +217,8 @@ const Sidebar = () => {
     const commonClasses = cn(
       "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group",
       isActive
-        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        ? "bg-sidebar-primary/15 text-sidebar-primary-foreground shadow-sm border-l-2 border-sidebar-primary"
+        : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground hover:translate-x-0.5"
     );
 
     const innerContent = (
