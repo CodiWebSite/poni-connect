@@ -755,9 +755,13 @@ const MyProfile = () => {
                   </div>
                   {delegateName && (
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-warning/5 border border-warning/20">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-warning to-warning/60 flex items-center justify-center flex-shrink-0 text-warning-foreground font-bold text-sm shadow-md">
-                        <ArrowRightLeft className="w-5 h-5" />
-                      </div>
+                      {delegateAvatarUrl ? (
+                        <img src={delegateAvatarUrl} alt={delegateName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-warning to-warning/60 flex items-center justify-center flex-shrink-0 text-warning-foreground font-bold text-sm shadow-md">
+                          {delegateName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div>
                         <p className="font-medium text-sm">{delegateName}</p>
                         <p className="text-xs text-muted-foreground">Înlocuitor temporar</p>
