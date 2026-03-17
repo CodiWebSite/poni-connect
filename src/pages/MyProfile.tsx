@@ -23,6 +23,7 @@ import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { formatNumePrenume } from '@/utils/formatName';
 import { isHrRequestOwnedByUser, isLeaveRequestOwnedByUser } from '@/utils/leaveOwnership';
+import { getLeaveStyle } from '@/utils/leaveTypes';
 
 interface Profile {
   full_name: string;
@@ -690,8 +691,17 @@ const MyProfile = () => {
                             {/* Timeline dot */}
                             <div className={`absolute -left-6 top-4 w-[18px] h-[18px] rounded-full border-[3px] border-background ${status.color} shadow-sm`} />
                             
-                            <div className="space-y-0.5 flex-1">
+                              <div className="space-y-0.5 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
+                                {(() => {
+                                  const leaveTypeKey = leave.source === 'leave_requests' ? 'co' : (details.leaveType || details.leave_type || 'co');
+                                  const style = getLeaveStyle(leaveTypeKey);
+                                  return (
+                                    <Badge variant="outline" className={`text-[10px] font-bold ${style.color} ${style.bg} border-0`}>
+                                      {style.label}
+                                    </Badge>
+                                  );
+                                })()}
                                 <p className="font-semibold text-sm">
                                   {startDate && endDate
                                     ? `${format(startDate, 'dd MMM', { locale: ro })} — ${format(endDate, 'dd MMM yyyy', { locale: ro })}`
