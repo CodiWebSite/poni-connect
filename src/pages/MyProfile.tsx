@@ -266,10 +266,11 @@ const MyProfile = () => {
     if (foundApproverId) {
       const { data: ap } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, avatar_url')
         .eq('user_id', foundApproverId)
         .maybeSingle();
       setApproverName(formatNumePrenume({ fullName: ap?.full_name }) || foundApproverEmail || 'Necunoscut');
+      setApproverAvatarUrl(ap?.avatar_url || null);
       setApproverSource(foundApproverSource);
 
       const today = new Date().toISOString().split('T')[0];
