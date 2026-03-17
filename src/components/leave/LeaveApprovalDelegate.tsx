@@ -98,17 +98,43 @@ export function LeaveApprovalDelegate() {
 
     if (!myProfile?.department) return;
 
-    const { data: profiles } = await supabase
+    // Fetch same-department colleagues
+    const { data: deptProfiles } = await supabase
       .from('profiles')
       .select('user_id, full_name, position')
       .eq('department', myProfile.department)
       .neq('user_id', user.id);
 
-    setColleagues((profiles || []).map(p => ({
+    // Cross-department delegate pairs (bidirectional)
+    const crossDeptPairs: Record<string, string> = {
+      'ebcea4c3-bed6-4960-bb27-4f43303094b3': '50c33275-d49f-48a4-a9f9-ad6f36b70d4b', // Lucian Tabara <-> Cezar Ciornei
+      '50c33275-d49f-48a4-a9f9-ad6f36b70d4b': 'ebcea4c3-bed6-4960-bb27-4f43303094b3',
+    };
+
+    const extraColleagueId = crossDeptPairs[user.id];
+    let allColleagues = (deptProfiles || []).map(p => ({
       user_id: p.user_id,
       full_name: p.full_name,
       position: p.position,
-    })));
+    }));
+
+    // Add cross-department colleague if not already in the list
+    if (extraColleagueId && !allColleagues.some(c => c.user_id === extraColleagueId)) {
+      const { data: extraProfile } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, position')
+        .eq('user_id', extraColleagueId)
+        .maybeSingle();
+      if (extraProfile) {
+        allColleagues.push({
+          user_id: extraProfile.user_id,
+          full_name: extraProfile.full_name,
+          position: extraProfile.position,
+        });
+      }
+    }
+
+    setColleagues(allColleagues);
   };
 
   const handleSubmit = async () => {
