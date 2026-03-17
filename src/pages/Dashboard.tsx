@@ -30,20 +30,21 @@ const quickActions = [
 ];
 
 const Dashboard = () => {
-  const { role, isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { role, isSuperAdmin, isHR, isSefSRUS, loading: roleLoading } = useUserRole();
+  const isAdminDashboard = isSuperAdmin || role === 'admin' || isHR || isSefSRUS;
   const { settings } = useAppSettings();
   const [stats, setStats] = useState({ employees: 0 });
 
   useEffect(() => {
-    if (role && role !== 'user') fetchData();
-  }, [role]);
+    if (isAdminDashboard) fetchData();
+  }, [isAdminDashboard]);
 
   const fetchData = async () => {
     const { count } = await supabase.from('employee_personal_data').select('*', { count: 'exact', head: true }).eq('is_archived', false);
     setStats({ employees: count || 0 });
   };
 
-  if (role === 'user') {
+  if (!isAdminDashboard) {
     return (
       <MainLayout title="Dashboard" description={<span className="inline-flex items-center gap-1">Bine ați venit în intranetul ICMPP <ContextualHelp title="Dashboard" content="Aceasta este pagina principală a platformei. De aici accesați rapid profilul, calendarul de concedii și formulare." /></span>}>
         {settings.homepage_message && (
