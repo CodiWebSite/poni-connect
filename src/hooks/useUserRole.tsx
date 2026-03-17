@@ -16,23 +16,33 @@ export function useUserRole() {
       return;
     }
 
+    setLoading(true);
+
     const fetchRole = async () => {
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .eq('user_id', user.id);
 
-      if (data && !error) {
-        const r = data.role as string;
-        if (['admin', 'super_admin', 'hr', 'sef', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific', 'bibliotecar', 'salarizare', 'achizitii', 'contabilitate', 'oficiu_juridic', 'compartiment_comunicare', 'secretariat', 'medic_medicina_muncii'].includes(r)) {
-          setRole(r as AppRole);
-        } else {
-          setRole('user');
-        }
-      } else {
+      if (error || !data?.length) {
         setRole('user');
+        setLoading(false);
+        return;
       }
+
+      const validRoles: AppRole[] = [
+        'super_admin', 'admin', 'hr', 'sef_srus', 'salarizare', 'sef',
+        'director_institut', 'director_adjunct', 'secretar_stiintific',
+        'bibliotecar', 'achizitii', 'contabilitate', 'oficiu_juridic',
+        'compartiment_comunicare', 'secretariat', 'medic_medicina_muncii', 'user'
+      ];
+
+      const assignedRoles = data
+        .map((row) => row.role as string)
+        .filter((r): r is AppRole => validRoles.includes(r as AppRole));
+
+      const resolvedRole = validRoles.find((r) => assignedRoles.includes(r)) ?? 'user';
+      setRole(resolvedRole);
       setLoading(false);
     };
 
