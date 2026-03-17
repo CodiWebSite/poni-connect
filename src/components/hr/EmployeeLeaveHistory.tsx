@@ -7,7 +7,7 @@ import { LeaveEditDialog } from '@/components/profile/LeaveEditDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { History, Pencil, Trash2, Loader2, Calendar } from 'lucide-react';
+import { History, Pencil, Trash2, Loader2, Calendar, Paperclip, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
