@@ -287,10 +287,11 @@ const MyProfile = () => {
         const del = activeDelegate[0] as any;
         const { data: delProfile } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, avatar_url')
           .eq('user_id', del.delegate_user_id)
           .maybeSingle();
         setDelegateName(delProfile?.full_name ? formatNumePrenume({ fullName: delProfile.full_name }) : null);
+        setDelegateAvatarUrl(delProfile?.avatar_url || null);
         setDelegatePeriod(`${format(new Date(del.start_date), 'dd.MM.yyyy')} – ${format(new Date(del.end_date), 'dd.MM.yyyy')}`);
       } else {
         setDelegateName(null);
