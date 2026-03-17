@@ -188,6 +188,75 @@
   }
 }
 
+/* Sidebar Modern Utilities */
+@layer utilities {
+  /* Custom scrollbar for sidebar */
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar:hover {
+    width: 6px;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--sidebar-accent) / 0.5);
+    border-radius: 9999px;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--sidebar-accent) / 0.8);
+  }
+  .sidebar-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--sidebar-accent) / 0.5) transparent;
+  }
+
+  /* Active nav item pill */
+  .sidebar-item-active {
+    background: linear-gradient(135deg, hsl(var(--sidebar-primary) / 0.18), hsl(var(--sidebar-primary) / 0.08));
+    box-shadow: 0 0 16px hsl(var(--sidebar-primary) / 0.12), inset 0 0 0 1px hsl(var(--sidebar-primary) / 0.12);
+  }
+
+  /* Collapsed active: circular glow */
+  .sidebar-item-active-collapsed {
+    background: radial-gradient(circle, hsl(var(--sidebar-primary) / 0.2) 0%, transparent 70%);
+    box-shadow: 0 0 12px hsl(var(--sidebar-primary) / 0.15);
+  }
+
+  /* Avatar gradient ring */
+  .avatar-gradient-ring {
+    background: linear-gradient(135deg, hsl(var(--sidebar-primary)), hsl(var(--accent)));
+    padding: 2px;
+    border-radius: 9999px;
+  }
+  .avatar-gradient-ring > * {
+    border-radius: 9999px;
+  }
+
+  /* Logo glow pulse */
+  .logo-glow {
+    box-shadow: 0 0 0 0 hsl(var(--sidebar-primary) / 0.3);
+    animation: logoGlow 3s ease-in-out infinite;
+  }
+
+  /* Gradient separator */
+  .gradient-separator {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--sidebar-border)), transparent);
+  }
+
+  /* Demo neon glow */
+  .demo-neon-active {
+    box-shadow: 0 0 12px hsl(38 92% 52% / 0.3), inset 0 0 0 1px hsl(38 92% 52% / 0.25);
+  }
+}
+
+@keyframes logoGlow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--sidebar-primary) / 0); }
+  50% { box-shadow: 0 0 12px 4px hsl(var(--sidebar-primary) / 0.25); }
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }

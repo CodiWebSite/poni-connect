@@ -14,7 +14,6 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  ChevronRight,
   Shield,
   UserCircle,
   ClipboardList,
@@ -215,23 +214,27 @@ const Sidebar = () => {
     const isActive = !isExternal && location.pathname === item.path;
 
     const commonClasses = cn(
-      "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group",
+      "flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 relative group text-[13px] tracking-wide",
       isActive
-        ? "bg-sidebar-primary/15 text-sidebar-primary-foreground shadow-sm border-l-2 border-sidebar-primary"
-        : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground hover:translate-x-0.5"
+        ? "sidebar-item-active text-sidebar-primary font-semibold"
+        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+      isCollapsed && isActive && "sidebar-item-active-collapsed justify-center"
     );
 
     const innerContent = (
       <>
-        {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-sidebar-primary-foreground rounded-r-full -ml-3" />
-        )}
         <div className="relative">
-          <item.icon className="w-5 h-5 flex-shrink-0" />
+          <item.icon className={cn(
+            "w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-105",
+            isActive && "text-sidebar-primary"
+          )} />
           {item.badge && item.badge > 0 && isCollapsed && (
             <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center animate-scale-in">
               {item.badge > 9 ? '9+' : item.badge}
             </span>
+          )}
+          {isActive && isCollapsed && (
+            <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-sidebar-primary" />
           )}
         </div>
         {!isCollapsed && (
@@ -271,7 +274,7 @@ const Sidebar = () => {
       return (
         <Tooltip key={item.path} delayDuration={0}>
           <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-          <TooltipContent side="right" className="font-medium">
+          <TooltipContent side="right" className="glass font-medium text-xs">
             {item.label}
           </TooltipContent>
         </Tooltip>
@@ -284,24 +287,27 @@ const Sidebar = () => {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 h-screen text-sidebar-foreground flex flex-col transition-all duration-300 z-50",
+        "fixed left-0 top-0 h-screen text-sidebar-foreground flex flex-col z-50",
+        "transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
         isCollapsed ? "w-20" : "w-64"
       )}
       style={{ background: 'var(--gradient-sidebar)' }}
     >
-      {/* Header with collapse button */}
-      <div className="p-4 border-b border-sidebar-border">
+      {/* Header */}
+      <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img 
-              src="/logo-icmpp.png" 
-              alt="ICMPP Logo" 
-              className="w-10 h-10 object-contain flex-shrink-0"
-            />
+            <div className="logo-glow rounded-xl p-0.5">
+              <img 
+                src="/logo-icmpp.png" 
+                alt="ICMPP Logo" 
+                className="w-9 h-9 object-contain flex-shrink-0 rounded-xl"
+              />
+            </div>
             {!isCollapsed && (
               <div className="overflow-hidden">
-                <h1 className="font-display font-bold text-lg leading-tight">ICMPP</h1>
-                <p className="text-xs text-sidebar-foreground/70 truncate">Intranet</p>
+                <h1 className="font-display font-bold text-lg leading-tight gradient-text">ICMPP</h1>
+                <p className="text-[11px] text-sidebar-foreground/50 tracking-wide">Intranet</p>
               </div>
             )}
           </div>
@@ -309,72 +315,92 @@ const Sidebar = () => {
             variant="ghost"
             size="icon"
             onClick={toggleCollapsed}
-            className="h-7 w-7 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent flex-shrink-0"
+            className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 flex-shrink-0 transition-all duration-200"
           >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            <ChevronLeft className={cn(
+              "w-4 h-4 transition-transform duration-300",
+              isCollapsed && "rotate-180"
+            )} />
           </Button>
         </div>
       </div>
 
+      <div className="gradient-separator mx-4" />
+
       {/* User info */}
-      <div className="p-3 border-b border-sidebar-border">
+      <div className="p-3">
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
-            <Link to="/my-profile" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-              <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center overflow-hidden flex-shrink-0">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-4 h-4 text-sidebar-foreground/70" />
-                )}
+            <Link to="/my-profile" className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-sidebar-accent/40 transition-all duration-200 group">
+              <div className="avatar-gradient-ring flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center overflow-hidden relative">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-4 h-4 text-sidebar-foreground/70" />
+                  )}
+                  {/* Online dot */}
+                  <span className="absolute bottom-0 right-0 w-2 h-2 bg-success rounded-full ring-2 ring-[hsl(var(--sidebar-background))]" />
+                </div>
               </div>
               {!isCollapsed && fullName && (
-                <span className="text-sm font-medium text-sidebar-foreground truncate">{fullName}</span>
+                <span className="text-[13px] font-medium text-sidebar-foreground/90 truncate group-hover:text-sidebar-foreground transition-colors">{fullName}</span>
               )}
             </Link>
           </TooltipTrigger>
           {isCollapsed && fullName && (
-            <TooltipContent side="right" className="font-medium">{fullName}</TooltipContent>
+            <TooltipContent side="right" className="glass font-medium text-xs">{fullName}</TooltipContent>
           )}
         </Tooltip>
       </div>
 
+      <div className="gradient-separator mx-4" />
+
       {/* Navigation */}
-      <nav className="flex-1 p-3 overflow-y-auto">
+      <nav className="flex-1 p-3 overflow-y-auto sidebar-scrollbar">
         {/* Main section */}
         {!isCollapsed && (
-          <p className="px-3 mb-2 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">
-            Meniu Principal
-          </p>
+          <div className="flex items-center gap-2 px-3 mb-3 mt-1">
+            <span className="h-px flex-1 bg-sidebar-border/30" />
+            <span className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/35 font-semibold">
+              Meniu Principal
+            </span>
+            <span className="h-px flex-1 bg-sidebar-border/30" />
+          </div>
         )}
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {mainItems.map(renderNavItem)}
         </div>
 
         {/* Separator */}
-        <div className="my-3 border-t border-sidebar-border/50" />
+        <div className="my-4 gradient-separator mx-2" />
 
         {/* Management section */}
         {!isCollapsed && (
-          <p className="px-3 mb-2 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">
-            Administrare
-          </p>
+          <div className="flex items-center gap-2 px-3 mb-3">
+            <span className="h-px flex-1 bg-sidebar-border/30" />
+            <span className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/35 font-semibold">
+              Administrare
+            </span>
+            <span className="h-px flex-1 bg-sidebar-border/30" />
+          </div>
         )}
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {managementItems.map(renderNavItem)}
         </div>
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-sidebar-border space-y-2">
+      <div className="p-3 space-y-1.5">
+        <div className="gradient-separator mx-2 mb-2" />
         {/* IT Contact */}
         <ITContactDialog
           trigger={
             isCollapsed ? (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
-                  <button className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors relative">
-                    <Headset className="w-5 h-5" />
+                  <button className="w-full flex items-center justify-center px-3 py-2 rounded-xl text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200 relative group">
+                    <Headset className="w-[18px] h-[18px] group-hover:scale-105 transition-transform" />
                     {isSuperAdmin && pendingHelpdesk > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center animate-scale-in">
                         {pendingHelpdesk > 9 ? '9+' : pendingHelpdesk}
@@ -382,13 +408,13 @@ const Sidebar = () => {
                     )}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">
+                <TooltipContent side="right" className="glass font-medium text-xs">
                   Contact IT{isSuperAdmin && pendingHelpdesk > 0 ? ` (${pendingHelpdesk} tichete)` : ''}
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors text-sm">
-                <Headset className="w-5 h-5 flex-shrink-0" />
+              <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200 text-[13px] group">
+                <Headset className="w-[18px] h-[18px] flex-shrink-0 group-hover:scale-105 transition-transform" />
                 <span className="font-medium flex-1 text-left">Contact IT</span>
                 {isSuperAdmin && pendingHelpdesk > 0 && (
                   <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 min-w-[20px] justify-center animate-scale-in">
@@ -399,21 +425,21 @@ const Sidebar = () => {
             )
           }
         />
-        {/* Demo Mode Toggle - only for Super Admin, HR/SRUS and Dept Heads */}
+        {/* Demo Mode Toggle */}
         {(isSuperAdmin || canManageHR || isSef) && (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <button
               onClick={toggleDemo}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm",
+                "w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 text-[13px] group",
                 isDemo
-                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                  ? "bg-warning/15 text-warning demo-neon-active"
+                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                 isCollapsed && "justify-center px-0"
               )}
             >
-              <FlaskConical className={cn("w-5 h-5 flex-shrink-0", isDemo && "text-amber-400")} />
+              <FlaskConical className={cn("w-[18px] h-[18px] flex-shrink-0 group-hover:scale-105 transition-transform", isDemo && "text-warning")} />
               {!isCollapsed && (
                 <>
                   <span className="flex-1 text-left font-medium">Mod Demo</span>
@@ -423,7 +449,7 @@ const Sidebar = () => {
             </button>
           </TooltipTrigger>
           {isCollapsed && (
-            <TooltipContent side="right" className="font-medium">
+            <TooltipContent side="right" className="glass font-medium text-xs">
               Mod Demo {isDemo ? '(Activ)' : '(Inactiv)'}
             </TooltipContent>
           )}
@@ -437,16 +463,16 @@ const Sidebar = () => {
               size="sm"
               onClick={handleSignOut}
               className={cn(
-                "w-full text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10",
+                "w-full text-sidebar-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-xl text-[13px] transition-all duration-200 group",
                 isCollapsed ? "justify-center" : "justify-start"
               )}
             >
-              <LogOut className="w-5 h-5" />
-              {!isCollapsed && <span className="ml-3">Deconectare</span>}
+              <LogOut className="w-[18px] h-[18px] group-hover:scale-105 transition-transform" />
+              {!isCollapsed && <span className="ml-2.5 font-medium">Deconectare</span>}
             </Button>
           </TooltipTrigger>
           {isCollapsed && (
-            <TooltipContent side="right" className="font-medium">Deconectare</TooltipContent>
+            <TooltipContent side="right" className="glass font-medium text-xs">Deconectare</TooltipContent>
           )}
         </Tooltip>
       </div>
