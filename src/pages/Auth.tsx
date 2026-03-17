@@ -243,15 +243,31 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
-      {/* Animated background blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/8 rounded-full blur-3xl animate-blob" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/8 rounded-full blur-3xl animate-blob animation-delay-2000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl animate-blob animation-delay-4000" />
+    <div className="min-h-screen flex bg-background relative overflow-hidden">
+      {/* Left side — decorative gradient panel */}
+      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center" style={{ background: 'var(--gradient-hero)' }}>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-20 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-blob" />
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-blob animation-delay-2000" />
+        </div>
+        <div className="relative z-10 text-center space-y-6 px-12">
+          <img src="/logo-icmpp.png" alt="ICMPP" className="w-28 h-28 object-contain mx-auto drop-shadow-lg" />
+          <h2 className="text-3xl font-display font-bold text-white">ICMPP Intranet</h2>
+          <p className="text-white/70 text-sm max-w-xs mx-auto">
+            Institutul de Chimie Macromoleculară "Petru Poni" Iași — Platformă internă de management
+          </p>
+        </div>
       </div>
+
+      {/* Right side — auth form */}
+      <div className="flex-1 flex items-center justify-center p-6 relative">
+        {/* Animated background blobs (visible on mobile / right side) */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/6 rounded-full blur-3xl animate-blob" />
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/6 rounded-full blur-3xl animate-blob animation-delay-2000" />
+        </div>
       
-      <Card className="w-full max-w-md relative animate-fade-in bg-card/90 backdrop-blur-xl border border-border/60 shadow-lg shadow-primary/5">
+      <Card className="w-full max-w-md relative animate-fade-in glass-card">
         <CardHeader className="text-center space-y-4 pb-2">
           <div className="mx-auto">
             <div className="relative">
