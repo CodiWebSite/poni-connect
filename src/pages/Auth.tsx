@@ -268,23 +268,29 @@ const Auth = () => {
         </div>
       
       <Card className="w-full max-w-md relative animate-fade-in glass-card">
-        <CardHeader className="text-center space-y-4 pb-2">
+        <CardHeader className="text-center space-y-4 pb-2 lg:hidden">
           <div className="mx-auto">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl scale-150" />
               <img 
                 src="/logo-icmpp.png" 
                 alt="ICMPP Logo" 
-                className="w-24 h-24 object-contain mx-auto relative z-10 drop-shadow-md"
+                className="w-20 h-20 object-contain mx-auto relative z-10 drop-shadow-md"
               />
             </div>
           </div>
           <div>
             <CardTitle className="text-2xl font-display">ICMPP Intranet</CardTitle>
-            <CardDescription className="text-muted-foreground mt-2">
-              Institutul de Chimie Macromoleculară "Petru Poni" Iași
+            <CardDescription className="text-muted-foreground mt-1">
+              Platforma internă ICMPP
             </CardDescription>
           </div>
+        </CardHeader>
+        <CardHeader className="hidden lg:flex flex-col items-center space-y-2 pb-2">
+          <CardTitle className="text-2xl font-display">Bine ați venit</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Autentifică-te pentru a accesa platforma
+          </CardDescription>
         </CardHeader>
         
         <CardContent>
