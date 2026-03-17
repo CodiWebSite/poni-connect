@@ -340,7 +340,7 @@ const Sidebar = () => {
                     <User className="w-4 h-4 text-sidebar-foreground/70" />
                   )}
                   {/* Online dot */}
-                  <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-[hsl(var(--sidebar-background))]" />
+                  <span className="absolute bottom-0 right-0 w-2 h-2 bg-success rounded-full ring-2 ring-[hsl(var(--sidebar-background))]" />
                 </div>
               </div>
               {!isCollapsed && fullName && (
