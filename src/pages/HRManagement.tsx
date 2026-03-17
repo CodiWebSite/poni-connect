@@ -911,6 +911,7 @@ const HRManagement = () => {
           leaveType: manualLeaveForm.leave_type,
           manualEntry: true,
           scannedDocumentUrl: fileUrl,
+          scannedDocumentName: manualLeaveFile?.name || null,
           notes: manualLeaveForm.notes,
           deductFrom: manualLeaveForm.deduct_from,
           // Always store epd_id and employee_name for consistent history lookup
