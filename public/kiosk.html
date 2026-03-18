@@ -158,26 +158,16 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
     <div class="sidebar">
       <div class="sidebar-glow"></div>
       <div class="sidebar-content">
-        <!-- Section 0: Weather -->
+        <!-- Section 0: Announcements -->
         <div class="sidebar-section active" id="sec0">
-          <div class="section-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-            Meteo
-          </div>
-          <div id="weatherContent">
-            <div style="color:#64748b;font-size:18px">Se încarcă meteo...</div>
-          </div>
-        </div>
-        <!-- Section 1: Announcements -->
-        <div class="sidebar-section hidden" id="sec1">
           <div class="section-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
             Anunțuri
           </div>
           <div id="annContent"><div style="color:#64748b;font-size:18px">Niciun anunț</div></div>
         </div>
-        <!-- Section 2: Rooms -->
-        <div class="sidebar-section hidden" id="sec2">
+        <!-- Section 1: Rooms -->
+        <div class="sidebar-section hidden" id="sec1">
           <div class="section-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg>
             Săli azi
@@ -188,7 +178,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
       <div class="dots-nav" id="dotsNav">
         <button class="dot active" onclick="goTo(0)"></button>
         <button class="dot" onclick="goTo(1)"></button>
-        <button class="dot" onclick="goTo(2)"></button>
       </div>
     </div>
   </div>
