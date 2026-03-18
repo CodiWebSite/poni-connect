@@ -185,7 +185,7 @@ const Sidebar = () => {
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
-    { icon: Calendar, label: 'Calendar Evenimente', path: '/calendar' },
+    
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request', badge: (isSef || isSefSRUS || isSuperAdmin) ? pendingHR : undefined },
     ...((isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
