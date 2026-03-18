@@ -55,6 +55,7 @@ const Kiosk = () => {
   const [kioskEnabled, setKioskEnabled] = useState(true);
   const [kioskMessage, setKioskMessage] = useState('');
   const [tickerMessages, setTickerMessages] = useState<string[]>([]);
+  const [videoProgress, setVideoProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const i = t[lang];
