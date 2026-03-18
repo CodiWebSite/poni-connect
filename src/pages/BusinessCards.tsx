@@ -218,6 +218,7 @@ function SelfServiceView() {
   const [department, setDepartment] = useState('');
   const [phone, setPhone] = useState('');
   const [variant, setVariant] = useState('classic');
+  const [lang, setLang] = useState<CardLang>('ro');
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
