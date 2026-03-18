@@ -372,6 +372,7 @@ function AdminView() {
     phone,
     email: selectedEmployee.email,
     profileUrl: `${window.location.origin}/profil/${selectedEmployee.id}`,
+    lang,
   } : null;
 
   const handleDownload = async () => {
