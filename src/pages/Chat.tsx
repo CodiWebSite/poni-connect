@@ -17,6 +17,12 @@ const Chat = () => {
     setListKey(k => k + 1);
   }, []);
 
+  // Tell global notifier which conversation is active
+  useEffect(() => {
+    setActiveChatConversation(selectedConvId);
+    return () => setActiveChatConversation(null);
+  }, [selectedConvId]);
+
   // On mobile when inside a conversation, render without MainLayout for full-screen chat
   if (isMobile && selectedConvId) {
     return (
