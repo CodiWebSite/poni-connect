@@ -4,7 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
-// https://vitejs.dev/config/
+// https://vitejs.dev/config/ — rebuild trigger
 export default defineConfig(({ mode }) => ({
   build: {
     target: "es2015",
