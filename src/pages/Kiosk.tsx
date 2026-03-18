@@ -180,12 +180,11 @@ const Kiosk = () => {
         </div>
         <div className="flex items-center gap-4">
           <AnalogClock size={80} />
-          <div className="text-right">
-            <div className="text-3xl font-mono font-bold tabular-nums text-foreground tracking-wider">
-              {formatTime(now)}
-            </div>
-            <div className="text-xs text-muted-foreground mt-0.5">{i.formatDate(now)}</div>
-          </div>
+          <KioskHeaderWeather
+            formatTime={formatTime}
+            formatDate={i.formatDate}
+            now={now}
+          />
         </div>
       </header>
 
