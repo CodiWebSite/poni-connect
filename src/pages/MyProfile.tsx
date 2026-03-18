@@ -11,6 +11,7 @@ import { ProgressRing } from '@/components/ui/progress-ring';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { useToast } from '@/hooks/use-toast';
 import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestForm';
+import { PublicProfileEditor } from '@/components/profile/PublicProfileEditor';
 import { AvatarCropDialog } from '@/components/profile/AvatarCropDialog';
 import { ProfileSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { 
@@ -153,6 +154,7 @@ const MyProfile = () => {
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [cnpCopied, setCnpCopied] = useState(false);
+  const [epdId, setEpdId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchData();
@@ -184,6 +186,7 @@ const MyProfile = () => {
         .maybeSingle();
       if (pd) {
         ownEpdId = pd.id;
+        setEpdId(pd.id);
         setPersonalData(pd);
         const [carryRes, bonusRes] = await Promise.all([
           supabase.from('leave_carryover').select('from_year, to_year, initial_days, used_days, remaining_days').eq('employee_personal_data_id', pd.id).order('from_year', { ascending: false }),
@@ -1045,6 +1048,12 @@ const MyProfile = () => {
           </div>
         </div>
       </div>
+
+      {epdId && profile?.full_name && (
+        <div className="max-w-4xl mt-6">
+          <PublicProfileEditor epdId={epdId} employeeName={profile.full_name} />
+        </div>
+      )}
 
       <CorrectionRequestForm 
         open={showCorrectionForm} 
