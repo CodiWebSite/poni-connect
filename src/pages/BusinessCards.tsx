@@ -34,12 +34,16 @@ function CardPreview({
   data,
   variant,
   onVariantChange,
+  lang,
+  onLangChange,
   frontRef,
   backRef,
 }: {
   data: CardData;
   variant: string;
   onVariantChange: (v: string) => void;
+  lang: CardLang;
+  onLangChange: (v: CardLang) => void;
   frontRef: React.RefObject<HTMLDivElement>;
   backRef: React.RefObject<HTMLDivElement>;
 }) {
