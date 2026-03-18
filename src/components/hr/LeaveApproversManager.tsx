@@ -70,6 +70,7 @@ export function LeaveApproversManager() {
   const [departments, setDepartments] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeDelegates, setActiveDelegates] = useState<ActiveDelegate[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Per-employee form
