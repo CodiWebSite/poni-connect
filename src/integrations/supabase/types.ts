@@ -2034,7 +2034,9 @@ export type Database = {
       public_profile_settings: {
         Row: {
           bio: string | null
+          bio_en: string | null
           created_at: string
+          department_en: string | null
           epd_id: string
           facebook_url: string | null
           google_scholar_url: string | null
@@ -2043,19 +2045,23 @@ export type Database = {
           linkedin_url: string | null
           orcid_url: string | null
           phone: string | null
+          position_en: string | null
           researchgate_url: string | null
           show_department: boolean
           show_email: boolean
           show_phone: boolean
           show_position: boolean
           tagline: string | null
+          tagline_en: string | null
           updated_at: string
           website_url: string | null
           x_url: string | null
         }
         Insert: {
           bio?: string | null
+          bio_en?: string | null
           created_at?: string
+          department_en?: string | null
           epd_id: string
           facebook_url?: string | null
           google_scholar_url?: string | null
@@ -2064,19 +2070,23 @@ export type Database = {
           linkedin_url?: string | null
           orcid_url?: string | null
           phone?: string | null
+          position_en?: string | null
           researchgate_url?: string | null
           show_department?: boolean
           show_email?: boolean
           show_phone?: boolean
           show_position?: boolean
           tagline?: string | null
+          tagline_en?: string | null
           updated_at?: string
           website_url?: string | null
           x_url?: string | null
         }
         Update: {
           bio?: string | null
+          bio_en?: string | null
           created_at?: string
+          department_en?: string | null
           epd_id?: string
           facebook_url?: string | null
           google_scholar_url?: string | null
@@ -2085,12 +2095,14 @@ export type Database = {
           linkedin_url?: string | null
           orcid_url?: string | null
           phone?: string | null
+          position_en?: string | null
           researchgate_url?: string | null
           show_department?: boolean
           show_email?: boolean
           show_phone?: boolean
           show_position?: boolean
           tagline?: string | null
+          tagline_en?: string | null
           updated_at?: string
           website_url?: string | null
           x_url?: string | null
