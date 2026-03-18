@@ -813,6 +813,34 @@ const MyProfile = () => {
               </Card>
             )}
 
+            {/* Acting as Delegate Info */}
+            {actingAsDelegate && (
+              <Card className="animate-fade-in border-accent/30" style={{ animationDelay: '175ms' }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <UserCheck className="w-5 h-5 text-accent" />
+                    Înlocuitor Activ
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/5 border border-accent/20">
+                    {actingAsDelegate.delegatorAvatar ? (
+                      <img src={actingAsDelegate.delegatorAvatar} alt={actingAsDelegate.delegatorName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent/60 flex items-center justify-center flex-shrink-0 text-accent-foreground font-bold text-sm shadow-md">
+                        {actingAsDelegate.delegatorName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">Înlocuiți pe {actingAsDelegate.delegatorName}</p>
+                      <p className="text-xs text-muted-foreground">Aprobați cererile de concediu în absența sa</p>
+                      <p className="text-xs text-accent font-medium mt-0.5">{actingAsDelegate.period}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Personal Data */}
             {personalData && (
               <Card className="animate-fade-in" style={{ animationDelay: '200ms' }}>
