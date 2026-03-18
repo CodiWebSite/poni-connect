@@ -9,6 +9,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { DemoModeProvider } from "@/contexts/DemoModeContext";
+import { useChatNotifications } from "@/hooks/useChatNotifications";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import CalendarPage from "./pages/CalendarPage";
@@ -87,6 +88,11 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function GlobalChatNotifier() {
+  useChatNotifications();
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" storageKey="icmpp-theme">
@@ -96,6 +102,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <GlobalChatNotifier />
           <BrowserRouter>
             <MaintenanceGuard>
               <Routes>

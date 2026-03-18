@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Bell } from 'lucide-react';
 import { useToast } from './use-toast';
+import { playNotificationSound } from '@/utils/notificationSound';
 
 interface Notification {
   id: string;
@@ -49,7 +50,8 @@ export function useNotifications() {
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
-          // Show toast for new notification
+          // Play sound and show toast for new notification
+          playNotificationSound('alert');
           toast({
             title: newNotification.title,
             description: newNotification.message,
