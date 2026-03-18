@@ -116,11 +116,18 @@ const PublicProfile = () => {
   const fullName = `${profile.last_name} ${profile.first_name}`.toUpperCase();
   const currentUrl = window.location.href;
 
-  const links = [
+  const academicLinks = [
     { url: s?.researchgate_url, label: 'ResearchGate', icon: BookOpen },
     { url: s?.google_scholar_url, label: 'Google Scholar', icon: GraduationCap },
     { url: s?.orcid_url, label: 'ORCID', icon: ExternalLink },
     { url: s?.website_url, label: 'Website', icon: Globe },
+  ].filter(l => l.url);
+
+  const socialLinks = [
+    { url: s?.linkedin_url, label: 'LinkedIn', icon: Linkedin },
+    { url: s?.facebook_url, label: 'Facebook', icon: Facebook },
+    { url: s?.instagram_url, label: 'Instagram', icon: Instagram },
+    { url: s?.x_url, label: 'X (Twitter)', icon: Twitter },
   ].filter(l => l.url);
 
   return (
