@@ -206,8 +206,9 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
           </div>
         </div>
 
-        {/* Bio & Tagline */}
+        {/* Bio & Tagline — Română */}
         <div className="space-y-4">
+          <p className="text-sm font-semibold flex items-center gap-2">🇷🇴 Versiunea în Română</p>
           <div className="space-y-2">
             <Label htmlFor="pp-tagline">Titlu profesional / Tagline</Label>
             <Input
@@ -226,6 +227,50 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
               value={settings.bio}
               onChange={e => update('bio', e.target.value)}
             />
+          </div>
+        </div>
+
+        {/* Bio & Tagline — English */}
+        <div className="space-y-4">
+          <p className="text-sm font-semibold flex items-center gap-2">🇬🇧 English Version</p>
+          <div className="space-y-2">
+            <Label htmlFor="pp-tagline-en">Professional Title / Tagline</Label>
+            <Input
+              id="pp-tagline-en"
+              placeholder="e.g. Research Scientist, Macromolecular Chemistry"
+              value={settings.tagline_en}
+              onChange={e => update('tagline_en', e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pp-bio-en">About me (bio)</Label>
+            <Textarea
+              id="pp-bio-en"
+              placeholder="Write a short professional description..."
+              className="min-h-[80px]"
+              value={settings.bio_en}
+              onChange={e => update('bio_en', e.target.value)}
+            />
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="pp-position-en">Position (English)</Label>
+              <Input
+                id="pp-position-en"
+                placeholder="e.g. Senior Researcher"
+                value={settings.position_en}
+                onChange={e => update('position_en', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pp-dept-en">Department (English)</Label>
+              <Input
+                id="pp-dept-en"
+                placeholder="e.g. Polymer Physics"
+                value={settings.department_en}
+                onChange={e => update('department_en', e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
