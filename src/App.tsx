@@ -12,7 +12,7 @@ import { DemoModeProvider } from "@/contexts/DemoModeContext";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import CalendarPage from "./pages/CalendarPage";
+
 import Settings from "./pages/Settings";
 import MyProfile from "./pages/MyProfile";
 import HRManagement from "./pages/HRManagement";
