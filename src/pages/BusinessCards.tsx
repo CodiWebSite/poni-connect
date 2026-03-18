@@ -53,6 +53,26 @@ function CardPreview({
 
   return (
     <>
+      {/* Language picker */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Limba / Language</CardTitle>
+          <CardDescription>Alege limba pentru cartea de vizită</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup value={lang} onValueChange={v => onLangChange(v as CardLang)} className="flex gap-4">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="ro" id="lang-ro" />
+              <Label htmlFor="lang-ro" className="text-sm font-medium cursor-pointer">🇷🇴 Română</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="en" id="lang-en" />
+              <Label htmlFor="lang-en" className="text-sm font-medium cursor-pointer">🇬🇧 English</Label>
+            </div>
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
       {/* Variant picker */}
       <Card>
         <CardHeader className="pb-3">
