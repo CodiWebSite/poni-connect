@@ -88,6 +88,14 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function GlobalChatNotifier() {
+  const location = useLocation();
+  // Don't double-notify when user is on /chat — ChatWindow handles its own
+  const isOnChat = location.pathname === '/chat';
+  useChatNotifications(isOnChat ? '__on_chat_page__' : null);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" storageKey="icmpp-theme">
@@ -98,6 +106,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <GlobalChatNotifier />
             <MaintenanceGuard>
               <Routes>
                 <Route path="/kiosk" element={<Kiosk />} />
