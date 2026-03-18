@@ -819,7 +819,7 @@ const MyProfile = () => {
                         )}
                         <div>
                           <p className="font-medium text-sm">{delegateName}</p>
-                          <p className="text-xs text-muted-foreground">Aprobator actual (înlocuitor)</p>
+                          <p className="text-xs text-muted-foreground">Aprobator actual (delegat temporar)</p>
                           {delegatePeriod && (
                             <p className="text-xs text-primary font-medium mt-0.5">Perioada: {delegatePeriod}</p>
                           )}
