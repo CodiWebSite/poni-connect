@@ -1,7 +1,6 @@
 import { useState, useEffect, ReactNode } from 'react';
 import KioskSidebarWeather from './KioskSidebarWeather';
 import KioskSidebarAnnouncements from './KioskSidebarAnnouncements';
-import KioskSidebarEvents from './KioskSidebarEvents';
 import KioskSidebarRoomBookings from './KioskSidebarRoomBookings';
 
 interface Section {
@@ -15,7 +14,6 @@ const ROTATE_INTERVAL = 10_000; // 10 seconds
 const sections: Section[] = [
   { key: 'weather', label: 'Meteo', component: <KioskSidebarWeather /> },
   { key: 'announcements', label: 'Anunțuri', component: <KioskSidebarAnnouncements /> },
-  { key: 'events', label: 'Evenimente', component: <KioskSidebarEvents /> },
   { key: 'rooms', label: 'Săli', component: <KioskSidebarRoomBookings /> },
 ];
 
@@ -29,14 +27,13 @@ const KioskRotatingSidebar = () => {
       setTimeout(() => {
         setActiveIndex(prev => (prev + 1) % sections.length);
         setIsTransitioning(false);
-      }, 400); // fade-out duration
+      }, 400);
     }, ROTATE_INTERVAL);
     return () => clearInterval(timer);
   }, []);
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Active section — fills available space */}
       <div className="flex-1 min-h-0 relative overflow-hidden">
         <div
           className={`absolute inset-0 flex flex-col transition-all duration-400 ease-in-out ${
@@ -49,7 +46,6 @@ const KioskRotatingSidebar = () => {
         </div>
       </div>
 
-      {/* Navigation dots */}
       <div className="px-5 py-3 flex items-center justify-center gap-2 shrink-0 border-t border-white/10">
         {sections.map((section, i) => (
           <button

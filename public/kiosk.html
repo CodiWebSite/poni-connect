@@ -116,8 +116,19 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
     <div class="header-right">
       <div class="lang-badge" id="langBadge">🇷🇴 RO</div>
       <div class="clock-block">
-        <div class="time-display" id="clock">--:--</div>
-        <div class="date-display" id="dateStr"></div>
+        <div id="clockWeatherContainer" style="position:relative;width:220px;height:80px;overflow:hidden">
+          <div id="clockView" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;transition:opacity 0.7s,transform 0.7s">
+            <div class="time-display" id="clock">--:--</div>
+            <div class="date-display" id="dateStr"></div>
+          </div>
+          <div id="weatherHeaderView" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;gap:12px;opacity:0;transform:translateY(16px);transition:opacity 0.7s,transform 0.7s">
+            <span id="weatherHeaderIcon" style="font-size:40px"></span>
+            <div style="text-align:right">
+              <div id="weatherHeaderTemp" style="font-size:42px;font-weight:700;color:#f8fafc;font-family:'Playfair Display',serif"></div>
+              <div id="weatherHeaderCond" style="font-size:18px;color:#94a3b8"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -164,16 +175,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
           </div>
           <div id="annContent"><div style="color:#64748b;font-size:18px">Niciun anunț</div></div>
         </div>
-        <!-- Section 2: Events -->
+        <!-- Section 2: Rooms -->
         <div class="sidebar-section hidden" id="sec2">
-          <div class="section-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            Evenimente
-          </div>
-          <div id="eventsContent"><div style="color:#64748b;font-size:18px">Niciun eveniment</div></div>
-        </div>
-        <!-- Section 3: Rooms -->
-        <div class="sidebar-section hidden" id="sec3">
           <div class="section-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg>
             Săli azi
@@ -185,7 +188,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
         <button class="dot active" onclick="goTo(0)"></button>
         <button class="dot" onclick="goTo(1)"></button>
         <button class="dot" onclick="goTo(2)"></button>
-        <button class="dot" onclick="goTo(3)"></button>
       </div>
     </div>
   </div>
@@ -213,7 +215,7 @@ var DAYS_RO = ['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă
 var MONTHS_RO = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
 var lang = 'ro';
 var activeSection = 0;
-var totalSections = 4;
+var totalSections = 3;
 
 // ── Slideshow state ──
 var slideshowImages = [];
@@ -374,6 +376,7 @@ function sbFetch(table, params, cb) {
 }
 
 // ── Weather ──
+var headerWeatherData = null;
 function fetchWeather() {
   var xhr = new XMLHttpRequest();
   xhr.open('GET','https://api.open-meteo.com/v1/forecast?latitude=47.1585&longitude=27.6014&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe%2FBucharest');
@@ -388,11 +391,35 @@ function fetchWeather() {
       '<div class="weather-cond">' + cond + '</div>' +
       '<div class="weather-details"><span>💧 ' + d.relative_humidity_2m + '%</span><span>💨 ' + Math.round(d.wind_speed_10m) + ' km/h</span></div>' +
       '<div class="weather-location">📍 Iași, România</div>';
+    // Update header weather
+    headerWeatherData = { icon: icon, temp: Math.round(d.temperature_2m), cond: cond };
+    document.getElementById('weatherHeaderIcon').textContent = icon;
+    document.getElementById('weatherHeaderTemp').textContent = Math.round(d.temperature_2m) + '°C';
+    document.getElementById('weatherHeaderCond').textContent = cond;
   };
   xhr.send();
 }
 fetchWeather();
 setInterval(fetchWeather, 600000);
+
+// ── Header clock/weather cycling ──
+var showHeaderWeather = false;
+setInterval(function() {
+  showHeaderWeather = !showHeaderWeather;
+  var clockView = document.getElementById('clockView');
+  var weatherView = document.getElementById('weatherHeaderView');
+  if (showHeaderWeather && headerWeatherData) {
+    clockView.style.opacity = '0';
+    clockView.style.transform = 'translateY(-16px)';
+    weatherView.style.opacity = '1';
+    weatherView.style.transform = 'translateY(0)';
+  } else {
+    clockView.style.opacity = '1';
+    clockView.style.transform = 'translateY(0)';
+    weatherView.style.opacity = '0';
+    weatherView.style.transform = 'translateY(16px)';
+  }
+}, 5000);
 
 // ── Announcements ──
 function fetchAnnouncements() {
@@ -409,22 +436,6 @@ function fetchAnnouncements() {
 fetchAnnouncements();
 setInterval(fetchAnnouncements, 60000);
 
-// ── Events ──
-function fetchEvents() {
-  var now = new Date().toISOString();
-  sbFetch('events', 'select=id,title,start_date,location&start_date=gte.' + now + '&order=start_date.asc&limit=5', function(data) {
-    if (!data || !data.length) { document.getElementById('eventsContent').innerHTML = '<div style="color:#64748b;font-size:22px">Niciun eveniment programat</div>'; return; }
-    var html = '';
-    data.forEach(function(e) {
-      var d = new Date(e.start_date);
-      var dateStr = d.getDate() + ' ' + MONTHS_RO[d.getMonth()].substring(0,3) + ' · ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-      html += '<div class="card"><div class="item-title">' + e.title + '</div><div class="item-row"><span>' + dateStr + '</span>' + (e.location ? '<span>📍 ' + e.location + '</span>' : '') + '</div></div>';
-    });
-    document.getElementById('eventsContent').innerHTML = html;
-  });
-}
-fetchEvents();
-setInterval(fetchEvents, 60000);
 
 // ── Room Bookings ──
 function fetchRooms() {
