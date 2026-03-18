@@ -2036,8 +2036,11 @@ export type Database = {
           bio: string | null
           created_at: string
           epd_id: string
+          facebook_url: string | null
           google_scholar_url: string | null
           id: string
+          instagram_url: string | null
+          linkedin_url: string | null
           orcid_url: string | null
           phone: string | null
           researchgate_url: string | null
@@ -2048,13 +2051,17 @@ export type Database = {
           tagline: string | null
           updated_at: string
           website_url: string | null
+          x_url: string | null
         }
         Insert: {
           bio?: string | null
           created_at?: string
           epd_id: string
+          facebook_url?: string | null
           google_scholar_url?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
           orcid_url?: string | null
           phone?: string | null
           researchgate_url?: string | null
@@ -2065,13 +2072,17 @@ export type Database = {
           tagline?: string | null
           updated_at?: string
           website_url?: string | null
+          x_url?: string | null
         }
         Update: {
           bio?: string | null
           created_at?: string
           epd_id?: string
+          facebook_url?: string | null
           google_scholar_url?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
           orcid_url?: string | null
           phone?: string | null
           researchgate_url?: string | null
@@ -2082,6 +2093,7 @@ export type Database = {
           tagline?: string | null
           updated_at?: string
           website_url?: string | null
+          x_url?: string | null
         }
         Relationships: [
           {

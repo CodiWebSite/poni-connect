@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
-import { Mail, Phone, MapPin, Globe, BookOpen, GraduationCap, ExternalLink } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, BookOpen, GraduationCap, ExternalLink, Instagram, Facebook, Linkedin, Twitter } from 'lucide-react';
 
 interface ProfileData {
   first_name: string;
@@ -19,6 +19,10 @@ interface ProfileData {
     google_scholar_url: string | null;
     orcid_url: string | null;
     website_url: string | null;
+    instagram_url: string | null;
+    facebook_url: string | null;
+    linkedin_url: string | null;
+    x_url: string | null;
     show_phone: boolean;
     show_email: boolean;
     show_department: boolean;
@@ -66,6 +70,10 @@ const PublicProfile = () => {
           google_scholar_url: settingsData.google_scholar_url,
           orcid_url: settingsData.orcid_url,
           website_url: settingsData.website_url,
+          instagram_url: (settingsData as any).instagram_url,
+          facebook_url: (settingsData as any).facebook_url,
+          linkedin_url: (settingsData as any).linkedin_url,
+          x_url: (settingsData as any).x_url,
           show_phone: settingsData.show_phone,
           show_email: settingsData.show_email,
           show_department: settingsData.show_department,
@@ -108,11 +116,18 @@ const PublicProfile = () => {
   const fullName = `${profile.last_name} ${profile.first_name}`.toUpperCase();
   const currentUrl = window.location.href;
 
-  const links = [
+  const academicLinks = [
     { url: s?.researchgate_url, label: 'ResearchGate', icon: BookOpen },
     { url: s?.google_scholar_url, label: 'Google Scholar', icon: GraduationCap },
     { url: s?.orcid_url, label: 'ORCID', icon: ExternalLink },
     { url: s?.website_url, label: 'Website', icon: Globe },
+  ].filter(l => l.url);
+
+  const socialLinks = [
+    { url: s?.linkedin_url, label: 'LinkedIn', icon: Linkedin },
+    { url: s?.facebook_url, label: 'Facebook', icon: Facebook },
+    { url: s?.instagram_url, label: 'Instagram', icon: Instagram },
+    { url: s?.x_url, label: 'X (Twitter)', icon: Twitter },
   ].filter(l => l.url);
 
   return (
@@ -208,18 +223,29 @@ const PublicProfile = () => {
         </div>
 
         {/* Academic Links */}
-        {links.length > 0 && (
+        {academicLinks.length > 0 && (
           <div className="space-y-3">
             <p className="text-white/30 text-xs uppercase tracking-widest font-medium">Prezență Academică</p>
             <div className="grid grid-cols-2 gap-3">
-              {links.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.url!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-white/5 hover:bg-white/10 rounded-xl p-3 border border-white/10 transition-colors"
-                >
+              {academicLinks.map((link) => (
+                <a key={link.label} href={link.url!} target="_blank" rel="noopener noreferrer"
+                   className="flex items-center gap-2 bg-white/5 hover:bg-white/10 rounded-xl p-3 border border-white/10 transition-colors">
+                  <link.icon className="w-4 h-4 text-white/50" />
+                  <span className="text-white/80 text-sm">{link.label}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Social Media Links */}
+        {socialLinks.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-white/30 text-xs uppercase tracking-widest font-medium">Rețele Sociale</p>
+            <div className="grid grid-cols-2 gap-3">
+              {socialLinks.map((link) => (
+                <a key={link.label} href={link.url!} target="_blank" rel="noopener noreferrer"
+                   className="flex items-center gap-2 bg-white/5 hover:bg-white/10 rounded-xl p-3 border border-white/10 transition-colors">
                   <link.icon className="w-4 h-4 text-white/50" />
                   <span className="text-white/80 text-sm">{link.label}</span>
                 </a>

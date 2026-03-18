@@ -10,7 +10,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { toast } from 'sonner';
 import { 
   Globe, BookOpen, GraduationCap, Phone, Save, Loader2, Eye, 
-  QrCode, ExternalLink 
+  QrCode, ExternalLink, Instagram, Facebook, Linkedin, Twitter
 } from 'lucide-react';
 
 interface PublicProfileEditorProps {
@@ -26,6 +26,10 @@ interface ProfileSettings {
   google_scholar_url: string;
   orcid_url: string;
   website_url: string;
+  instagram_url: string;
+  facebook_url: string;
+  linkedin_url: string;
+  x_url: string;
   show_phone: boolean;
   show_email: boolean;
   show_department: boolean;
@@ -40,6 +44,10 @@ const defaultSettings: ProfileSettings = {
   google_scholar_url: '',
   orcid_url: '',
   website_url: '',
+  instagram_url: '',
+  facebook_url: '',
+  linkedin_url: '',
+  x_url: '',
   show_phone: true,
   show_email: true,
   show_department: true,
@@ -72,6 +80,10 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
           google_scholar_url: data.google_scholar_url || '',
           orcid_url: data.orcid_url || '',
           website_url: data.website_url || '',
+          instagram_url: (data as any).instagram_url || '',
+          facebook_url: (data as any).facebook_url || '',
+          linkedin_url: (data as any).linkedin_url || '',
+          x_url: (data as any).x_url || '',
           show_phone: data.show_phone,
           show_email: data.show_email,
           show_department: data.show_department,
@@ -95,6 +107,10 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
       google_scholar_url: settings.google_scholar_url || null,
       orcid_url: settings.orcid_url || null,
       website_url: settings.website_url || null,
+      instagram_url: settings.instagram_url || null,
+      facebook_url: settings.facebook_url || null,
+      linkedin_url: settings.linkedin_url || null,
+      x_url: settings.x_url || null,
       show_phone: settings.show_phone,
       show_email: settings.show_email,
       show_department: settings.show_department,
@@ -221,52 +237,63 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
               <Label htmlFor="pp-rg" className="text-xs text-muted-foreground">ResearchGate</Label>
               <div className="relative">
                 <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="pp-rg"
-                  className="pl-10"
-                  placeholder="https://researchgate.net/profile/..."
-                  value={settings.researchgate_url}
-                  onChange={e => update('researchgate_url', e.target.value)}
-                />
+                <Input id="pp-rg" className="pl-10" placeholder="https://researchgate.net/profile/..." value={settings.researchgate_url} onChange={e => update('researchgate_url', e.target.value)} />
               </div>
             </div>
             <div className="space-y-1">
               <Label htmlFor="pp-gs" className="text-xs text-muted-foreground">Google Scholar</Label>
               <div className="relative">
                 <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="pp-gs"
-                  className="pl-10"
-                  placeholder="https://scholar.google.com/..."
-                  value={settings.google_scholar_url}
-                  onChange={e => update('google_scholar_url', e.target.value)}
-                />
+                <Input id="pp-gs" className="pl-10" placeholder="https://scholar.google.com/..." value={settings.google_scholar_url} onChange={e => update('google_scholar_url', e.target.value)} />
               </div>
             </div>
             <div className="space-y-1">
               <Label htmlFor="pp-orcid" className="text-xs text-muted-foreground">ORCID</Label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="pp-orcid"
-                  className="pl-10"
-                  placeholder="https://orcid.org/0000-..."
-                  value={settings.orcid_url}
-                  onChange={e => update('orcid_url', e.target.value)}
-                />
+                <Input id="pp-orcid" className="pl-10" placeholder="https://orcid.org/0000-..." value={settings.orcid_url} onChange={e => update('orcid_url', e.target.value)} />
               </div>
             </div>
             <div className="space-y-1">
               <Label htmlFor="pp-web" className="text-xs text-muted-foreground">Website personal</Label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="pp-web"
-                  className="pl-10"
-                  placeholder="https://..."
-                  value={settings.website_url}
-                  onChange={e => update('website_url', e.target.value)}
-                />
+                <Input id="pp-web" className="pl-10" placeholder="https://..." value={settings.website_url} onChange={e => update('website_url', e.target.value)} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Social Media Links */}
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold">Rețele sociale</Label>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="pp-linkedin" className="text-xs text-muted-foreground">LinkedIn</Label>
+              <div className="relative">
+                <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="pp-linkedin" className="pl-10" placeholder="https://linkedin.com/in/..." value={settings.linkedin_url} onChange={e => update('linkedin_url', e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="pp-facebook" className="text-xs text-muted-foreground">Facebook</Label>
+              <div className="relative">
+                <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="pp-facebook" className="pl-10" placeholder="https://facebook.com/..." value={settings.facebook_url} onChange={e => update('facebook_url', e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="pp-instagram" className="text-xs text-muted-foreground">Instagram</Label>
+              <div className="relative">
+                <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="pp-instagram" className="pl-10" placeholder="https://instagram.com/..." value={settings.instagram_url} onChange={e => update('instagram_url', e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="pp-x" className="text-xs text-muted-foreground">X (Twitter)</Label>
+              <div className="relative">
+                <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="pp-x" className="pl-10" placeholder="https://x.com/..." value={settings.x_url} onChange={e => update('x_url', e.target.value)} />
               </div>
             </div>
           </div>
