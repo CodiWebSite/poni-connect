@@ -11,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Search, Users, ArrowRight, Building2, Clock, ChevronsUpDown, Check } from 'lucide-react';
+import { Loader2, Plus, Trash2, Search, Users, ArrowRight, Building2, Clock, ChevronsUpDown, Check, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface ApproverMapping {
   id: string;
@@ -41,6 +42,14 @@ interface DeptApproverMapping {
   approver_pending?: boolean;
 }
 
+interface ActiveDelegate {
+  delegator_user_id: string;
+  delegate_user_id: string;
+  delegate_name: string;
+  start_date: string;
+  end_date: string;
+}
+
 // Unified person option: from profiles (with account) or EPD (without)
 interface PersonOption {
   key: string; // user_id or 'epd_' + email
@@ -61,6 +70,7 @@ export function LeaveApproversManager() {
   const [departments, setDepartments] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeDelegates, setActiveDelegates] = useState<ActiveDelegate[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Per-employee form
@@ -161,10 +171,48 @@ export function LeaveApproversManager() {
     });
     setDeptMappings(enrichedDept);
 
+    // Fetch active delegates
+    const today = new Date().toISOString().split('T')[0];
+    const { data: delegatesData } = await supabase
+      .from('leave_approval_delegates' as any)
+      .select('delegator_user_id, delegate_user_id, start_date, end_date')
+      .eq('is_active', true)
+      .lte('start_date', today)
+      .gte('end_date', today);
+
+    const enrichedDelegates: ActiveDelegate[] = ((delegatesData || []) as any[]).map(d => {
+      const delPerson = personMap.get(d.delegate_user_id);
+      return {
+        delegator_user_id: d.delegator_user_id,
+        delegate_user_id: d.delegate_user_id,
+        delegate_name: delPerson?.full_name || 'Necunoscut',
+        start_date: d.start_date,
+        end_date: d.end_date,
+      };
+    });
+    setActiveDelegates(enrichedDelegates);
+
     setLoading(false);
   };
 
   const getPersonByKey = (key: string): PersonOption | undefined => persons.find(p => p.key === key);
+
+  const getDelegateForApprover = (approverUserId: string | null): ActiveDelegate | undefined => {
+    if (!approverUserId) return undefined;
+    return activeDelegates.find(d => d.delegator_user_id === approverUserId);
+  };
+
+  const DelegateBadge = ({ delegate }: { delegate: ActiveDelegate }) => (
+    <div className="flex items-center gap-1.5 ml-1">
+      <Badge variant="outline" className="text-xs gap-1 bg-accent/10 border-accent/30 text-accent-foreground">
+        <UserCheck className="w-3 h-3" />
+        Delegat: {delegate.delegate_name}
+        <span className="text-[10px] text-muted-foreground ml-1">
+          ({format(new Date(delegate.start_date), 'dd.MM')} – {format(new Date(delegate.end_date), 'dd.MM.yyyy')})
+        </span>
+      </Badge>
+    </div>
+  );
 
   const handleAdd = async () => {
     if (!selectedEmployee || !selectedApprover || !user) {
@@ -399,7 +447,9 @@ export function LeaveApproversManager() {
                 <p className="text-center text-muted-foreground py-4">Nu sunt configurate relații pe departament.</p>
               ) : (
                 <div className="space-y-2">
-                  {deptMappings.map(m => (
+                  {deptMappings.map(m => {
+                    const delegate = getDelegateForApprover(m.approver_user_id);
+                    return (
                     <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3 flex-wrap">
                         <Badge variant="outline">{m.department}</Badge>
@@ -412,12 +462,14 @@ export function LeaveApproversManager() {
                           </Badge>
                         )}
                         {m.notes && <span className="text-xs text-muted-foreground italic">({m.notes})</span>}
+                        {delegate && <DelegateBadge delegate={delegate} />}
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => handleDeleteDept(m.id)} className="text-destructive hover:text-destructive">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -479,7 +531,9 @@ export function LeaveApproversManager() {
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {filteredMappings.map(m => (
+                  {filteredMappings.map(m => {
+                    const delegate = getDelegateForApprover(m.approver_user_id);
+                    return (
                     <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3 flex-wrap">
                         <div className="text-sm">
@@ -498,12 +552,14 @@ export function LeaveApproversManager() {
                           )}
                         </div>
                         {m.notes && <span className="text-xs text-muted-foreground italic">({m.notes})</span>}
+                        {delegate && <DelegateBadge delegate={delegate} />}
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(m.id)} className="text-destructive hover:text-destructive">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
