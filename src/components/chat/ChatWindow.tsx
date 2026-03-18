@@ -240,7 +240,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
 
     const { data: conv } = await supabase
       .from('chat_conversations')
-      .select('type, name, department, admin_id')
+      .select('type, name, department, admin_id, group_avatar_url')
       .eq('id', conversationId)
       .maybeSingle();
 
