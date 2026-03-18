@@ -290,9 +290,9 @@ const LeaveCalendar = () => {
               </Card>
             ) : (
               employees.map(emp => {
-                const empLeaves = leavesByEmployee.get(emp.employeeName) || [];
+                const empLeaves = leavesByEmployee.get(emp.employeeId) || [];
                 return (
-                  <Card key={emp.employeeName} className={cn(emp.isCurrentUser && 'border-primary/30 bg-primary/5')}>
+                  <Card key={emp.employeeId} className={cn(emp.isCurrentUser && 'border-primary/30 bg-primary/5')}>
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Avatar className="w-7 h-7 flex-shrink-0">
@@ -391,7 +391,7 @@ const LeaveCalendar = () => {
                         </tr>
                       ) : (
                         employees.map((emp) => (
-                          <tr key={emp.employeeName} className={cn('transition-colors hover:bg-muted/30', emp.isCurrentUser && 'bg-primary/5 hover:bg-primary/10')}>
+                          <tr key={emp.employeeId} className={cn('transition-colors hover:bg-muted/30', emp.isCurrentUser && 'bg-primary/5 hover:bg-primary/10')}>
                             <td className={cn('sticky left-0 z-10 border border-border px-4 py-2.5 whitespace-nowrap bg-inherit', emp.isCurrentUser ? 'font-bold text-primary' : 'font-medium text-foreground')}>
                               <div className="flex items-center gap-2">
                                 <Avatar className="w-6 h-6 flex-shrink-0">
@@ -410,7 +410,7 @@ const LeaveCalendar = () => {
                               const pubH = isPublicHoliday(day);
                               const customH = customHolidays[dateStr];
                               const isOff = weekend || pubH || !!customH;
-                              const leave = isOff ? null : getLeaveForDay(emp.employeeName, day);
+                              const leave = isOff ? null : getLeaveForDay(emp.employeeId, day);
                               const style = leave ? getLeaveStyle(leave.leaveType) : null;
                               return (
                                 <td key={dateStr} className={cn(
