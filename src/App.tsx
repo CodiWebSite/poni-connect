@@ -133,6 +133,8 @@ const App = () => (
                 <Route path="/arhiva" element={<Archive />} />
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />
+                <Route path="/profil/:id" element={<PublicProfile />} />
+                <Route path="/carti-vizita" element={<BusinessCards />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
