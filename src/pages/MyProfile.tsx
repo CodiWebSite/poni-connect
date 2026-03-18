@@ -837,7 +837,7 @@ const MyProfile = () => {
                         <div>
                           <p className="font-medium text-xs text-muted-foreground">{approverName}</p>
                           <p className="text-[11px] text-muted-foreground/70">
-                            {approverSource === 'individual' ? 'Aprobator titular (temporar înlocuit)' : 'Aprobator departament (temporar înlocuit)'}
+                            {approverSource === 'individual' ? 'Aprobator titular (a delegat temporar)' : 'Aprobator departament (a delegat temporar)'}
                           </p>
                         </div>
                       </div>
