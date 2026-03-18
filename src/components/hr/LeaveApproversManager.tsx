@@ -197,6 +197,23 @@ export function LeaveApproversManager() {
 
   const getPersonByKey = (key: string): PersonOption | undefined => persons.find(p => p.key === key);
 
+  const getDelegateForApprover = (approverUserId: string | null): ActiveDelegate | undefined => {
+    if (!approverUserId) return undefined;
+    return activeDelegates.find(d => d.delegator_user_id === approverUserId);
+  };
+
+  const DelegateBadge = ({ delegate }: { delegate: ActiveDelegate }) => (
+    <div className="flex items-center gap-1.5 ml-1">
+      <Badge variant="outline" className="text-xs gap-1 bg-accent/10 border-accent/30 text-accent-foreground">
+        <UserCheck className="w-3 h-3" />
+        Delegat: {delegate.delegate_name}
+        <span className="text-[10px] text-muted-foreground ml-1">
+          ({format(new Date(delegate.start_date), 'dd.MM')} – {format(new Date(delegate.end_date), 'dd.MM.yyyy')})
+        </span>
+      </Badge>
+    </div>
+  );
+
   const handleAdd = async () => {
     if (!selectedEmployee || !selectedApprover || !user) {
       toast({ title: 'Eroare', description: 'Selectați angajatul și aprobatorul.', variant: 'destructive' });
