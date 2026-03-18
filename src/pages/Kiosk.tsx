@@ -83,16 +83,26 @@ const Kiosk = () => {
     }
   }, []);
 
-  // Toggle language every time the video ends (loops)
+  // Toggle language every time the video ends (loops) + track progress
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     const handleEnded = () => {
+      setVideoProgress(0);
       setLang(prev => (prev === 'ro' ? 'en' : 'ro'));
       video.play().catch(() => {});
     };
+    const handleTimeUpdate = () => {
+      if (video.duration) {
+        setVideoProgress((video.currentTime / video.duration) * 100);
+      }
+    };
     video.addEventListener('ended', handleEnded);
-    return () => video.removeEventListener('ended', handleEnded);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    return () => {
+      video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+    };
   }, []);
 
   // Clock tick
