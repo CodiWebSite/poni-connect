@@ -951,6 +951,24 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
           onNameUpdated={(name) => setConvName(name)}
         />
       )}
+
+      {/* Avatar preview dialog */}
+      <Dialog open={!!avatarPreview} onOpenChange={(open) => { if (!open) setAvatarPreview(null); }}>
+        <DialogContent className="sm:max-w-sm p-0 bg-transparent border-none shadow-none [&>button]:bg-background/80 [&>button]:rounded-full">
+          <div className="flex flex-col items-center gap-3 p-4">
+            {avatarPreview?.url && (
+              <img
+                src={avatarPreview.url}
+                alt={avatarPreview.name}
+                className="w-64 h-64 rounded-full object-cover ring-4 ring-background shadow-2xl"
+              />
+            )}
+            <p className="text-sm font-semibold text-foreground bg-background/80 px-3 py-1 rounded-full backdrop-blur-sm">
+              {avatarPreview?.name}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
