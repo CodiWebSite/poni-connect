@@ -309,7 +309,7 @@ function SelfServiceView() {
         originalPosition={employee.position || ''}
         originalDepartment={employee.department || ''}
       />
-      <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} frontRef={frontRef} backRef={backRef} />
+      <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
       <Button onClick={handleDownload} disabled={generating} variant="hero" className="w-full">
         {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
         Descarcă PDF
