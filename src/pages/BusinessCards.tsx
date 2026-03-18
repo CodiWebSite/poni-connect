@@ -327,7 +327,7 @@ const BusinessCards = () => {
           </div>
           {selectedEmployee && (
             <div id="back-qr-hidden">
-              <QRCodeSVG value={profileUrl(selectedEmployee.id)} size={200} level="M" renderAs="canvas" />
+              <QRCodeCanvas value={profileUrl(selectedEmployee.id)} size={200} level="M" />
             </div>
           )}
         </div>
