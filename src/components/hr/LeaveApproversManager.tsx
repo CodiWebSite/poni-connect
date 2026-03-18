@@ -80,64 +80,41 @@ export function LeaveApproversManager() {
   const fetchData = async () => {
     setLoading(true);
 
-    // Fetch profiles (users with accounts) and EPD (all employees)
-    const [profilesRes, epdRes] = await Promise.all([
-      supabase.from('profiles').select('user_id, full_name, department, position').order('full_name'),
-      supabase.from('employee_personal_data').select('email, first_name, last_name, department, position').eq('is_archived', false).order('last_name'),
-    ]);
+    // Use the employee_directory_full view which correctly joins EPD with profiles
+    // This avoids duplicates caused by name format mismatches
+    const { data: directoryData } = await supabase
+      .from('employee_directory_full')
+      .select('id, first_name, last_name, full_name, department, position, email, user_id')
+      .order('last_name');
 
-    const profilesData = profilesRes.data || [];
-    const epdData = epdRes.data || [];
-
-    // Build unified person list
-    const profileEmails = new Set<string>();
+    const entries = directoryData || [];
     const personMap = new Map<string, PersonOption>();
 
-    // First add profiles (with accounts) - we need to get their emails
-    for (const p of profilesData) {
-      // Match EPD by name to get email
-      const matchedEpd = epdData.find(e => 
-        `${e.last_name} ${e.first_name}`.toLowerCase() === p.full_name.toLowerCase() ||
-        `${e.first_name} ${e.last_name}`.toLowerCase() === p.full_name.toLowerCase()
-      );
-      const email = matchedEpd?.email || '';
-      if (email) profileEmails.add(email.toLowerCase());
+    for (const e of entries) {
+      const hasAccount = !!e.user_id;
+      const key = hasAccount ? e.user_id! : `epd_${e.email}`;
 
-      personMap.set(p.user_id, {
-        key: p.user_id,
-        user_id: p.user_id,
-        email: email,
-        full_name: p.full_name,
-        department: p.department,
-        position: p.position,
-        has_account: true,
+      // Avoid duplicates: if this user_id or email already exists, skip
+      if (personMap.has(key)) continue;
+
+      personMap.set(key, {
+        key,
+        user_id: e.user_id || null,
+        email: e.email,
+        full_name: e.full_name || `${e.last_name} ${e.first_name}`,
+        department: e.department,
+        position: e.position,
+        has_account: hasAccount,
       });
-    }
-
-    // Then add EPD entries that DON'T have a matching profile
-    for (const e of epdData) {
-      if (!profileEmails.has(e.email.toLowerCase())) {
-        const key = `epd_${e.email}`;
-        personMap.set(key, {
-          key,
-          user_id: null,
-          email: e.email,
-          full_name: `${e.last_name} ${e.first_name}`,
-          department: e.department,
-          position: e.position,
-          has_account: false,
-        });
-      }
     }
 
     const allPersons = Array.from(personMap.values()).sort((a, b) => a.full_name.localeCompare(b.full_name));
     setPersons(allPersons);
 
-    // Extract unique departments from both sources
-    const depts = [...new Set([
-      ...profilesData.map(p => p.department).filter(Boolean) as string[],
-      ...epdData.map(e => e.department).filter(Boolean) as string[],
-    ])].sort();
+    // Extract unique departments
+    const depts = [...new Set(
+      entries.map(e => e.department).filter(Boolean) as string[],
+    )].sort();
     setDepartments(depts);
 
     // Fetch per-employee mappings
