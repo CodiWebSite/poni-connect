@@ -263,7 +263,7 @@ const BusinessCards = () => {
                           </div>
                           <div className="text-center">
                             <div ref={frontQrRef}>
-                              <QRCodeSVG value="https://www.icmpp.ro" size={48} level="M" renderAs="canvas" />
+                              <QRCodeCanvas value="https://www.icmpp.ro" size={48} level="M" />
                             </div>
                             <p className="text-[7px] text-gray-400 mt-0.5">icmpp.ro</p>
                           </div>
