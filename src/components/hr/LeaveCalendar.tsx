@@ -107,10 +107,23 @@ const LeaveCalendar = () => {
     const recordUserMap: Record<string, string> = {};
     (records || []).forEach(r => { recordUserMap[r.id] = r.user_id; });
 
+    // Also fetch directory to map epd_id -> user_id for avatars
+    const { data: directoryRows } = await supabase.from('employee_directory_full').select('id, user_id');
+
+    const epdIdToUserId: Record<string, string> = {};
+    (directoryRows || []).forEach((row: any) => {
+      if (row.id && row.user_id) epdIdToUserId[row.id] = row.user_id;
+    });
+    (epdData || []).forEach(e => {
+      if (e.employee_record_id && recordUserMap[e.employee_record_id]) {
+        if (!epdIdToUserId[e.id]) epdIdToUserId[e.id] = recordUserMap[e.employee_record_id];
+      }
+    });
+
     const epdMap: Record<string, { name: string; department: string | null; avatarUrl: string | null }> = {};
     const userIdToEpdId: Record<string, string> = {};
     (epdData || []).forEach(e => {
-      const userId = e.employee_record_id ? recordUserMap[e.employee_record_id] : null;
+      const userId = epdIdToUserId[e.id] || (e.employee_record_id ? recordUserMap[e.employee_record_id] : null);
       const avatar = userId ? profileMap[userId]?.avatarUrl || null : null;
       epdMap[e.id] = { name: `${e.last_name} ${e.first_name}`, department: e.department, avatarUrl: avatar };
       if (userId) userIdToEpdId[userId] = e.id;
