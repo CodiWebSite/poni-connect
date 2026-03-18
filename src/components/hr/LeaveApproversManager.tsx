@@ -531,7 +531,9 @@ export function LeaveApproversManager() {
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {filteredMappings.map(m => (
+                  {filteredMappings.map(m => {
+                    const delegate = getDelegateForApprover(m.approver_user_id);
+                    return (
                     <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3 flex-wrap">
                         <div className="text-sm">
@@ -550,12 +552,14 @@ export function LeaveApproversManager() {
                           )}
                         </div>
                         {m.notes && <span className="text-xs text-muted-foreground italic">({m.notes})</span>}
+                        {delegate && <DelegateBadge delegate={delegate} />}
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(m.id)} className="text-destructive hover:text-destructive">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
