@@ -204,10 +204,10 @@ export function LeaveApproversManager() {
 
   const DelegateBadge = ({ delegate }: { delegate: ActiveDelegate }) => (
     <div className="flex items-center gap-1.5 ml-1">
-      <Badge variant="outline" className="text-xs gap-1 bg-accent/10 border-accent/30 text-accent-foreground">
+      <Badge variant="outline" className="text-xs gap-1 bg-primary/15 border-primary/40 text-primary font-medium">
         <UserCheck className="w-3 h-3" />
         Delegat: {delegate.delegate_name}
-        <span className="text-[10px] text-muted-foreground ml-1">
+        <span className="text-[10px] text-primary/70 font-normal ml-1">
           ({format(new Date(delegate.start_date), 'dd.MM')} – {format(new Date(delegate.end_date), 'dd.MM.yyyy')})
         </span>
       </Badge>
