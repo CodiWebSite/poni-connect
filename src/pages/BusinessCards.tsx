@@ -282,7 +282,7 @@ const BusinessCards = () => {
                     <div className="border rounded-xl overflow-hidden shadow-lg" style={{ aspectRatio: `${CARD_W}/${CARD_H}` }}>
                       <div className="bg-[#003366] p-4 h-full flex flex-col items-center justify-center text-white relative">
                         <div className="bg-white rounded-lg p-2" ref={backQrRef}>
-                          <QRCodeSVG value={profileUrl(selectedEmployee.id)} size={80} level="M" renderAs="canvas" />
+                          <QRCodeCanvas value={profileUrl(selectedEmployee.id)} size={80} level="M" />
                         </div>
                         <p className="font-bold text-sm mt-3">Profil profesional</p>
                         <div className="w-12 h-[1px] bg-white/40 my-1.5" />
