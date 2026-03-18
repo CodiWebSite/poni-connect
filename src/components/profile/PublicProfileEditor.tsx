@@ -10,7 +10,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { toast } from 'sonner';
 import { 
   Globe, BookOpen, GraduationCap, Phone, Save, Loader2, Eye, 
-  QrCode, ExternalLink 
+  QrCode, ExternalLink, Instagram, Facebook, Linkedin, Twitter
 } from 'lucide-react';
 
 interface PublicProfileEditorProps {
