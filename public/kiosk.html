@@ -20,11 +20,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
 .institute-name{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:#f1f5f9;letter-spacing:0.01em;line-height:1.15}
 .institute-accent{color:#e6c04a}
 .greeting{font-size:22px;color:#94a3b8;font-weight:500;letter-spacing:0.01em}
-.header-right{display:flex;align-items:center;gap:28px;text-align:right}
+.header-right{display:flex;align-items:center;gap:20px;text-align:right}
 .lang-badge{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;background:rgba(201,162,39,0.15);color:#e6c04a;padding:6px 16px;border-radius:99px;border:1px solid rgba(201,162,39,0.25)}
-.clock-block{display:flex;flex-direction:column;align-items:flex-end}
-.time-display{font-size:60px;font-weight:700;font-family:'Inter',monospace;letter-spacing:0.04em;color:#f8fafc;line-height:1}
-.date-display{font-size:22px;color:#94a3b8;margin-top:6px;font-weight:500}
+.clock-block{display:flex;align-items:flex-end}
+.time-display{font-size:52px;font-weight:700;font-family:'Inter',monospace;letter-spacing:0.04em;color:#f8fafc;line-height:1}
+.date-display{font-size:18px;color:#94a3b8;margin-top:6px;font-weight:500;line-height:1.1}
 
 /* Message bar */
 .message-bar{padding:14px 48px;background:linear-gradient(90deg,rgba(201,162,39,0.12),rgba(201,162,39,0.08));border-bottom:1px solid rgba(201,162,39,0.2);text-align:center;font-size:24px;color:#e6c04a;font-weight:500;flex-shrink:0;display:none}
@@ -116,16 +116,17 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
     <div class="header-right">
       <div class="lang-badge" id="langBadge">🇷🇴 RO</div>
       <div class="clock-block">
-        <div id="clockWeatherContainer" style="position:relative;width:220px;height:80px;overflow:hidden">
-          <div id="clockView" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;transition:opacity 0.7s,transform 0.7s">
+        <div id="clockWeatherContainer" style="display:flex;align-items:center;gap:18px">
+          <div id="clockView" style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;min-width:250px">
             <div class="time-display" id="clock">--:--</div>
             <div class="date-display" id="dateStr"></div>
           </div>
-          <div id="weatherHeaderView" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;gap:12px;opacity:0;transform:translateY(16px);transition:opacity 0.7s,transform 0.7s">
-            <span id="weatherHeaderIcon" style="font-size:40px"></span>
+          <div style="width:1px;height:52px;background:rgba(148,163,184,0.25)"></div>
+          <div id="weatherHeaderView" style="display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:170px">
+            <span id="weatherHeaderIcon" style="font-size:32px;line-height:1">☁️</span>
             <div style="text-align:right">
-              <div id="weatherHeaderTemp" style="font-size:42px;font-weight:700;color:#f8fafc;font-family:'Playfair Display',serif"></div>
-              <div id="weatherHeaderCond" style="font-size:18px;color:#94a3b8"></div>
+              <div id="weatherHeaderTemp" style="font-size:32px;font-weight:700;color:#f8fafc;font-family:'Playfair Display',serif;line-height:1">--°C</div>
+              <div id="weatherHeaderCond" style="font-size:14px;color:#94a3b8;line-height:1.1">Se încarcă...</div>
             </div>
           </div>
         </div>
@@ -157,26 +158,16 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
     <div class="sidebar">
       <div class="sidebar-glow"></div>
       <div class="sidebar-content">
-        <!-- Section 0: Weather -->
+        <!-- Section 0: Announcements -->
         <div class="sidebar-section active" id="sec0">
-          <div class="section-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-            Meteo
-          </div>
-          <div id="weatherContent">
-            <div style="color:#64748b;font-size:18px">Se încarcă meteo...</div>
-          </div>
-        </div>
-        <!-- Section 1: Announcements -->
-        <div class="sidebar-section hidden" id="sec1">
           <div class="section-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
             Anunțuri
           </div>
           <div id="annContent"><div style="color:#64748b;font-size:18px">Niciun anunț</div></div>
         </div>
-        <!-- Section 2: Rooms -->
-        <div class="sidebar-section hidden" id="sec2">
+        <!-- Section 1: Rooms -->
+        <div class="sidebar-section hidden" id="sec1">
           <div class="section-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg>
             Săli azi
@@ -187,7 +178,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
       <div class="dots-nav" id="dotsNav">
         <button class="dot active" onclick="goTo(0)"></button>
         <button class="dot" onclick="goTo(1)"></button>
-        <button class="dot" onclick="goTo(2)"></button>
       </div>
     </div>
   </div>
@@ -215,7 +205,7 @@ var DAYS_RO = ['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă
 var MONTHS_RO = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
 var lang = 'ro';
 var activeSection = 0;
-var totalSections = 3;
+var totalSections = 2;
 
 // ── Slideshow state ──
 var slideshowImages = [];
@@ -375,23 +365,18 @@ function sbFetch(table, params, cb) {
   xhr.send();
 }
 
-// ── Weather ──
+// ── Weather (header only, no sidebar cycling) ──
 var headerWeatherData = null;
 function fetchWeather() {
   var xhr = new XMLHttpRequest();
-  xhr.open('GET','https://api.open-meteo.com/v1/forecast?latitude=47.1585&longitude=27.6014&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe%2FBucharest');
+  xhr.open('GET','https://api.open-meteo.com/v1/forecast?latitude=47.1585&longitude=27.6014&current=temperature_2m,weather_code&timezone=Europe%2FBucharest');
   xhr.onload = function() {
     if (xhr.status !== 200) return;
     var d = JSON.parse(xhr.responseText).current;
     var code = d.weather_code;
     var cond = code === 0 ? 'Cer senin' : code <= 3 ? 'Parțial noros' : (code >= 61 && code <= 67) ? 'Ploaie' : (code >= 71 && code <= 77) ? 'Ninsoare' : code >= 95 ? 'Furtună' : 'Variabil';
     var icon = code === 0 ? '☀️' : code <= 3 ? '⛅' : (code >= 61 && code <= 67) ? '🌧️' : (code >= 71 && code <= 77) ? '❄️' : code >= 95 ? '⛈️' : '🌤️';
-    document.getElementById('weatherContent').innerHTML =
-      '<div style="display:flex;align-items:center;gap:16px"><span style="font-size:56px">' + icon + '</span><div class="weather-temp">' + Math.round(d.temperature_2m) + '°C</div></div>' +
-      '<div class="weather-cond">' + cond + '</div>' +
-      '<div class="weather-details"><span>💧 ' + d.relative_humidity_2m + '%</span><span>💨 ' + Math.round(d.wind_speed_10m) + ' km/h</span></div>' +
-      '<div class="weather-location">📍 Iași, România</div>';
-    // Update header weather
+
     headerWeatherData = { icon: icon, temp: Math.round(d.temperature_2m), cond: cond };
     document.getElementById('weatherHeaderIcon').textContent = icon;
     document.getElementById('weatherHeaderTemp').textContent = Math.round(d.temperature_2m) + '°C';
@@ -401,25 +386,6 @@ function fetchWeather() {
 }
 fetchWeather();
 setInterval(fetchWeather, 600000);
-
-// ── Header clock/weather cycling ──
-var showHeaderWeather = false;
-setInterval(function() {
-  showHeaderWeather = !showHeaderWeather;
-  var clockView = document.getElementById('clockView');
-  var weatherView = document.getElementById('weatherHeaderView');
-  if (showHeaderWeather && headerWeatherData) {
-    clockView.style.opacity = '0';
-    clockView.style.transform = 'translateY(-16px)';
-    weatherView.style.opacity = '1';
-    weatherView.style.transform = 'translateY(0)';
-  } else {
-    clockView.style.opacity = '1';
-    clockView.style.transform = 'translateY(0)';
-    weatherView.style.opacity = '0';
-    weatherView.style.transform = 'translateY(16px)';
-  }
-}, 5000);
 
 // ── Announcements ──
 function fetchAnnouncements() {
