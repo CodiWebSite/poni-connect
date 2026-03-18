@@ -63,6 +63,7 @@ const LeaveCalendar = () => {
     const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department, avatar_url');
     const { data: epdData } = await supabase.from('employee_personal_data').select('id, first_name, last_name, department, employee_record_id').eq('is_archived', false);
     const { data: records } = await supabase.from('employee_records').select('id, user_id');
+    const { data: directoryRows } = await supabase.from('employee_directory_full').select('id, user_id');
 
     const profileMap: Record<string, { name: string; department: string | null; avatarUrl: string | null }> = {};
     (profiles || []).forEach(p => { profileMap[p.user_id] = { name: p.full_name, department: p.department, avatarUrl: p.avatar_url }; });
