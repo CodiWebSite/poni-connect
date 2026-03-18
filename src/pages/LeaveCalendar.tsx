@@ -83,10 +83,17 @@ const LeaveCalendar = () => {
 
     // Build a map from user_id to their canonical EPD id for deduplication
     const userIdToEpdId: Record<string, string> = {};
+
+    // Primary source: unified employee directory
+    (directoryRows || []).forEach((row: any) => {
+      if (row.user_id && row.id) userIdToEpdId[row.user_id] = row.id;
+    });
+
+    // Fallback source: employee_record linkage
     (epdData || []).forEach(e => {
       if (e.employee_record_id) {
         const uid = recordUserMap[e.employee_record_id];
-        if (uid) userIdToEpdId[uid] = e.id;
+        if (uid && !userIdToEpdId[uid]) userIdToEpdId[uid] = e.id;
       }
     });
 
