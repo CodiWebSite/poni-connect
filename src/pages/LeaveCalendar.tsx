@@ -16,6 +16,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DepartmentLeave {
+  employeeId: string;
   employeeName: string;
   startDate: string;
   endDate: string;
@@ -48,7 +49,6 @@ const LeaveCalendar = () => {
     const { data: profile } = await supabase.from('profiles').select('full_name, department').eq('user_id', user.id).single();
     const userDept = profile?.department || null;
     setDepartment(userDept);
-    
 
     const { data: holidays } = await supabase.from('custom_holidays').select('holiday_date, name');
     const holidayMap: Record<string, string> = {};
@@ -56,7 +56,7 @@ const LeaveCalendar = () => {
     setCustomHolidays(holidayMap);
 
     const { data: allLeaves } = await supabase.from('hr_requests').select('user_id, details').eq('request_type', 'concediu').eq('status', 'approved');
-    
+
     // Also fetch approved leave_requests
     const { data: leaveReqs } = await supabase.from('leave_requests').select('user_id, epd_id, start_date, end_date, status').eq('status', 'approved' as any);
 
@@ -92,6 +92,8 @@ const LeaveCalendar = () => {
     const entries: DepartmentLeave[] = [];
     // Use person ID (epd_id or user_id) + dates as dedupe key to avoid name-format issues
     const seenLeaveKeys = new Set<string>();
+    // Keep one canonical display name per person id (NUME PRENUME)
+    const personDisplayName = new Map<string, string>();
 
     const resolvePersonId = (userId: string | null, epdId: string | null): string => {
       if (epdId) return `epd_${epdId}`;
@@ -108,6 +110,12 @@ const LeaveCalendar = () => {
       if (userId && profileMap[userId]) return profileMap[userId];
       if (fallbackName) return { name: fallbackName, department: null, avatarUrl: null };
       return undefined;
+    };
+
+    const getCanonicalDisplayName = (personId: string, resolvedName: string) => {
+      if (personDisplayName.has(personId)) return personDisplayName.get(personId)!;
+      personDisplayName.set(personId, resolvedName);
+      return resolvedName;
     };
 
     // Process hr_requests leaves
@@ -128,7 +136,15 @@ const LeaveCalendar = () => {
 
       const isCurrentUser = lr.user_id === user.id && !d.epd_id;
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
-        entries.push({ employeeName: empInfo.name, startDate: d.startDate, endDate: d.endDate, leaveType: d.leaveType || d.leave_type || 'co', isCurrentUser, avatarUrl: empInfo.avatarUrl || null });
+        entries.push({
+          employeeId: personId,
+          employeeName: getCanonicalDisplayName(personId, empInfo.name),
+          startDate: d.startDate,
+          endDate: d.endDate,
+          leaveType: d.leaveType || d.leave_type || 'co',
+          isCurrentUser,
+          avatarUrl: empInfo.avatarUrl || null,
+        });
       }
     });
 
@@ -149,7 +165,15 @@ const LeaveCalendar = () => {
 
       const isCurrentUser = lr.user_id === user.id && !lr.epd_id;
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
-        entries.push({ employeeName: empInfo.name, startDate: lr.start_date, endDate: lr.end_date, leaveType: 'co', isCurrentUser, avatarUrl: empInfo.avatarUrl || null });
+        entries.push({
+          employeeId: personId,
+          employeeName: getCanonicalDisplayName(personId, empInfo.name),
+          startDate: lr.start_date,
+          endDate: lr.end_date,
+          leaveType: 'co',
+          isCurrentUser,
+          avatarUrl: empInfo.avatarUrl || null,
+        });
       }
     });
 
@@ -167,24 +191,36 @@ const LeaveCalendar = () => {
 
   const employees = useMemo(() => {
     const seen = new Set<string>();
-    return leaves.filter(l => { if (seen.has(l.employeeName)) return false; seen.add(l.employeeName); return true; });
+    return leaves.filter(l => {
+      if (seen.has(l.employeeId)) return false;
+      seen.add(l.employeeId);
+      return true;
+    });
   }, [leaves]);
 
-  const getLeaveForDay = (employeeName: string, day: Date) => {
-    return leaves.find(l => l.employeeName === employeeName && isWithinInterval(day, { start: parseISO(l.startDate), end: parseISO(l.endDate) }));
+  const getLeaveForDay = (employeeId: string, day: Date) => {
+    return leaves.find(l => l.employeeId === employeeId && isWithinInterval(day, { start: parseISO(l.startDate), end: parseISO(l.endDate) }));
   };
 
   const colleaguesOnLeaveToday = useMemo(() => {
     const today = new Date();
-    return [...new Set(leaves.filter(l => !l.isCurrentUser && isWithinInterval(today, { start: parseISO(l.startDate), end: parseISO(l.endDate) })).map(l => l.employeeName))];
+    const uniqueNames = new Map<string, string>();
+
+    leaves
+      .filter(l => !l.isCurrentUser && isWithinInterval(today, { start: parseISO(l.startDate), end: parseISO(l.endDate) }))
+      .forEach(l => {
+        if (!uniqueNames.has(l.employeeId)) uniqueNames.set(l.employeeId, l.employeeName);
+      });
+
+    return Array.from(uniqueNames.values());
   }, [leaves]);
 
   // Group leaves by employee for mobile view
   const leavesByEmployee = useMemo(() => {
     const map = new Map<string, DepartmentLeave[]>();
     leaves.forEach(l => {
-      if (!map.has(l.employeeName)) map.set(l.employeeName, []);
-      map.get(l.employeeName)!.push(l);
+      if (!map.has(l.employeeId)) map.set(l.employeeId, []);
+      map.get(l.employeeId)!.push(l);
     });
     return map;
   }, [leaves]);
