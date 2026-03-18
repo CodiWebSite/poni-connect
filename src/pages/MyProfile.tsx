@@ -819,7 +819,7 @@ const MyProfile = () => {
                         )}
                         <div>
                           <p className="font-medium text-sm">{delegateName}</p>
-                          <p className="text-xs text-muted-foreground">Aprobator actual (înlocuitor)</p>
+                          <p className="text-xs text-muted-foreground">Aprobator actual (delegat temporar)</p>
                           {delegatePeriod && (
                             <p className="text-xs text-primary font-medium mt-0.5">Perioada: {delegatePeriod}</p>
                           )}
@@ -837,7 +837,7 @@ const MyProfile = () => {
                         <div>
                           <p className="font-medium text-xs text-muted-foreground">{approverName}</p>
                           <p className="text-[11px] text-muted-foreground/70">
-                            {approverSource === 'individual' ? 'Aprobator titular (temporar înlocuit)' : 'Aprobator departament (temporar înlocuit)'}
+                            {approverSource === 'individual' ? 'Aprobator titular (a delegat temporar)' : 'Aprobator departament (a delegat temporar)'}
                           </p>
                         </div>
                       </div>
