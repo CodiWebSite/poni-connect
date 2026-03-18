@@ -15,8 +15,9 @@ import html2canvas from 'html2canvas';
 import {
   CARD_W, CARD_H, VARIANTS,
   getFrontComponent, getBackComponent, getBackgroundColors,
-  type CardData,
+  type CardData, type CardLang,
 } from '@/components/business-cards/CardVariants';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface Employee {
   id: string;
@@ -33,12 +34,16 @@ function CardPreview({
   data,
   variant,
   onVariantChange,
+  lang,
+  onLangChange,
   frontRef,
   backRef,
 }: {
   data: CardData;
   variant: string;
   onVariantChange: (v: string) => void;
+  lang: CardLang;
+  onLangChange: (v: CardLang) => void;
   frontRef: React.RefObject<HTMLDivElement>;
   backRef: React.RefObject<HTMLDivElement>;
 }) {
@@ -48,6 +53,26 @@ function CardPreview({
 
   return (
     <>
+      {/* Language picker */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Limba / Language</CardTitle>
+          <CardDescription>Alege limba pentru cartea de vizită</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup value={lang} onValueChange={v => onLangChange(v as CardLang)} className="flex gap-4">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="ro" id="lang-ro" />
+              <Label htmlFor="lang-ro" className="text-sm font-medium cursor-pointer">🇷🇴 Română</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="en" id="lang-en" />
+              <Label htmlFor="lang-en" className="text-sm font-medium cursor-pointer">🇬🇧 English</Label>
+            </div>
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
       {/* Variant picker */}
       <Card>
         <CardHeader className="pb-3">
@@ -193,6 +218,7 @@ function SelfServiceView() {
   const [department, setDepartment] = useState('');
   const [phone, setPhone] = useState('');
   const [variant, setVariant] = useState('classic');
+  const [lang, setLang] = useState<CardLang>('ro');
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -256,6 +282,7 @@ function SelfServiceView() {
     phone,
     email: employee.email,
     profileUrl: `${window.location.origin}/profil/${employee.id}`,
+    lang,
   };
 
   const handleDownload = async () => {
@@ -282,7 +309,7 @@ function SelfServiceView() {
         originalPosition={employee.position || ''}
         originalDepartment={employee.department || ''}
       />
-      <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} frontRef={frontRef} backRef={backRef} />
+      <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
       <Button onClick={handleDownload} disabled={generating} variant="hero" className="w-full">
         {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
         Descarcă PDF
@@ -306,6 +333,7 @@ function AdminView() {
   const [department, setDepartment] = useState('');
   const [phone, setPhone] = useState('');
   const [variant, setVariant] = useState('classic');
+  const [lang, setLang] = useState<CardLang>('ro');
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -344,6 +372,7 @@ function AdminView() {
     phone,
     email: selectedEmployee.email,
     profileUrl: `${window.location.origin}/profil/${selectedEmployee.id}`,
+    lang,
   } : null;
 
   const handleDownload = async () => {
@@ -407,7 +436,7 @@ function AdminView() {
                 originalPosition={selectedEmployee.position || ''}
                 originalDepartment={selectedEmployee.department || ''}
               />
-              <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} frontRef={frontRef} backRef={backRef} />
+              <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
               <Button onClick={handleDownload} disabled={generating} className="w-full">
                 {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
                 Descarcă PDF
