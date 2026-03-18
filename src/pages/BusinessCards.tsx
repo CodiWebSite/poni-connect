@@ -72,91 +72,124 @@ const BusinessCards = () => {
       await loadRobotoFonts();
       applyRobotoFont(doc);
 
+      // Load logo image
+      const logoImg = await new Promise<string>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          canvas.getContext('2d')!.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve('');
+        img.src = '/logo-icmpp.png';
+      });
+
+      const fullName = `${emp.last_name} ${emp.first_name}`.toUpperCase();
+
       // === FRONT SIDE ===
-      // White background
       doc.setFillColor(255, 255, 255);
       doc.rect(0, 0, CARD_W, CARD_H, 'F');
 
-      // Top accent line
-      doc.setDrawColor(0, 51, 102);
-      doc.setLineWidth(0.8);
-      doc.line(5, 14, CARD_W - 5, 14);
+      // Logo top-left
+      if (logoImg) {
+        doc.addImage(logoImg, 'PNG', 5, 3, 10, 10);
+      }
 
-      // Logo + Institute name (small)
+      // Institute name next to logo
       doc.setFont('Roboto-Bold', 'normal');
-      doc.setFontSize(7);
-      doc.setTextColor(0, 51, 102);
-      doc.text('Institutul de Chimie Macromoleculară "Petru Poni" Iași', 5, 11);
+      doc.setFontSize(8);
+      doc.setTextColor(43, 76, 126); // #2B4C7E
+      doc.text('Institutul de Chimie', 17, 7);
+      doc.text('Macromoleculară "Petru Poni" Iași', 17, 11);
 
-      // Employee name
-      const fullName = `${emp.last_name} ${emp.first_name}`.toUpperCase();
+      // Blue separator line
+      doc.setDrawColor(43, 76, 126);
+      doc.setLineWidth(0.6);
+      doc.line(5, 15, CARD_W - 5, 15);
+
+      // Thin gray line below
+      doc.setDrawColor(200, 210, 220);
+      doc.setLineWidth(0.2);
+      doc.line(5, 15.8, CARD_W - 5, 15.8);
+
+      // Employee name — large, bold, blue
       doc.setFont('Roboto-Bold', 'normal');
-      doc.setFontSize(12);
-      doc.setTextColor(0, 51, 102);
-      doc.text(fullName, 5, 22);
+      doc.setFontSize(13);
+      doc.setTextColor(43, 76, 126);
+      doc.text(fullName, 10, 24);
 
-      // Position & Department
+      // Position — italic style (regular, smaller, olive/muted)
       doc.setFont('Roboto-Regular', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 80); // olive-ish
+      if (emp.position) doc.text(emp.position, 10, 29);
+
+      // Department — regular gray
       doc.setFontSize(7.5);
       doc.setTextColor(80, 80, 80);
-      if (emp.position) doc.text(emp.position, 5, 27);
-      if (emp.department) doc.text(emp.department, 5, 31);
+      if (emp.department) doc.text(emp.department, 10, 33);
 
-      // Contact info
-      doc.setFontSize(6.5);
-      doc.setTextColor(60, 60, 60);
-      let yContact = 38;
-      if (phone) { doc.text(`Tel: ${phone}`, 5, yContact); yContact += 3.5; }
+      // Contact info — bottom-left
+      doc.setFont('Roboto-Regular', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(40, 40, 40);
+      let yContact = 42;
+      if (phone) {
+        doc.text(`Tel: ${phone}`, 5, yContact);
+        yContact += 3.5;
+      }
       doc.text(emp.email, 5, yContact);
 
-      // QR for icmpp.ro on front (small, bottom-right)
+      // QR for icmpp.ro — bottom-right
       const frontQrCanvas = frontQrRef.current?.querySelector('canvas');
       if (frontQrCanvas) {
         const qrImg = frontQrCanvas.toDataURL('image/png');
-        doc.addImage(qrImg, 'PNG', CARD_W - 20, CARD_H - 20, 15, 15);
-        doc.setFontSize(4.5);
-        doc.setTextColor(100, 100, 100);
-        doc.text('icmpp.ro', CARD_W - 12.5, CARD_H - 4, { align: 'center' });
+        doc.addImage(qrImg, 'PNG', CARD_W - 22, CARD_H - 22, 17, 17);
+        doc.setFontSize(5);
+        doc.setTextColor(120, 120, 120);
+        doc.text('icmpp.ro', CARD_W - 13.5, CARD_H - 4, { align: 'center' });
       }
 
       // === BACK SIDE ===
       doc.addPage([CARD_W, CARD_H], 'landscape');
 
-      // Dark blue background
-      doc.setFillColor(0, 51, 102);
+      // Dark blue background — #2B4C7E
+      doc.setFillColor(43, 76, 126);
       doc.rect(0, 0, CARD_W, CARD_H, 'F');
 
-      // QR for profile (centered, larger)
+      // Large white QR centered
       const backQrCanvas = backQrRef.current?.querySelector('canvas');
+      const qrSize = 24;
+      const qrX = CARD_W / 2 - qrSize / 2;
       if (backQrCanvas) {
-        // White background circle/rect for QR
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(CARD_W / 2 - 13, 6, 26, 26, 2, 2, 'F');
         const qrImg = backQrCanvas.toDataURL('image/png');
-        doc.addImage(qrImg, 'PNG', CARD_W / 2 - 11, 8, 22, 22);
+        doc.addImage(qrImg, 'PNG', qrX, 5, qrSize, qrSize);
       }
 
-      // "Profil profesional" label
+      // "Profil profesional" — bold white
       doc.setFont('Roboto-Bold', 'normal');
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.setTextColor(255, 255, 255);
-      doc.text('Profil profesional', CARD_W / 2, 37, { align: 'center' });
+      doc.text('Profil profesional', CARD_W / 2, 35, { align: 'center' });
 
-      // Separator line
+      // White separator line — wide
       doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(0.3);
-      doc.line(CARD_W / 2 - 15, 40, CARD_W / 2 + 15, 40);
+      doc.setLineWidth(0.4);
+      doc.line(10, 38, CARD_W - 10, 38);
 
-      // Employee name
+      // Employee name — bold white
       doc.setFont('Roboto-Bold', 'normal');
-      doc.setFontSize(7);
-      doc.text(fullName, CARD_W / 2, 45, { align: 'center' });
+      doc.setFontSize(9);
+      doc.text(fullName, CARD_W / 2, 44, { align: 'center' });
 
-      // Scan instruction
+      // Scan instruction — lighter
       doc.setFont('Roboto-Regular', 'normal');
-      doc.setFontSize(5);
-      doc.setTextColor(180, 200, 220);
-      doc.text('Scanează pentru contact și profil', CARD_W / 2, 49, { align: 'center' });
+      doc.setFontSize(5.5);
+      doc.setTextColor(180, 200, 230);
+      doc.text('Scanează pentru contact și profil', CARD_W / 2, 48.5, { align: 'center' });
 
       doc.save(`carte-vizita-${emp.last_name}-${emp.first_name}.pdf`);
       toast({ title: 'PDF generat!', description: 'Cartea de vizită a fost descărcată.' });
