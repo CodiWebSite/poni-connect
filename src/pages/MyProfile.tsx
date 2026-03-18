@@ -836,6 +836,50 @@ const MyProfile = () => {
                       </div>
                     </div>
                   )}
+                  {myDelegation && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/5 border border-accent/20">
+                      {myDelegation.delegateAvatar ? (
+                        <img src={myDelegation.delegateAvatar} alt={myDelegation.delegateName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent/60 flex items-center justify-center flex-shrink-0 text-accent-foreground font-bold text-sm shadow-md">
+                          {myDelegation.delegateName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-sm">{myDelegation.delegateName}</p>
+                        <p className="text-xs text-muted-foreground">Ați delegat aprobarea cererilor</p>
+                        <p className="text-xs text-accent font-medium mt-0.5">{myDelegation.period}</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* My Delegation (when user has delegated but no approver card shown) */}
+            {!approverName && myDelegation && (
+              <Card className="animate-fade-in border-accent/30" style={{ animationDelay: '150ms' }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <UserCheck className="w-5 h-5 text-accent" />
+                    Delegare Activă
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/5 border border-accent/20">
+                    {myDelegation.delegateAvatar ? (
+                      <img src={myDelegation.delegateAvatar} alt={myDelegation.delegateName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent/60 flex items-center justify-center flex-shrink-0 text-accent-foreground font-bold text-sm shadow-md">
+                        {myDelegation.delegateName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">{myDelegation.delegateName}</p>
+                      <p className="text-xs text-muted-foreground">Ați delegat aprobarea cererilor</p>
+                      <p className="text-xs text-accent font-medium mt-0.5">{myDelegation.period}</p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
