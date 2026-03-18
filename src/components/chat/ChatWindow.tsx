@@ -273,6 +273,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
       }
     } else {
       setConvName(conv?.name || conv?.department || 'Grup');
+      setConvAvatarUrl((conv as any)?.group_avatar_url || null);
       setOtherUserId(null);
     }
 
