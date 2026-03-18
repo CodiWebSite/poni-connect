@@ -1,5 +1,4 @@
 import { useState, useEffect, ReactNode } from 'react';
-import KioskSidebarWeather from './KioskSidebarWeather';
 import KioskSidebarAnnouncements from './KioskSidebarAnnouncements';
 import KioskSidebarRoomBookings from './KioskSidebarRoomBookings';
 
@@ -12,7 +11,6 @@ interface Section {
 const ROTATE_INTERVAL = 10_000; // 10 seconds
 
 const sections: Section[] = [
-  { key: 'weather', label: 'Meteo', component: <KioskSidebarWeather /> },
   { key: 'announcements', label: 'Anunțuri', component: <KioskSidebarAnnouncements /> },
   { key: 'rooms', label: 'Săli', component: <KioskSidebarRoomBookings /> },
 ];
