@@ -3,6 +3,8 @@ import { QRCodeCanvas } from 'qrcode.react';
 export const CARD_W = 85;
 export const CARD_H = 55;
 
+export type CardLang = 'ro' | 'en';
+
 export interface CardData {
   displayName: string;
   position: string;
@@ -10,6 +12,7 @@ export interface CardData {
   phone: string;
   email: string;
   profileUrl: string;
+  lang: CardLang;
 }
 
 type VariantId = 'classic' | 'modern' | 'minimal' | 'bold';
@@ -21,22 +24,55 @@ export const VARIANTS: { id: VariantId; label: string; description: string }[] =
   { id: 'bold', label: 'Îndrăzneț', description: 'Fundal întunecat, impact vizual' },
 ];
 
+/* ═══════ i18n helpers ═══════ */
+
+const TEXTS = {
+  ro: {
+    institute1: 'Institutul de Chimie',
+    institute2: 'Macromoleculară "Petru Poni" Iași',
+    instituteShort: 'ICMPP "Petru Poni" Iași',
+    academy: 'Academia Română',
+    address1: 'Aleea Grigore Ghica Vodă, 41A',
+    address2: 'Iași 700487',
+    profileLabel: 'Profil profesional',
+    scanLabel: 'Scanează pentru contact și profil',
+    scanLabelShort: 'Scanează codul QR pentru profil',
+    profileUpper: 'PROFIL PROFESIONAL',
+  },
+  en: {
+    institute1: '"Petru Poni" Institute of',
+    institute2: 'Macromolecular Chemistry Iași',
+    instituteShort: '"Petru Poni" Institute Iași',
+    academy: 'Romanian Academy',
+    address1: 'Grigore Ghica Voda Alley, 41A',
+    address2: 'Iași 700487',
+    profileLabel: 'Professional profile',
+    scanLabel: 'Scan for contact & profile',
+    scanLabelShort: 'Scan QR code for profile',
+    profileUpper: 'PROFESSIONAL PROFILE',
+  },
+} as const;
+
+function t(lang: CardLang) { return TEXTS[lang]; }
+
 /* ═══════ FRONT SIDES ═══════ */
 
 function ClassicFront({ data }: { data: CardData }) {
+  const txt = t(data.lang);
   return (
     <div style={{ padding: '16px 20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: 'Arial, Helvetica, sans-serif', background: '#ffffff' }}>
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2px' }}>
           <img src="/logo-icmpp.png" alt="ICMPP" style={{ height: '40px', width: 'auto' }} crossOrigin="anonymous" />
           <div>
-            <p style={{ fontSize: '11px', color: '#2B4C7E', fontWeight: 'bold', lineHeight: '1.3', margin: 0 }}>Institutul de Chimie</p>
-            <p style={{ fontSize: '11px', color: '#2B4C7E', fontWeight: 'bold', lineHeight: '1.3', margin: 0 }}>Macromoleculară "Petru Poni" Iași</p>
+            <p style={{ fontSize: '11px', color: '#2B4C7E', fontWeight: 'bold', lineHeight: '1.3', margin: 0 }}>{txt.institute1}</p>
+            <p style={{ fontSize: '11px', color: '#2B4C7E', fontWeight: 'bold', lineHeight: '1.3', margin: 0 }}>{txt.institute2}</p>
+            <p style={{ fontSize: '9px', color: '#2B4C7E', fontWeight: '600', lineHeight: '1.3', margin: '2px 0 0 0' }}>{txt.academy}</p>
           </div>
         </div>
         <div style={{ height: '2px', background: '#2B4C7E', marginBottom: '2px' }} />
-        <div style={{ height: '1px', background: 'rgba(43,76,126,0.2)', marginBottom: '12px' }} />
-        <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#2B4C7E', textAlign: 'center', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>
+        <div style={{ height: '1px', background: 'rgba(43,76,126,0.2)', marginBottom: '8px' }} />
+        <h2 style={{ fontSize: '17px', fontWeight: 'bold', color: '#2B4C7E', textAlign: 'center', letterSpacing: '0.5px', margin: '0 0 3px 0' }}>
           {data.displayName}
         </h2>
         {data.position && (
@@ -48,11 +84,13 @@ function ClassicFront({ data }: { data: CardData }) {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          {data.phone && <p style={{ fontSize: '10px', color: '#282828', margin: '0 0 2px 0' }}>Tel: {data.phone}</p>}
-          <p style={{ fontSize: '10px', color: '#282828', margin: 0 }}>{data.email}</p>
+          <p style={{ fontSize: '9px', color: '#282828', margin: '0 0 1px 0' }}>{txt.address1}</p>
+          <p style={{ fontSize: '9px', color: '#282828', margin: '0 0 3px 0' }}>{txt.address2}</p>
+          {data.phone && <p style={{ fontSize: '9px', color: '#2B4C7E', fontWeight: '600', margin: '0 0 1px 0' }}>Phone: {data.phone}</p>}
+          <p style={{ fontSize: '9px', color: '#2B4C7E', fontWeight: '600', margin: 0 }}>E-mail: {data.email}</p>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <QRCodeCanvas value="https://www.icmpp.ro" size={52} level="M" />
+          <QRCodeCanvas value="https://www.icmpp.ro" size={48} level="M" />
           <p style={{ fontSize: '7px', color: '#787878', marginTop: '2px' }}>icmpp.ro</p>
         </div>
       </div>
@@ -61,21 +99,24 @@ function ClassicFront({ data }: { data: CardData }) {
 }
 
 function ModernFront({ data }: { data: CardData }) {
+  const txt = t(data.lang);
   return (
     <div style={{ height: '100%', display: 'flex', fontFamily: 'Arial, Helvetica, sans-serif', background: '#ffffff' }}>
-      {/* Left accent strip */}
       <div style={{ width: '8px', background: 'linear-gradient(180deg, #2B4C7E 0%, #1a365d 50%, #3b82f6 100%)', flexShrink: 0 }} />
-      <div style={{ flex: 1, padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <div style={{ flex: 1, padding: '12px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-            <img src="/logo-icmpp.png" alt="ICMPP" style={{ height: '32px', width: 'auto' }} crossOrigin="anonymous" />
-            <p style={{ fontSize: '9px', color: '#2B4C7E', fontWeight: 'bold', lineHeight: '1.3', margin: 0 }}>ICMPP "Petru Poni" Iași</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <img src="/logo-icmpp.png" alt="ICMPP" style={{ height: '30px', width: 'auto' }} crossOrigin="anonymous" />
+            <div>
+              <p style={{ fontSize: '8px', color: '#2B4C7E', fontWeight: 'bold', lineHeight: '1.3', margin: 0 }}>{txt.instituteShort}</p>
+              <p style={{ fontSize: '7px', color: '#2B4C7E', fontWeight: '600', margin: 0 }}>{txt.academy}</p>
+            </div>
           </div>
-          <h2 style={{ fontSize: '17px', fontWeight: 'bold', color: '#1a365d', margin: '0 0 4px 0' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1a365d', margin: '0 0 3px 0' }}>
             {data.displayName}
           </h2>
           {data.position && (
-            <p style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600', margin: '0 0 2px 0' }}>{data.position}</p>
+            <p style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '600', margin: '0 0 2px 0' }}>{data.position}</p>
           )}
           {data.department && (
             <p style={{ fontSize: '9px', color: '#64748b', margin: 0 }}>{data.department}</p>
@@ -83,10 +124,12 @@ function ModernFront({ data }: { data: CardData }) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            {data.phone && <p style={{ fontSize: '9px', color: '#374151', margin: '0 0 2px 0' }}>📞 {data.phone}</p>}
-            <p style={{ fontSize: '9px', color: '#374151', margin: 0 }}>✉ {data.email}</p>
+            <p style={{ fontSize: '8px', color: '#374151', margin: '0 0 1px 0' }}>{txt.address1}</p>
+            <p style={{ fontSize: '8px', color: '#374151', margin: '0 0 2px 0' }}>{txt.address2}</p>
+            {data.phone && <p style={{ fontSize: '8px', color: '#374151', margin: '0 0 1px 0' }}>📞 {data.phone}</p>}
+            <p style={{ fontSize: '8px', color: '#374151', margin: 0 }}>✉ {data.email}</p>
           </div>
-          <QRCodeCanvas value="https://www.icmpp.ro" size={44} level="M" />
+          <QRCodeCanvas value="https://www.icmpp.ro" size={40} level="M" />
         </div>
       </div>
     </div>
@@ -94,51 +137,61 @@ function ModernFront({ data }: { data: CardData }) {
 }
 
 function MinimalFront({ data }: { data: CardData }) {
+  const txt = t(data.lang);
   return (
-    <div style={{ height: '100%', padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif', background: '#fafafa' }}>
-      <img src="/logo-icmpp.png?v=20260318" alt="ICMPP" style={{ width: '42px', height: '42px', objectFit: 'contain', objectPosition: 'center', display: 'block', marginBottom: '14px' }} crossOrigin="anonymous" />
-      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', letterSpacing: '1px', margin: '0 0 6px 0' }}>
+    <div style={{ height: '100%', padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif', background: '#fafafa' }}>
+      <img src="/logo-icmpp.png?v=20260318" alt="ICMPP" style={{ width: '38px', height: '38px', objectFit: 'contain', objectPosition: 'center', display: 'block', marginBottom: '10px' }} crossOrigin="anonymous" />
+      <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', letterSpacing: '1px', margin: '0 0 4px 0' }}>
         {data.displayName}
       </h2>
-      <div style={{ width: '40px', height: '2px', background: '#2B4C7E', marginBottom: '8px' }} />
+      <div style={{ width: '40px', height: '2px', background: '#2B4C7E', marginBottom: '6px' }} />
       {data.position && (
-        <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 2px 0' }}>{data.position}</p>
+        <p style={{ fontSize: '10px', color: '#6b7280', margin: '0 0 2px 0' }}>{data.position}</p>
       )}
       {data.department && (
-        <p style={{ fontSize: '10px', color: '#9ca3af', margin: '0 0 10px 0' }}>{data.department}</p>
+        <p style={{ fontSize: '9px', color: '#9ca3af', margin: '0 0 6px 0' }}>{data.department}</p>
       )}
-      <div style={{ display: 'flex', gap: '12px', fontSize: '9px', color: '#4b5563' }}>
-        {data.phone && <span>{data.phone}</span>}
-        <span>{data.email}</span>
+      <div style={{ fontSize: '8px', color: '#4b5563' }}>
+        <p style={{ margin: '0 0 1px 0' }}>{txt.address1}, {txt.address2}</p>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '2px' }}>
+          {data.phone && <span>{data.phone}</span>}
+          <span>{data.email}</span>
+        </div>
       </div>
     </div>
   );
 }
 
 function BoldFront({ data }: { data: CardData }) {
+  const txt = t(data.lang);
   return (
-    <div style={{ height: '100%', padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: 'Arial, Helvetica, sans-serif', background: '#0f172a' }}>
+    <div style={{ height: '100%', padding: '14px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: 'Arial, Helvetica, sans-serif', background: '#0f172a' }}>
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-          <img src="/logo-icmpp.png" alt="ICMPP" style={{ height: '32px', width: 'auto', filter: 'brightness(0) invert(1)' }} crossOrigin="anonymous" />
-          <p style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 'bold', margin: 0 }}>ICMPP "Petru Poni"</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <img src="/logo-icmpp.png" alt="ICMPP" style={{ height: '30px', width: 'auto', filter: 'brightness(0) invert(1)' }} crossOrigin="anonymous" />
+          <div>
+            <p style={{ fontSize: '8px', color: '#94a3b8', fontWeight: 'bold', margin: 0 }}>{txt.instituteShort}</p>
+            <p style={{ fontSize: '7px', color: '#64748b', margin: 0 }}>{txt.academy}</p>
+          </div>
         </div>
-        <h2 style={{ fontSize: '19px', fontWeight: 'bold', color: '#f8fafc', letterSpacing: '1px', margin: '0 0 4px 0' }}>
+        <h2 style={{ fontSize: '17px', fontWeight: 'bold', color: '#f8fafc', letterSpacing: '1px', margin: '0 0 3px 0' }}>
           {data.displayName}
         </h2>
         {data.position && (
-          <p style={{ fontSize: '11px', color: '#60a5fa', fontWeight: '600', margin: '0 0 2px 0' }}>{data.position}</p>
+          <p style={{ fontSize: '10px', color: '#60a5fa', fontWeight: '600', margin: '0 0 2px 0' }}>{data.position}</p>
         )}
         {data.department && (
-          <p style={{ fontSize: '10px', color: '#94a3b8', margin: 0 }}>{data.department}</p>
+          <p style={{ fontSize: '9px', color: '#94a3b8', margin: 0 }}>{data.department}</p>
         )}
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          {data.phone && <p style={{ fontSize: '9px', color: '#cbd5e1', margin: '0 0 2px 0' }}>{data.phone}</p>}
-          <p style={{ fontSize: '9px', color: '#cbd5e1', margin: 0 }}>{data.email}</p>
+          <p style={{ fontSize: '8px', color: '#94a3b8', margin: '0 0 1px 0' }}>{txt.address1}</p>
+          <p style={{ fontSize: '8px', color: '#94a3b8', margin: '0 0 2px 0' }}>{txt.address2}</p>
+          {data.phone && <p style={{ fontSize: '8px', color: '#cbd5e1', margin: '0 0 1px 0' }}>{data.phone}</p>}
+          <p style={{ fontSize: '8px', color: '#cbd5e1', margin: 0 }}>{data.email}</p>
         </div>
-        <QRCodeCanvas value="https://www.icmpp.ro" size={46} level="M" bgColor="transparent" fgColor="#60a5fa" />
+        <QRCodeCanvas value="https://www.icmpp.ro" size={42} level="M" bgColor="transparent" fgColor="#60a5fa" />
       </div>
     </div>
   );
@@ -147,23 +200,25 @@ function BoldFront({ data }: { data: CardData }) {
 /* ═══════ BACK SIDES ═══════ */
 
 function ClassicBack({ data }: { data: CardData }) {
+  const txt = t(data.lang);
   return (
     <div style={{ padding: '12px 16px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif', background: '#2B4C7E' }}>
       <QRCodeCanvas value={data.profileUrl} size={90} level="M" bgColor="transparent" fgColor="#ffffff" />
-      <p style={{ fontWeight: 'bold', fontSize: '13px', color: '#ffffff', marginTop: '8px', marginBottom: '6px' }}>Profil profesional</p>
+      <p style={{ fontWeight: 'bold', fontSize: '13px', color: '#ffffff', marginTop: '8px', marginBottom: '6px' }}>{txt.profileLabel}</p>
       <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.5)', marginBottom: '8px' }} />
       <p style={{ fontWeight: 'bold', fontSize: '12px', color: '#ffffff', letterSpacing: '1px', margin: '0 0 4px 0' }}>{data.displayName}</p>
-      <p style={{ fontSize: '8px', color: 'rgba(180,200,230,0.8)', margin: 0 }}>Scanează pentru contact și profil</p>
+      <p style={{ fontSize: '8px', color: 'rgba(180,200,230,0.8)', margin: 0 }}>{txt.scanLabel}</p>
     </div>
   );
 }
 
 function ModernBack({ data }: { data: CardData }) {
+  const txt = t(data.lang);
   return (
     <div style={{ height: '100%', display: 'flex', fontFamily: 'Arial, Helvetica, sans-serif', background: 'linear-gradient(135deg, #1a365d 0%, #2B4C7E 50%, #3b82f6 100%)' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <QRCodeCanvas value={data.profileUrl} size={85} level="M" bgColor="transparent" fgColor="#ffffff" />
-        <p style={{ fontWeight: 'bold', fontSize: '12px', color: '#ffffff', marginTop: '8px', marginBottom: '4px' }}>Profil profesional</p>
+        <p style={{ fontWeight: 'bold', fontSize: '12px', color: '#ffffff', marginTop: '8px', marginBottom: '4px' }}>{txt.profileLabel}</p>
         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.5px', margin: 0 }}>{data.displayName}</p>
       </div>
     </div>
@@ -171,21 +226,23 @@ function ModernBack({ data }: { data: CardData }) {
 }
 
 function MinimalBack({ data }: { data: CardData }) {
+  const txt = t(data.lang);
   return (
     <div style={{ height: '100%', padding: '20px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif', background: '#f8fafc' }}>
       <QRCodeCanvas value={data.profileUrl} size={90} level="M" fgColor="#2B4C7E" />
       <p style={{ fontWeight: 'bold', fontSize: '12px', color: '#1e293b', marginTop: '10px', marginBottom: '2px' }}>{data.displayName}</p>
-      <p style={{ fontSize: '9px', color: '#94a3b8', margin: 0 }}>Scanează codul QR pentru profil</p>
+      <p style={{ fontSize: '9px', color: '#94a3b8', margin: 0 }}>{txt.scanLabelShort}</p>
     </div>
   );
 }
 
 function BoldBack({ data }: { data: CardData }) {
+  const txt = t(data.lang);
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif', background: '#0f172a' }}>
       <QRCodeCanvas value={data.profileUrl} size={95} level="M" bgColor="transparent" fgColor="#60a5fa" />
       <p style={{ fontWeight: 'bold', fontSize: '13px', color: '#f8fafc', marginTop: '8px', letterSpacing: '1px', marginBottom: '4px' }}>{data.displayName}</p>
-      <p style={{ fontSize: '8px', color: '#64748b', margin: 0 }}>PROFIL PROFESIONAL</p>
+      <p style={{ fontSize: '8px', color: '#64748b', margin: 0 }}>{txt.profileUpper}</p>
     </div>
   );
 }

@@ -15,8 +15,9 @@ import html2canvas from 'html2canvas';
 import {
   CARD_W, CARD_H, VARIANTS,
   getFrontComponent, getBackComponent, getBackgroundColors,
-  type CardData,
+  type CardData, type CardLang,
 } from '@/components/business-cards/CardVariants';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface Employee {
   id: string;
