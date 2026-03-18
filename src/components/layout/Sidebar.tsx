@@ -36,6 +36,7 @@ import {
   Download,
   Activity,
   Archive,
+  CreditCard,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
