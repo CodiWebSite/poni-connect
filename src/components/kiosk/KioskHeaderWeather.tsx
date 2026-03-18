@@ -60,24 +60,24 @@ const KioskHeaderWeather = ({ formatTime, formatDate, now }: Props) => {
   }, [fetchWeather]);
 
   return (
-    <div className="flex items-center gap-5">
+    <div className="flex items-center gap-4">
       {/* Clock + Date */}
-      <div className="flex flex-col items-end justify-center">
-        <div className="text-3xl font-mono font-bold tabular-nums text-foreground tracking-wider leading-none">
+      <div className="flex min-w-[220px] flex-col items-end justify-center">
+        <div className="text-2xl font-mono font-bold tabular-nums text-foreground tracking-wider leading-none">
           {formatTime(now)}
         </div>
-        <div className="text-xs text-muted-foreground mt-1 leading-none">{formatDate(now)}</div>
+        <div className="mt-1 text-[11px] leading-none text-muted-foreground">{formatDate(now)}</div>
       </div>
 
       {/* Weather */}
       {weather && (
         <>
-          <div className="w-px h-10 bg-border/50" />
-          <div className="flex items-center gap-2">
+          <div className="h-10 w-px bg-border/50" />
+          <div className="flex min-w-[110px] items-center gap-2">
             <WeatherIcon code={weather.weatherCode} />
             <div className="text-right">
-              <div className="text-xl font-bold tabular-nums text-foreground leading-none">{weather.temperature}°C</div>
-              <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">{weather.condition}</p>
+              <div className="text-lg font-bold tabular-nums text-foreground leading-none">{weather.temperature}°C</div>
+              <p className="mt-0.5 text-[11px] leading-none text-muted-foreground">{weather.condition}</p>
             </div>
           </div>
         </>

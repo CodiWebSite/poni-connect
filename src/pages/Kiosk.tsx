@@ -158,17 +158,17 @@ const Kiosk = () => {
   return (
     <div className="h-screen w-screen bg-slate-50 text-foreground flex flex-col overflow-hidden select-none">
       {/* ── Language indicator ─────────────────── */}
-      <div className="absolute top-3 right-36 z-10">
+      <div className="absolute top-3 right-6 z-10">
         <span className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full backdrop-blur-sm">
           {lang === 'ro' ? '🇷🇴 RO' : '🇬🇧 EN'}
         </span>
       </div>
 
       {/* ── Header with gradient ───────────────── */}
-      <header className="flex items-center justify-between px-8 py-3 bg-gradient-to-r from-white via-white to-primary/5 border-b border-slate-200/80 shrink-0 relative">
+      <header className="flex items-center justify-between px-8 py-4 bg-gradient-to-r from-white via-white to-primary/5 border-b border-slate-200/80 shrink-0 relative">
         {/* Subtle top accent line */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-primary/60 via-primary/30 to-transparent" />
-        
+
         <div className="flex items-center gap-4">
           <img src="/logo-icmpp.png" alt="ICMPP" className="h-16 w-auto drop-shadow-sm" />
           <div>
@@ -178,7 +178,7 @@ const Kiosk = () => {
             </h1>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5 pr-1">
           <AnalogClock size={80} />
           <KioskHeaderWeather
             formatTime={formatTime}
