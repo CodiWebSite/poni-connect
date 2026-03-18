@@ -30,6 +30,9 @@ import {
   ExternalLink,
   Mail,
   Download,
+  CreditCard,
+  Archive,
+  Activity,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -37,7 +40,7 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
   const { isDesignatedApprover } = useIsApprover();
   const [isOpen, setIsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -73,6 +76,8 @@ const MobileNav = () => {
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
+    ...(canAccessMedical ? [{ icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' }] : []),
+    { icon: Archive, label: 'Arhivă Online', path: '/arhiva' },
     { icon: ExternalLink, label: 'Adeverințe SCTP', path: 'https://adeverinte.icmpp.ro/', external: true },
     { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
@@ -83,6 +88,7 @@ const MobileNav = () => {
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     ...(isSalarizare ? [{ icon: Banknote, label: 'Salarizare', path: '/salarizare' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
+    { icon: CreditCard, label: 'Carte de Vizită', path: '/carti-vizita' },
     ...(isSuperAdmin ? [{ icon: ServerCog, label: 'Stare Sistem', path: '/system-status' }] : []),
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
