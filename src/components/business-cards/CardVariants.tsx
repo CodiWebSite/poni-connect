@@ -96,7 +96,7 @@ function ModernFront({ data }: { data: CardData }) {
 function MinimalFront({ data }: { data: CardData }) {
   return (
     <div style={{ height: '100%', padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif', background: '#fafafa' }}>
-      <img src="/logo-icmpp.png" alt="ICMPP" style={{ width: '42px', height: '42px', objectFit: 'contain', objectPosition: 'center', display: 'block', marginBottom: '14px' }} crossOrigin="anonymous" />
+      <img src="/logo-icmpp.png?v=20260318" alt="ICMPP" style={{ width: '42px', height: '42px', objectFit: 'contain', objectPosition: 'center', display: 'block', marginBottom: '14px' }} crossOrigin="anonymous" />
       <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', letterSpacing: '1px', margin: '0 0 6px 0' }}>
         {data.displayName}
       </h2>
