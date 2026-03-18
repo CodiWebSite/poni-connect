@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Bell } from 'lucide-react';
 import { useToast } from './use-toast';
+import { playNotificationSound } from '@/utils/notificationSound';
 
 interface Notification {
   id: string;
