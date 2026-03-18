@@ -89,10 +89,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
 }
 
 function GlobalChatNotifier() {
-  const location = useLocation();
-  // Don't double-notify when user is on /chat — ChatWindow handles its own
-  const isOnChat = location.pathname === '/chat';
-  useChatNotifications(isOnChat ? '__on_chat_page__' : null);
+  useChatNotifications();
   return null;
 }
 
