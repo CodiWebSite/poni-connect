@@ -102,8 +102,8 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <GlobalChatNotifier />
           <BrowserRouter>
-            <GlobalChatNotifier />
             <MaintenanceGuard>
               <Routes>
                 <Route path="/kiosk" element={<Kiosk />} />
