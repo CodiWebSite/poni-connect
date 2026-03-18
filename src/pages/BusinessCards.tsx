@@ -323,7 +323,7 @@ const BusinessCards = () => {
         {/* Hidden QR canvases for PDF generation */}
         <div className="hidden">
           <div id="front-qr-hidden">
-            <QRCodeSVG value="https://www.icmpp.ro" size={200} level="M" renderAs="canvas" />
+            <QRCodeCanvas value="https://www.icmpp.ro" size={200} level="M" />
           </div>
           {selectedEmployee && (
             <div id="back-qr-hidden">
