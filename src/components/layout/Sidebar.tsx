@@ -207,7 +207,6 @@ const Sidebar = () => {
     ...(isSalarizare ? [{ icon: Banknote, label: 'Salarizare', path: '/salarizare' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(isSuperAdmin ? [{ icon: ServerCog, label: 'Stare Sistem', path: '/system-status' }] : []),
-    ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin }] : []),
     { icon: CreditCard, label: 'Carte de Vizită', path: '/carti-vizita' },
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin }] : []),
   ];
