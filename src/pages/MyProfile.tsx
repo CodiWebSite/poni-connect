@@ -153,6 +153,7 @@ const MyProfile = () => {
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [cnpCopied, setCnpCopied] = useState(false);
+  const [epdId, setEpdId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchData();
