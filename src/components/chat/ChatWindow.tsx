@@ -26,6 +26,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
 
 interface Message {
   id: string;
