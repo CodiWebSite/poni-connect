@@ -217,7 +217,7 @@ const Kiosk = () => {
             </h2>
           </div>
           <div className="flex-1 px-8 pb-4 flex items-center justify-center min-h-0">
-            <div className="w-full h-full flex items-center justify-center kiosk-fade-in">
+            <div className="w-full h-full flex items-center justify-center kiosk-fade-in relative">
               <video
                 ref={videoRef}
                 src={KIOSK_VIDEO_URL}
@@ -226,6 +226,15 @@ const Kiosk = () => {
                 autoPlay
                 className="max-w-full max-h-full rounded-xl shadow-2xl ring-1 ring-black/5"
               />
+              {/* Subtle video progress bar */}
+              <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-full px-[2px] pb-[2px]" style={{ width: 'calc(100% - 1px)' }}>
+                <div className="h-[3px] w-full rounded-b-xl overflow-hidden bg-black/20">
+                  <div
+                    className="h-full bg-primary/60 transition-[width] duration-300 ease-linear"
+                    style={{ width: `${videoProgress}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
