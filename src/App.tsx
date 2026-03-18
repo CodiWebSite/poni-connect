@@ -9,6 +9,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { DemoModeProvider } from "@/contexts/DemoModeContext";
+import { useChatNotifications } from "@/hooks/useChatNotifications";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import CalendarPage from "./pages/CalendarPage";
