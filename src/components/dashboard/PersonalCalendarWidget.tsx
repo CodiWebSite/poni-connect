@@ -81,11 +81,36 @@ const PersonalCalendarWidget = () => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
 
+    // Build a map from user_id to their canonical EPD id for deduplication
+    const recordUserMap: Record<string, string> = {};
+    // We need employee_records to map EPD -> user_id
+    const { data: records } = await supabase.from('employee_records').select('id, user_id');
+    (records || []).forEach((r: any) => { recordUserMap[r.id] = r.user_id; });
+
+    const userIdToEpdId: Record<string, string> = {};
+    (epdData || []).forEach(e => {
+      if (e.employee_record_id) {
+        const uid = recordUserMap[e.employee_record_id];
+        if (uid) userIdToEpdId[uid] = e.id;
+      }
+    });
+
     const entries: DepartmentLeave[] = [];
-    // Track seen leaves by normalized key to avoid duplicates across tables
     const seenLeaveKeys = new Set<string>();
-    const makeDedupeKey = (name: string, start: string, end: string) =>
-      `${name.toLowerCase().trim()}|${start}|${end}`;
+
+    const resolvePersonId = (userId: string | null, epdId: string | null): string => {
+      if (epdId) return `epd_${epdId}`;
+      if (userId && userIdToEpdId[userId]) return `epd_${userIdToEpdId[userId]}`;
+      return `uid_${userId || 'unknown'}`;
+    };
+
+    const resolveEmpInfo = (userId: string | null, epdId: string | null, fallbackName?: string) => {
+      if (epdId && epdMap[epdId]) return epdMap[epdId];
+      if (userId && userIdToEpdId[userId] && epdMap[userIdToEpdId[userId]]) return epdMap[userIdToEpdId[userId]];
+      if (userId && profileMap[userId]) return profileMap[userId];
+      if (fallbackName) return { name: fallbackName, department: null };
+      return undefined;
+    };
 
     // Process hr_requests
     (allLeaves || []).forEach((lr: any) => {
@@ -95,19 +120,15 @@ const PersonalCalendarWidget = () => {
       const leaveEnd = parseISO(d.endDate);
       if (leaveEnd < monthStart || leaveStart > monthEnd) return;
 
-      let empInfo: { name: string; department: string | null } | undefined;
-      if (d.epd_id && epdMap[d.epd_id]) empInfo = epdMap[d.epd_id];
-      else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
-      else if (d.employee_name) empInfo = { name: d.employee_name, department: null };
-
+      const empInfo = resolveEmpInfo(lr.user_id, d.epd_id, d.employee_name);
       if (!empInfo) return;
 
-      const key = makeDedupeKey(empInfo.name, d.startDate, d.endDate);
+      const personId = resolvePersonId(lr.user_id, d.epd_id);
+      const key = `${personId}|${d.startDate}|${d.endDate}`;
       if (seenLeaveKeys.has(key)) return;
       seenLeaveKeys.add(key);
 
       const isCurrentUser = lr.user_id === user.id && !d.epd_id;
-      // Show if: it's the current user OR same department
       if (isCurrentUser || (userDept && empInfo.department === userDept)) {
         entries.push({
           employeeName: empInfo.name,
@@ -126,12 +147,11 @@ const PersonalCalendarWidget = () => {
       const leaveEnd = parseISO(lr.end_date);
       if (leaveEnd < monthStart || leaveStart > monthEnd) return;
 
-      let empInfo: { name: string; department: string | null } | undefined;
-      if (lr.epd_id && epdMap[lr.epd_id]) empInfo = epdMap[lr.epd_id];
-      else if (lr.user_id && profileMap[lr.user_id]) empInfo = profileMap[lr.user_id];
+      const empInfo = resolveEmpInfo(lr.user_id, lr.epd_id);
       if (!empInfo) return;
 
-      const key = makeDedupeKey(empInfo.name, lr.start_date, lr.end_date);
+      const personId = resolvePersonId(lr.user_id, lr.epd_id);
+      const key = `${personId}|${lr.start_date}|${lr.end_date}`;
       if (seenLeaveKeys.has(key)) return;
       seenLeaveKeys.add(key);
 
