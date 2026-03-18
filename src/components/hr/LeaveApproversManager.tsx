@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Search, Users, ArrowRight, Building2, Clock, ChevronsUpDown, Check } from 'lucide-react';
+import { Loader2, Plus, Trash2, Search, Users, ArrowRight, Building2, Clock, ChevronsUpDown, Check, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ApproverMapping {
