@@ -317,13 +317,14 @@ const MyProfile = () => {
     }
 
     // Check if current user is acting as delegate for someone
+    const todayStr = new Date().toISOString().split('T')[0];
     const { data: actingAsDelegateData } = await supabase
       .from('leave_approval_delegates' as any)
       .select('delegator_user_id, start_date, end_date')
       .eq('delegate_user_id', user.id)
       .eq('is_active', true)
-      .lte('start_date', today)
-      .gte('end_date', today)
+      .lte('start_date', todayStr)
+      .gte('end_date', todayStr)
       .limit(1);
 
     if (actingAsDelegateData && actingAsDelegateData.length > 0) {
