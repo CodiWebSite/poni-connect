@@ -267,6 +267,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
       if (parts?.[0]) {
         const p = await getProfile(parts[0].user_id);
         setConvName(p.name);
+        setConvAvatarUrl(p.avatar);
         setOtherUserId(parts[0].user_id);
         fetchPresence(parts[0].user_id);
       }
