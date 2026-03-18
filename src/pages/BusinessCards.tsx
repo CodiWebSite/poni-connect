@@ -282,6 +282,7 @@ function SelfServiceView() {
     phone,
     email: employee.email,
     profileUrl: `${window.location.origin}/profil/${employee.id}`,
+    lang,
   };
 
   const handleDownload = async () => {
