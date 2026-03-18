@@ -71,6 +71,8 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
+  const [convAvatarUrl, setConvAvatarUrl] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<{ url: string; name: string } | null>(null);
   const [otherLastRead, setOtherLastRead] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
