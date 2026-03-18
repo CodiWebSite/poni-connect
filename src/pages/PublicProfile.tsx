@@ -135,7 +135,7 @@ const PublicProfile = () => {
       {/* Header bar */}
       <div className="bg-white/5 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center gap-3">
-          <img src="/logo-icmpp.png" alt="ICMPP" className="h-10 w-auto" />
+          <img src="/logo-icmpp.png" alt="ICMPP" className="h-10 w-auto brightness-0 invert opacity-90" />
           <div>
             <p className="text-white/90 text-sm font-semibold leading-tight">Institutul de Chimie Macromoleculară</p>
             <p className="text-white/50 text-xs">"Petru Poni" Iași</p>
