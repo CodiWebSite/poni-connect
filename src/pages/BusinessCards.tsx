@@ -5,13 +5,18 @@ import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { QRCodeCanvas } from 'qrcode.react';
-import { CreditCard, Download, Search, Loader2 } from 'lucide-react';
+import { CreditCard, Download, Search, Loader2, Pencil } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import {
+  CARD_W, CARD_H, VARIANTS,
+  getFrontComponent, getBackComponent, getBackgroundColors,
+  type CardData,
+} from '@/components/business-cards/CardVariants';
 
 interface Employee {
   id: string;
@@ -22,103 +27,81 @@ interface Employee {
   email: string;
 }
 
-const CARD_W = 85;
-const CARD_H = 55;
-
-/* ──────── Shared card preview + PDF logic ──────── */
+/* ──────── Card Preview with variant selector ──────── */
 
 function CardPreview({
-  employee,
-  phone,
+  data,
+  variant,
+  onVariantChange,
   frontRef,
   backRef,
 }: {
-  employee: Employee;
-  phone: string;
+  data: CardData;
+  variant: string;
+  onVariantChange: (v: string) => void;
   frontRef: React.RefObject<HTMLDivElement>;
   backRef: React.RefObject<HTMLDivElement>;
 }) {
-  const profileUrl = `${window.location.origin}/profil/${employee.id}`;
+  const FrontComp = getFrontComponent(variant as any);
+  const BackComp = getBackComponent(variant as any);
+  const bg = getBackgroundColors(variant as any);
 
   return (
     <>
+      {/* Variant picker */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Stil carte de vizită</CardTitle>
+          <CardDescription>Alege varianta care ți se potrivește</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {VARIANTS.map(v => (
+              <button
+                key={v.id}
+                onClick={() => onVariantChange(v.id)}
+                className={`rounded-lg border-2 p-3 text-left transition-all ${
+                  variant === v.id
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-border hover:border-primary/40'
+                }`}
+              >
+                <p className="font-semibold text-sm">{v.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{v.description}</p>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Front */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Preview — Față</CardTitle>
-          <CardDescription>Partea frontală a cărții de vizită</CardDescription>
         </CardHeader>
         <CardContent>
           <div
             ref={frontRef}
             className="border rounded-xl overflow-hidden shadow-lg"
-            style={{ aspectRatio: `${CARD_W}/${CARD_H}`, background: '#ffffff' }}
+            style={{ aspectRatio: `${CARD_W}/${CARD_H}`, background: bg.front }}
           >
-            <div style={{ padding: '16px 20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                  <img src="/logo-icmpp.png" alt="ICMPP" style={{ height: '40px', width: 'auto' }} crossOrigin="anonymous" />
-                  <div>
-                    <p style={{ fontSize: '11px', color: '#2B4C7E', fontWeight: 'bold', lineHeight: '1.3', margin: 0 }}>Institutul de Chimie</p>
-                    <p style={{ fontSize: '11px', color: '#2B4C7E', fontWeight: 'bold', lineHeight: '1.3', margin: 0 }}>Macromoleculară "Petru Poni" Iași</p>
-                  </div>
-                </div>
-                <div style={{ height: '2px', background: '#2B4C7E', marginBottom: '2px' }} />
-                <div style={{ height: '1px', background: 'rgba(43,76,126,0.2)', marginBottom: '12px' }} />
-                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#2B4C7E', textAlign: 'center', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>
-                  {employee.last_name.toUpperCase()} {employee.first_name.toUpperCase()}
-                </h2>
-                {employee.position && (
-                  <p style={{ fontSize: '11px', color: '#787850', fontStyle: 'italic', textAlign: 'center', margin: '0 0 2px 0' }}>
-                    {employee.position}
-                  </p>
-                )}
-                {employee.department && (
-                  <p style={{ fontSize: '10px', color: '#505050', textAlign: 'center', margin: 0 }}>
-                    {employee.department}
-                  </p>
-                )}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <div>
-                  {phone && <p style={{ fontSize: '10px', color: '#282828', margin: '0 0 2px 0' }}>Tel: {phone}</p>}
-                  <p style={{ fontSize: '10px', color: '#282828', margin: 0 }}>{employee.email}</p>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <QRCodeCanvas value="https://www.icmpp.ro" size={52} level="M" />
-                  <p style={{ fontSize: '7px', color: '#787878', marginTop: '2px' }}>icmpp.ro</p>
-                </div>
-              </div>
-            </div>
+            <FrontComp data={data} />
           </div>
         </CardContent>
       </Card>
 
+      {/* Back */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Preview — Verso</CardTitle>
-          <CardDescription>QR către profilul profesional</CardDescription>
         </CardHeader>
         <CardContent>
           <div
             ref={backRef}
             className="border rounded-xl overflow-hidden shadow-lg"
-            style={{ aspectRatio: `${CARD_W}/${CARD_H}`, background: '#2B4C7E' }}
+            style={{ aspectRatio: `${CARD_W}/${CARD_H}`, background: bg.back }}
           >
-            <div style={{ padding: '12px 16px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-              <div style={{ marginTop: '-4px' }}>
-                <QRCodeCanvas value={profileUrl} size={90} level="M" bgColor="transparent" fgColor="#ffffff" />
-              </div>
-              <p style={{ fontWeight: 'bold', fontSize: '13px', color: '#ffffff', marginTop: '8px', marginBottom: '6px' }}>
-                Profil profesional
-              </p>
-              <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.5)', marginBottom: '8px' }} />
-              <p style={{ fontWeight: 'bold', fontSize: '12px', color: '#ffffff', letterSpacing: '1px', margin: '0 0 4px 0' }}>
-                {employee.last_name.toUpperCase()} {employee.first_name.toUpperCase()}
-              </p>
-              <p style={{ fontSize: '8px', color: 'rgba(180,200,230,0.8)', margin: 0 }}>
-                Scanează pentru contact și profil
-              </p>
-            </div>
+            <BackComp data={data} />
           </div>
         </CardContent>
       </Card>
@@ -126,22 +109,97 @@ function CardPreview({
   );
 }
 
-/* ──────── Self-service view (regular employee) ──────── */
+/* ──────── Editable fields panel ──────── */
+
+function EditableFields({
+  displayName, setDisplayName,
+  position, setPosition,
+  department, setDepartment,
+  phone, setPhone,
+  originalName, originalPosition, originalDepartment,
+}: {
+  displayName: string; setDisplayName: (v: string) => void;
+  position: string; setPosition: (v: string) => void;
+  department: string; setDepartment: (v: string) => void;
+  phone: string; setPhone: (v: string) => void;
+  originalName: string; originalPosition: string; originalDepartment: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Pencil className="w-4 h-4" />
+          Personalizare text
+        </CardTitle>
+        <CardDescription>Modifică textul afișat pe cartea de vizită</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="card-name" className="text-xs">Nume afișat</Label>
+          <Input id="card-name" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder={originalName} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="card-position" className="text-xs">Funcție</Label>
+            <Input id="card-position" value={position} onChange={e => setPosition(e.target.value)} placeholder={originalPosition || 'Funcție'} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="card-dept" className="text-xs">Departament</Label>
+            <Input id="card-dept" value={department} onChange={e => setDepartment(e.target.value)} placeholder={originalDepartment || 'Departament'} />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="card-phone" className="text-xs">Telefon (opțional)</Label>
+          <Input id="card-phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+40 xxx xxx xxx" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ──────── Download helper ──────── */
+
+async function downloadPDF(
+  frontRef: React.RefObject<HTMLDivElement>,
+  backRef: React.RefObject<HTMLDivElement>,
+  variant: string,
+  fileName: string,
+) {
+  if (!frontRef.current || !backRef.current) throw new Error('Refs missing');
+  const bg = getBackgroundColors(variant as any);
+  const scale = 4;
+  const [frontCanvas, backCanvas] = await Promise.all([
+    html2canvas(frontRef.current, { scale, useCORS: true, backgroundColor: bg.front, logging: false }),
+    html2canvas(backRef.current, { scale, useCORS: true, backgroundColor: bg.back, logging: false }),
+  ]);
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H] });
+  doc.addImage(frontCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
+  doc.addPage([CARD_W, CARD_H], 'landscape');
+  doc.addImage(backCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
+  doc.save(fileName);
+}
+
+/* ──────── Self-service view ──────── */
 
 function SelfServiceView() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [employee, setEmployee] = useState<Employee | null>(null);
-  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+
+  const [displayName, setDisplayName] = useState('');
+  const [position, setPosition] = useState('');
+  const [department, setDepartment] = useState('');
+  const [phone, setPhone] = useState('');
+  const [variant, setVariant] = useState('classic');
+
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchOwn = async () => {
       if (!user) return;
-      // Find employee record linked to current user
       const { data: rec } = await supabase
         .from('employee_records')
         .select('id')
@@ -155,10 +213,14 @@ function SelfServiceView() {
           .eq('employee_record_id', rec.id)
           .eq('is_archived', false)
           .maybeSingle();
-        if (epd) setEmployee(epd);
+        if (epd) {
+          setEmployee(epd);
+          setDisplayName(`${epd.last_name.toUpperCase()} ${epd.first_name.toUpperCase()}`);
+          setPosition(epd.position || '');
+          setDepartment(epd.department || '');
+        }
       }
 
-      // Also try to get phone from public profile settings or profile
       const { data: prof } = await supabase
         .from('profiles')
         .select('phone')
@@ -171,33 +233,8 @@ function SelfServiceView() {
     fetchOwn();
   }, [user]);
 
-  const handleDownload = async () => {
-    if (!employee || !frontRef.current || !backRef.current) return;
-    setGenerating(true);
-    try {
-      const scale = 4;
-      const [frontCanvas, backCanvas] = await Promise.all([
-        html2canvas(frontRef.current, { scale, useCORS: true, backgroundColor: '#ffffff', logging: false }),
-        html2canvas(backRef.current, { scale, useCORS: true, backgroundColor: '#2B4C7E', logging: false }),
-      ]);
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H] });
-      doc.addImage(frontCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
-      doc.addPage([CARD_W, CARD_H], 'landscape');
-      doc.addImage(backCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
-      doc.save(`carte-vizita-${employee.last_name}-${employee.first_name}.pdf`);
-      toast({ title: 'PDF generat!', description: 'Cartea de vizită a fost descărcată.' });
-    } catch {
-      toast({ title: 'Eroare', description: 'Nu s-a putut genera PDF-ul.', variant: 'destructive' });
-    }
-    setGenerating(false);
-  };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   }
 
   if (!employee) {
@@ -212,27 +249,49 @@ function SelfServiceView() {
     );
   }
 
+  const cardData: CardData = {
+    displayName,
+    position,
+    department,
+    phone,
+    email: employee.email,
+    profileUrl: `${window.location.origin}/profil/${employee.id}`,
+  };
+
+  const handleDownload = async () => {
+    setGenerating(true);
+    try {
+      await downloadPDF(frontRef, backRef, variant, `carte-vizita-${employee.last_name}-${employee.first_name}.pdf`);
+      toast({ title: 'PDF generat!', description: 'Cartea de vizită a fost descărcată.' });
+    } catch {
+      toast({ title: 'Eroare', description: 'Nu s-a putut genera PDF-ul.', variant: 'destructive' });
+    }
+    setGenerating(false);
+  };
+
+  const origName = `${employee.last_name.toUpperCase()} ${employee.first_name.toUpperCase()}`;
+
   return (
     <div className="max-w-lg mx-auto space-y-4">
-      <CardPreview employee={employee} phone={phone} frontRef={frontRef} backRef={backRef} />
-
-      <div className="flex gap-3">
-        <Input
-          placeholder="Telefon (opțional)"
-          value={phone}
-          onChange={e => setPhone(e.target.value)}
-          className="flex-1"
-        />
-        <Button onClick={handleDownload} disabled={generating} variant="hero">
-          {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
-          Descarcă PDF
-        </Button>
-      </div>
+      <EditableFields
+        displayName={displayName} setDisplayName={setDisplayName}
+        position={position} setPosition={setPosition}
+        department={department} setDepartment={setDepartment}
+        phone={phone} setPhone={setPhone}
+        originalName={origName}
+        originalPosition={employee.position || ''}
+        originalDepartment={employee.department || ''}
+      />
+      <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} frontRef={frontRef} backRef={backRef} />
+      <Button onClick={handleDownload} disabled={generating} variant="hero" className="w-full">
+        {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+        Descarcă PDF
+      </Button>
     </div>
   );
 }
 
-/* ──────── Admin / HR view (full generator) ──────── */
+/* ──────── Admin view ──────── */
 
 function AdminView() {
   const { toast } = useToast();
@@ -240,8 +299,14 @@ function AdminView() {
   const [search, setSearch] = useState('');
   const [selectedDept, setSelectedDept] = useState<string>('all');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [phone, setPhone] = useState('');
   const [generating, setGenerating] = useState(false);
+
+  const [displayName, setDisplayName] = useState('');
+  const [position, setPosition] = useState('');
+  const [department, setDepartment] = useState('');
+  const [phone, setPhone] = useState('');
+  const [variant, setVariant] = useState('classic');
+
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
 
@@ -257,6 +322,14 @@ function AdminView() {
     fetchData();
   }, []);
 
+  const selectEmployee = (emp: Employee) => {
+    setSelectedEmployee(emp);
+    setDisplayName(`${emp.last_name.toUpperCase()} ${emp.first_name.toUpperCase()}`);
+    setPosition(emp.position || '');
+    setDepartment(emp.department || '');
+    setPhone('');
+  };
+
   const departments = [...new Set(employees.map(e => e.department).filter(Boolean))] as string[];
   const filtered = employees.filter(e => {
     const matchSearch = `${e.last_name} ${e.first_name} ${e.email}`.toLowerCase().includes(search.toLowerCase());
@@ -264,20 +337,20 @@ function AdminView() {
     return matchSearch && matchDept;
   });
 
+  const cardData: CardData | null = selectedEmployee ? {
+    displayName,
+    position,
+    department,
+    phone,
+    email: selectedEmployee.email,
+    profileUrl: `${window.location.origin}/profil/${selectedEmployee.id}`,
+  } : null;
+
   const handleDownload = async () => {
-    if (!selectedEmployee || !frontRef.current || !backRef.current) return;
+    if (!selectedEmployee) return;
     setGenerating(true);
     try {
-      const scale = 4;
-      const [frontCanvas, backCanvas] = await Promise.all([
-        html2canvas(frontRef.current, { scale, useCORS: true, backgroundColor: '#ffffff', logging: false }),
-        html2canvas(backRef.current, { scale, useCORS: true, backgroundColor: '#2B4C7E', logging: false }),
-      ]);
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H] });
-      doc.addImage(frontCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
-      doc.addPage([CARD_W, CARD_H], 'landscape');
-      doc.addImage(backCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
-      doc.save(`carte-vizita-${selectedEmployee.last_name}-${selectedEmployee.first_name}.pdf`);
+      await downloadPDF(frontRef, backRef, variant, `carte-vizita-${selectedEmployee.last_name}-${selectedEmployee.first_name}.pdf`);
       toast({ title: 'PDF generat!', description: 'Cartea de vizită a fost descărcată.' });
     } catch {
       toast({ title: 'Eroare', description: 'Nu s-a putut genera PDF-ul.', variant: 'destructive' });
@@ -293,28 +366,22 @@ function AdminView() {
           <Input placeholder="Caută angajat..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={selectedDept} onValueChange={setSelectedDept}>
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Departament" />
-          </SelectTrigger>
+          <SelectTrigger className="w-[220px]"><SelectValue placeholder="Departament" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Toate departamentele</SelectItem>
-            {departments.map(d => (
-              <SelectItem key={d} value={d}>{d}</SelectItem>
-            ))}
+            {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Angajați ({filtered.length})</CardTitle>
-          </CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-base">Angajați ({filtered.length})</CardTitle></CardHeader>
           <CardContent className="max-h-[500px] overflow-y-auto space-y-1">
             {filtered.map(emp => (
               <button
                 key={emp.id}
-                onClick={() => { setSelectedEmployee(emp); setPhone(''); }}
+                onClick={() => selectEmployee(emp)}
                 className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${
                   selectedEmployee?.id === emp.id
                     ? 'bg-primary/10 text-primary border border-primary/20'
@@ -329,16 +396,22 @@ function AdminView() {
         </Card>
 
         <div className="space-y-4">
-          {selectedEmployee ? (
+          {selectedEmployee && cardData ? (
             <>
-              <CardPreview employee={selectedEmployee} phone={phone} frontRef={frontRef} backRef={backRef} />
-              <div className="flex gap-3">
-                <Input placeholder="Telefon (opțional)" value={phone} onChange={e => setPhone(e.target.value)} className="flex-1" />
-                <Button onClick={handleDownload} disabled={generating}>
-                  {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
-                  Descarcă PDF
-                </Button>
-              </div>
+              <EditableFields
+                displayName={displayName} setDisplayName={setDisplayName}
+                position={position} setPosition={setPosition}
+                department={department} setDepartment={setDepartment}
+                phone={phone} setPhone={setPhone}
+                originalName={`${selectedEmployee.last_name.toUpperCase()} ${selectedEmployee.first_name.toUpperCase()}`}
+                originalPosition={selectedEmployee.position || ''}
+                originalDepartment={selectedEmployee.department || ''}
+              />
+              <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} frontRef={frontRef} backRef={backRef} />
+              <Button onClick={handleDownload} disabled={generating} className="w-full">
+                {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+                Descarcă PDF
+              </Button>
             </>
           ) : (
             <Card className="flex items-center justify-center h-[300px]">
@@ -384,7 +457,6 @@ const BusinessCards = () => {
               : 'Previzualizează și descarcă cartea ta de vizită profesională.'}
           </p>
         </div>
-
         {isAdmin ? <AdminView /> : <SelfServiceView />}
       </div>
     </MainLayout>
