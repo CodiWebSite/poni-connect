@@ -69,7 +69,8 @@ const BusinessCards = () => {
     setGenerating(true);
     try {
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H] });
-      await loadPdfFonts(doc);
+      await loadRobotoFonts();
+      applyRobotoFont(doc);
 
       // === FRONT SIDE ===
       // White background
