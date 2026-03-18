@@ -208,6 +208,7 @@ const Sidebar = () => {
     { icon: Settings, label: 'Setări', path: '/settings' },
     ...(isSuperAdmin ? [{ icon: ServerCog, label: 'Stare Sistem', path: '/system-status' }] : []),
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin }] : []),
+    ...(isSuperAdmin ? [{ icon: CreditCard, label: 'Cărți de Vizită', path: '/carti-vizita' }] : []),
   ];
 
   const renderNavItem = (item: { icon: any; label: string; path: string; badge?: number; external?: boolean }) => {
