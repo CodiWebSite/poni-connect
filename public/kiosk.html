@@ -116,8 +116,19 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
     <div class="header-right">
       <div class="lang-badge" id="langBadge">🇷🇴 RO</div>
       <div class="clock-block">
-        <div class="time-display" id="clock">--:--</div>
-        <div class="date-display" id="dateStr"></div>
+        <div id="clockWeatherContainer" style="position:relative;width:220px;height:80px;overflow:hidden">
+          <div id="clockView" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;transition:opacity 0.7s,transform 0.7s">
+            <div class="time-display" id="clock">--:--</div>
+            <div class="date-display" id="dateStr"></div>
+          </div>
+          <div id="weatherHeaderView" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;gap:12px;opacity:0;transform:translateY(16px);transition:opacity 0.7s,transform 0.7s">
+            <span id="weatherHeaderIcon" style="font-size:40px"></span>
+            <div style="text-align:right">
+              <div id="weatherHeaderTemp" style="font-size:42px;font-weight:700;color:#f8fafc;font-family:'Playfair Display',serif"></div>
+              <div id="weatherHeaderCond" style="font-size:18px;color:#94a3b8"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
