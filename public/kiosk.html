@@ -343,7 +343,14 @@ function playVideo() {
 
 // ── Video ended → toggle lang → slideshow (if images) → replay ──
 var video = document.getElementById('video');
+var videoProgressBar = document.getElementById('videoProgressBar');
+video.addEventListener('timeupdate', function() {
+  if (video.duration) {
+    videoProgressBar.style.width = (video.currentTime / video.duration * 100) + '%';
+  }
+});
 video.addEventListener('ended', function() {
+  videoProgressBar.style.width = '0%';
   lang = lang === 'ro' ? 'en' : 'ro';
   document.getElementById('langBadge').textContent = lang === 'ro' ? '🇷🇴 RO' : '🇬🇧 EN';
   if (lang === 'en') {
