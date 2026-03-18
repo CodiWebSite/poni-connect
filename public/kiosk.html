@@ -411,22 +411,6 @@ function fetchAnnouncements() {
 fetchAnnouncements();
 setInterval(fetchAnnouncements, 60000);
 
-// ── Events ──
-function fetchEvents() {
-  var now = new Date().toISOString();
-  sbFetch('events', 'select=id,title,start_date,location&start_date=gte.' + now + '&order=start_date.asc&limit=5', function(data) {
-    if (!data || !data.length) { document.getElementById('eventsContent').innerHTML = '<div style="color:#64748b;font-size:22px">Niciun eveniment programat</div>'; return; }
-    var html = '';
-    data.forEach(function(e) {
-      var d = new Date(e.start_date);
-      var dateStr = d.getDate() + ' ' + MONTHS_RO[d.getMonth()].substring(0,3) + ' · ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-      html += '<div class="card"><div class="item-title">' + e.title + '</div><div class="item-row"><span>' + dateStr + '</span>' + (e.location ? '<span>📍 ' + e.location + '</span>' : '') + '</div></div>';
-    });
-    document.getElementById('eventsContent').innerHTML = html;
-  });
-}
-fetchEvents();
-setInterval(fetchEvents, 60000);
 
 // ── Room Bookings ──
 function fetchRooms() {
