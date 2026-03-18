@@ -19,6 +19,10 @@ interface ProfileData {
     google_scholar_url: string | null;
     orcid_url: string | null;
     website_url: string | null;
+    instagram_url: string | null;
+    facebook_url: string | null;
+    linkedin_url: string | null;
+    x_url: string | null;
     show_phone: boolean;
     show_email: boolean;
     show_department: boolean;
