@@ -30,6 +30,9 @@ import {
   ExternalLink,
   Mail,
   Download,
+  CreditCard,
+  Archive,
+  Activity,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
