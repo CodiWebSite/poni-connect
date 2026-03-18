@@ -20,7 +20,7 @@ const getConditionRo = (code: number): string => {
 };
 
 const WeatherIcon = ({ code }: { code: number }) => {
-  const cn = 'w-7 h-7';
+  const cn = 'w-6 h-6';
   if (code === 0) return <Sun className={`${cn} text-amber-500`} />;
   if (code <= 3) return <Cloud className={`${cn} text-slate-400`} />;
   if (code >= 95) return <CloudLightning className={`${cn} text-amber-600`} />;
@@ -28,8 +28,6 @@ const WeatherIcon = ({ code }: { code: number }) => {
   if (code >= 51 && code <= 82) return <CloudRain className={`${cn} text-blue-500`} />;
   return <Cloud className={`${cn} text-slate-400`} />;
 };
-
-const CYCLE_MS = 5000; // show weather for 5s, then clock for 5s
 
 interface Props {
   formatTime: (d: Date) => string;
@@ -39,7 +37,6 @@ interface Props {
 
 const KioskHeaderWeather = ({ formatTime, formatDate, now }: Props) => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [showWeather, setShowWeather] = useState(false);
 
   const fetchWeather = useCallback(async () => {
     try {
@@ -62,42 +59,28 @@ const KioskHeaderWeather = ({ formatTime, formatDate, now }: Props) => {
     return () => clearInterval(t);
   }, [fetchWeather]);
 
-  useEffect(() => {
-    const t = setInterval(() => setShowWeather(prev => !prev), CYCLE_MS);
-    return () => clearInterval(t);
-  }, []);
-
   return (
-    <div className="relative w-[180px] h-[70px] overflow-hidden">
-      {/* Clock view */}
-      <div
-        className={`absolute inset-0 flex flex-col items-end justify-center transition-all duration-700 ease-in-out ${
-          showWeather && weather
-            ? 'opacity-0 -translate-y-4 scale-95'
-            : 'opacity-100 translate-y-0 scale-100'
-        }`}
-      >
-        <div className="text-3xl font-mono font-bold tabular-nums text-foreground tracking-wider">
+    <div className="flex items-center gap-5">
+      {/* Clock + Date */}
+      <div className="flex flex-col items-end justify-center">
+        <div className="text-3xl font-mono font-bold tabular-nums text-foreground tracking-wider leading-none">
           {formatTime(now)}
         </div>
-        <div className="text-xs text-muted-foreground mt-0.5">{formatDate(now)}</div>
+        <div className="text-xs text-muted-foreground mt-1 leading-none">{formatDate(now)}</div>
       </div>
 
-      {/* Weather view */}
+      {/* Weather */}
       {weather && (
-        <div
-          className={`absolute inset-0 flex items-center justify-end gap-2 transition-all duration-700 ease-in-out ${
-            showWeather
-              ? 'opacity-100 translate-y-0 scale-100'
-              : 'opacity-0 translate-y-4 scale-95'
-          }`}
-        >
-          <WeatherIcon code={weather.weatherCode} />
-          <div className="text-right">
-            <div className="text-2xl font-bold tabular-nums text-slate-800">{weather.temperature}°C</div>
-            <p className="text-[11px] text-slate-500">{weather.condition}</p>
+        <>
+          <div className="w-px h-10 bg-border/50" />
+          <div className="flex items-center gap-2">
+            <WeatherIcon code={weather.weatherCode} />
+            <div className="text-right">
+              <div className="text-xl font-bold tabular-nums text-foreground leading-none">{weather.temperature}°C</div>
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">{weather.condition}</p>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
