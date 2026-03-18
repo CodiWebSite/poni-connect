@@ -26,6 +26,10 @@ interface ProfileSettings {
   google_scholar_url: string;
   orcid_url: string;
   website_url: string;
+  instagram_url: string;
+  facebook_url: string;
+  linkedin_url: string;
+  x_url: string;
   show_phone: boolean;
   show_email: boolean;
   show_department: boolean;
@@ -40,6 +44,10 @@ const defaultSettings: ProfileSettings = {
   google_scholar_url: '',
   orcid_url: '',
   website_url: '',
+  instagram_url: '',
+  facebook_url: '',
+  linkedin_url: '',
+  x_url: '',
   show_phone: true,
   show_email: true,
   show_department: true,
