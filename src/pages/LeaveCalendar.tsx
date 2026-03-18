@@ -110,13 +110,16 @@ const LeaveCalendar = () => {
     };
 
     const resolveEmpInfo = (userId: string | null, epdId: string | null, fallbackName?: string) => {
-      // Prefer EPD name (canonical LAST FIRST format)
-      if (epdId && epdMap[epdId]) return epdMap[epdId];
-      // Try to find EPD via user_id for canonical name
+      // If epd_id is explicitly set, ONLY use EPD data — don't fall back to creator's profile
+      if (epdId) {
+        if (epdMap[epdId]) return epdMap[epdId];
+        // EPD not found (archived?) — use raw employee_name from details if available
+        if (fallbackName) return { name: fallbackName, department: null, avatarUrl: null };
+        return undefined;
+      }
+      // No epd_id: this is the user's own leave
       if (userId && userIdToEpdId[userId] && epdMap[userIdToEpdId[userId]]) return epdMap[userIdToEpdId[userId]];
-      // Fall back to profile
       if (userId && profileMap[userId]) return profileMap[userId];
-      if (fallbackName) return { name: fallbackName, department: null, avatarUrl: null };
       return undefined;
     };
 

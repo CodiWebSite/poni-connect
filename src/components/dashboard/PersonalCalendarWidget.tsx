@@ -105,10 +105,15 @@ const PersonalCalendarWidget = () => {
     };
 
     const resolveEmpInfo = (userId: string | null, epdId: string | null, fallbackName?: string) => {
-      if (epdId && epdMap[epdId]) return epdMap[epdId];
+      // If epd_id is explicitly set, ONLY use EPD data — don't fall back to creator's profile
+      if (epdId) {
+        if (epdMap[epdId]) return epdMap[epdId];
+        if (fallbackName) return { name: fallbackName, department: null };
+        return undefined;
+      }
+      // No epd_id: this is the user's own leave
       if (userId && userIdToEpdId[userId] && epdMap[userIdToEpdId[userId]]) return epdMap[userIdToEpdId[userId]];
       if (userId && profileMap[userId]) return profileMap[userId];
-      if (fallbackName) return { name: fallbackName, department: null };
       return undefined;
     };
 
