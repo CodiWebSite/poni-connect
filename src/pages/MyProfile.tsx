@@ -11,6 +11,7 @@ import { ProgressRing } from '@/components/ui/progress-ring';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { useToast } from '@/hooks/use-toast';
 import { CorrectionRequestForm } from '@/components/profile/CorrectionRequestForm';
+import { PublicProfileEditor } from '@/components/profile/PublicProfileEditor';
 import { AvatarCropDialog } from '@/components/profile/AvatarCropDialog';
 import { ProfileSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { 
