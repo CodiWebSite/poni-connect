@@ -149,6 +149,7 @@ const MyProfile = () => {
   const [delegateName, setDelegateName] = useState<string | null>(null);
   const [delegatePeriod, setDelegatePeriod] = useState<string | null>(null);
   const [actingAsDelegate, setActingAsDelegate] = useState<{ delegatorName: string; delegatorAvatar: string | null; period: string } | null>(null);
+  const [myDelegation, setMyDelegation] = useState<{ delegateName: string; delegateAvatar: string | null; period: string } | null>(null);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [cnpCopied, setCnpCopied] = useState(false);
@@ -341,6 +342,32 @@ const MyProfile = () => {
       });
     } else {
       setActingAsDelegate(null);
+    }
+
+    // Check if current user has delegated to someone
+    const { data: myDelegationData } = await supabase
+      .from('leave_approval_delegates' as any)
+      .select('delegate_user_id, start_date, end_date')
+      .eq('delegator_user_id', user.id)
+      .eq('is_active', true)
+      .lte('start_date', todayStr)
+      .gte('end_date', todayStr)
+      .limit(1);
+
+    if (myDelegationData && myDelegationData.length > 0) {
+      const del = myDelegationData[0] as any;
+      const { data: delProfile } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('user_id', del.delegate_user_id)
+        .maybeSingle();
+      setMyDelegation({
+        delegateName: delProfile?.full_name ? formatNumePrenume({ fullName: delProfile.full_name }) : 'Necunoscut',
+        delegateAvatar: delProfile?.avatar_url || null,
+        period: `${format(new Date(del.start_date), 'dd.MM.yyyy')} – ${format(new Date(del.end_date), 'dd.MM.yyyy')}`,
+      });
+    } else {
+      setMyDelegation(null);
     }
 
     setLoading(false);
@@ -809,6 +836,50 @@ const MyProfile = () => {
                       </div>
                     </div>
                   )}
+                  {myDelegation && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/5 border border-accent/20">
+                      {myDelegation.delegateAvatar ? (
+                        <img src={myDelegation.delegateAvatar} alt={myDelegation.delegateName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent/60 flex items-center justify-center flex-shrink-0 text-accent-foreground font-bold text-sm shadow-md">
+                          {myDelegation.delegateName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-sm">{myDelegation.delegateName}</p>
+                        <p className="text-xs text-muted-foreground">Ați delegat aprobarea cererilor</p>
+                        <p className="text-xs text-accent font-medium mt-0.5">{myDelegation.period}</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* My Delegation (when user has delegated but no approver card shown) */}
+            {!approverName && myDelegation && (
+              <Card className="animate-fade-in border-accent/30" style={{ animationDelay: '150ms' }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <UserCheck className="w-5 h-5 text-accent" />
+                    Delegare Activă
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/5 border border-accent/20">
+                    {myDelegation.delegateAvatar ? (
+                      <img src={myDelegation.delegateAvatar} alt={myDelegation.delegateName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent/60 flex items-center justify-center flex-shrink-0 text-accent-foreground font-bold text-sm shadow-md">
+                        {myDelegation.delegateName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">{myDelegation.delegateName}</p>
+                      <p className="text-xs text-muted-foreground">Ați delegat aprobarea cererilor</p>
+                      <p className="text-xs text-accent font-medium mt-0.5">{myDelegation.period}</p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
