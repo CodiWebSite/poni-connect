@@ -111,11 +111,10 @@ export function LeaveApproversManager() {
     const allPersons = Array.from(personMap.values()).sort((a, b) => a.full_name.localeCompare(b.full_name));
     setPersons(allPersons);
 
-    // Extract unique departments from both sources
-    const depts = [...new Set([
-      ...profilesData.map(p => p.department).filter(Boolean) as string[],
-      ...epdData.map(e => e.department).filter(Boolean) as string[],
-    ])].sort();
+    // Extract unique departments
+    const depts = [...new Set(
+      entries.map(e => e.department).filter(Boolean) as string[],
+    )].sort();
     setDepartments(depts);
 
     // Fetch per-employee mappings
