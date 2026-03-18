@@ -20,7 +20,11 @@ interface PublicProfileEditorProps {
 
 interface ProfileSettings {
   bio: string;
+  bio_en: string;
   tagline: string;
+  tagline_en: string;
+  position_en: string;
+  department_en: string;
   phone: string;
   researchgate_url: string;
   google_scholar_url: string;
@@ -38,7 +42,11 @@ interface ProfileSettings {
 
 const defaultSettings: ProfileSettings = {
   bio: '',
+  bio_en: '',
   tagline: '',
+  tagline_en: '',
+  position_en: '',
+  department_en: '',
   phone: '',
   researchgate_url: '',
   google_scholar_url: '',
@@ -74,7 +82,11 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
         setHasRecord(true);
         setSettings({
           bio: data.bio || '',
+          bio_en: (data as any).bio_en || '',
           tagline: data.tagline || '',
+          tagline_en: (data as any).tagline_en || '',
+          position_en: (data as any).position_en || '',
+          department_en: (data as any).department_en || '',
           phone: data.phone || '',
           researchgate_url: data.researchgate_url || '',
           google_scholar_url: data.google_scholar_url || '',
@@ -101,7 +113,11 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
     const payload = {
       epd_id: epdId,
       bio: settings.bio || null,
+      bio_en: settings.bio_en || null,
       tagline: settings.tagline || null,
+      tagline_en: settings.tagline_en || null,
+      position_en: settings.position_en || null,
+      department_en: settings.department_en || null,
       phone: settings.phone || null,
       researchgate_url: settings.researchgate_url || null,
       google_scholar_url: settings.google_scholar_url || null,
@@ -190,8 +206,9 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
           </div>
         </div>
 
-        {/* Bio & Tagline */}
+        {/* Bio & Tagline — Română */}
         <div className="space-y-4">
+          <p className="text-sm font-semibold flex items-center gap-2">🇷🇴 Versiunea în Română</p>
           <div className="space-y-2">
             <Label htmlFor="pp-tagline">Titlu profesional / Tagline</Label>
             <Input
@@ -210,6 +227,50 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
               value={settings.bio}
               onChange={e => update('bio', e.target.value)}
             />
+          </div>
+        </div>
+
+        {/* Bio & Tagline — English */}
+        <div className="space-y-4">
+          <p className="text-sm font-semibold flex items-center gap-2">🇬🇧 English Version</p>
+          <div className="space-y-2">
+            <Label htmlFor="pp-tagline-en">Professional Title / Tagline</Label>
+            <Input
+              id="pp-tagline-en"
+              placeholder="e.g. Research Scientist, Macromolecular Chemistry"
+              value={settings.tagline_en}
+              onChange={e => update('tagline_en', e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pp-bio-en">About me (bio)</Label>
+            <Textarea
+              id="pp-bio-en"
+              placeholder="Write a short professional description..."
+              className="min-h-[80px]"
+              value={settings.bio_en}
+              onChange={e => update('bio_en', e.target.value)}
+            />
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="pp-position-en">Position (English)</Label>
+              <Input
+                id="pp-position-en"
+                placeholder="e.g. Senior Researcher"
+                value={settings.position_en}
+                onChange={e => update('position_en', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pp-dept-en">Department (English)</Label>
+              <Input
+                id="pp-dept-en"
+                placeholder="e.g. Polymer Physics"
+                value={settings.department_en}
+                onChange={e => update('department_en', e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
