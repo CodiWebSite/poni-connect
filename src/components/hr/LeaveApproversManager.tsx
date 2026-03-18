@@ -171,6 +171,27 @@ export function LeaveApproversManager() {
     });
     setDeptMappings(enrichedDept);
 
+    // Fetch active delegates
+    const today = new Date().toISOString().split('T')[0];
+    const { data: delegatesData } = await supabase
+      .from('leave_approval_delegates' as any)
+      .select('delegator_user_id, delegate_user_id, start_date, end_date')
+      .eq('is_active', true)
+      .lte('start_date', today)
+      .gte('end_date', today);
+
+    const enrichedDelegates: ActiveDelegate[] = ((delegatesData || []) as any[]).map(d => {
+      const delPerson = personMap.get(d.delegate_user_id);
+      return {
+        delegator_user_id: d.delegator_user_id,
+        delegate_user_id: d.delegate_user_id,
+        delegate_name: delPerson?.full_name || 'Necunoscut',
+        start_date: d.start_date,
+        end_date: d.end_date,
+      };
+    });
+    setActiveDelegates(enrichedDelegates);
+
     setLoading(false);
   };
 
