@@ -36,6 +36,8 @@ import MedicinaMuncii from "./pages/MedicinaMuncii";
 import InstallApp from "./pages/InstallApp";
 import Kiosk from "./pages/Kiosk";
 import Archive from "./pages/Archive";
+import PublicProfile from "./pages/PublicProfile";
+import BusinessCards from "./pages/BusinessCards";
 
 const queryClient = new QueryClient();
 
@@ -46,7 +48,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   // Allow auth and kiosk routes always
-  if (location.pathname.startsWith('/auth') || location.pathname === '/kiosk') return <>{children}</>;
+  if (location.pathname.startsWith('/auth') || location.pathname === '/kiosk' || location.pathname.startsWith('/profil/')) return <>{children}</>;
 
   // Wait for settings to load before making any maintenance decision
   if (settingsLoading) return <>{children}</>;
@@ -131,6 +133,8 @@ const App = () => (
                 <Route path="/arhiva" element={<Archive />} />
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />
+                <Route path="/profil/:id" element={<PublicProfile />} />
+                <Route path="/carti-vizita" element={<BusinessCards />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
