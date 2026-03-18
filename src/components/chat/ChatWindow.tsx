@@ -26,6 +26,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
 
 interface Message {
   id: string;
@@ -67,6 +71,8 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
+  const [convAvatarUrl, setConvAvatarUrl] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<{ url: string; name: string } | null>(null);
   const [otherLastRead, setOtherLastRead] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -234,7 +240,7 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
 
     const { data: conv } = await supabase
       .from('chat_conversations')
-      .select('type, name, department, admin_id')
+      .select('type, name, department, admin_id, group_avatar_url')
       .eq('id', conversationId)
       .maybeSingle();
 
@@ -261,11 +267,13 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
       if (parts?.[0]) {
         const p = await getProfile(parts[0].user_id);
         setConvName(p.name);
+        setConvAvatarUrl(p.avatar);
         setOtherUserId(parts[0].user_id);
         fetchPresence(parts[0].user_id);
       }
     } else {
       setConvName(conv?.name || conv?.department || 'Grup');
+      setConvAvatarUrl((conv as any)?.group_avatar_url || null);
       setOtherUserId(null);
     }
 
@@ -654,6 +662,20 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
+        {/* Clickable avatar */}
+        <button
+          onClick={() => {
+            if (convAvatarUrl) setAvatarPreview({ url: convAvatarUrl, name: convName });
+          }}
+          className={cn("flex-shrink-0", convAvatarUrl && "cursor-pointer")}
+        >
+          <Avatar className="h-9 w-9 ring-2 ring-transparent hover:ring-primary/30 transition-all">
+            {convAvatarUrl && <AvatarImage src={convAvatarUrl} />}
+            <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
+              {convType === 'group' ? <Users className="h-4 w-4" /> : (convName || 'U').substring(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </button>
         <div className="flex-1 min-w-0">
           <button
             onClick={() => {
@@ -749,12 +771,19 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
               {!isOwn && (
                 <div className="w-8 flex-shrink-0">
                   {showAvatar && (
-                    <Avatar className="h-8 w-8">
-                      {msg.sender_avatar && <AvatarImage src={msg.sender_avatar} />}
-                      <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">
-                        {(msg.sender_name || 'U').substring(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <button
+                      onClick={() => {
+                        if (msg.sender_avatar) setAvatarPreview({ url: msg.sender_avatar, name: msg.sender_name || 'Utilizator' });
+                      }}
+                      className={cn(msg.sender_avatar && "cursor-pointer")}
+                    >
+                      <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary/30 transition-all">
+                        {msg.sender_avatar && <AvatarImage src={msg.sender_avatar} />}
+                        <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">
+                          {(msg.sender_name || 'U').substring(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
                   )}
                 </div>
               )}
@@ -922,6 +951,24 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
           onNameUpdated={(name) => setConvName(name)}
         />
       )}
+
+      {/* Avatar preview dialog */}
+      <Dialog open={!!avatarPreview} onOpenChange={(open) => { if (!open) setAvatarPreview(null); }}>
+        <DialogContent className="sm:max-w-sm p-0 bg-transparent border-none shadow-none [&>button]:bg-background/80 [&>button]:rounded-full">
+          <div className="flex flex-col items-center gap-3 p-4">
+            {avatarPreview?.url && (
+              <img
+                src={avatarPreview.url}
+                alt={avatarPreview.name}
+                className="w-64 h-64 rounded-full object-cover ring-4 ring-background shadow-2xl"
+              />
+            )}
+            <p className="text-sm font-semibold text-foreground bg-background/80 px-3 py-1 rounded-full backdrop-blur-sm">
+              {avatarPreview?.name}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
