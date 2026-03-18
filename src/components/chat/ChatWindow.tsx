@@ -662,6 +662,20 @@ const ChatWindow = ({ conversationId, onMessagesRead, onBack }: Props) => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
+        {/* Clickable avatar */}
+        <button
+          onClick={() => {
+            if (convAvatarUrl) setAvatarPreview({ url: convAvatarUrl, name: convName });
+          }}
+          className={cn("flex-shrink-0", convAvatarUrl && "cursor-pointer")}
+        >
+          <Avatar className="h-9 w-9 ring-2 ring-transparent hover:ring-primary/30 transition-all">
+            {convAvatarUrl && <AvatarImage src={convAvatarUrl} />}
+            <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
+              {convType === 'group' ? <Users className="h-4 w-4" /> : (convName || 'U').substring(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </button>
         <div className="flex-1 min-w-0">
           <button
             onClick={() => {
