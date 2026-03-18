@@ -8,11 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { CreditCard, Download, Search, Loader2 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
-import { loadRobotoFonts, applyRobotoFont } from '@/utils/pdfFontLoader';
+import html2canvas from 'html2canvas';
 
 interface Employee {
   id: string;
@@ -23,8 +23,8 @@ interface Employee {
   email: string;
 }
 
-const CARD_W = 85; // mm
-const CARD_H = 55; // mm
+const CARD_W = 85;
+const CARD_H = 55;
 
 const BusinessCards = () => {
   const { user } = useAuth();
@@ -36,11 +36,11 @@ const BusinessCards = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [phone, setPhone] = useState('');
   const [generating, setGenerating] = useState(false);
-  const frontQrRef = useRef<HTMLDivElement>(null);
-  const backQrRef = useRef<HTMLDivElement>(null);
+  const frontCardRef = useRef<HTMLDivElement>(null);
+  const backCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       const { data } = await supabase
         .from('employee_personal_data')
         .select('id, first_name, last_name, department, position, email')
@@ -48,7 +48,7 @@ const BusinessCards = () => {
         .order('last_name');
       if (data) setEmployees(data);
     };
-    fetch();
+    fetchData();
   }, []);
 
   if (!roleLoading && !canManageHR) return <Navigate to="/" replace />;
@@ -66,134 +66,40 @@ const BusinessCards = () => {
   };
 
   const generatePDF = async (emp: Employee) => {
+    if (!frontCardRef.current || !backCardRef.current) return;
     setGenerating(true);
     try {
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H] });
-      await loadRobotoFonts();
-      applyRobotoFont(doc);
+      const scale = 4;
 
-      // Load logo image
-      const logoImg = await new Promise<string>((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          canvas.getContext('2d')!.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
-        };
-        img.onerror = () => resolve('');
-        img.src = '/logo-icmpp.png';
+      const frontCanvas = await html2canvas(frontCardRef.current, {
+        scale,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
       });
 
-      const fullName = `${emp.last_name} ${emp.first_name}`.toUpperCase();
+      const backCanvas = await html2canvas(backCardRef.current, {
+        scale,
+        useCORS: true,
+        backgroundColor: '#2B4C7E',
+        logging: false,
+      });
 
-      // === FRONT SIDE ===
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, CARD_W, CARD_H, 'F');
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H] });
 
-      // Logo top-left
-      if (logoImg) {
-        doc.addImage(logoImg, 'PNG', 5, 3, 10, 10);
-      }
+      // Front side
+      const frontImg = frontCanvas.toDataURL('image/png');
+      doc.addImage(frontImg, 'PNG', 0, 0, CARD_W, CARD_H);
 
-      // Institute name next to logo
-      doc.setFont('Roboto-Bold', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(43, 76, 126); // #2B4C7E
-      doc.text('Institutul de Chimie', 17, 7);
-      doc.text('Macromoleculară "Petru Poni" Iași', 17, 11);
-
-      // Blue separator line
-      doc.setDrawColor(43, 76, 126);
-      doc.setLineWidth(0.6);
-      doc.line(5, 15, CARD_W - 5, 15);
-
-      // Thin gray line below
-      doc.setDrawColor(200, 210, 220);
-      doc.setLineWidth(0.2);
-      doc.line(5, 15.8, CARD_W - 5, 15.8);
-
-      // Employee name — large, bold, blue
-      doc.setFont('Roboto-Bold', 'normal');
-      doc.setFontSize(13);
-      doc.setTextColor(43, 76, 126);
-      doc.text(fullName, 10, 24);
-
-      // Position — italic style (regular, smaller, olive/muted)
-      doc.setFont('Roboto-Regular', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(120, 120, 80); // olive-ish
-      if (emp.position) doc.text(emp.position, 10, 29);
-
-      // Department — regular gray
-      doc.setFontSize(7.5);
-      doc.setTextColor(80, 80, 80);
-      if (emp.department) doc.text(emp.department, 10, 33);
-
-      // Contact info — bottom-left
-      doc.setFont('Roboto-Regular', 'normal');
-      doc.setFontSize(7);
-      doc.setTextColor(40, 40, 40);
-      let yContact = 42;
-      if (phone) {
-        doc.text(`Tel: ${phone}`, 5, yContact);
-        yContact += 3.5;
-      }
-      doc.text(emp.email, 5, yContact);
-
-      // QR for icmpp.ro — bottom-right
-      const frontQrCanvas = frontQrRef.current?.querySelector('canvas');
-      if (frontQrCanvas) {
-        const qrImg = frontQrCanvas.toDataURL('image/png');
-        doc.addImage(qrImg, 'PNG', CARD_W - 22, CARD_H - 22, 17, 17);
-        doc.setFontSize(5);
-        doc.setTextColor(120, 120, 120);
-        doc.text('icmpp.ro', CARD_W - 13.5, CARD_H - 4, { align: 'center' });
-      }
-
-      // === BACK SIDE ===
+      // Back side
       doc.addPage([CARD_W, CARD_H], 'landscape');
-
-      // Dark blue background — #2B4C7E
-      doc.setFillColor(43, 76, 126);
-      doc.rect(0, 0, CARD_W, CARD_H, 'F');
-
-      // Large white QR centered
-      const backQrCanvas = backQrRef.current?.querySelector('canvas');
-      const qrSize = 24;
-      const qrX = CARD_W / 2 - qrSize / 2;
-      if (backQrCanvas) {
-        const qrImg = backQrCanvas.toDataURL('image/png');
-        doc.addImage(qrImg, 'PNG', qrX, 5, qrSize, qrSize);
-      }
-
-      // "Profil profesional" — bold white
-      doc.setFont('Roboto-Bold', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.text('Profil profesional', CARD_W / 2, 35, { align: 'center' });
-
-      // White separator line — wide
-      doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(0.4);
-      doc.line(10, 38, CARD_W - 10, 38);
-
-      // Employee name — bold white
-      doc.setFont('Roboto-Bold', 'normal');
-      doc.setFontSize(9);
-      doc.text(fullName, CARD_W / 2, 44, { align: 'center' });
-
-      // Scan instruction — lighter
-      doc.setFont('Roboto-Regular', 'normal');
-      doc.setFontSize(5.5);
-      doc.setTextColor(180, 200, 230);
-      doc.text('Scanează pentru contact și profil', CARD_W / 2, 48.5, { align: 'center' });
+      const backImg = backCanvas.toDataURL('image/png');
+      doc.addImage(backImg, 'PNG', 0, 0, CARD_W, CARD_H);
 
       doc.save(`carte-vizita-${emp.last_name}-${emp.first_name}.pdf`);
       toast({ title: 'PDF generat!', description: 'Cartea de vizită a fost descărcată.' });
     } catch (err) {
+      console.error('PDF generation error:', err);
       toast({ title: 'Eroare', description: 'Nu s-a putut genera PDF-ul.', variant: 'destructive' });
     }
     setGenerating(false);
@@ -248,8 +154,8 @@ const BusinessCards = () => {
                   key={emp.id}
                   onClick={() => { setSelectedEmployee(emp); setPhone(''); }}
                   className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${
-                    selectedEmployee?.id === emp.id 
-                      ? 'bg-primary/10 text-primary border border-primary/20' 
+                    selectedEmployee?.id === emp.id
+                      ? 'bg-primary/10 text-primary border border-primary/20'
                       : 'hover:bg-muted'
                   }`}
                 >
@@ -270,40 +176,57 @@ const BusinessCards = () => {
                     <CardDescription>Partea frontală a cărții de vizită</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="border rounded-xl overflow-hidden shadow-lg" style={{ aspectRatio: `${CARD_W}/${CARD_H}` }}>
-                      <div className="bg-white p-5 h-full flex flex-col justify-between relative">
-                        {/* Header with logo */}
+                    <div
+                      ref={frontCardRef}
+                      className="border rounded-xl overflow-hidden shadow-lg"
+                      style={{ aspectRatio: `${CARD_W}/${CARD_H}`, background: '#ffffff' }}
+                    >
+                      <div style={{ padding: '16px 20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                        {/* Header: logo + institute name */}
                         <div>
-                          <div className="flex items-center gap-2.5 mb-2">
-                            <img src="/logo-icmpp.png" alt="ICMPP" className="h-8 w-auto" />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                            <img src="/logo-icmpp.png" alt="ICMPP" style={{ height: '40px', width: 'auto' }} crossOrigin="anonymous" />
                             <div>
-                              <p className="text-[10px] text-[#2B4C7E] font-bold leading-tight">Institutul de Chimie</p>
-                              <p className="text-[10px] text-[#2B4C7E] font-bold leading-tight">Macromoleculară "Petru Poni" Iași</p>
+                              <p style={{ fontSize: '11px', color: '#2B4C7E', fontWeight: 'bold', lineHeight: '1.3', margin: 0 }}>Institutul de Chimie</p>
+                              <p style={{ fontSize: '11px', color: '#2B4C7E', fontWeight: 'bold', lineHeight: '1.3', margin: 0 }}>Macromoleculară "Petru Poni" Iași</p>
                             </div>
                           </div>
-                          <div className="h-[2px] bg-[#2B4C7E] mb-0.5" />
-                          <div className="h-[1px] bg-[#2B4C7E]/20 mb-3" />
-                          <h2 className="text-lg font-bold text-[#2B4C7E] tracking-wide ml-2">
+
+                          {/* Blue separator */}
+                          <div style={{ height: '2px', background: '#2B4C7E', marginBottom: '2px' }} />
+                          <div style={{ height: '1px', background: 'rgba(43,76,126,0.2)', marginBottom: '12px' }} />
+
+                          {/* Name centered */}
+                          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#2B4C7E', textAlign: 'center', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>
                             {selectedEmployee.last_name.toUpperCase()} {selectedEmployee.first_name.toUpperCase()}
                           </h2>
+
+                          {/* Position - italic, olive */}
                           {selectedEmployee.position && (
-                            <p className="text-xs text-[#787850] italic ml-2">{selectedEmployee.position}</p>
+                            <p style={{ fontSize: '11px', color: '#787850', fontStyle: 'italic', textAlign: 'center', margin: '0 0 2px 0' }}>
+                              {selectedEmployee.position}
+                            </p>
                           )}
+
+                          {/* Department */}
                           {selectedEmployee.department && (
-                            <p className="text-xs text-[#505050] ml-2">{selectedEmployee.department}</p>
+                            <p style={{ fontSize: '10px', color: '#505050', textAlign: 'center', margin: 0 }}>
+                              {selectedEmployee.department}
+                            </p>
                           )}
                         </div>
-                        {/* Contact + QR */}
-                        <div className="flex justify-between items-end">
-                          <div className="space-y-0.5">
-                            {phone && <p className="text-[10px] text-[#282828]">Tel: {phone}</p>}
-                            <p className="text-[10px] text-[#282828]">{selectedEmployee.email}</p>
+
+                        {/* Bottom: contact left, QR right */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                          <div>
+                            {phone && (
+                              <p style={{ fontSize: '10px', color: '#282828', margin: '0 0 2px 0' }}>Tel: {phone}</p>
+                            )}
+                            <p style={{ fontSize: '10px', color: '#282828', margin: 0 }}>{selectedEmployee.email}</p>
                           </div>
-                          <div className="text-center">
-                            <div ref={frontQrRef}>
-                              <QRCodeCanvas value="https://www.icmpp.ro" size={52} level="M" />
-                            </div>
-                            <p className="text-[7px] text-[#787878] mt-0.5">icmpp.ro</p>
+                          <div style={{ textAlign: 'center' }}>
+                            <QRCodeCanvas value="https://www.icmpp.ro" size={52} level="M" />
+                            <p style={{ fontSize: '7px', color: '#787878', marginTop: '2px' }}>icmpp.ro</p>
                           </div>
                         </div>
                       </div>
@@ -317,17 +240,40 @@ const BusinessCards = () => {
                     <CardDescription>QR către profilul profesional</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="border rounded-xl overflow-hidden shadow-lg" style={{ aspectRatio: `${CARD_W}/${CARD_H}` }}>
-                      <div className="bg-[#2B4C7E] p-4 h-full flex flex-col items-center justify-center text-white relative">
-                        <div ref={backQrRef} className="-mt-2">
-                          <QRCodeCanvas value={profileUrl(selectedEmployee.id)} size={85} level="M" bgColor="transparent" fgColor="#ffffff" />
+                    <div
+                      ref={backCardRef}
+                      className="border rounded-xl overflow-hidden shadow-lg"
+                      style={{ aspectRatio: `${CARD_W}/${CARD_H}`, background: '#2B4C7E' }}
+                    >
+                      <div style={{ padding: '12px 16px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                        {/* QR code - white on blue */}
+                        <div style={{ marginTop: '-4px' }}>
+                          <QRCodeCanvas
+                            value={profileUrl(selectedEmployee.id)}
+                            size={90}
+                            level="M"
+                            bgColor="transparent"
+                            fgColor="#ffffff"
+                          />
                         </div>
-                        <p className="font-bold text-sm mt-2.5">Profil profesional</p>
-                        <div className="w-3/4 h-[1px] bg-white/50 my-2" />
-                        <p className="font-bold text-xs tracking-wider">
+
+                        {/* Profil profesional */}
+                        <p style={{ fontWeight: 'bold', fontSize: '13px', color: '#ffffff', marginTop: '8px', marginBottom: '6px' }}>
+                          Profil profesional
+                        </p>
+
+                        {/* White separator */}
+                        <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.5)', marginBottom: '8px' }} />
+
+                        {/* Name */}
+                        <p style={{ fontWeight: 'bold', fontSize: '12px', color: '#ffffff', letterSpacing: '1px', margin: '0 0 4px 0' }}>
                           {selectedEmployee.last_name.toUpperCase()} {selectedEmployee.first_name.toUpperCase()}
                         </p>
-                        <p className="text-[9px] text-blue-200/70 mt-1">Scanează pentru contact și profil</p>
+
+                        {/* Scan instruction */}
+                        <p style={{ fontSize: '8px', color: 'rgba(180,200,230,0.8)', margin: 0 }}>
+                          Scanează pentru contact și profil
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -356,18 +302,6 @@ const BusinessCards = () => {
               </Card>
             )}
           </div>
-        </div>
-
-        {/* Hidden QR canvases for PDF generation */}
-        <div className="hidden">
-          <div id="front-qr-hidden">
-            <QRCodeCanvas value="https://www.icmpp.ro" size={200} level="M" />
-          </div>
-          {selectedEmployee && (
-            <div id="back-qr-hidden">
-              <QRCodeCanvas value={profileUrl(selectedEmployee.id)} size={200} level="M" />
-            </div>
-          )}
         </div>
       </div>
     </MainLayout>
