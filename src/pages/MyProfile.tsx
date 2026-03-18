@@ -16,7 +16,7 @@ import { ProfileSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { 
   User, FileText, Download, Calendar, Briefcase, Building, Phone,
   Loader2, MapPin, CreditCard, Hash, History, Mail, BadgeCheck, AlertTriangle, Camera,
-  Gift, ArrowRightLeft, Scale, ShieldCheck, HelpCircle, Copy, Check,
+  Gift, ArrowRightLeft, Scale, ShieldCheck, HelpCircle, Copy, Check, UserCheck,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
@@ -148,6 +148,7 @@ const MyProfile = () => {
   const [approverSource, setApproverSource] = useState<'individual' | 'department' | null>(null);
   const [delegateName, setDelegateName] = useState<string | null>(null);
   const [delegatePeriod, setDelegatePeriod] = useState<string | null>(null);
+  const [actingAsDelegate, setActingAsDelegate] = useState<{ delegatorName: string; delegatorAvatar: string | null; period: string } | null>(null);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [cnpCopied, setCnpCopied] = useState(false);
@@ -313,6 +314,33 @@ const MyProfile = () => {
       setDelegateName(null);
       setDelegateAvatarUrl(null);
       setDelegatePeriod(null);
+    }
+
+    // Check if current user is acting as delegate for someone
+    const todayStr = new Date().toISOString().split('T')[0];
+    const { data: actingAsDelegateData } = await supabase
+      .from('leave_approval_delegates' as any)
+      .select('delegator_user_id, start_date, end_date')
+      .eq('delegate_user_id', user.id)
+      .eq('is_active', true)
+      .lte('start_date', todayStr)
+      .gte('end_date', todayStr)
+      .limit(1);
+
+    if (actingAsDelegateData && actingAsDelegateData.length > 0) {
+      const del = actingAsDelegateData[0] as any;
+      const { data: delegatorProfile } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('user_id', del.delegator_user_id)
+        .maybeSingle();
+      setActingAsDelegate({
+        delegatorName: delegatorProfile?.full_name ? formatNumePrenume({ fullName: delegatorProfile.full_name }) : 'Necunoscut',
+        delegatorAvatar: delegatorProfile?.avatar_url || null,
+        period: `${format(new Date(del.start_date), 'dd.MM.yyyy')} – ${format(new Date(del.end_date), 'dd.MM.yyyy')}`,
+      });
+    } else {
+      setActingAsDelegate(null);
     }
 
     setLoading(false);
@@ -781,6 +809,34 @@ const MyProfile = () => {
                       </div>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Acting as Delegate Info */}
+            {actingAsDelegate && (
+              <Card className="animate-fade-in border-accent/30" style={{ animationDelay: '175ms' }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <UserCheck className="w-5 h-5 text-accent" />
+                    Înlocuitor Activ
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/5 border border-accent/20">
+                    {actingAsDelegate.delegatorAvatar ? (
+                      <img src={actingAsDelegate.delegatorAvatar} alt={actingAsDelegate.delegatorName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent/60 flex items-center justify-center flex-shrink-0 text-accent-foreground font-bold text-sm shadow-md">
+                        {actingAsDelegate.delegatorName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">Înlocuiți pe {actingAsDelegate.delegatorName}</p>
+                      <p className="text-xs text-muted-foreground">Aprobați cererile de concediu în absența sa</p>
+                      <p className="text-xs text-accent font-medium mt-0.5">{actingAsDelegate.period}</p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
