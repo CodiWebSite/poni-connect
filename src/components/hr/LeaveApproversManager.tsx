@@ -42,6 +42,14 @@ interface DeptApproverMapping {
   approver_pending?: boolean;
 }
 
+interface ActiveDelegate {
+  delegator_user_id: string;
+  delegate_user_id: string;
+  delegate_name: string;
+  start_date: string;
+  end_date: string;
+}
+
 // Unified person option: from profiles (with account) or EPD (without)
 interface PersonOption {
   key: string; // user_id or 'epd_' + email
