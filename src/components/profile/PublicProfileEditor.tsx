@@ -20,7 +20,11 @@ interface PublicProfileEditorProps {
 
 interface ProfileSettings {
   bio: string;
+  bio_en: string;
   tagline: string;
+  tagline_en: string;
+  position_en: string;
+  department_en: string;
   phone: string;
   researchgate_url: string;
   google_scholar_url: string;
@@ -38,7 +42,11 @@ interface ProfileSettings {
 
 const defaultSettings: ProfileSettings = {
   bio: '',
+  bio_en: '',
   tagline: '',
+  tagline_en: '',
+  position_en: '',
+  department_en: '',
   phone: '',
   researchgate_url: '',
   google_scholar_url: '',

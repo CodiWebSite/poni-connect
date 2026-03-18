@@ -4,6 +4,37 @@ import { supabase } from '@/integrations/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
 import { Mail, Phone, MapPin, Globe, BookOpen, GraduationCap, ExternalLink, Instagram, Facebook, Linkedin, Twitter } from 'lucide-react';
 
+type Lang = 'ro' | 'en';
+
+const t = {
+  ro: {
+    notFound: 'Profil negăsit',
+    notFoundDesc: 'Acest profil nu există sau a fost dezactivat.',
+    email: 'Email',
+    phone: 'Telefon',
+    location: 'Locație',
+    locationValue: 'ICMPP — Iași, România',
+    academic: 'Prezență Academică',
+    social: 'Rețele Sociale',
+    footer: 'icmpp.ro • Profil profesional',
+    institute: 'Institutul de Chimie Macromoleculară',
+    subtitle: '"Petru Poni" Iași',
+  },
+  en: {
+    notFound: 'Profile not found',
+    notFoundDesc: 'This profile does not exist or has been deactivated.',
+    email: 'Email',
+    phone: 'Phone',
+    location: 'Location',
+    locationValue: 'ICMPP — Iași, Romania',
+    academic: 'Academic Presence',
+    social: 'Social Media',
+    footer: 'icmpp.ro • Professional profile',
+    institute: 'Institute of Macromolecular Chemistry',
+    subtitle: '"Petru Poni" Iași',
+  },
+};
+
 interface ProfileData {
   first_name: string;
   last_name: string;
@@ -14,7 +45,11 @@ interface ProfileData {
   settings: {
     phone: string | null;
     bio: string | null;
+    bio_en: string | null;
     tagline: string | null;
+    tagline_en: string | null;
+    position_en: string | null;
+    department_en: string | null;
     researchgate_url: string | null;
     google_scholar_url: string | null;
     orcid_url: string | null;
@@ -35,12 +70,12 @@ const PublicProfile = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [lang, setLang] = useState<Lang>('ro');
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (!id) { setError(true); setLoading(false); return; }
 
-      // Fetch employee data from the public view
       const { data: empData, error: empError } = await supabase
         .from('employee_directory_full')
         .select('first_name, last_name, department, position, email, avatar_url')
@@ -53,7 +88,6 @@ const PublicProfile = () => {
         return;
       }
 
-      // Fetch public profile settings
       const { data: settingsData } = await supabase
         .from('public_profile_settings')
         .select('*')
@@ -65,7 +99,11 @@ const PublicProfile = () => {
         settings: settingsData ? {
           phone: settingsData.phone,
           bio: settingsData.bio,
+          bio_en: (settingsData as any).bio_en,
           tagline: settingsData.tagline,
+          tagline_en: (settingsData as any).tagline_en,
+          position_en: (settingsData as any).position_en,
+          department_en: (settingsData as any).department_en,
           researchgate_url: settingsData.researchgate_url,
           google_scholar_url: settingsData.google_scholar_url,
           orcid_url: settingsData.orcid_url,
@@ -86,6 +124,8 @@ const PublicProfile = () => {
     fetchProfile();
   }, [id]);
 
+  const i = t[lang];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#003366] to-[#001a33] flex items-center justify-center">
@@ -101,8 +141,8 @@ const PublicProfile = () => {
           <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto">
             <span className="text-3xl">🔍</span>
           </div>
-          <h1 className="text-2xl font-bold">Profil negăsit</h1>
-          <p className="text-white/60">Acest profil nu există sau a fost dezactivat.</p>
+          <h1 className="text-2xl font-bold">{i.notFound}</h1>
+          <p className="text-white/60">{i.notFoundDesc}</p>
         </div>
       </div>
     );
@@ -115,6 +155,11 @@ const PublicProfile = () => {
   const showPos = s ? s.show_position : true;
   const fullName = `${profile.last_name} ${profile.first_name}`.toUpperCase();
   const currentUrl = window.location.href;
+
+  const displayBio = lang === 'en' && s?.bio_en ? s.bio_en : s?.bio;
+  const displayTagline = lang === 'en' && s?.tagline_en ? s.tagline_en : s?.tagline;
+  const displayPosition = lang === 'en' && s?.position_en ? s.position_en : profile.position;
+  const displayDepartment = lang === 'en' && s?.department_en ? s.department_en : profile.department;
 
   const academicLinks = [
     { url: s?.researchgate_url, label: 'ResearchGate', icon: BookOpen },
@@ -136,9 +181,28 @@ const PublicProfile = () => {
       <div className="bg-white/5 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center gap-3">
           <img src="/logo-icmpp.png" alt="ICMPP" className="h-10 w-auto brightness-0 invert opacity-90" />
-          <div>
-            <p className="text-white/90 text-sm font-semibold leading-tight">Institutul de Chimie Macromoleculară</p>
-            <p className="text-white/50 text-xs">"Petru Poni" Iași</p>
+          <div className="flex-1">
+            <p className="text-white/90 text-sm font-semibold leading-tight">{i.institute}</p>
+            <p className="text-white/50 text-xs">{i.subtitle}</p>
+          </div>
+          {/* Language toggle */}
+          <div className="flex rounded-full bg-white/10 border border-white/20 overflow-hidden">
+            <button
+              onClick={() => setLang('ro')}
+              className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                lang === 'ro' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/80'
+              }`}
+            >
+              RO
+            </button>
+            <button
+              onClick={() => setLang('en')}
+              className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                lang === 'en' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/80'
+              }`}
+            >
+              EN
+            </button>
           </div>
         </div>
       </div>
@@ -164,22 +228,22 @@ const PublicProfile = () => {
 
           <div>
             <h1 className="text-2xl font-bold text-white tracking-wide">{fullName}</h1>
-            {showPos && profile.position && (
-              <p className="text-blue-200/80 text-sm mt-1 italic">{profile.position}</p>
+            {showPos && displayPosition && (
+              <p className="text-blue-200/80 text-sm mt-1 italic">{displayPosition}</p>
             )}
-            {showDept && profile.department && (
-              <p className="text-white/50 text-sm">{profile.department}</p>
+            {showDept && displayDepartment && (
+              <p className="text-white/50 text-sm">{displayDepartment}</p>
             )}
-            {s?.tagline && (
-              <p className="text-white/40 text-xs mt-2">{s.tagline}</p>
+            {displayTagline && (
+              <p className="text-white/40 text-xs mt-2">{displayTagline}</p>
             )}
           </div>
         </div>
 
         {/* Bio */}
-        {s?.bio && (
+        {displayBio && (
           <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
-            <p className="text-white/70 text-sm leading-relaxed">{s.bio}</p>
+            <p className="text-white/70 text-sm leading-relaxed">{displayBio}</p>
           </div>
         )}
 
@@ -192,7 +256,7 @@ const PublicProfile = () => {
                 <Mail className="w-5 h-5 text-blue-300" />
               </div>
               <div className="min-w-0">
-                <p className="text-white/40 text-xs">Email</p>
+                <p className="text-white/40 text-xs">{i.email}</p>
                 <p className="text-white text-sm truncate group-hover:text-blue-200 transition-colors">{profile.email}</p>
               </div>
             </a>
@@ -205,7 +269,7 @@ const PublicProfile = () => {
                 <Phone className="w-5 h-5 text-green-300" />
               </div>
               <div>
-                <p className="text-white/40 text-xs">Telefon</p>
+                <p className="text-white/40 text-xs">{i.phone}</p>
                 <p className="text-white text-sm group-hover:text-green-200 transition-colors">{s.phone}</p>
               </div>
             </a>
@@ -216,8 +280,8 @@ const PublicProfile = () => {
               <MapPin className="w-5 h-5 text-orange-300" />
             </div>
             <div>
-              <p className="text-white/40 text-xs">Locație</p>
-              <p className="text-white text-sm">ICMPP — Iași, România</p>
+              <p className="text-white/40 text-xs">{i.location}</p>
+              <p className="text-white text-sm">{i.locationValue}</p>
             </div>
           </div>
         </div>
@@ -225,7 +289,7 @@ const PublicProfile = () => {
         {/* Academic Links */}
         {academicLinks.length > 0 && (
           <div className="space-y-3">
-            <p className="text-white/30 text-xs uppercase tracking-widest font-medium">Prezență Academică</p>
+            <p className="text-white/30 text-xs uppercase tracking-widest font-medium">{i.academic}</p>
             <div className="grid grid-cols-2 gap-3">
               {academicLinks.map((link) => (
                 <a key={link.label} href={link.url!} target="_blank" rel="noopener noreferrer"
@@ -241,7 +305,7 @@ const PublicProfile = () => {
         {/* Social Media Links */}
         {socialLinks.length > 0 && (
           <div className="space-y-3">
-            <p className="text-white/30 text-xs uppercase tracking-widest font-medium">Rețele Sociale</p>
+            <p className="text-white/30 text-xs uppercase tracking-widest font-medium">{i.social}</p>
             <div className="grid grid-cols-2 gap-3">
               {socialLinks.map((link) => (
                 <a key={link.label} href={link.url!} target="_blank" rel="noopener noreferrer"
@@ -263,7 +327,7 @@ const PublicProfile = () => {
 
         {/* Footer */}
         <div className="text-center pt-4 pb-8">
-          <p className="text-white/20 text-xs">icmpp.ro • Profil profesional</p>
+          <p className="text-white/20 text-xs">{i.footer}</p>
         </div>
       </div>
     </div>
