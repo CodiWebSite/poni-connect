@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
-import { Mail, Phone, MapPin, Globe, BookOpen, GraduationCap, ExternalLink } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, BookOpen, GraduationCap, ExternalLink, Instagram, Facebook, Linkedin, Twitter } from 'lucide-react';
 
 interface ProfileData {
   first_name: string;
