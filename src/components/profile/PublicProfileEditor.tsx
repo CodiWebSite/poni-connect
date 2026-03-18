@@ -82,7 +82,11 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
         setHasRecord(true);
         setSettings({
           bio: data.bio || '',
+          bio_en: (data as any).bio_en || '',
           tagline: data.tagline || '',
+          tagline_en: (data as any).tagline_en || '',
+          position_en: (data as any).position_en || '',
+          department_en: (data as any).department_en || '',
           phone: data.phone || '',
           researchgate_url: data.researchgate_url || '',
           google_scholar_url: data.google_scholar_url || '',
@@ -109,7 +113,11 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
     const payload = {
       epd_id: epdId,
       bio: settings.bio || null,
+      bio_en: settings.bio_en || null,
       tagline: settings.tagline || null,
+      tagline_en: settings.tagline_en || null,
+      position_en: settings.position_en || null,
+      department_en: settings.department_en || null,
       phone: settings.phone || null,
       researchgate_url: settings.researchgate_url || null,
       google_scholar_url: settings.google_scholar_url || null,
