@@ -12,7 +12,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { CreditCard, Download, Search, Loader2 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
-import { loadPdfFonts } from '@/utils/pdfFontLoader';
+import { loadRobotoFonts, applyRobotoFont } from '@/utils/pdfFontLoader';
 
 interface Employee {
   id: string;
