@@ -110,7 +110,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/reset-password" element={<ResetPassword />} />
-                <Route path="/calendar" element={<CalendarPage />} />
+                
                 <Route path="/leave-calendar" element={<LeaveCalendar />} />
                 <Route path="/my-profile" element={<MyProfile />} />
                 <Route path="/hr-management" element={<HRManagement />} />
