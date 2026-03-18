@@ -1,5 +1,4 @@
 import { useState, useEffect, ReactNode } from 'react';
-import KioskSidebarWeather from './KioskSidebarWeather';
 import KioskSidebarAnnouncements from './KioskSidebarAnnouncements';
 import KioskSidebarRoomBookings from './KioskSidebarRoomBookings';
 
