@@ -16,7 +16,7 @@ import { ProfileSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { 
   User, FileText, Download, Calendar, Briefcase, Building, Phone,
   Loader2, MapPin, CreditCard, Hash, History, Mail, BadgeCheck, AlertTriangle, Camera,
-  Gift, ArrowRightLeft, Scale, ShieldCheck, HelpCircle, Copy, Check,
+  Gift, ArrowRightLeft, Scale, ShieldCheck, HelpCircle, Copy, Check, UserCheck,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
