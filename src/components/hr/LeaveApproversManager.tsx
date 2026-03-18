@@ -447,7 +447,9 @@ export function LeaveApproversManager() {
                 <p className="text-center text-muted-foreground py-4">Nu sunt configurate relații pe departament.</p>
               ) : (
                 <div className="space-y-2">
-                  {deptMappings.map(m => (
+                  {deptMappings.map(m => {
+                    const delegate = getDelegateForApprover(m.approver_user_id);
+                    return (
                     <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3 flex-wrap">
                         <Badge variant="outline">{m.department}</Badge>
@@ -460,12 +462,14 @@ export function LeaveApproversManager() {
                           </Badge>
                         )}
                         {m.notes && <span className="text-xs text-muted-foreground italic">({m.notes})</span>}
+                        {delegate && <DelegateBadge delegate={delegate} />}
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => handleDeleteDept(m.id)} className="text-destructive hover:text-destructive">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
