@@ -806,36 +806,56 @@ const MyProfile = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                    {approverAvatarUrl ? (
-                      <img src={approverAvatarUrl} alt={approverName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0 text-primary-foreground font-bold text-sm shadow-md">
-                        {approverName.charAt(0).toUpperCase()}
+                  {delegateName ? (
+                    <>
+                      {/* When delegate is active, show delegate as current approver */}
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                        {delegateAvatarUrl ? (
+                          <img src={delegateAvatarUrl} alt={delegateName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0 text-primary-foreground font-bold text-sm shadow-md">
+                            {delegateName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium text-sm">{delegateName}</p>
+                          <p className="text-xs text-muted-foreground">Aprobator actual (înlocuitor)</p>
+                          {delegatePeriod && (
+                            <p className="text-xs text-primary font-medium mt-0.5">Perioada: {delegatePeriod}</p>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    <div>
-                      <p className="font-medium text-sm">{approverName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {approverSource === 'individual' ? 'Aprobator desemnat individual' : 'Aprobator departament'}
-                      </p>
-                    </div>
-                  </div>
-                  {delegateName && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-warning/5 border border-warning/20">
-                      {delegateAvatarUrl ? (
-                        <img src={delegateAvatarUrl} alt={delegateName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
+                      {/* Show original approver as secondary info */}
+                      <div className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50 border border-border">
+                        {approverAvatarUrl ? (
+                          <img src={approverAvatarUrl} alt={approverName} className="w-8 h-8 rounded-full object-cover flex-shrink-0 opacity-70" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 text-muted-foreground font-bold text-xs">
+                            {approverName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium text-xs text-muted-foreground">{approverName}</p>
+                          <p className="text-[11px] text-muted-foreground/70">
+                            {approverSource === 'individual' ? 'Aprobator titular (temporar înlocuit)' : 'Aprobator departament (temporar înlocuit)'}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                      {approverAvatarUrl ? (
+                        <img src={approverAvatarUrl} alt={approverName} className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md" />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-warning to-warning/60 flex items-center justify-center flex-shrink-0 text-warning-foreground font-bold text-sm shadow-md">
-                          {delegateName.charAt(0).toUpperCase()}
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0 text-primary-foreground font-bold text-sm shadow-md">
+                          {approverName.charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div>
-                        <p className="font-medium text-sm">{delegateName}</p>
-                        <p className="text-xs text-muted-foreground">Înlocuitor temporar</p>
-                        {delegatePeriod && (
-                          <p className="text-xs text-warning font-medium mt-0.5">{delegatePeriod}</p>
-                        )}
+                        <p className="font-medium text-sm">{approverName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {approverSource === 'individual' ? 'Aprobator desemnat individual' : 'Aprobator departament'}
+                        </p>
                       </div>
                     </div>
                   )}
