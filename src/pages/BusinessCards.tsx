@@ -271,34 +271,39 @@ const BusinessCards = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="border rounded-xl overflow-hidden shadow-lg" style={{ aspectRatio: `${CARD_W}/${CARD_H}` }}>
-                      <div className="bg-white p-4 h-full flex flex-col justify-between relative">
-                        {/* Header */}
+                      <div className="bg-white p-5 h-full flex flex-col justify-between relative">
+                        {/* Header with logo */}
                         <div>
-                          <p className="text-[10px] text-[#003366] font-bold">
-                            Institutul de Chimie Macromoleculară "Petru Poni" Iași
-                          </p>
-                          <div className="h-[2px] bg-[#003366] mt-1.5 mb-3" />
-                          <h2 className="text-lg font-bold text-[#003366] tracking-wide">
+                          <div className="flex items-center gap-2.5 mb-2">
+                            <img src="/logo-icmpp.png" alt="ICMPP" className="h-8 w-auto" />
+                            <div>
+                              <p className="text-[10px] text-[#2B4C7E] font-bold leading-tight">Institutul de Chimie</p>
+                              <p className="text-[10px] text-[#2B4C7E] font-bold leading-tight">Macromoleculară "Petru Poni" Iași</p>
+                            </div>
+                          </div>
+                          <div className="h-[2px] bg-[#2B4C7E] mb-0.5" />
+                          <div className="h-[1px] bg-[#2B4C7E]/20 mb-3" />
+                          <h2 className="text-lg font-bold text-[#2B4C7E] tracking-wide ml-2">
                             {selectedEmployee.last_name.toUpperCase()} {selectedEmployee.first_name.toUpperCase()}
                           </h2>
                           {selectedEmployee.position && (
-                            <p className="text-xs text-gray-500 italic">{selectedEmployee.position}</p>
+                            <p className="text-xs text-[#787850] italic ml-2">{selectedEmployee.position}</p>
                           )}
                           {selectedEmployee.department && (
-                            <p className="text-xs text-gray-500">{selectedEmployee.department}</p>
+                            <p className="text-xs text-[#505050] ml-2">{selectedEmployee.department}</p>
                           )}
                         </div>
                         {/* Contact + QR */}
                         <div className="flex justify-between items-end">
                           <div className="space-y-0.5">
-                            {phone && <p className="text-[10px] text-gray-600">Tel: {phone}</p>}
-                            <p className="text-[10px] text-gray-600">{selectedEmployee.email}</p>
+                            {phone && <p className="text-[10px] text-[#282828]">Tel: {phone}</p>}
+                            <p className="text-[10px] text-[#282828]">{selectedEmployee.email}</p>
                           </div>
                           <div className="text-center">
                             <div ref={frontQrRef}>
-                              <QRCodeCanvas value="https://www.icmpp.ro" size={48} level="M" />
+                              <QRCodeCanvas value="https://www.icmpp.ro" size={52} level="M" />
                             </div>
-                            <p className="text-[7px] text-gray-400 mt-0.5">icmpp.ro</p>
+                            <p className="text-[7px] text-[#787878] mt-0.5">icmpp.ro</p>
                           </div>
                         </div>
                       </div>
@@ -313,12 +318,12 @@ const BusinessCards = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="border rounded-xl overflow-hidden shadow-lg" style={{ aspectRatio: `${CARD_W}/${CARD_H}` }}>
-                      <div className="bg-[#003366] p-4 h-full flex flex-col items-center justify-center text-white relative">
-                        <div className="bg-white rounded-lg p-2" ref={backQrRef}>
-                          <QRCodeCanvas value={profileUrl(selectedEmployee.id)} size={80} level="M" />
+                      <div className="bg-[#2B4C7E] p-4 h-full flex flex-col items-center justify-center text-white relative">
+                        <div ref={backQrRef} className="-mt-2">
+                          <QRCodeCanvas value={profileUrl(selectedEmployee.id)} size={85} level="M" bgColor="transparent" fgColor="#ffffff" />
                         </div>
-                        <p className="font-bold text-sm mt-3">Profil profesional</p>
-                        <div className="w-12 h-[1px] bg-white/40 my-1.5" />
+                        <p className="font-bold text-sm mt-2.5">Profil profesional</p>
+                        <div className="w-3/4 h-[1px] bg-white/50 my-2" />
                         <p className="font-bold text-xs tracking-wider">
                           {selectedEmployee.last_name.toUpperCase()} {selectedEmployee.first_name.toUpperCase()}
                         </p>
