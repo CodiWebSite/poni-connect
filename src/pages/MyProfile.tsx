@@ -148,6 +148,7 @@ const MyProfile = () => {
   const [approverSource, setApproverSource] = useState<'individual' | 'department' | null>(null);
   const [delegateName, setDelegateName] = useState<string | null>(null);
   const [delegatePeriod, setDelegatePeriod] = useState<string | null>(null);
+  const [actingAsDelegate, setActingAsDelegate] = useState<{ delegatorName: string; delegatorAvatar: string | null; period: string } | null>(null);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [cnpCopied, setCnpCopied] = useState(false);
