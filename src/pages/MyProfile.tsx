@@ -185,6 +185,7 @@ const MyProfile = () => {
         .maybeSingle();
       if (pd) {
         ownEpdId = pd.id;
+        setEpdId(pd.id);
         setPersonalData(pd);
         const [carryRes, bonusRes] = await Promise.all([
           supabase.from('leave_carryover').select('from_year, to_year, initial_days, used_days, remaining_days').eq('employee_personal_data_id', pd.id).order('from_year', { ascending: false }),
