@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, Clock, Building2, Monitor, Phone } from 'lucide-react';
 import AnalogClock from '@/components/kiosk/AnalogClock';
 import KioskRotatingSidebar from '@/components/kiosk/KioskRotatingSidebar';
+import KioskHeaderWeather from '@/components/kiosk/KioskHeaderWeather';
 
 // ── i18n helpers ───────────────────────────────────────
 const DAYS_RO = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
