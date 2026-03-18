@@ -237,52 +237,63 @@ export function PublicProfileEditor({ epdId, employeeName }: PublicProfileEditor
               <Label htmlFor="pp-rg" className="text-xs text-muted-foreground">ResearchGate</Label>
               <div className="relative">
                 <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="pp-rg"
-                  className="pl-10"
-                  placeholder="https://researchgate.net/profile/..."
-                  value={settings.researchgate_url}
-                  onChange={e => update('researchgate_url', e.target.value)}
-                />
+                <Input id="pp-rg" className="pl-10" placeholder="https://researchgate.net/profile/..." value={settings.researchgate_url} onChange={e => update('researchgate_url', e.target.value)} />
               </div>
             </div>
             <div className="space-y-1">
               <Label htmlFor="pp-gs" className="text-xs text-muted-foreground">Google Scholar</Label>
               <div className="relative">
                 <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="pp-gs"
-                  className="pl-10"
-                  placeholder="https://scholar.google.com/..."
-                  value={settings.google_scholar_url}
-                  onChange={e => update('google_scholar_url', e.target.value)}
-                />
+                <Input id="pp-gs" className="pl-10" placeholder="https://scholar.google.com/..." value={settings.google_scholar_url} onChange={e => update('google_scholar_url', e.target.value)} />
               </div>
             </div>
             <div className="space-y-1">
               <Label htmlFor="pp-orcid" className="text-xs text-muted-foreground">ORCID</Label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="pp-orcid"
-                  className="pl-10"
-                  placeholder="https://orcid.org/0000-..."
-                  value={settings.orcid_url}
-                  onChange={e => update('orcid_url', e.target.value)}
-                />
+                <Input id="pp-orcid" className="pl-10" placeholder="https://orcid.org/0000-..." value={settings.orcid_url} onChange={e => update('orcid_url', e.target.value)} />
               </div>
             </div>
             <div className="space-y-1">
               <Label htmlFor="pp-web" className="text-xs text-muted-foreground">Website personal</Label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="pp-web"
-                  className="pl-10"
-                  placeholder="https://..."
-                  value={settings.website_url}
-                  onChange={e => update('website_url', e.target.value)}
-                />
+                <Input id="pp-web" className="pl-10" placeholder="https://..." value={settings.website_url} onChange={e => update('website_url', e.target.value)} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Social Media Links */}
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold">Rețele sociale</Label>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="pp-linkedin" className="text-xs text-muted-foreground">LinkedIn</Label>
+              <div className="relative">
+                <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="pp-linkedin" className="pl-10" placeholder="https://linkedin.com/in/..." value={settings.linkedin_url} onChange={e => update('linkedin_url', e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="pp-facebook" className="text-xs text-muted-foreground">Facebook</Label>
+              <div className="relative">
+                <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="pp-facebook" className="pl-10" placeholder="https://facebook.com/..." value={settings.facebook_url} onChange={e => update('facebook_url', e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="pp-instagram" className="text-xs text-muted-foreground">Instagram</Label>
+              <div className="relative">
+                <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="pp-instagram" className="pl-10" placeholder="https://instagram.com/..." value={settings.instagram_url} onChange={e => update('instagram_url', e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="pp-x" className="text-xs text-muted-foreground">X (Twitter)</Label>
+              <div className="relative">
+                <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="pp-x" className="pl-10" placeholder="https://x.com/..." value={settings.x_url} onChange={e => update('x_url', e.target.value)} />
               </div>
             </div>
           </div>
