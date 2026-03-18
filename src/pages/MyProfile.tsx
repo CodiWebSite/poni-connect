@@ -344,6 +344,32 @@ const MyProfile = () => {
       setActingAsDelegate(null);
     }
 
+    // Check if current user has delegated to someone
+    const { data: myDelegationData } = await supabase
+      .from('leave_approval_delegates' as any)
+      .select('delegate_user_id, start_date, end_date')
+      .eq('delegator_user_id', user.id)
+      .eq('is_active', true)
+      .lte('start_date', todayStr)
+      .gte('end_date', todayStr)
+      .limit(1);
+
+    if (myDelegationData && myDelegationData.length > 0) {
+      const del = myDelegationData[0] as any;
+      const { data: delProfile } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('user_id', del.delegate_user_id)
+        .maybeSingle();
+      setMyDelegation({
+        delegateName: delProfile?.full_name ? formatNumePrenume({ fullName: delProfile.full_name }) : 'Necunoscut',
+        delegateAvatar: delProfile?.avatar_url || null,
+        period: `${format(new Date(del.start_date), 'dd.MM.yyyy')} – ${format(new Date(del.end_date), 'dd.MM.yyyy')}`,
+      });
+    } else {
+      setMyDelegation(null);
+    }
+
     setLoading(false);
   };
 
