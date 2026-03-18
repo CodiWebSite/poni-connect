@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import ChatBetaBanner from '@/components/chat/ChatBetaBanner';
 import ConversationList from '@/components/chat/ConversationList';
 import ChatWindow from '@/components/chat/ChatWindow';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { setActiveChatConversation } from '@/hooks/useChatNotifications';
 
 const Chat = () => {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
