@@ -2031,6 +2031,75 @@ export type Database = {
         }
         Relationships: []
       }
+      public_profile_settings: {
+        Row: {
+          bio: string | null
+          created_at: string
+          epd_id: string
+          google_scholar_url: string | null
+          id: string
+          orcid_url: string | null
+          phone: string | null
+          researchgate_url: string | null
+          show_department: boolean
+          show_email: boolean
+          show_phone: boolean
+          show_position: boolean
+          tagline: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          epd_id: string
+          google_scholar_url?: string | null
+          id?: string
+          orcid_url?: string | null
+          phone?: string | null
+          researchgate_url?: string | null
+          show_department?: boolean
+          show_email?: boolean
+          show_phone?: boolean
+          show_position?: boolean
+          tagline?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          epd_id?: string
+          google_scholar_url?: string | null
+          id?: string
+          orcid_url?: string | null
+          phone?: string | null
+          researchgate_url?: string | null
+          show_department?: boolean
+          show_email?: boolean
+          show_phone?: boolean
+          show_position?: boolean
+          tagline?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_profile_settings_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: true
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_profile_settings_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: true
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recreational_activities: {
         Row: {
           category: Database["public"]["Enums"]["activity_category"]
