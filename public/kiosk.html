@@ -365,23 +365,18 @@ function sbFetch(table, params, cb) {
   xhr.send();
 }
 
-// ── Weather ──
+// ── Weather (header only, no sidebar cycling) ──
 var headerWeatherData = null;
 function fetchWeather() {
   var xhr = new XMLHttpRequest();
-  xhr.open('GET','https://api.open-meteo.com/v1/forecast?latitude=47.1585&longitude=27.6014&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe%2FBucharest');
+  xhr.open('GET','https://api.open-meteo.com/v1/forecast?latitude=47.1585&longitude=27.6014&current=temperature_2m,weather_code&timezone=Europe%2FBucharest');
   xhr.onload = function() {
     if (xhr.status !== 200) return;
     var d = JSON.parse(xhr.responseText).current;
     var code = d.weather_code;
     var cond = code === 0 ? 'Cer senin' : code <= 3 ? 'Parțial noros' : (code >= 61 && code <= 67) ? 'Ploaie' : (code >= 71 && code <= 77) ? 'Ninsoare' : code >= 95 ? 'Furtună' : 'Variabil';
     var icon = code === 0 ? '☀️' : code <= 3 ? '⛅' : (code >= 61 && code <= 67) ? '🌧️' : (code >= 71 && code <= 77) ? '❄️' : code >= 95 ? '⛈️' : '🌤️';
-    document.getElementById('weatherContent').innerHTML =
-      '<div style="display:flex;align-items:center;gap:16px"><span style="font-size:56px">' + icon + '</span><div class="weather-temp">' + Math.round(d.temperature_2m) + '°C</div></div>' +
-      '<div class="weather-cond">' + cond + '</div>' +
-      '<div class="weather-details"><span>💧 ' + d.relative_humidity_2m + '%</span><span>💨 ' + Math.round(d.wind_speed_10m) + ' km/h</span></div>' +
-      '<div class="weather-location">📍 Iași, România</div>';
-    // Update header weather
+
     headerWeatherData = { icon: icon, temp: Math.round(d.temperature_2m), cond: cond };
     document.getElementById('weatherHeaderIcon').textContent = icon;
     document.getElementById('weatherHeaderTemp').textContent = Math.round(d.temperature_2m) + '°C';
@@ -391,25 +386,6 @@ function fetchWeather() {
 }
 fetchWeather();
 setInterval(fetchWeather, 600000);
-
-// ── Header clock/weather cycling ──
-var showHeaderWeather = false;
-setInterval(function() {
-  showHeaderWeather = !showHeaderWeather;
-  var clockView = document.getElementById('clockView');
-  var weatherView = document.getElementById('weatherHeaderView');
-  if (showHeaderWeather && headerWeatherData) {
-    clockView.style.opacity = '0';
-    clockView.style.transform = 'translateY(-16px)';
-    weatherView.style.opacity = '1';
-    weatherView.style.transform = 'translateY(0)';
-  } else {
-    clockView.style.opacity = '1';
-    clockView.style.transform = 'translateY(0)';
-    weatherView.style.opacity = '0';
-    weatherView.style.transform = 'translateY(16px)';
-  }
-}, 5000);
 
 // ── Announcements ──
 function fetchAnnouncements() {
