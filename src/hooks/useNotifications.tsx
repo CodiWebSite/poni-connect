@@ -50,7 +50,8 @@ export function useNotifications() {
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
-          // Show toast for new notification
+          // Play sound and show toast for new notification
+          playNotificationSound('alert');
           toast({
             title: newNotification.title,
             description: newNotification.message,
