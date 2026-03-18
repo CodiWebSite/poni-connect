@@ -71,7 +71,7 @@ const PersonalCalendarWidget = () => {
     // Fetch profiles for department matching
     const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department');
     const { data: epdData } = await supabase
-      .from('employee_personal_data').select('id, first_name, last_name, department').eq('is_archived', false);
+      .from('employee_personal_data').select('id, first_name, last_name, department, employee_record_id').eq('is_archived', false);
 
     const profileMap: Record<string, { name: string; department: string | null }> = {};
     (profiles || []).forEach(p => { profileMap[p.user_id] = { name: p.full_name, department: p.department }; });
