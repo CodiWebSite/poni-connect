@@ -223,18 +223,29 @@ const PublicProfile = () => {
         </div>
 
         {/* Academic Links */}
-        {links.length > 0 && (
+        {academicLinks.length > 0 && (
           <div className="space-y-3">
             <p className="text-white/30 text-xs uppercase tracking-widest font-medium">Prezență Academică</p>
             <div className="grid grid-cols-2 gap-3">
-              {links.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.url!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-white/5 hover:bg-white/10 rounded-xl p-3 border border-white/10 transition-colors"
-                >
+              {academicLinks.map((link) => (
+                <a key={link.label} href={link.url!} target="_blank" rel="noopener noreferrer"
+                   className="flex items-center gap-2 bg-white/5 hover:bg-white/10 rounded-xl p-3 border border-white/10 transition-colors">
+                  <link.icon className="w-4 h-4 text-white/50" />
+                  <span className="text-white/80 text-sm">{link.label}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Social Media Links */}
+        {socialLinks.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-white/30 text-xs uppercase tracking-widest font-medium">Rețele Sociale</p>
+            <div className="grid grid-cols-2 gap-3">
+              {socialLinks.map((link) => (
+                <a key={link.label} href={link.url!} target="_blank" rel="noopener noreferrer"
+                   className="flex items-center gap-2 bg-white/5 hover:bg-white/10 rounded-xl p-3 border border-white/10 transition-colors">
                   <link.icon className="w-4 h-4 text-white/50" />
                   <span className="text-white/80 text-sm">{link.label}</span>
                 </a>
