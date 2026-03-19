@@ -56,7 +56,7 @@ const KioskSidebarRoomBookings = () => {
           const currentBooking = roomBookings.find(b =>
             new Date(b.start_time) <= now && new Date(b.end_time) > now
           );
-          const nextBookings = roomBookings.filter(b => new Date(b.start_time) > now).slice(0, 2);
+          const nextBookings = roomBookings.filter(b => new Date(b.start_time) > now).slice(0, 4);
 
           return (
             <div key={room} className="rounded-lg bg-white border border-slate-200 p-3 shadow-sm">
@@ -68,6 +68,9 @@ const KioskSidebarRoomBookings = () => {
                   <span className="text-xs text-red-600 font-medium">
                     Ocupat: {formatHM(currentBooking.start_time)}–{formatHM(currentBooking.end_time)}
                   </span>
+                  {currentBooking.title && (
+                    <span className="text-[10px] text-red-500 truncate max-w-[40%]">({currentBooking.title})</span>
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 mb-1.5">
@@ -77,13 +80,16 @@ const KioskSidebarRoomBookings = () => {
               )}
 
               {nextBookings.length > 0 ? (
-                <div className="space-y-1 mt-1.5 pt-1.5 border-t border-slate-100">
-                  {nextBookings.map(b => (
-                    <div key={b.id} className="flex items-center justify-between text-[11px] text-slate-500">
-                      <span className="truncate max-w-[55%]">{b.title}</span>
-                      <span className="tabular-nums text-slate-400">{formatHM(b.start_time)}–{formatHM(b.end_time)}</span>
-                    </div>
-                  ))}
+                <div className="mt-1.5 pt-1.5 border-t border-slate-100">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Urmează:</p>
+                  <div className="space-y-1">
+                    {nextBookings.map(b => (
+                      <div key={b.id} className="flex items-center justify-between text-[11px]">
+                        <span className="truncate max-w-[50%] text-slate-600 font-medium">{b.title}</span>
+                        <span className="tabular-nums text-primary font-semibold">{formatHM(b.start_time)}–{formatHM(b.end_time)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : !currentBooking && (
                 <p className="text-[11px] text-slate-400 mt-1">Fără rezervări programate</p>
