@@ -57,6 +57,7 @@ interface LeaveRecord {
   epd_id: string | null;
   user_id: string;
   leave_type: string;
+  deduct_from?: string; // 'auto' | 'carryover_only' | 'current_only'
 }
 
 interface CarryoverData {
