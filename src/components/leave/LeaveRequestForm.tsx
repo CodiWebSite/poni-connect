@@ -392,6 +392,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
     }
 
     setSubmitting(false);
+    submittingRef.current = false;
   };
 
   if (loading) {
