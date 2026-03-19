@@ -7,6 +7,7 @@ export type AppRole = 'user' | 'admin' | 'super_admin' | 'hr' | 'sef' | 'sef_sru
 export function useUserRole() {
   const { user } = useAuth();
   const [role, setRole] = useState<AppRole | null>(null);
+  const [allRoles, setAllRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
