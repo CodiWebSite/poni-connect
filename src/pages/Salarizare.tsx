@@ -164,7 +164,10 @@ function addMonthSheet(
     let coBeforeMonth = 0;
     if (showSource) {
       empLeaves.forEach(lr => {
-        if ((lr.leave_type || 'co') !== 'co') return;
+        const lrType = lr.leave_type || 'co';
+        const lrLabel = leaveTypeLabels[lrType] || lrType.toUpperCase();
+        const lrIsCoType = lrType === 'co' || lrLabel === 'CO';
+        if (!lrIsCoType) return;
         const lrStart = new Date(lr.start_date);
         const lrEnd = new Date(lr.end_date);
         // Only count days that fall before this month within the same year
