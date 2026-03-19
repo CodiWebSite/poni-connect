@@ -428,19 +428,23 @@ function fetchRooms() {
     rooms.forEach(function(room) {
       var rb = (data || []).filter(function(b) { return b.room === room; });
       var current = rb.find(function(b) { return new Date(b.start_time) <= now && new Date(b.end_time) > now; });
-      var next = rb.filter(function(b) { return new Date(b.start_time) > now; }).slice(0, 2);
+      var next = rb.filter(function(b) { return new Date(b.start_time) > now; }).slice(0, 4);
       html += '<div class="card"><div style="font-size:22px;font-weight:600;color:#e2e8f0;margin-bottom:12px">' + room + '</div>';
       if (current) {
         var cs = new Date(current.start_time), ce = new Date(current.end_time);
         html += '<div style="display:flex;align-items:center;gap:10px"><span class="status-dot status-occupied"></span><span class="status-label" style="color:#f87171">Ocupat: ' + String(cs.getHours()).padStart(2,'0')+':'+String(cs.getMinutes()).padStart(2,'0') + '–' + String(ce.getHours()).padStart(2,'0')+':'+String(ce.getMinutes()).padStart(2,'0') + '</span></div>';
+        if (current.title) {
+          html += '<div style="font-size:18px;color:#f87171;opacity:0.8;margin-top:4px;margin-left:26px">(' + current.title + ')</div>';
+        }
       } else {
         html += '<div style="display:flex;align-items:center;gap:10px"><span class="status-dot status-available"></span><span class="status-label" style="color:#34d399">Disponibil acum</span></div>';
       }
       if (next.length) {
         html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(148,163,184,0.1)">';
+        html += '<div style="font-size:16px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Urmează:</div>';
         next.forEach(function(b) {
           var s = new Date(b.start_time), e = new Date(b.end_time);
-          html += '<div class="item-row"><span style="max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + b.title + '</span><span style="color:#64748b">' + String(s.getHours()).padStart(2,'0')+':'+String(s.getMinutes()).padStart(2,'0') + '–' + String(e.getHours()).padStart(2,'0')+':'+String(e.getMinutes()).padStart(2,'0') + '</span></div>';
+          html += '<div class="item-row"><span style="max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8f0;font-weight:500">' + b.title + '</span><span style="color:#e6c04a;font-weight:600;font-variant-numeric:tabular-nums">' + String(s.getHours()).padStart(2,'0')+':'+String(s.getMinutes()).padStart(2,'0') + '–' + String(e.getHours()).padStart(2,'0')+':'+String(e.getMinutes()).padStart(2,'0') + '</span></div>';
         });
         html += '</div>';
       } else if (!current) {
