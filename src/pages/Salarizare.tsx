@@ -46,6 +46,8 @@ interface EmployeeData {
   department: string | null;
   position: string | null;
   employee_record_id: string | null;
+  total_leave_days: number | null;
+  used_leave_days: number | null;
 }
 
 interface LeaveRecord {
@@ -55,6 +57,22 @@ interface LeaveRecord {
   epd_id: string | null;
   user_id: string;
   leave_type: string;
+}
+
+interface CarryoverData {
+  employee_personal_data_id: string;
+  from_year: number;
+  to_year: number;
+  initial_days: number;
+  used_days: number;
+  remaining_days: number;
+}
+
+interface BonusData {
+  employee_personal_data_id: string;
+  year: number;
+  bonus_days: number;
+  reason: string;
 }
 
 function getWorkingDaysInRange(start: Date, end: Date, monthStart: Date, monthEnd: Date): { days: number; period: string } {
