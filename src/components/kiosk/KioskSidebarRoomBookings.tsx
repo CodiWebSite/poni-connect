@@ -20,6 +20,13 @@ const formatHM = (iso: string) => {
 
 const KioskSidebarRoomBookings = () => {
   const [bookings, setBookings] = useState<RoomBooking[]>([]);
+  const [now, setNow] = useState(new Date());
+
+  // Keep "now" fresh so current/next detection updates even between fetches
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   const fetchBookings = useCallback(async () => {
     const now = new Date();
@@ -39,11 +46,9 @@ const KioskSidebarRoomBookings = () => {
 
   useEffect(() => {
     fetchBookings();
-    const t = setInterval(fetchBookings, 60_000);
+    const t = setInterval(fetchBookings, 30_000);
     return () => clearInterval(t);
   }, [fetchBookings]);
-
-  const now = new Date();
 
   return (
     <div className="p-5 shrink-0 overflow-hidden">
