@@ -488,7 +488,7 @@ const Salarizare = () => {
         const monthStart = new Date(year, m, 1);
         const monthEnd = endOfMonth(monthStart);
         const sheetName = `${MONTH_NAMES_RO[m]} ${year}`;
-        addMonthSheet(wb, sheetName, employees, leaveRecords, monthStart, monthEnd);
+        addMonthSheet(wb, sheetName, employees, leaveRecords, monthStart, monthEnd, carryovers, year);
       }
 
       const buf = await wb.xlsx.writeBuffer();
