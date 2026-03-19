@@ -420,7 +420,7 @@ const Salarizare = () => {
     });
 
     // Transform hr_requests into LeaveRecord format
-    const leaveRecords: LeaveRecord[] = (hrReqs || []).map((hr: any) => {
+    const hrLeaveRecords: LeaveRecord[] = (hrReqs || []).map((hr: any) => {
       const details = hr.details || {};
       const resolvedEpdId = details.epd_id || userIdToEpdId[hr.user_id] || null;
       let rawType = (details.leaveType || 'co').toLowerCase().trim();
@@ -436,6 +436,8 @@ const Salarizare = () => {
       };
     });
 
+    const leaveRecords: LeaveRecord[] = [...hrLeaveRecords];
+
     // Also fetch from leave_requests table (formal workflow)
     const { data: formalLeaves } = await supabase
       .from('leave_requests')
@@ -443,7 +445,7 @@ const Salarizare = () => {
       .eq('status', 'approved' as any)
       .eq('is_demo', false);
 
-    // Build dedup set from formal leaves (these take priority)
+    // Build dedup set from formal leaves (these take priority for CO)
     const formalLeaveKeys = new Set<string>();
     (formalLeaves || []).forEach((lr: any) => {
       formalLeaveKeys.add(`${lr.user_id}|${lr.start_date}|${lr.end_date}`);
@@ -457,21 +459,13 @@ const Salarizare = () => {
       });
     });
 
-    // Remove hr_requests CO duplicates that also exist as formal leave_requests
-    const dedupedRecords = leaveRecords.filter(lr => {
-      // Keep all non-CO and all formal leaves (added after hr_requests)
-      if (lr.leave_type !== 'co') return true;
-      // For CO from hr_requests: check if formal leave exists with same user+dates
-      // hr_requests were pushed first, formal leaves second
-      // If this record's key is in formalLeaveKeys AND this is NOT the formal version,
-      // we skip it. The formal version has epd_id directly from leave_requests.
+    // Remove CO duplicates from hr_requests when same user+interval exists in formal workflow
+    const hrCount = hrLeaveRecords.length;
+    const dedupedRecords = leaveRecords.filter((lr, index) => {
+      if (index >= hrCount) return true; // always keep formal leaves
+      if (lr.leave_type !== 'co') return true; // only CO can duplicate with formal workflow
       const key = `${lr.user_id}|${lr.start_date}|${lr.end_date}`;
-      if (!formalLeaveKeys.has(key)) return true; // no duplicate, keep
-      // Check if this IS the formal leave entry (has matching epd_id from formalLeaves)
-      const formalMatch = (formalLeaves || []).find((fl: any) => 
-        fl.user_id === lr.user_id && fl.start_date === lr.start_date && fl.end_date === lr.end_date
-      );
-      return formalMatch && lr.epd_id === (formalMatch.epd_id || userIdToEpdId[formalMatch.user_id] || null);
+      return !formalLeaveKeys.has(key);
     });
 
     return {
