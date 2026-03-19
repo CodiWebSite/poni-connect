@@ -57,6 +57,7 @@ interface LeaveRecord {
   epd_id: string | null;
   user_id: string;
   leave_type: string;
+  deduct_from?: string; // 'auto' | 'carryover_only' | 'current_only'
 }
 
 interface CarryoverData {
@@ -96,33 +97,38 @@ function addMonthSheet(
   employees: EmployeeData[],
   leaveRecords: LeaveRecord[],
   monthStart: Date,
-  monthEnd: Date
+  monthEnd: Date,
+  carryovers?: CarryoverData[],
+  year?: number
 ) {
   const ws = wb.addWorksheet(sheetName);
+  const showSource = !!carryovers && !!year;
 
   // Header
-  const headers = ['Nr', 'Nume', 'Departament', 'Funcție', 'Tip', 'Zile', 'Perioade'];
+  const headers = showSource
+    ? ['Nr', 'Nume', 'Departament', 'Funcție', 'Tip', 'Zile', `Din Report ${year - 1}`, `Din Sold ${year}`, 'Perioade']
+    : ['Nr', 'Nume', 'Departament', 'Funcție', 'Tip', 'Zile', 'Perioade'];
   const headerRow = ws.addRow(headers);
   headerRow.eachCell((cell) => {
     cell.fill = HEADER_FILL;
     cell.font = HEADER_FONT;
     cell.border = BORDER_THIN;
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   });
+  if (showSource) headerRow.height = 30;
 
-  // Sort employees A-Z by last_name + first_name
+  // Sort employees A-Z
   const sorted = [...employees].sort((a, b) => {
     const nameA = `${a.last_name} ${a.first_name}`.toLowerCase();
     const nameB = `${b.last_name} ${b.first_name}`.toLowerCase();
     return nameA.localeCompare(nameB, 'ro');
   });
 
-  // Build labels from centralized leave types config
+  // Build labels
   const leaveTypeLabels: Record<string, string> = {};
   for (const lt of LEAVE_TYPES) {
     leaveTypeLabels[lt.key] = lt.label;
   }
-  // Legacy aliases
   leaveTypeLabels['concediu_odihna'] = 'CO';
   leaveTypeLabels['concediu_medical'] = 'CM';
   leaveTypeLabels['concediu_fara_plata'] = 'CS';
@@ -132,13 +138,46 @@ function addMonthSheet(
   leaveTypeLabels['eveniment'] = 'EV';
   leaveTypeLabels['bo'] = 'CM';
 
+  // Build per-employee carryover remaining tracker (running balance for source calc)
+  // We compute how many carryover days were available at the start of the month
+  // by looking at all CO leaves before this month and deducting from carryover first
+  const getSourceSplit = (empId: string, coDaysThisMonth: number, allCoBeforeMonth: number): { fromCarryover: number; fromCurrent: number } => {
+    if (!showSource || !carryovers || !year) return { fromCarryover: 0, fromCurrent: 0 };
+    
+    const carryover = carryovers.find(c => c.employee_personal_data_id === empId && c.to_year === year);
+    const carryoverTotal = carryover?.initial_days ?? 0;
+    
+    // Carryover used before this month = min(allCoBeforeMonth, carryoverTotal)
+    const carryoverUsedBefore = Math.min(allCoBeforeMonth, carryoverTotal);
+    const carryoverRemaining = Math.max(0, carryoverTotal - carryoverUsedBefore);
+    
+    const fromCarryover = Math.min(coDaysThisMonth, carryoverRemaining);
+    const fromCurrent = coDaysThisMonth - fromCarryover;
+    
+    return { fromCarryover, fromCurrent };
+  };
+
   sorted.forEach((emp, idx) => {
-    // Find all leave records for this employee in this month
     const empLeaves = leaveRecords.filter(lr => lr.epd_id === emp.id);
     
-    // Group by leave type
-    const byType: Record<string, { days: number; periods: string[] }> = {};
+    // Calculate CO days used before this month (for source split)
+    let coBeforeMonth = 0;
+    if (showSource) {
+      empLeaves.forEach(lr => {
+        if ((lr.leave_type || 'co') !== 'co') return;
+        const lrStart = new Date(lr.start_date);
+        const lrEnd = new Date(lr.end_date);
+        // Only count days that fall before this month within the same year
+        const yearStart = new Date(year!, 0, 1);
+        const beforeEnd = new Date(monthStart.getTime() - 86400000); // day before month start
+        if (beforeEnd < yearStart) return;
+        const result = getWorkingDaysInRange(lrStart, lrEnd, yearStart, beforeEnd);
+        coBeforeMonth += result.days;
+      });
+    }
 
+    // Group by leave type for this month
+    const byType: Record<string, { days: number; periods: string[] }> = {};
     empLeaves.forEach(lr => {
       const lrStart = new Date(lr.start_date);
       const lrEnd = new Date(lr.end_date);
@@ -152,17 +191,7 @@ function addMonthSheet(
     });
 
     const types = Object.keys(byType);
-    if (types.length === 0) {
-      // No leave - single row
-      const row = ws.addRow([
-        idx + 1,
-        `${emp.last_name} ${emp.first_name}`,
-        emp.department || '',
-        emp.position || '',
-        '',
-        0,
-        '',
-      ]);
+    const applyRowStyle = (row: ExcelJS.Row) => {
       row.eachCell((cell) => {
         cell.border = BORDER_THIN;
         cell.alignment = { vertical: 'middle' };
@@ -172,27 +201,48 @@ function addMonthSheet(
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
         });
       }
+    };
+
+    if (types.length === 0) {
+      const rowData = showSource
+        ? [idx + 1, `${emp.last_name} ${emp.first_name}`, emp.department || '', emp.position || '', '', 0, '', '', '']
+        : [idx + 1, `${emp.last_name} ${emp.first_name}`, emp.department || '', emp.position || '', '', 0, ''];
+      applyRowStyle(ws.addRow(rowData));
     } else {
       types.forEach((type, typeIdx) => {
         const info = byType[type];
-        const row = ws.addRow([
-          typeIdx === 0 ? idx + 1 : '',
-          typeIdx === 0 ? `${emp.last_name} ${emp.first_name}` : '',
-          typeIdx === 0 ? (emp.department || '') : '',
-          typeIdx === 0 ? (emp.position || '') : '',
-          leaveTypeLabels[type] || type.toUpperCase(),
-          info.days,
-          info.periods.join(', '),
-        ]);
-        row.eachCell((cell) => {
-          cell.border = BORDER_THIN;
-          cell.alignment = { vertical: 'middle' };
-        });
-        if (idx % 2 === 1) {
-          row.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
-          });
+        
+        // Source split only for CO (deductible) types
+        let fromCarryover = 0;
+        let fromCurrent = 0;
+        if (showSource && type === 'co') {
+          const split = getSourceSplit(emp.id, info.days, coBeforeMonth);
+          fromCarryover = split.fromCarryover;
+          fromCurrent = split.fromCurrent;
         }
+
+        const rowData = showSource
+          ? [
+              typeIdx === 0 ? idx + 1 : '',
+              typeIdx === 0 ? `${emp.last_name} ${emp.first_name}` : '',
+              typeIdx === 0 ? (emp.department || '') : '',
+              typeIdx === 0 ? (emp.position || '') : '',
+              leaveTypeLabels[type] || type.toUpperCase(),
+              info.days,
+              type === 'co' ? (fromCarryover || '') : '',
+              type === 'co' ? (fromCurrent || '') : '',
+              info.periods.join(', '),
+            ]
+          : [
+              typeIdx === 0 ? idx + 1 : '',
+              typeIdx === 0 ? `${emp.last_name} ${emp.first_name}` : '',
+              typeIdx === 0 ? (emp.department || '') : '',
+              typeIdx === 0 ? (emp.position || '') : '',
+              leaveTypeLabels[type] || type.toUpperCase(),
+              info.days,
+              info.periods.join(', '),
+            ];
+        applyRowStyle(ws.addRow(rowData));
       });
     }
   });
@@ -204,7 +254,13 @@ function addMonthSheet(
   ws.getColumn(4).width = 22;
   ws.getColumn(5).width = 8;
   ws.getColumn(6).width = 10;
-  ws.getColumn(7).width = 35;
+  if (showSource) {
+    ws.getColumn(7).width = 18;
+    ws.getColumn(8).width = 18;
+    ws.getColumn(9).width = 35;
+  } else {
+    ws.getColumn(7).width = 35;
+  }
 }
 
 function addBalanceSummarySheet(
@@ -432,7 +488,7 @@ const Salarizare = () => {
         const monthStart = new Date(year, m, 1);
         const monthEnd = endOfMonth(monthStart);
         const sheetName = `${MONTH_NAMES_RO[m]} ${year}`;
-        addMonthSheet(wb, sheetName, employees, leaveRecords, monthStart, monthEnd);
+        addMonthSheet(wb, sheetName, employees, leaveRecords, monthStart, monthEnd, carryovers, year);
       }
 
       const buf = await wb.xlsx.writeBuffer();
