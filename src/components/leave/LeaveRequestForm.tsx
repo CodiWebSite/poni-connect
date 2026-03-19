@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useDemoMode } from '@/contexts/DemoModeContext';
@@ -52,6 +52,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   const [bonusDays, setBonusDays] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -211,7 +212,31 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       return;
     }
 
+    // Ref-based guard against rapid double-clicks
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
+
+    // Check for duplicate: same user, same dates, active status
+    const { data: existingRequests } = await supabase
+      .from('leave_requests')
+      .select('id, request_number')
+      .eq('user_id', user.id)
+      .eq('start_date', startDate)
+      .eq('end_date', endDate)
+      .not('status', 'in', '("rejected","cancelled")')
+      .limit(1);
+
+    if (existingRequests && existingRequests.length > 0) {
+      toast({
+        title: 'Cerere duplicat detectată',
+        description: `Există deja o cerere activă (${existingRequests[0].request_number}) pentru perioada ${formatDate(startDate)} - ${formatDate(endDate)}.`,
+        variant: 'destructive',
+      });
+      setSubmitting(false);
+      submittingRef.current = false;
+      return;
+    }
 
     const selectedColleague = colleagues.find(c => c.id === replacementId);
 
@@ -367,6 +392,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
     }
 
     setSubmitting(false);
+    submittingRef.current = false;
   };
 
   if (loading) {
