@@ -43,6 +43,7 @@ export function useUserRole() {
 
       const resolvedRole = validRoles.find((r) => assignedRoles.includes(r)) ?? 'user';
       setRole(resolvedRole);
+      setAllRoles(assignedRoles);
       setLoading(false);
     };
 
