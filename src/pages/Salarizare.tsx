@@ -212,10 +212,12 @@ function addMonthSheet(
       types.forEach((type, typeIdx) => {
         const info = byType[type];
         
-        // Source split only for CO (deductible) types
+        // Source split for CO (deductible) types - check label too for robustness
+        const displayLabel = leaveTypeLabels[type] || type.toUpperCase();
+        const isCoType = type === 'co' || displayLabel === 'CO';
         let fromCarryover = 0;
         let fromCurrent = 0;
-        if (showSource && type === 'co') {
+        if (showSource && isCoType) {
           const split = getSourceSplit(emp.id, info.days, coBeforeMonth);
           fromCarryover = split.fromCarryover;
           fromCurrent = split.fromCurrent;
@@ -227,10 +229,10 @@ function addMonthSheet(
               typeIdx === 0 ? `${emp.last_name} ${emp.first_name}` : '',
               typeIdx === 0 ? (emp.department || '') : '',
               typeIdx === 0 ? (emp.position || '') : '',
-              leaveTypeLabels[type] || type.toUpperCase(),
+              displayLabel,
               info.days,
-              type === 'co' ? (fromCarryover || '') : '',
-              type === 'co' ? (fromCurrent || '') : '',
+              isCoType ? (fromCarryover > 0 ? fromCarryover : '-') : '',
+              isCoType ? (fromCurrent > 0 ? fromCurrent : '-') : '',
               info.periods.join(', '),
             ]
           : [
@@ -238,7 +240,7 @@ function addMonthSheet(
               typeIdx === 0 ? `${emp.last_name} ${emp.first_name}` : '',
               typeIdx === 0 ? (emp.department || '') : '',
               typeIdx === 0 ? (emp.position || '') : '',
-              leaveTypeLabels[type] || type.toUpperCase(),
+              displayLabel,
               info.days,
               info.periods.join(', '),
             ];
