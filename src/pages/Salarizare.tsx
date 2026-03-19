@@ -232,10 +232,12 @@ const Salarizare = () => {
   if (!isSalarizare) return null;
 
   const fetchData = async () => {
-    const [{ data: employees }, { data: hrReqs }, { data: empRecords }] = await Promise.all([
-      supabase.from('employee_personal_data').select('id, first_name, last_name, department, position, employee_record_id').eq('is_archived', false),
+    const [{ data: employees }, { data: hrReqs }, { data: empRecords }, { data: carryovers }, { data: bonuses }] = await Promise.all([
+      supabase.from('employee_personal_data').select('id, first_name, last_name, department, position, employee_record_id, total_leave_days, used_leave_days').eq('is_archived', false),
       supabase.from('hr_requests').select('*').eq('request_type', 'concediu' as any).eq('status', 'approved' as any),
       supabase.from('employee_records').select('id, user_id'),
+      supabase.from('leave_carryover').select('employee_personal_data_id, from_year, to_year, initial_days, used_days, remaining_days'),
+      supabase.from('leave_bonus').select('employee_personal_data_id, year, bonus_days, reason'),
     ]);
 
     // Build user_id -> epd_id mapping via employee_records
@@ -253,7 +255,6 @@ const Salarizare = () => {
     const leaveRecords: LeaveRecord[] = (hrReqs || []).map((hr: any) => {
       const details = hr.details || {};
       const resolvedEpdId = details.epd_id || userIdToEpdId[hr.user_id] || null;
-      // Normalize leave type using centralized config
       let rawType = (details.leaveType || 'co').toLowerCase().trim();
       const mapped = LEAVE_TYPE_MAP[rawType];
       const normalizedType = mapped ? mapped.key : rawType;
@@ -288,6 +289,8 @@ const Salarizare = () => {
     return {
       employees: (employees || []) as EmployeeData[],
       leaveRecords,
+      carryovers: (carryovers || []) as CarryoverData[],
+      bonuses: (bonuses || []) as BonusData[],
     };
   };
 
