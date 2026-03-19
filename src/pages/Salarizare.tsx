@@ -46,6 +46,8 @@ interface EmployeeData {
   department: string | null;
   position: string | null;
   employee_record_id: string | null;
+  total_leave_days: number | null;
+  used_leave_days: number | null;
 }
 
 interface LeaveRecord {
@@ -55,6 +57,22 @@ interface LeaveRecord {
   epd_id: string | null;
   user_id: string;
   leave_type: string;
+}
+
+interface CarryoverData {
+  employee_personal_data_id: string;
+  from_year: number;
+  to_year: number;
+  initial_days: number;
+  used_days: number;
+  remaining_days: number;
+}
+
+interface BonusData {
+  employee_personal_data_id: string;
+  year: number;
+  bonus_days: number;
+  reason: string;
 }
 
 function getWorkingDaysInRange(start: Date, end: Date, monthStart: Date, monthEnd: Date): { days: number; period: string } {
@@ -189,6 +207,107 @@ function addMonthSheet(
   ws.getColumn(7).width = 35;
 }
 
+function addBalanceSummarySheet(
+  wb: ExcelJS.Workbook,
+  employees: EmployeeData[],
+  carryovers: CarryoverData[],
+  bonuses: BonusData[],
+  year: number
+) {
+  const ws = wb.addWorksheet('Sold Concedii');
+
+  const headers = [
+    'Nr', 'Nume', 'Departament', 'Funcție',
+    `Report ${year - 1} (Zile inițiale)`, `Report ${year - 1} (Folosite)`, `Report ${year - 1} (Rămase)`,
+    `Sold+ (Bonus ${year})`,
+    `Sold ${year} (Total)`, `Sold ${year} (Folosite)`, `Sold ${year} (Rămase)`,
+    'Total Disponibil'
+  ];
+  const headerRow = ws.addRow(headers);
+  headerRow.eachCell((cell) => {
+    cell.fill = HEADER_FILL;
+    cell.font = HEADER_FONT;
+    cell.border = BORDER_THIN;
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  });
+  headerRow.height = 36;
+
+  const sorted = [...employees].sort((a, b) => {
+    const nameA = `${a.last_name} ${a.first_name}`.toLowerCase();
+    const nameB = `${b.last_name} ${b.first_name}`.toLowerCase();
+    return nameA.localeCompare(nameB, 'ro');
+  });
+
+  sorted.forEach((emp, idx) => {
+    // Carryover from previous year to this year
+    const carryover = carryovers.find(
+      c => c.employee_personal_data_id === emp.id && c.to_year === year
+    );
+    const coInitial = carryover?.initial_days ?? 0;
+    const coUsed = carryover?.used_days ?? 0;
+    const coRemaining = carryover?.remaining_days ?? 0;
+
+    // Bonus days for this year
+    const empBonuses = bonuses.filter(
+      b => b.employee_personal_data_id === emp.id && b.year === year
+    );
+    const totalBonus = empBonuses.reduce((sum, b) => sum + b.bonus_days, 0);
+
+    // Current year balance from EPD
+    const totalYearDays = emp.total_leave_days ?? 21;
+    const usedYearDays = emp.used_leave_days ?? 0;
+    const remainingYear = totalYearDays - usedYearDays;
+
+    const totalAvailable = coRemaining + totalBonus + remainingYear;
+
+    const row = ws.addRow([
+      idx + 1,
+      `${emp.last_name} ${emp.first_name}`,
+      emp.department || '',
+      emp.position || '',
+      coInitial,
+      coUsed,
+      coRemaining,
+      totalBonus,
+      totalYearDays,
+      usedYearDays,
+      remainingYear,
+      totalAvailable,
+    ]);
+
+    row.eachCell((cell, colNumber) => {
+      cell.border = BORDER_THIN;
+      cell.alignment = { vertical: 'middle', horizontal: colNumber >= 5 ? 'center' : 'left' };
+    });
+
+    if (idx % 2 === 1) {
+      row.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+      });
+    }
+
+    // Highlight low availability in red
+    const availCell = row.getCell(12);
+    if (totalAvailable <= 0) {
+      availCell.font = { bold: true, color: { argb: 'FFFF0000' } };
+    }
+  });
+
+  // Column widths
+  ws.getColumn(1).width = 6;
+  ws.getColumn(2).width = 30;
+  ws.getColumn(3).width = 22;
+  ws.getColumn(4).width = 22;
+  ws.getColumn(5).width = 18;
+  ws.getColumn(6).width = 18;
+  ws.getColumn(7).width = 18;
+  ws.getColumn(8).width = 16;
+  ws.getColumn(9).width = 16;
+  ws.getColumn(10).width = 16;
+  ws.getColumn(11).width = 16;
+  ws.getColumn(12).width = 16;
+}
+
 const Salarizare = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -214,10 +333,12 @@ const Salarizare = () => {
   if (!isSalarizare) return null;
 
   const fetchData = async () => {
-    const [{ data: employees }, { data: hrReqs }, { data: empRecords }] = await Promise.all([
-      supabase.from('employee_personal_data').select('id, first_name, last_name, department, position, employee_record_id').eq('is_archived', false),
+    const [{ data: employees }, { data: hrReqs }, { data: empRecords }, { data: carryovers }, { data: bonuses }] = await Promise.all([
+      supabase.from('employee_personal_data').select('id, first_name, last_name, department, position, employee_record_id, total_leave_days, used_leave_days').eq('is_archived', false),
       supabase.from('hr_requests').select('*').eq('request_type', 'concediu' as any).eq('status', 'approved' as any),
       supabase.from('employee_records').select('id, user_id'),
+      supabase.from('leave_carryover').select('employee_personal_data_id, from_year, to_year, initial_days, used_days, remaining_days'),
+      supabase.from('leave_bonus').select('employee_personal_data_id, year, bonus_days, reason'),
     ]);
 
     // Build user_id -> epd_id mapping via employee_records
@@ -235,7 +356,6 @@ const Salarizare = () => {
     const leaveRecords: LeaveRecord[] = (hrReqs || []).map((hr: any) => {
       const details = hr.details || {};
       const resolvedEpdId = details.epd_id || userIdToEpdId[hr.user_id] || null;
-      // Normalize leave type using centralized config
       let rawType = (details.leaveType || 'co').toLowerCase().trim();
       const mapped = LEAVE_TYPE_MAP[rawType];
       const normalizedType = mapped ? mapped.key : rawType;
@@ -270,6 +390,8 @@ const Salarizare = () => {
     return {
       employees: (employees || []) as EmployeeData[],
       leaveRecords,
+      carryovers: (carryovers || []) as CarryoverData[],
+      bonuses: (bonuses || []) as BonusData[],
     };
   };
 
@@ -300,8 +422,11 @@ const Salarizare = () => {
   const exportYear = async (year: number) => {
     setExporting(String(year));
     try {
-      const { employees, leaveRecords } = await fetchData();
+      const { employees, leaveRecords, carryovers, bonuses } = await fetchData();
       const wb = new ExcelJS.Workbook();
+
+      // First sheet: Balance summary
+      addBalanceSummarySheet(wb, employees, carryovers, bonuses, year);
 
       for (let m = 0; m < 12; m++) {
         const monthStart = new Date(year, m, 1);
