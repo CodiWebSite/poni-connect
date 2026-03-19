@@ -212,7 +212,31 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       return;
     }
 
+    // Ref-based guard against rapid double-clicks
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
+
+    // Check for duplicate: same user, same dates, active status
+    const { data: existingRequests } = await supabase
+      .from('leave_requests')
+      .select('id, request_number')
+      .eq('user_id', user.id)
+      .eq('start_date', startDate)
+      .eq('end_date', endDate)
+      .not('status', 'in', '("rejected","cancelled")')
+      .limit(1);
+
+    if (existingRequests && existingRequests.length > 0) {
+      toast({
+        title: 'Cerere duplicat detectată',
+        description: `Există deja o cerere activă (${existingRequests[0].request_number}) pentru perioada ${formatDate(startDate)} - ${formatDate(endDate)}.`,
+        variant: 'destructive',
+      });
+      setSubmitting(false);
+      submittingRef.current = false;
+      return;
+    }
 
     const selectedColleague = colleagues.find(c => c.id === replacementId);
 
