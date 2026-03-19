@@ -234,8 +234,8 @@ function addMonthSheet(
               typeIdx === 0 ? (emp.position || '') : '',
               displayLabel,
               info.days,
-              isCoType ? (fromCarryover > 0 ? fromCarryover : '-') : '',
-              isCoType ? (fromCurrent > 0 ? fromCurrent : '-') : '',
+              isCoType ? (fromCarryover > 0 ? fromCarryover : 0) : '',
+              isCoType ? (fromCurrent > 0 ? fromCurrent : 0) : '',
               info.periods.join(', '),
             ]
           : [
