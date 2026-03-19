@@ -52,12 +52,12 @@ export function useUserRole() {
   }, [user]);
 
   const isSuperAdmin = role === 'super_admin';
-  const isHR = role === 'hr';
-  const isSef = role === 'sef';
-  const isSefSRUS = role === 'sef_srus';
-  const isBibliotecar = role === 'bibliotecar';
-  const isSalarizare = role === 'salarizare';
-  const isMedicMuncii = role === 'medic_medicina_muncii';
+  const isHR = role === 'hr' || (isSuperAdmin && allRoles.includes('hr'));
+  const isSef = role === 'sef' || (isSuperAdmin && allRoles.includes('sef'));
+  const isSefSRUS = role === 'sef_srus' || (isSuperAdmin && allRoles.includes('sef_srus'));
+  const isBibliotecar = role === 'bibliotecar' || isSuperAdmin || allRoles.includes('bibliotecar');
+  const isSalarizare = role === 'salarizare' || isSuperAdmin || allRoles.includes('salarizare');
+  const isMedicMuncii = role === 'medic_medicina_muncii' || (isSuperAdmin && allRoles.includes('medic_medicina_muncii'));
   const isStaff = isSuperAdmin || isHR || isSefSRUS;
   
   const canManageHR = isSuperAdmin || isHR || isSefSRUS;
