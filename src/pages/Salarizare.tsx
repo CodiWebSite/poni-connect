@@ -422,8 +422,11 @@ const Salarizare = () => {
   const exportYear = async (year: number) => {
     setExporting(String(year));
     try {
-      const { employees, leaveRecords } = await fetchData();
+      const { employees, leaveRecords, carryovers, bonuses } = await fetchData();
       const wb = new ExcelJS.Workbook();
+
+      // First sheet: Balance summary
+      addBalanceSummarySheet(wb, employees, carryovers, bonuses, year);
 
       for (let m = 0; m < 12; m++) {
         const monthStart = new Date(year, m, 1);
