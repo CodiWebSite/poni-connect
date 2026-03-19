@@ -215,41 +215,273 @@ var activeSection = 0;
 var totalSections = 2;
 
 function normalizeRoomName(room) {
-  return String(room || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  var raw = String(room || '').toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (typeof raw.normalize === 'function') {
+    return raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+  return raw;
 }
-...
-      var rb = (data || []).filter(function(b) { return normalizeRoomName(b.room) === normalizeRoomName(room); });
-      var current = rb.find(function(b) { return new Date(b.start_time) <= now && new Date(b.end_time) > now; });
-      var next = rb.filter(function(b) { return new Date(b.start_time) > now; }).slice(0, 4);
+
+// ── Slideshow state ──
+var slideshowImages = [];
+var slideshowIndex = 0;
+var slideshowTimer = null;
+var slideshowActive = false;
+var SLIDE_DURATION = 90; // seconds per slide
+
+// ── Greeting ──
+var greetings = {
+  ro: [
+    { from: 5, to: 12, text: '☀️ Bună dimineața! Bine ați venit!' },
+    { from: 12, to: 18, text: '🌤️ Bună ziua! Bine ați venit!' },
+    { from: 18, to: 22, text: '🌆 Bună seara! Bine ați venit!' },
+    { from: 22, to: 5, text: '🌙 Noapte bună!' }
+  ],
+  en: [
+    { from: 5, to: 12, text: '☀️ Good morning! Welcome!' },
+    { from: 12, to: 18, text: '🌤️ Good afternoon! Welcome!' },
+    { from: 18, to: 22, text: '🌆 Good evening! Welcome!' },
+    { from: 22, to: 5, text: '🌙 Good night!' }
+  ]
+};
+
+function getGreeting() {
+  var h = new Date().getHours();
+  var list = greetings[lang] || greetings.ro;
+  for (var i = 0; i < list.length; i++) {
+    var g = list[i];
+    if (g.from < g.to) {
+      if (h >= g.from && h < g.to) return g.text;
+    } else {
+      if (h >= g.from || h < g.to) return g.text;
+    }
+  }
+  return list[0].text;
+}
+
+// ── Clock ──
+function updateClock() {
+  var now = new Date();
+  var h = String(now.getHours()).padStart(2, '0');
+  var m = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('clock').textContent = h + ':' + m;
+  document.getElementById('dateStr').textContent = DAYS_RO[now.getDay()] + ', ' + now.getDate() + ' ' + MONTHS_RO[now.getMonth()] + ' ' + now.getFullYear();
+  document.getElementById('greeting').textContent = getGreeting();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Sidebar rotation ──
+function goTo(idx) {
+  activeSection = idx;
+  for (var i = 0; i < totalSections; i++) {
+    var el = document.getElementById('sec' + i);
+    var dot = document.getElementById('dotsNav').children[i];
+    if (i === idx) {
+      el.className = 'sidebar-section active';
+      dot.className = 'dot active';
+    } else {
+      el.className = 'sidebar-section hidden';
+      dot.className = 'dot';
+    }
+  }
+}
+setInterval(function() {
+  goTo((activeSection + 1) % totalSections);
+}, 15000);
+
+// ── Slideshow logic ──
+function startSlideshow() {
+  if (!slideshowImages.length) {
+    playVideo();
+    return;
+  }
+  slideshowActive = true;
+  slideshowIndex = 0;
+  var video = document.getElementById('video');
+  video.style.display = 'none';
+  document.getElementById('mediaLabel').textContent = lang === 'en' ? 'Photo Gallery' : 'Galerie Foto';
+  document.getElementById('slideshowProgress').style.display = 'block';
+  showSlide();
+}
+
+function showSlide() {
+  if (slideshowIndex >= slideshowImages.length) {
+    endSlideshow();
+    return;
+  }
+
+  var container = document.getElementById('mediaContainer');
+  var oldImgs = container.querySelectorAll('img.slideshow-img');
+  oldImgs.forEach(function(img) {
+    img.classList.add('fade-out');
+    setTimeout(function() { img.remove(); }, 1100);
+  });
+
+  var img = document.createElement('img');
+  img.className = 'slideshow-img';
+  img.src = slideshowImages[slideshowIndex];
+  img.style.opacity = '0';
+  container.appendChild(img);
+  setTimeout(function() { img.style.opacity = '1'; }, 50);
+
+  var bar = document.getElementById('slideshowProgressBar');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  setTimeout(function() {
+    bar.style.transition = 'width ' + SLIDE_DURATION + 's linear';
+    bar.style.width = '100%';
+  }, 100);
+
+  clearTimeout(slideshowTimer);
+  slideshowTimer = setTimeout(function() {
+    slideshowIndex++;
+    showSlide();
+  }, SLIDE_DURATION * 1000);
+}
+
+function endSlideshow() {
+  slideshowActive = false;
+  var container = document.getElementById('mediaContainer');
+  var imgs = container.querySelectorAll('img.slideshow-img');
+  imgs.forEach(function(img) { img.remove(); });
+  document.getElementById('slideshowProgress').style.display = 'none';
+  playVideo();
+}
+
+function playVideo() {
+  var video = document.getElementById('video');
+  video.style.display = '';
+  document.getElementById('mediaLabel').textContent = lang === 'en' ? 'Institute Presentation' : 'Prezentare Institut';
+  video.currentTime = 0;
+  video.play().catch(function() {});
+}
+
+// ── Video progress + language toggle on loop ──
+var video = document.getElementById('video');
+var videoProgressBar = document.getElementById('videoProgressBar');
+video.addEventListener('timeupdate', function() {
+  if (video.duration) {
+    videoProgressBar.style.width = (video.currentTime / video.duration * 100) + '%';
+  }
+});
+video.addEventListener('ended', function() {
+  videoProgressBar.style.width = '0%';
+  lang = lang === 'ro' ? 'en' : 'ro';
+  document.getElementById('langBadge').textContent = lang === 'ro' ? '🇷🇴 RO' : '🇬🇧 EN';
+
+  if (lang === 'en') {
+    document.getElementById('instName').innerHTML = 'Institute of Macromolecular Chemistry <span class="institute-accent">"Petru Poni"</span> Iași';
+  } else {
+    document.getElementById('instName').innerHTML = 'Institutul de Chimie Macromoleculară <span class="institute-accent">„Petru Poni"</span> Iași';
+  }
+
+  if (slideshowImages.length > 0) {
+    startSlideshow();
+  } else {
+    playVideo();
+  }
+});
+
+// ── Backend REST helper ──
+function sbFetch(table, params, cb) {
+  var url = SUPABASE_URL + '/rest/v1/' + table + '?' + params;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url);
+  xhr.setRequestHeader('apikey', SUPABASE_KEY);
+  xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+  xhr.onload = function() {
+    if (xhr.status === 200) cb(JSON.parse(xhr.responseText));
+  };
+  xhr.send();
+}
+
+// ── Weather (header) ──
+function fetchWeather() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'https://api.open-meteo.com/v1/forecast?latitude=47.1585&longitude=27.6014&current=temperature_2m,weather_code&timezone=Europe%2FBucharest');
+  xhr.onload = function() {
+    if (xhr.status !== 200) return;
+    var d = JSON.parse(xhr.responseText).current;
+    var code = d.weather_code;
+    var cond = code === 0 ? 'Cer senin' : code <= 3 ? 'Parțial noros' : (code >= 61 && code <= 67) ? 'Ploaie' : (code >= 71 && code <= 77) ? 'Ninsoare' : code >= 95 ? 'Furtună' : 'Variabil';
+    var icon = code === 0 ? '☀️' : code <= 3 ? '⛅' : (code >= 61 && code <= 67) ? '🌧️' : (code >= 71 && code <= 77) ? '❄️' : code >= 95 ? '⛈️' : '🌤️';
+
+    document.getElementById('weatherHeaderIcon').textContent = icon;
+    document.getElementById('weatherHeaderTemp').textContent = Math.round(d.temperature_2m) + '°C';
+    document.getElementById('weatherHeaderCond').textContent = cond;
+  };
+  xhr.send();
+}
+fetchWeather();
+setInterval(fetchWeather, 600000);
+
+// ── Announcements ──
+function fetchAnnouncements() {
+  sbFetch('announcements', 'select=id,title,content,priority,is_pinned,created_at&or=(is_pinned.eq.true,priority.eq.urgent,priority.eq.high)&order=created_at.desc&limit=6', function(data) {
+    if (!data || !data.length) {
+      document.getElementById('annContent').innerHTML = '<div style="color:#64748b;font-size:22px">Niciun anunț important</div>';
+      return;
+    }
+    var html = '';
+    data.forEach(function(a) {
+      var cls = a.priority === 'urgent' ? ' card-urgent' : a.priority === 'high' ? ' card-high' : '';
+      html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#94a3b8;margin-top:8px;white-space:pre-line">' + a.content + '</div></div>';
+    });
+    document.getElementById('annContent').innerHTML = html;
+  });
+}
+fetchAnnouncements();
+setInterval(fetchAnnouncements, 60000);
+
+// ── Room Bookings ──
+function fetchRooms() {
+  var now = new Date();
+  var start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  var end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+
+  sbFetch('room_bookings', 'select=id,room,title,start_time,end_time,status&start_time=gte.' + start + '&start_time=lte.' + end + '&status=eq.confirmed&order=start_time.asc', function(data) {
+    var rooms = ['Sala de Conferințe', 'Bibliotecă'];
+    var html = '';
+
+    rooms.forEach(function(room) {
+      var rb = (data || []).filter(function(b) {
+        return normalizeRoomName(b.room) === normalizeRoomName(room);
+      });
+      var current = rb.find(function(b) {
+        return new Date(b.start_time) <= now && new Date(b.end_time) > now;
+      });
+      var next = rb.filter(function(b) {
+        return new Date(b.start_time) > now;
+      }).slice(0, 4);
+
       html += '<div class="card"><div style="font-size:22px;font-weight:600;color:#e2e8f0;margin-bottom:12px">' + room + '</div>';
+
       if (current) {
         var cs = new Date(current.start_time), ce = new Date(current.end_time);
-        html += '<div style="display:flex;align-items:center;gap:10px"><span class="status-dot status-occupied"></span><span class="status-label" style="color:#f87171">Ocupat: ' + String(cs.getHours()).padStart(2,'0')+':'+String(cs.getMinutes()).padStart(2,'0') + '–' + String(ce.getHours()).padStart(2,'0')+':'+String(ce.getMinutes()).padStart(2,'0') + '</span></div>';
+        html += '<div style="display:flex;align-items:center;gap:10px"><span class="status-dot status-occupied"></span><span class="status-label" style="color:#f87171">Ocupat: ' + String(cs.getHours()).padStart(2, '0') + ':' + String(cs.getMinutes()).padStart(2, '0') + '–' + String(ce.getHours()).padStart(2, '0') + ':' + String(ce.getMinutes()).padStart(2, '0') + '</span></div>';
         if (current.title) {
           html += '<div style="font-size:18px;color:#f87171;opacity:0.8;margin-top:4px;margin-left:26px">(' + current.title + ')</div>';
         }
       } else {
         html += '<div style="display:flex;align-items:center;gap:10px"><span class="status-dot status-available"></span><span class="status-label" style="color:#34d399">Disponibil acum</span></div>';
       }
+
       if (next.length) {
         html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(148,163,184,0.1)">';
         html += '<div style="font-size:16px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Urmează:</div>';
         next.forEach(function(b) {
           var s = new Date(b.start_time), e = new Date(b.end_time);
-          html += '<div class="item-row"><span style="max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8f0;font-weight:500">' + b.title + '</span><span style="color:#e6c04a;font-weight:600;font-variant-numeric:tabular-nums">' + String(s.getHours()).padStart(2,'0')+':'+String(s.getMinutes()).padStart(2,'0') + '–' + String(e.getHours()).padStart(2,'0')+':'+String(e.getMinutes()).padStart(2,'0') + '</span></div>';
+          html += '<div class="item-row"><span style="max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8f0;font-weight:500">' + b.title + '</span><span style="color:#e6c04a;font-weight:600;font-variant-numeric:tabular-nums">' + String(s.getHours()).padStart(2, '0') + ':' + String(s.getMinutes()).padStart(2, '0') + '–' + String(e.getHours()).padStart(2, '0') + ':' + String(e.getMinutes()).padStart(2, '0') + '</span></div>';
         });
         html += '</div>';
       } else if (!current) {
         html += '<div style="font-size:20px;color:#64748b;margin-top:8px">Fără rezervări programate</div>';
       }
+
       html += '</div>';
     });
+
     document.getElementById('roomsContent').innerHTML = html;
   });
 }
@@ -262,7 +494,7 @@ function fetchSettings() {
     if (!data) return;
     var map = {};
     data.forEach(function(r) { map[r.key] = r.value; });
-    // Kiosk message
+
     var msgBar = document.getElementById('msgBar');
     if (typeof map.kiosk_message === 'string' && map.kiosk_message) {
       msgBar.textContent = map.kiosk_message;
@@ -270,10 +502,11 @@ function fetchSettings() {
     } else {
       msgBar.style.display = 'none';
     }
-    // Ticker
+
     var ticker = document.getElementById('ticker');
     var tickerInner = document.getElementById('tickerInner');
     var msgs = Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [];
+
     if (msgs.length) {
       var signature = JSON.stringify(msgs);
       if (tickerInner.dataset.signature !== signature) {
@@ -297,10 +530,9 @@ function fetchSettings() {
       tickerInner.innerHTML = '';
       tickerInner.dataset.signature = '';
     }
-    // Slideshow images
-    var imgs = Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [];
-    slideshowImages = imgs;
-    // Kiosk enabled
+
+    slideshowImages = Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [];
+
     if (map.kiosk_enabled === false) {
       document.querySelector('.kiosk').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;background:#0c1222"><div><div style="font-size:56px;color:#334155;margin-bottom:20px">📺</div><h1 style="font-size:28px;font-weight:700;color:#64748b;font-family:Playfair Display,serif">Mod Kiosk dezactivat</h1><p style="color:#475569;margin-top:10px;font-size:20px">Ecranul TV este momentan oprit de administrator.</p></div></div>';
     }
@@ -308,9 +540,6 @@ function fetchSettings() {
 }
 fetchSettings();
 setInterval(fetchSettings, 60000);
-
-// No full page reload — data refreshes via individual fetch intervals
-// (weather: 10min, announcements/events/rooms/settings: 1min)
 </script>
 </body>
 </html>
