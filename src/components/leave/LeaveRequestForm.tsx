@@ -52,6 +52,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   const [bonusDays, setBonusDays] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
