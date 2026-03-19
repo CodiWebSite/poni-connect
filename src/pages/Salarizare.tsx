@@ -470,7 +470,7 @@ const Salarizare = () => {
 
     return {
       employees: (employees || []) as EmployeeData[],
-      leaveRecords,
+      leaveRecords: dedupedRecords,
       carryovers: (carryovers || []) as CarryoverData[],
       bonuses: (bonuses || []) as BonusData[],
     };
