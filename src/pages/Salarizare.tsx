@@ -146,6 +146,12 @@ function addMonthSheet(
     
     const carryover = carryovers.find(c => c.employee_personal_data_id === empId && c.to_year === year);
     const carryoverTotal = carryover?.initial_days ?? 0;
+    const carryoverRemainingNow = carryover?.remaining_days ?? 0;
+
+    // If report is already exhausted in current balances, all monthly CO is from current year
+    if (carryoverRemainingNow <= 0) {
+      return { fromCarryover: 0, fromCurrent: coDaysThisMonth };
+    }
     
     // Carryover used before this month = min(allCoBeforeMonth, carryoverTotal)
     const carryoverUsedBefore = Math.min(allCoBeforeMonth, carryoverTotal);
