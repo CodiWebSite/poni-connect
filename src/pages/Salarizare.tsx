@@ -207,6 +207,107 @@ function addMonthSheet(
   ws.getColumn(7).width = 35;
 }
 
+function addBalanceSummarySheet(
+  wb: ExcelJS.Workbook,
+  employees: EmployeeData[],
+  carryovers: CarryoverData[],
+  bonuses: BonusData[],
+  year: number
+) {
+  const ws = wb.addWorksheet('Sold Concedii');
+
+  const headers = [
+    'Nr', 'Nume', 'Departament', 'Funcție',
+    `Report ${year - 1} (Zile inițiale)`, `Report ${year - 1} (Folosite)`, `Report ${year - 1} (Rămase)`,
+    `Sold+ (Bonus ${year})`,
+    `Sold ${year} (Total)`, `Sold ${year} (Folosite)`, `Sold ${year} (Rămase)`,
+    'Total Disponibil'
+  ];
+  const headerRow = ws.addRow(headers);
+  headerRow.eachCell((cell) => {
+    cell.fill = HEADER_FILL;
+    cell.font = HEADER_FONT;
+    cell.border = BORDER_THIN;
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  });
+  headerRow.height = 36;
+
+  const sorted = [...employees].sort((a, b) => {
+    const nameA = `${a.last_name} ${a.first_name}`.toLowerCase();
+    const nameB = `${b.last_name} ${b.first_name}`.toLowerCase();
+    return nameA.localeCompare(nameB, 'ro');
+  });
+
+  sorted.forEach((emp, idx) => {
+    // Carryover from previous year to this year
+    const carryover = carryovers.find(
+      c => c.employee_personal_data_id === emp.id && c.to_year === year
+    );
+    const coInitial = carryover?.initial_days ?? 0;
+    const coUsed = carryover?.used_days ?? 0;
+    const coRemaining = carryover?.remaining_days ?? 0;
+
+    // Bonus days for this year
+    const empBonuses = bonuses.filter(
+      b => b.employee_personal_data_id === emp.id && b.year === year
+    );
+    const totalBonus = empBonuses.reduce((sum, b) => sum + b.bonus_days, 0);
+
+    // Current year balance from EPD
+    const totalYearDays = emp.total_leave_days ?? 21;
+    const usedYearDays = emp.used_leave_days ?? 0;
+    const remainingYear = totalYearDays - usedYearDays;
+
+    const totalAvailable = coRemaining + totalBonus + remainingYear;
+
+    const row = ws.addRow([
+      idx + 1,
+      `${emp.last_name} ${emp.first_name}`,
+      emp.department || '',
+      emp.position || '',
+      coInitial,
+      coUsed,
+      coRemaining,
+      totalBonus,
+      totalYearDays,
+      usedYearDays,
+      remainingYear,
+      totalAvailable,
+    ]);
+
+    row.eachCell((cell, colNumber) => {
+      cell.border = BORDER_THIN;
+      cell.alignment = { vertical: 'middle', horizontal: colNumber >= 5 ? 'center' : 'left' };
+    });
+
+    if (idx % 2 === 1) {
+      row.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+      });
+    }
+
+    // Highlight low availability in red
+    const availCell = row.getCell(12);
+    if (totalAvailable <= 0) {
+      availCell.font = { bold: true, color: { argb: 'FFFF0000' } };
+    }
+  });
+
+  // Column widths
+  ws.getColumn(1).width = 6;
+  ws.getColumn(2).width = 30;
+  ws.getColumn(3).width = 22;
+  ws.getColumn(4).width = 22;
+  ws.getColumn(5).width = 18;
+  ws.getColumn(6).width = 18;
+  ws.getColumn(7).width = 18;
+  ws.getColumn(8).width = 16;
+  ws.getColumn(9).width = 16;
+  ws.getColumn(10).width = 16;
+  ws.getColumn(11).width = 16;
+  ws.getColumn(12).width = 16;
+}
+
 const Salarizare = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
