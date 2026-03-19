@@ -13,6 +13,15 @@ interface RoomBooking {
 
 const ROOMS = ['Sala de Conferințe', 'Bibliotecă'];
 
+const normalizeRoom = (room: string) =>
+  room
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 const formatHM = (iso: string) => {
   const d = new Date(iso);
   return d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
@@ -22,16 +31,15 @@ const KioskSidebarRoomBookings = () => {
   const [bookings, setBookings] = useState<RoomBooking[]>([]);
   const [now, setNow] = useState(new Date());
 
-  // Keep "now" fresh so current/next detection updates even between fetches
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(t);
   }, []);
 
   const fetchBookings = useCallback(async () => {
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+    const current = new Date();
+    const startOfDay = new Date(current.getFullYear(), current.getMonth(), current.getDate()).toISOString();
+    const endOfDay = new Date(current.getFullYear(), current.getMonth(), current.getDate(), 23, 59, 59).toISOString();
 
     const { data } = await supabase
       .from('room_bookings')
@@ -57,10 +65,8 @@ const KioskSidebarRoomBookings = () => {
       </h3>
       <div className="space-y-2.5">
         {ROOMS.map(room => {
-          const roomBookings = bookings.filter(b => b.room === room);
-          const currentBooking = roomBookings.find(b =>
-            new Date(b.start_time) <= now && new Date(b.end_time) > now
-          );
+          const roomBookings = bookings.filter(b => normalizeRoom(b.room) === normalizeRoom(room));
+          const currentBooking = roomBookings.find(b => new Date(b.start_time) <= now && new Date(b.end_time) > now);
           const nextBookings = roomBookings.filter(b => new Date(b.start_time) > now).slice(0, 4);
 
           return (
@@ -91,14 +97,14 @@ const KioskSidebarRoomBookings = () => {
                     {nextBookings.map(b => (
                       <div key={b.id} className="flex items-center justify-between text-[11px]">
                         <span className="truncate max-w-[50%] text-slate-600 font-medium">{b.title}</span>
-                        <span className="tabular-nums text-primary font-semibold">{formatHM(b.start_time)}–{formatHM(b.end_time)}</span>
+                        <span className="tabular-nums text-primary font-semibold">
+                          {formatHM(b.start_time)}–{formatHM(b.end_time)}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
-              ) : !currentBooking && (
-                <p className="text-[11px] text-slate-400 mt-1">Fără rezervări programate</p>
-              )}
+              ) : !currentBooking && <p className="text-[11px] text-slate-400 mt-1">Fără rezervări programate</p>}
             </div>
           );
         })}
