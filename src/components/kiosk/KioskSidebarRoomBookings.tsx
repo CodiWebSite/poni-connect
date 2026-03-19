@@ -26,12 +26,47 @@ const formatHM = (iso: string) => {
   const d = new Date(iso);
   return d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
 };
-...
+
+const KioskSidebarRoomBookings = () => {
+  const [bookings, setBookings] = useState<RoomBooking[]>([]);
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const fetchBookings = useCallback(async () => {
+    const current = new Date();
+    const startOfDay = new Date(current.getFullYear(), current.getMonth(), current.getDate()).toISOString();
+    const endOfDay = new Date(current.getFullYear(), current.getMonth(), current.getDate(), 23, 59, 59).toISOString();
+
+    const { data } = await supabase
+      .from('room_bookings')
+      .select('id, room, title, start_time, end_time, status')
+      .gte('start_time', startOfDay)
+      .lte('start_time', endOfDay)
+      .eq('status', 'confirmed')
+      .order('start_time', { ascending: true });
+
+    if (data) setBookings(data);
+  }, []);
+
+  useEffect(() => {
+    fetchBookings();
+    const t = setInterval(fetchBookings, 30_000);
+    return () => clearInterval(t);
+  }, [fetchBookings]);
+
+  return (
+    <div className="p-5 shrink-0 overflow-hidden">
+      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+        <DoorOpen className="w-3.5 h-3.5" /> Săli azi
+      </h3>
+      <div className="space-y-2.5">
         {ROOMS.map(room => {
           const roomBookings = bookings.filter(b => normalizeRoom(b.room) === normalizeRoom(room));
-          const currentBooking = roomBookings.find(b =>
-            new Date(b.start_time) <= now && new Date(b.end_time) > now
-          );
+          const currentBooking = roomBookings.find(b => new Date(b.start_time) <= now && new Date(b.end_time) > now);
           const nextBookings = roomBookings.filter(b => new Date(b.start_time) > now).slice(0, 4);
 
           return (
@@ -62,14 +97,14 @@ const formatHM = (iso: string) => {
                     {nextBookings.map(b => (
                       <div key={b.id} className="flex items-center justify-between text-[11px]">
                         <span className="truncate max-w-[50%] text-slate-600 font-medium">{b.title}</span>
-                        <span className="tabular-nums text-primary font-semibold">{formatHM(b.start_time)}–{formatHM(b.end_time)}</span>
+                        <span className="tabular-nums text-primary font-semibold">
+                          {formatHM(b.start_time)}–{formatHM(b.end_time)}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
-              ) : !currentBooking && (
-                <p className="text-[11px] text-slate-400 mt-1">Fără rezervări programate</p>
-              )}
+              ) : !currentBooking && <p className="text-[11px] text-slate-400 mt-1">Fără rezervări programate</p>}
             </div>
           );
         })}
