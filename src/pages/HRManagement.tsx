@@ -1218,6 +1218,14 @@ const HRManagement = () => {
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Modificări</span>
           </TabsTrigger>
+          <TabsTrigger value="reports" className="gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Rapoarte</span>
+          </TabsTrigger>
+          <TabsTrigger value="certificates" className="gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Adeverințe</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Employees Tab */}
