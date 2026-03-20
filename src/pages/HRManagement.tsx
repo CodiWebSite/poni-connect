@@ -1964,6 +1964,16 @@ const HRManagement = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Reports Tab */}
+        <TabsContent value="reports" className="space-y-6">
+          <HRReportsPanel employees={employees} archivedEmployees={archivedEmployees} />
+        </TabsContent>
+
+        {/* Certificates Tab */}
+        <TabsContent value="certificates" className="space-y-6">
+          <CertificateGenerator employees={employees} />
+        </TabsContent>
       </Tabs>
 
       {/* Edit Employee Dialog */}
