@@ -77,7 +77,7 @@ interface UserWithRole {
 
 const Admin = () => {
   const { user } = useAuth();
-  const { role } = useUserRole();
+  const { role, isRealSuperAdmin } = useUserRole();
   const { toast } = useToast();
   
   const [users, setUsers] = useState<UserWithRole[]>([]);
