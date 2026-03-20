@@ -300,11 +300,12 @@ const AccessMatrixEditor = () => {
                 <tbody>
                   {filteredRoles.map(rk => {
                     const isSA = rk === 'super_admin';
+                    const meta = allRoleMeta[rk] || { label: rk, color: 'bg-muted text-muted-foreground' };
                     return (
                       <tr key={rk} className={`border-b last:border-0 ${isSA ? 'bg-destructive/5' : 'hover:bg-muted/30'}`}>
                         <td className="sticky left-0 z-10 bg-background p-2">
-                          <Badge className={`${ROLE_META[rk].color} text-[10px] whitespace-nowrap`} variant="secondary">
-                            {ROLE_META[rk].label}
+                          <Badge className={`${meta.color} text-[10px] whitespace-nowrap`} variant="secondary">
+                            {meta.label}
                           </Badge>
                         </td>
                         {filteredPages.map(pk => {
