@@ -189,7 +189,7 @@ const Admin = () => {
     u.department?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (role && role !== 'super_admin') return <Navigate to="/" replace />;
+  if (role && !isRealSuperAdmin) return <Navigate to="/" replace />;
 
   return (
     <MainLayout title="Administrare" description="Gestionează rolurile și configurările sistemului">
