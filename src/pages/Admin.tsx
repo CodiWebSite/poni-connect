@@ -311,6 +311,9 @@ const Admin = () => {
         <TabsContent value="reminders">
           <AccountReminderPanel />
         </TabsContent>
+        <TabsContent value="rules">
+          <OperationalRulesPanel />
+        </TabsContent>
         <TabsContent value="settings">
           <AppSettingsPanel />
         </TabsContent>
