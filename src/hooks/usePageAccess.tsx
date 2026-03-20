@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from './useUserRole';
+import { useImpersonation } from '@/contexts/ImpersonationContext';
 
 interface PagePermission {
   page_key: string;
@@ -8,7 +9,8 @@ interface PagePermission {
 }
 
 export function usePageAccess() {
-  const { role, isSuperAdmin } = useUserRole();
+  const { role, isRealSuperAdmin } = useUserRole();
+  const { isImpersonating } = useImpersonation();
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
@@ -18,13 +20,14 @@ export function usePageAccess() {
       return;
     }
 
-    // Super admin always has full access — skip DB query
-    if (isSuperAdmin) {
+    // Real super admin NOT impersonating → full access, skip DB
+    if (isRealSuperAdmin && !isImpersonating) {
       setPermissions({});
       setLoading(false);
       return;
     }
 
+    // Fetch permissions for the effective role
     const fetchPermissions = async () => {
       const { data, error } = await supabase
         .from('role_page_permissions')
@@ -42,15 +45,15 @@ export function usePageAccess() {
     };
 
     fetchPermissions();
-  }, [role, isSuperAdmin]);
+  }, [role, isRealSuperAdmin, isImpersonating]);
 
   const canAccessPage = useCallback((pageKey: string): boolean => {
-    // Super admin bypasses everything
-    if (isSuperAdmin) return true;
+    // Real super admin not impersonating bypasses everything
+    if (isRealSuperAdmin && !isImpersonating) return true;
     // If permission exists in DB, use it; otherwise default to true
     if (pageKey in permissions) return permissions[pageKey];
     return true;
-  }, [isSuperAdmin, permissions]);
+  }, [isRealSuperAdmin, isImpersonating, permissions]);
 
   return { canAccessPage, permissions, loading };
 }
