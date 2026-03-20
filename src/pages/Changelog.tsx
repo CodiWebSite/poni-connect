@@ -204,6 +204,9 @@ const Changelog = () => {
             <SelectItem value="fix">Fix / Cleanup</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={exportXlsx} className="gap-2">
+          <Download className="w-4 h-4" /> Export XLSX
+        </Button>
       </div>
 
       {loading ? (
