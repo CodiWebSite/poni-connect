@@ -351,4 +351,4 @@ const AccessMatrixEditor = () => {
   );
 };
 
-export default OperationalRulesPanel;
+export default AccessMatrixEditor;
