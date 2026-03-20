@@ -29,6 +29,7 @@ import LeaveCalendar from '@/components/hr/LeaveCalendar';
 import { EmailSyncImport } from '@/components/hr/EmailSyncImport';
 import HRReportsPanel from '@/components/hr/HRReportsPanel';
 import CertificateGenerator from '@/components/hr/CertificateGenerator';
+import EmployeeDigitalDossier from '@/components/hr/EmployeeDigitalDossier';
 import { 
   Users, 
   UserPlus, 
@@ -56,7 +57,8 @@ import {
   Archive,
   RotateCcw,
   History,
-  Gift
+  Gift,
+  FolderOpen
 } from 'lucide-react';
 import { format, isWeekend, eachDayOfInterval, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -1226,6 +1228,10 @@ const HRManagement = () => {
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Adeverințe</span>
           </TabsTrigger>
+          <TabsTrigger value="dossier" className="gap-2">
+            <FolderOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Dosare</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Employees Tab */}
@@ -1973,6 +1979,11 @@ const HRManagement = () => {
         {/* Certificates Tab */}
         <TabsContent value="certificates" className="space-y-6">
           <CertificateGenerator employees={employees} />
+        </TabsContent>
+
+        {/* Digital Dossier Tab */}
+        <TabsContent value="dossier" className="space-y-6">
+          <EmployeeDigitalDossier employees={employees} />
         </TabsContent>
       </Tabs>
 
