@@ -124,11 +124,11 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
       const recordIds = [...new Set(medData.map(m => m.medical_record_id))];
       const { data: medRecords } = await supabase
         .from('medical_records')
-        .select('id, employee_id')
+        .select('id, epd_id')
         .in('id', recordIds);
 
       const recordToEpd = new Map<string, string>();
-      (medRecords || []).forEach(r => recordToEpd.set(r.id, r.employee_id));
+      (medRecords || []).forEach((r: any) => recordToEpd.set(r.id, r.epd_id));
 
       const empIds = [...new Set([...recordToEpd.values()])];
       const { data: empNames } = await supabase
