@@ -1,15 +1,16 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { Search, FolderOpen, AlertTriangle, FileText, Download, User, Clock, Shield, CreditCard, FileCheck, Briefcase, ChevronRight, Calendar } from 'lucide-react';
+import { Search, FolderOpen, AlertTriangle, FileText, Download, User, Clock, Shield, CreditCard, FileCheck, Briefcase, ChevronRight, Calendar, Upload, Plus, Loader2 } from 'lucide-react';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -75,6 +76,11 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
   const [loadingDossier, setLoadingDossier] = useState(false);
   const [expiryAlerts, setExpiryAlerts] = useState<ExpiryAlert[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadType, setUploadType] = useState('altele');
+  const [uploadName, setUploadName] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const departments = useMemo(() => {
     const depts = [...new Set(employees.map(e => e.department).filter(Boolean))] as string[];
@@ -293,6 +299,47 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
     a.download = doc.name || 'document';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleUploadDocument = async (file: File) => {
+    if (!selectedEmployee || !file) return;
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const ext = file.name.split('.').pop();
+      const filePath = `${selectedEmployee.id}/${Date.now()}-${file.name}`;
+
+      const { error: storageErr } = await supabase.storage
+        .from('employee-documents')
+        .upload(filePath, file);
+
+      if (storageErr) throw storageErr;
+
+      const docName = uploadName.trim() || file.name;
+      const { error: dbErr } = await supabase
+        .from('employee_documents')
+        .insert({
+          user_id: selectedEmployee.id,
+          name: docName,
+          document_type: uploadType,
+          file_url: filePath,
+          uploaded_by: user?.id || null,
+        });
+
+      if (dbErr) throw dbErr;
+
+      toast({ title: 'Document încărcat cu succes' });
+      setShowUpload(false);
+      setUploadName('');
+      setUploadType('altele');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      // Refresh dossier
+      openDossier(selectedEmployee);
+    } catch (err: any) {
+      toast({ title: 'Eroare la încărcare', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const filteredEmployees = useMemo(() => {
@@ -553,6 +600,74 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
                     <p>{format(new Date(selectedEmployee.employment_date), 'dd.MM.yyyy')}</p>
                   </div>
                 </div>
+              </div>
+
+              {/* Upload section */}
+              <div className="border rounded-lg p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Upload className="h-4 w-4" /> Încarcă document în dosar
+                  </p>
+                  {!showUpload && (
+                    <Button size="sm" variant="outline" onClick={() => setShowUpload(true)}>
+                      <Plus className="h-4 w-4 mr-1" /> Adaugă document
+                    </Button>
+                  )}
+                </div>
+                {showUpload && (
+                  <div className="space-y-3 bg-muted/50 rounded-md p-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Nume document</Label>
+                        <Input
+                          value={uploadName}
+                          onChange={e => setUploadName(e.target.value)}
+                          placeholder="Ex: Contract de muncă 2024"
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Tip document</Label>
+                        <Select value={uploadType} onValueChange={setUploadType}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="contract">Contract de Muncă</SelectItem>
+                            <SelectItem value="anexa">Anexă Contract</SelectItem>
+                            <SelectItem value="cv">CV</SelectItem>
+                            <SelectItem value="diploma">Diplomă</SelectItem>
+                            <SelectItem value="certificat">Certificat</SelectItem>
+                            <SelectItem value="adeverinta">Adeverință</SelectItem>
+                            <SelectItem value="ci_scan">Scanare CI</SelectItem>
+                            <SelectItem value="scanare_co">Scanare Concediu Odihnă</SelectItem>
+                            <SelectItem value="scanare_cm">Scanare Concediu Medical</SelectItem>
+                            <SelectItem value="scanare_ev">Scanare Eveniment</SelectItem>
+                            <SelectItem value="scanare_np">Scanare Concediu Neplătit</SelectItem>
+                            <SelectItem value="altele">Altele</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                        className="text-sm file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer flex-1"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadDocument(file);
+                        }}
+                        disabled={uploading}
+                      />
+                      {uploading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                      <Button size="sm" variant="ghost" onClick={() => { setShowUpload(false); setUploadName(''); setUploadType('altele'); }}>
+                        Anulează
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Dossier documents by source */}
