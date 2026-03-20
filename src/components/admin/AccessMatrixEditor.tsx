@@ -68,6 +68,12 @@ interface PermissionRow {
   can_access: boolean;
 }
 
+interface CustomRoleMeta {
+  key: string;
+  label: string;
+  color: string;
+}
+
 const AccessMatrixEditor = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -77,6 +83,7 @@ const AccessMatrixEditor = () => {
   const [saving, setSaving] = useState(false);
   const [searchRole, setSearchRole] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [customRoles, setCustomRoles] = useState<CustomRoleMeta[]>([]);
 
   useEffect(() => {
     fetchPermissions();
@@ -84,9 +91,10 @@ const AccessMatrixEditor = () => {
 
   const fetchPermissions = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('role_page_permissions')
-      .select('id, role_key, page_key, can_access');
+    const [{ data, error }, { data: crData }] = await Promise.all([
+      supabase.from('role_page_permissions').select('id, role_key, page_key, can_access'),
+      supabase.from('custom_roles').select('key, label, color'),
+    ]);
 
     if (error) {
       toast({ title: 'Eroare', description: 'Nu s-au putut încărca permisiunile.', variant: 'destructive' });
@@ -95,6 +103,7 @@ const AccessMatrixEditor = () => {
       setPermissions(rows);
       setOriginal(JSON.parse(JSON.stringify(rows)));
     }
+    setCustomRoles((crData || []) as CustomRoleMeta[]);
     setLoading(false);
   };
 
