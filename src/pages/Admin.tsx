@@ -26,6 +26,7 @@ import HelpdeskPanel from '@/components/admin/HelpdeskPanel';
 import AnnouncementPublishersPanel from '@/components/admin/AnnouncementPublishersPanel';
 import EventPublishersPanel from '@/components/admin/EventPublishersPanel';
 import AccountReminderPanel from '@/components/admin/AccountReminderPanel';
+import OperationalRulesPanel from '@/components/admin/OperationalRulesPanel';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -205,8 +206,9 @@ const Admin = () => {
               <TabsTrigger value="helpdesk" className="text-xs sm:text-sm">HelpDesk</TabsTrigger>
               <TabsTrigger value="publishers" className="text-xs sm:text-sm">Anunțuri</TabsTrigger>
               <TabsTrigger value="event-publishers" className="text-xs sm:text-sm">Evenimente</TabsTrigger>
-               <TabsTrigger value="reminders" className="text-xs sm:text-sm">Remindere</TabsTrigger>
-               <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
+                <TabsTrigger value="reminders" className="text-xs sm:text-sm">Remindere</TabsTrigger>
+                <TabsTrigger value="rules" className="text-xs sm:text-sm">Reguli Acces</TabsTrigger>
+                <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
           </TabsList>
         <TabsContent value="roles" className="space-y-6">
           <Card>
@@ -308,6 +310,9 @@ const Admin = () => {
         </TabsContent>
         <TabsContent value="reminders">
           <AccountReminderPanel />
+        </TabsContent>
+        <TabsContent value="rules">
+          <OperationalRulesPanel />
         </TabsContent>
         <TabsContent value="settings">
           <AppSettingsPanel />
