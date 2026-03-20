@@ -57,7 +57,7 @@ const ROLE_META: Record<string, { label: string; color: string }> = {
   user: { label: 'Angajat', color: 'bg-muted text-muted-foreground' },
 };
 
-const ROLE_ORDER = Object.keys(ROLE_META);
+const BUILTIN_ROLE_ORDER = Object.keys(ROLE_META);
 const PAGE_ORDER = Object.keys(PAGE_META);
 const CATEGORIES = [...new Set(Object.values(PAGE_META).map(p => p.category))];
 
@@ -66,6 +66,12 @@ interface PermissionRow {
   role_key: string;
   page_key: string;
   can_access: boolean;
+}
+
+interface CustomRoleMeta {
+  key: string;
+  label: string;
+  color: string;
 }
 
 const AccessMatrixEditor = () => {
@@ -77,6 +83,7 @@ const AccessMatrixEditor = () => {
   const [saving, setSaving] = useState(false);
   const [searchRole, setSearchRole] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [customRoles, setCustomRoles] = useState<CustomRoleMeta[]>([]);
 
   useEffect(() => {
     fetchPermissions();
@@ -84,9 +91,10 @@ const AccessMatrixEditor = () => {
 
   const fetchPermissions = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('role_page_permissions')
-      .select('id, role_key, page_key, can_access');
+    const [{ data, error }, { data: crData }] = await Promise.all([
+      supabase.from('role_page_permissions').select('id, role_key, page_key, can_access'),
+      supabase.from('custom_roles').select('key, label, color'),
+    ]);
 
     if (error) {
       toast({ title: 'Eroare', description: 'Nu s-au putut încărca permisiunile.', variant: 'destructive' });
@@ -95,6 +103,7 @@ const AccessMatrixEditor = () => {
       setPermissions(rows);
       setOriginal(JSON.parse(JSON.stringify(rows)));
     }
+    setCustomRoles((crData || []) as CustomRoleMeta[]);
     setLoading(false);
   };
 
@@ -175,13 +184,21 @@ const AccessMatrixEditor = () => {
     setPermissions(JSON.parse(JSON.stringify(original)));
   };
 
+  // Merge built-in + custom roles
+  const allRoleMeta: Record<string, { label: string; color: string }> = { ...ROLE_META };
+  const ROLE_ORDER = [...BUILTIN_ROLE_ORDER];
+  customRoles.forEach(cr => {
+    allRoleMeta[cr.key] = { label: cr.label, color: cr.color };
+    ROLE_ORDER.push(cr.key);
+  });
+
   const filteredPages = PAGE_ORDER.filter(pk => {
     if (filterCategory !== 'all' && PAGE_META[pk].category !== filterCategory) return false;
     return true;
   });
 
   const filteredRoles = ROLE_ORDER.filter(rk =>
-    ROLE_META[rk].label.toLowerCase().includes(searchRole.toLowerCase())
+    allRoleMeta[rk]?.label.toLowerCase().includes(searchRole.toLowerCase())
   );
 
   const accessCountForRole = (roleKey: string) =>
@@ -283,11 +300,12 @@ const AccessMatrixEditor = () => {
                 <tbody>
                   {filteredRoles.map(rk => {
                     const isSA = rk === 'super_admin';
+                    const meta = allRoleMeta[rk] || { label: rk, color: 'bg-muted text-muted-foreground' };
                     return (
                       <tr key={rk} className={`border-b last:border-0 ${isSA ? 'bg-destructive/5' : 'hover:bg-muted/30'}`}>
                         <td className="sticky left-0 z-10 bg-background p-2">
-                          <Badge className={`${ROLE_META[rk].color} text-[10px] whitespace-nowrap`} variant="secondary">
-                            {ROLE_META[rk].label}
+                          <Badge className={`${meta.color} text-[10px] whitespace-nowrap`} variant="secondary">
+                            {meta.label}
                           </Badge>
                         </td>
                         {filteredPages.map(pk => {
