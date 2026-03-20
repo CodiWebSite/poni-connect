@@ -102,12 +102,14 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" storageKey="icmpp-theme">
       <AuthProvider>
+        <ImpersonationProvider>
         <DemoModeProvider>
         <SidebarProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <GlobalChatNotifier />
+          <ImpersonationBanner />
           <BrowserRouter>
             <MaintenanceGuard>
               <Routes>
@@ -146,6 +148,7 @@ const App = () => (
         </TooltipProvider>
         </SidebarProvider>
         </DemoModeProvider>
+        </ImpersonationProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
