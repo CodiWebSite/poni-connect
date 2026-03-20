@@ -2169,6 +2169,33 @@ export type Database = {
         }
         Relationships: []
       }
+      role_page_permissions: {
+        Row: {
+          can_access: boolean
+          created_at: string
+          id: string
+          page_key: string
+          role_key: string
+          updated_at: string
+        }
+        Insert: {
+          can_access?: boolean
+          created_at?: string
+          id?: string
+          page_key: string
+          role_key: string
+          updated_at?: string
+        }
+        Update: {
+          can_access?: boolean
+          created_at?: string
+          id?: string
+          page_key?: string
+          role_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       room_bookings: {
         Row: {
           booked_by: string
