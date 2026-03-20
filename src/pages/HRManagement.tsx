@@ -27,6 +27,8 @@ import { LeaveApproversManager } from '@/components/hr/LeaveApproversManager';
 import { EmployeeLeaveHistory } from '@/components/hr/EmployeeLeaveHistory';
 import LeaveCalendar from '@/components/hr/LeaveCalendar';
 import { EmailSyncImport } from '@/components/hr/EmailSyncImport';
+import HRReportsPanel from '@/components/hr/HRReportsPanel';
+import CertificateGenerator from '@/components/hr/CertificateGenerator';
 import { 
   Users, 
   UserPlus, 
@@ -1216,6 +1218,14 @@ const HRManagement = () => {
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Modificări</span>
           </TabsTrigger>
+          <TabsTrigger value="reports" className="gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Rapoarte</span>
+          </TabsTrigger>
+          <TabsTrigger value="certificates" className="gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Adeverințe</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Employees Tab */}
@@ -1953,6 +1963,16 @@ const HRManagement = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Reports Tab */}
+        <TabsContent value="reports" className="space-y-6">
+          <HRReportsPanel employees={employees} archivedEmployees={archivedEmployees} />
+        </TabsContent>
+
+        {/* Certificates Tab */}
+        <TabsContent value="certificates" className="space-y-6">
+          <CertificateGenerator employees={employees} />
         </TabsContent>
       </Tabs>
 
