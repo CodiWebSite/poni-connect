@@ -68,7 +68,7 @@ interface PermissionRow {
   can_access: boolean;
 }
 
-const OperationalRulesPanel = () => {
+const AccessMatrixEditor = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [permissions, setPermissions] = useState<PermissionRow[]>([]);
