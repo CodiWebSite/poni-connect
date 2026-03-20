@@ -27,6 +27,8 @@ import { LeaveApproversManager } from '@/components/hr/LeaveApproversManager';
 import { EmployeeLeaveHistory } from '@/components/hr/EmployeeLeaveHistory';
 import LeaveCalendar from '@/components/hr/LeaveCalendar';
 import { EmailSyncImport } from '@/components/hr/EmailSyncImport';
+import HRReportsPanel from '@/components/hr/HRReportsPanel';
+import CertificateGenerator from '@/components/hr/CertificateGenerator';
 import { 
   Users, 
   UserPlus, 
