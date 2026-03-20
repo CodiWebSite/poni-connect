@@ -57,7 +57,8 @@ import {
   Archive,
   RotateCcw,
   History,
-  Gift
+  Gift,
+  FolderOpen
 } from 'lucide-react';
 import { format, isWeekend, eachDayOfInterval, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
