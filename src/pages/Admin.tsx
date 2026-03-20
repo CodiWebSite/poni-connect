@@ -88,8 +88,8 @@ const Admin = () => {
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserWithRole | null>(null);
 
   useEffect(() => {
-    if (role === 'super_admin') fetchUsers();
-  }, [role]);
+    if (isRealSuperAdmin) fetchUsers();
+  }, [isRealSuperAdmin]);
 
   const fetchUsers = async () => {
     setLoading(true);
