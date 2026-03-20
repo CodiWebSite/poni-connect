@@ -37,6 +37,7 @@ import {
   Activity,
   Archive,
   CreditCard,
+  Newspaper,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -209,6 +210,7 @@ const Sidebar = () => {
     ...(isSuperAdmin ? [{ icon: ServerCog, label: 'Stare Sistem', path: '/system-status' }] : []),
     { icon: CreditCard, label: 'Carte de Vizită', path: '/carti-vizita' },
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin }] : []),
+    ...(isSuperAdmin ? [{ icon: Newspaper, label: 'Changelog', path: '/changelog' }] : []),
   ];
 
   const renderNavItem = (item: { icon: any; label: string; path: string; badge?: number; external?: boolean }) => {

@@ -38,6 +38,7 @@ import Kiosk from "./pages/Kiosk";
 import Archive from "./pages/Archive";
 import PublicProfile from "./pages/PublicProfile";
 import BusinessCards from "./pages/BusinessCards";
+import Changelog from "./pages/Changelog";
 
 const queryClient = new QueryClient();
 
@@ -135,6 +136,7 @@ const App = () => (
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="/profil/:id" element={<PublicProfile />} />
                 <Route path="/carti-vizita" element={<BusinessCards />} />
+                <Route path="/changelog" element={<Changelog />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
