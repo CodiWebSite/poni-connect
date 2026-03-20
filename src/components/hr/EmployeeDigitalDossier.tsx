@@ -602,6 +602,74 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
                 </div>
               </div>
 
+              {/* Upload section */}
+              <div className="border rounded-lg p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Upload className="h-4 w-4" /> Încarcă document în dosar
+                  </p>
+                  {!showUpload && (
+                    <Button size="sm" variant="outline" onClick={() => setShowUpload(true)}>
+                      <Plus className="h-4 w-4 mr-1" /> Adaugă document
+                    </Button>
+                  )}
+                </div>
+                {showUpload && (
+                  <div className="space-y-3 bg-muted/50 rounded-md p-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Nume document</Label>
+                        <Input
+                          value={uploadName}
+                          onChange={e => setUploadName(e.target.value)}
+                          placeholder="Ex: Contract de muncă 2024"
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Tip document</Label>
+                        <Select value={uploadType} onValueChange={setUploadType}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="contract">Contract de Muncă</SelectItem>
+                            <SelectItem value="anexa">Anexă Contract</SelectItem>
+                            <SelectItem value="cv">CV</SelectItem>
+                            <SelectItem value="diploma">Diplomă</SelectItem>
+                            <SelectItem value="certificat">Certificat</SelectItem>
+                            <SelectItem value="adeverinta">Adeverință</SelectItem>
+                            <SelectItem value="ci_scan">Scanare CI</SelectItem>
+                            <SelectItem value="scanare_co">Scanare Concediu Odihnă</SelectItem>
+                            <SelectItem value="scanare_cm">Scanare Concediu Medical</SelectItem>
+                            <SelectItem value="scanare_ev">Scanare Eveniment</SelectItem>
+                            <SelectItem value="scanare_np">Scanare Concediu Neplătit</SelectItem>
+                            <SelectItem value="altele">Altele</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                        className="text-sm file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer flex-1"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadDocument(file);
+                        }}
+                        disabled={uploading}
+                      />
+                      {uploading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                      <Button size="sm" variant="ghost" onClick={() => { setShowUpload(false); setUploadName(''); setUploadType('altele'); }}>
+                        Anulează
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Dossier documents by source */}
               {loadingDossier ? (
                 <div className="text-center py-8 text-muted-foreground">Se încarcă dosarul...</div>
