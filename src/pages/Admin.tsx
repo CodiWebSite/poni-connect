@@ -77,7 +77,7 @@ interface UserWithRole {
 
 const Admin = () => {
   const { user } = useAuth();
-  const { role } = useUserRole();
+  const { role, isRealSuperAdmin } = useUserRole();
   const { toast } = useToast();
   
   const [users, setUsers] = useState<UserWithRole[]>([]);
@@ -88,8 +88,8 @@ const Admin = () => {
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserWithRole | null>(null);
 
   useEffect(() => {
-    if (role === 'super_admin') fetchUsers();
-  }, [role]);
+    if (isRealSuperAdmin) fetchUsers();
+  }, [isRealSuperAdmin]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -189,7 +189,7 @@ const Admin = () => {
     u.department?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (role && role !== 'super_admin') return <Navigate to="/" replace />;
+  if (role && !isRealSuperAdmin) return <Navigate to="/" replace />;
 
   return (
     <MainLayout title="Administrare" description="Gestionează rolurile și configurările sistemului">

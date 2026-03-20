@@ -9,7 +9,9 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { DemoModeProvider } from "@/contexts/DemoModeContext";
+import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
+import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 
@@ -100,12 +102,14 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" storageKey="icmpp-theme">
       <AuthProvider>
+        <ImpersonationProvider>
         <DemoModeProvider>
         <SidebarProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <GlobalChatNotifier />
+          <ImpersonationBanner />
           <BrowserRouter>
             <MaintenanceGuard>
               <Routes>
@@ -144,6 +148,7 @@ const App = () => (
         </TooltipProvider>
         </SidebarProvider>
         </DemoModeProvider>
+        </ImpersonationProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
