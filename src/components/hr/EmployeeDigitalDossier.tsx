@@ -221,7 +221,7 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
     const { data: medRecords } = await supabase
       .from('medical_records')
       .select('id')
-      .eq('employee_id', emp.id);
+      .eq('epd_id', emp.id);
 
     if (medRecords && medRecords.length > 0) {
       const medRecordIds = medRecords.map(r => r.id);
