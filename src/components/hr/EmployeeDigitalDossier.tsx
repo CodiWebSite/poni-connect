@@ -301,6 +301,47 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
     URL.revokeObjectURL(url);
   };
 
+  const handleUploadDocument = async (file: File) => {
+    if (!selectedEmployee || !file) return;
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const ext = file.name.split('.').pop();
+      const filePath = `${selectedEmployee.id}/${Date.now()}-${file.name}`;
+
+      const { error: storageErr } = await supabase.storage
+        .from('employee-documents')
+        .upload(filePath, file);
+
+      if (storageErr) throw storageErr;
+
+      const docName = uploadName.trim() || file.name;
+      const { error: dbErr } = await supabase
+        .from('employee_documents')
+        .insert({
+          user_id: selectedEmployee.id,
+          name: docName,
+          document_type: uploadType,
+          file_url: filePath,
+          uploaded_by: user?.id || null,
+        });
+
+      if (dbErr) throw dbErr;
+
+      toast({ title: 'Document încărcat cu succes' });
+      setShowUpload(false);
+      setUploadName('');
+      setUploadType('altele');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      // Refresh dossier
+      openDossier(selectedEmployee);
+    } catch (err: any) {
+      toast({ title: 'Eroare la încărcare', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const filteredEmployees = useMemo(() => {
     let list = employees;
     if (deptFilter !== 'all') list = list.filter(e => e.department === deptFilter);
