@@ -217,6 +217,74 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_workflow_steps: {
+        Row: {
+          approver_role: string
+          created_at: string
+          id: string
+          is_optional: boolean
+          step_label: string
+          step_order: number
+          workflow_id: string
+        }
+        Insert: {
+          approver_role: string
+          created_at?: string
+          id?: string
+          is_optional?: boolean
+          step_label: string
+          step_order: number
+          workflow_id: string
+        }
+        Update: {
+          approver_role?: string
+          created_at?: string
+          id?: string
+          is_optional?: boolean
+          step_label?: string
+          step_order?: number
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_workflow_steps_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "approval_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_workflows: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          request_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          request_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          request_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       archive_access_log: {
         Row: {
           accessed_at: string
@@ -1818,6 +1886,48 @@ export type Database = {
           },
         ]
       }
+      notification_rules: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          is_active: boolean
+          message_template: string | null
+          name: string
+          recipient_role: string | null
+          recipient_type: string
+          trigger_event: string
+          trigger_label: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          message_template?: string | null
+          name: string
+          recipient_role?: string | null
+          recipient_type?: string
+          trigger_event: string
+          trigger_label: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          message_template?: string | null
+          name?: string
+          recipient_role?: string | null
+          recipient_type?: string
+          trigger_event?: string
+          trigger_label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -2165,6 +2275,42 @@ export type Database = {
           scheduled_at?: string | null
           status?: string
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      request_routing_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          request_label: string
+          request_type: string
+          target_department: string | null
+          target_role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          request_label: string
+          request_type: string
+          target_department?: string | null
+          target_role: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          request_label?: string
+          request_type?: string
+          target_department?: string | null
+          target_role?: string
           updated_at?: string
         }
         Relationships: []
