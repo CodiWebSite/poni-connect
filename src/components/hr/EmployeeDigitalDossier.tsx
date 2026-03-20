@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { Search, FolderOpen, AlertTriangle, FileText, Download, User, Clock, Shield, CreditCard, FileCheck, Briefcase, ChevronRight } from 'lucide-react';
+import { Search, FolderOpen, AlertTriangle, FileText, Download, User, Clock, Shield, CreditCard, FileCheck, Briefcase, ChevronRight, Calendar } from 'lucide-react';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
