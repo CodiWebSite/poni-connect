@@ -38,6 +38,7 @@ import Kiosk from "./pages/Kiosk";
 import Archive from "./pages/Archive";
 import PublicProfile from "./pages/PublicProfile";
 import BusinessCards from "./pages/BusinessCards";
+import Changelog from "./pages/Changelog";
 
 const queryClient = new QueryClient();
 
