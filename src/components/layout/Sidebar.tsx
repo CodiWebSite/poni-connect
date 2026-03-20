@@ -242,7 +242,6 @@ const Sidebar = () => {
 
   const mainItems = filterByAccess(allMainItems);
   const managementItems = filterByAccess(allManagementItems);
-  ];
 
   const renderNavItem = (item: { icon: any; label: string; path: string; badge?: number; external?: boolean }) => {
     const isExternal = item.external;
