@@ -1227,6 +1227,10 @@ const HRManagement = () => {
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Adeverințe</span>
           </TabsTrigger>
+          <TabsTrigger value="dossier" className="gap-2">
+            <FolderOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Dosare</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Employees Tab */}
