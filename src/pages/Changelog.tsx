@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sparkles, ArrowRight, Search, Filter, Loader2, Newspaper } from 'lucide-react';
+import { Sparkles, ArrowRight, Search, Filter, Loader2, Newspaper, Download } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { Link, Navigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -91,6 +93,53 @@ const Changelog = () => {
     fix: entries.filter(e => e.impact_level === 'fix').length,
   };
 
+  const exportXlsx = async () => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Changelog');
+
+    ws.columns = [
+      { header: 'Versiune', key: 'version', width: 10 },
+      { header: 'Tip', key: 'impact', width: 12 },
+      { header: 'Modul', key: 'module', width: 16 },
+      { header: 'Titlu', key: 'title', width: 40 },
+      { header: 'Descriere', key: 'description', width: 80 },
+      { header: 'Data', key: 'date', width: 14 },
+    ];
+
+    // Header style
+    ws.getRow(1).eachCell(cell => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+      cell.alignment = { horizontal: 'center' };
+    });
+
+    const impactLabels: Record<string, string> = { major: 'Major', minor: 'Minor', fix: 'Fix/Cleanup' };
+
+    filtered.forEach(e => {
+      ws.addRow({
+        version: 'v' + e.version,
+        impact: impactLabels[e.impact_level] || e.impact_level,
+        module: e.module || '',
+        title: e.title,
+        description: e.description,
+        date: format(new Date(e.created_at), 'dd.MM.yyyy'),
+      });
+    });
+
+    // Color-code impact column
+    ws.eachRow((row, idx) => {
+      if (idx === 1) return;
+      row.alignment = { wrapText: true, vertical: 'top' };
+      const impactCell = row.getCell(2);
+      const val = impactCell.value as string;
+      if (val === 'Major') impactCell.font = { bold: true, color: { argb: 'FF4F46E5' } };
+      else if (val === 'Fix/Cleanup') impactCell.font = { color: { argb: 'FF16A34A' } };
+    });
+
+    const buf = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buf]), `changelog_icmpp_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  };
+
   return (
     <MainLayout title="Changelog Complet" description="Istoricul complet al tuturor schimbărilor implementate pe platformă">
       {/* Stats */}
@@ -155,6 +204,9 @@ const Changelog = () => {
             <SelectItem value="fix">Fix / Cleanup</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={exportXlsx} className="gap-2">
+          <Download className="w-4 h-4" /> Export XLSX
+        </Button>
       </div>
 
       {loading ? (
