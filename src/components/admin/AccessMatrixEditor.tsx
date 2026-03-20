@@ -184,13 +184,21 @@ const AccessMatrixEditor = () => {
     setPermissions(JSON.parse(JSON.stringify(original)));
   };
 
+  // Merge built-in + custom roles
+  const allRoleMeta: Record<string, { label: string; color: string }> = { ...ROLE_META };
+  const ROLE_ORDER = [...BUILTIN_ROLE_ORDER];
+  customRoles.forEach(cr => {
+    allRoleMeta[cr.key] = { label: cr.label, color: cr.color };
+    ROLE_ORDER.push(cr.key);
+  });
+
   const filteredPages = PAGE_ORDER.filter(pk => {
     if (filterCategory !== 'all' && PAGE_META[pk].category !== filterCategory) return false;
     return true;
   });
 
   const filteredRoles = ROLE_ORDER.filter(rk =>
-    ROLE_META[rk].label.toLowerCase().includes(searchRole.toLowerCase())
+    allRoleMeta[rk]?.label.toLowerCase().includes(searchRole.toLowerCase())
   );
 
   const accessCountForRole = (roleKey: string) =>
