@@ -9,7 +9,9 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { DemoModeProvider } from "@/contexts/DemoModeContext";
+import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
+import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 
