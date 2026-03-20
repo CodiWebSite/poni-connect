@@ -68,10 +68,19 @@ const ChangelogWidget = () => {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Newspaper className="w-4 h-4 text-primary" />
-          Ce s-a schimbat pentru tine
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Newspaper className="w-4 h-4 text-primary" />
+            Ce s-a schimbat pentru tine
+          </CardTitle>
+          {role === 'super_admin' && (
+            <Link to="/changelog">
+              <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-muted-foreground hover:text-foreground">
+                Vezi tot <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            </Link>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {entries.length === 0 ? (
