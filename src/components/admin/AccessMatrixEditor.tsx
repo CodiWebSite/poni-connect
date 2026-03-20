@@ -57,7 +57,7 @@ const ROLE_META: Record<string, { label: string; color: string }> = {
   user: { label: 'Angajat', color: 'bg-muted text-muted-foreground' },
 };
 
-const ROLE_ORDER = Object.keys(ROLE_META);
+const BUILTIN_ROLE_ORDER = Object.keys(ROLE_META);
 const PAGE_ORDER = Object.keys(PAGE_META);
 const CATEGORIES = [...new Set(Object.values(PAGE_META).map(p => p.category))];
 
