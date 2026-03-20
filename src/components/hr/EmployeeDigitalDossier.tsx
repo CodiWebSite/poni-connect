@@ -76,6 +76,11 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
   const [loadingDossier, setLoadingDossier] = useState(false);
   const [expiryAlerts, setExpiryAlerts] = useState<ExpiryAlert[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadType, setUploadType] = useState('altele');
+  const [uploadName, setUploadName] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const departments = useMemo(() => {
     const depts = [...new Set(employees.map(e => e.department).filter(Boolean))] as string[];
