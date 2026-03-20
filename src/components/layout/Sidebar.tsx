@@ -51,6 +51,7 @@ const Sidebar = () => {
   const { user, signOut } = useAuth();
   const { role, isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
   const { isDesignatedApprover } = useIsApprover();
+  const { canAccessPage } = usePageAccess();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
   const { isDemo, toggleDemo } = useDemoMode();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
