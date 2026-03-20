@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -7,8 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Search, FileText, Download, Loader2 } from 'lucide-react';
 import { differenceInYears, differenceInMonths, parseISO, format } from 'date-fns';
-import { ro } from 'date-fns/locale';
 import { generateCertificateDocx, CertificateType } from '@/utils/generateCertificate';
+import { toast } from '@/hooks/use-toast';
 
 interface Employee {
   id: string;
@@ -53,9 +54,33 @@ const CertificateGenerator = ({ employees }: CertificateGeneratorProps) => {
     if (!selectedEmployee) return;
     setGenerating(true);
     try {
-      await generateCertificateDocx(selectedEmployee, selectedType, purpose);
-    } catch (err) {
+      // Fetch full personal data (CI + address) from employee_personal_data
+      const { data: epd } = await supabase
+        .from('employee_personal_data')
+        .select('ci_series, ci_number, ci_issued_by, ci_issued_date, address_street, address_number, address_block, address_floor, address_apartment, address_city, address_county')
+        .eq('id', selectedEmployee.id)
+        .maybeSingle();
+
+      const fullData = {
+        ...selectedEmployee,
+        ci_series: epd?.ci_series || null,
+        ci_number: epd?.ci_number || null,
+        ci_issued_by: epd?.ci_issued_by || null,
+        ci_issued_date: epd?.ci_issued_date || null,
+        address_street: epd?.address_street || null,
+        address_number: epd?.address_number || null,
+        address_block: epd?.address_block || null,
+        address_floor: epd?.address_floor || null,
+        address_apartment: epd?.address_apartment || null,
+        address_city: epd?.address_city || null,
+        address_county: epd?.address_county || null,
+      };
+
+      await generateCertificateDocx(fullData, selectedType, purpose);
+      toast({ title: 'Adeverință generată cu succes' });
+    } catch (err: any) {
       console.error('Certificate generation error:', err);
+      toast({ title: 'Eroare la generare', description: err.message, variant: 'destructive' });
     }
     setGenerating(false);
   };
