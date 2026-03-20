@@ -1980,6 +1980,11 @@ const HRManagement = () => {
         <TabsContent value="certificates" className="space-y-6">
           <CertificateGenerator employees={employees} />
         </TabsContent>
+
+        {/* Digital Dossier Tab */}
+        <TabsContent value="dossier" className="space-y-6">
+          <EmployeeDigitalDossier employees={employees} />
+        </TabsContent>
       </Tabs>
 
       {/* Edit Employee Dialog */}
