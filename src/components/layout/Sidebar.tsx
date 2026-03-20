@@ -184,20 +184,34 @@ const Sidebar = () => {
     navigate('/auth');
   };
 
-  const mainItems = [
+  // Map path to page_key for permission checks
+  const pathToPageKey = (path: string): string | null => {
+    const map: Record<string, string> = {
+      '/': 'dashboard', '/announcements': 'announcements', '/my-profile': 'my-profile',
+      '/leave-calendar': 'leave-calendar', '/formulare': 'formulare', '/leave-request': 'leave-request',
+      '/my-team': 'my-team', '/library': 'library', '/room-bookings': 'room-bookings',
+      '/activitati': 'activitati', '/chat': 'chat', '/medicina-muncii': 'medicina-muncii',
+      '/arhiva': 'arhiva', '/ghid': 'ghid', '/install': 'install',
+      '/hr-management': 'hr-management', '/salarizare': 'salarizare', '/settings': 'settings',
+      '/system-status': 'system-status', '/carti-vizita': 'carti-vizita', '/admin': 'admin',
+      '/changelog': 'changelog',
+    };
+    return map[path] || null;
+  };
+
+  const allMainItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
-    
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request', badge: (isSef || isSefSRUS || isSuperAdmin) ? pendingHR : undefined },
-    ...((isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
-    ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
+    { icon: Users, label: 'Echipa Mea', path: '/my-team' },
+    { icon: BookOpen, label: 'Bibliotecă', path: '/library' },
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat', badge: unreadChat || undefined },
-    ...(canAccessMedical ? [{ icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' }] : []),
+    { icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' },
     { icon: Archive, label: 'Arhivă Online', path: '/arhiva' },
     { icon: ExternalLink, label: 'Adeverințe SCTP', path: 'https://adeverinte.icmpp.ro/', external: true },
     { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },
@@ -205,14 +219,29 @@ const Sidebar = () => {
     { icon: Download, label: 'Instalează App', path: '/install' },
   ];
 
-  const managementItems = [
-    ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR }] : []),
-    ...(isSalarizare ? [{ icon: Banknote, label: 'Salarizare', path: '/salarizare' }] : []),
+  const allManagementItems = [
+    { icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR },
+    { icon: Banknote, label: 'Salarizare', path: '/salarizare' },
     { icon: Settings, label: 'Setări', path: '/settings' },
-    ...(isSuperAdmin ? [{ icon: ServerCog, label: 'Stare Sistem', path: '/system-status' }] : []),
+    { icon: ServerCog, label: 'Stare Sistem', path: '/system-status' },
     { icon: CreditCard, label: 'Carte de Vizită', path: '/carti-vizita' },
-    ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin }] : []),
-    ...(isSuperAdmin ? [{ icon: Newspaper, label: 'Changelog', path: '/changelog' }] : []),
+    { icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin },
+    { icon: Newspaper, label: 'Changelog', path: '/changelog' },
+  ];
+
+  // Filter items based on DB permissions (+ keep designated approver logic for my-team)
+  const filterByAccess = (items: typeof allMainItems) =>
+    items.filter(item => {
+      if (item.external) return true; // external links always visible
+      const pageKey = pathToPageKey(item.path);
+      if (!pageKey) return true;
+      // Special: designated approvers always see my-team regardless of role config
+      if (pageKey === 'my-team' && isDesignatedApprover) return true;
+      return canAccessPage(pageKey);
+    });
+
+  const mainItems = filterByAccess(allMainItems);
+  const managementItems = filterByAccess(allManagementItems);
   ];
 
   const renderNavItem = (item: { icon: any; label: string; path: string; badge?: number; external?: boolean }) => {
