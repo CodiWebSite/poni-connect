@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link } from 'react-router-dom';
-import { Megaphone, ArrowRight } from 'lucide-react';
-import AnnouncementCard from './AnnouncementCard';
+import { Megaphone, ArrowRight, Pin, Paperclip, Link2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { ro } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface Announcement {
   id: string;
@@ -17,8 +21,16 @@ interface Announcement {
   links: any[];
 }
 
+const priorityDot: Record<string, string> = {
+  low: 'bg-muted-foreground/40',
+  normal: 'bg-primary',
+  high: 'bg-warning',
+  urgent: 'bg-destructive',
+};
+
 const DashboardAnnouncements = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -27,7 +39,7 @@ const DashboardAnnouncements = () => {
         .select('*')
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(5);
 
       if (data) {
         setAnnouncements(data.map(a => ({
@@ -44,34 +56,92 @@ const DashboardAnnouncements = () => {
   if (announcements.length === 0) return null;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Megaphone className="w-5 h-5 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+            <Megaphone className="w-4 h-4 text-primary" />
             Anunțuri
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium">
+              {announcements.length}
+            </Badge>
           </CardTitle>
-          <Button variant="ghost" size="sm" asChild className="text-xs">
-            <Link to="/announcements" className="flex items-center gap-1">
-              Toate <ArrowRight className="w-3.5 h-3.5" />
+          <Button variant="ghost" size="sm" asChild className="text-xs h-7 px-2">
+            <Link to="/announcements" className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+              Toate <ArrowRight className="w-3 h-3" />
             </Link>
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {announcements.map((a) => (
-          <AnnouncementCard
-            key={a.id}
-            title={a.title}
-            content={a.content}
-            priority={a.priority}
-            isPinned={a.is_pinned}
-            createdAt={a.created_at}
-            attachments={a.attachments}
-            links={a.links}
-            compact
-          />
-        ))}
+      <CardContent className="px-2 pb-2">
+        <ScrollArea className="max-h-[280px]">
+          <div className="space-y-0.5 px-2">
+            {announcements.map((a) => {
+              const isExpanded = expandedId === a.id;
+              const isLong = a.content.length > 120;
+              const displayContent = isExpanded || !isLong
+                ? a.content
+                : a.content.slice(0, 120) + '…';
+
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setExpandedId(isExpanded ? null : a.id)}
+                  className={cn(
+                    "w-full text-left rounded-lg px-3 py-2.5 transition-all duration-200 group",
+                    "hover:bg-accent/50",
+                    isExpanded && "bg-accent/30",
+                    a.is_pinned && "border-l-2 border-primary/60"
+                  )}
+                >
+                  {/* Header row */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", priorityDot[a.priority])} />
+                    {a.is_pinned && <Pin className="w-3 h-3 text-primary fill-primary flex-shrink-0" />}
+                    <span className="text-sm font-medium text-foreground truncate flex-1">
+                      {a.title}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground flex-shrink-0 tabular-nums">
+                      {format(new Date(a.created_at), 'dd MMM', { locale: ro })}
+                    </span>
+                  </div>
+
+                  {/* Content */}
+                  <p className={cn(
+                    "text-xs text-muted-foreground mt-1 leading-relaxed whitespace-pre-line",
+                    !isExpanded && "line-clamp-2"
+                  )}>
+                    {displayContent}
+                  </p>
+
+                  {/* Meta indicators */}
+                  {(a.attachments.length > 0 || a.links.length > 0) && (
+                    <div className="flex gap-2 mt-1.5">
+                      {a.attachments.length > 0 && (
+                        <span className="text-[10px] text-muted-foreground/70 flex items-center gap-0.5">
+                          <Paperclip className="w-2.5 h-2.5" /> {a.attachments.length}
+                        </span>
+                      )}
+                      {a.links.length > 0 && (
+                        <span className="text-[10px] text-muted-foreground/70 flex items-center gap-0.5">
+                          <Link2 className="w-2.5 h-2.5" /> {a.links.length}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Expand hint */}
+                  {isLong && !isExpanded && (
+                    <span className="text-[10px] text-primary/70 mt-1 inline-block group-hover:text-primary transition-colors">
+                      citește mai mult
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
