@@ -281,6 +281,15 @@ const Admin = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5" title={bypassUsers.has(u.user_id) ? 'Acces global activ — poate intra de oriunde' : 'Acces doar din rețeaua institutului'}>
+                          <Globe className={`w-3.5 h-3.5 ${bypassUsers.has(u.user_id) ? 'text-emerald-500' : 'text-muted-foreground/40'}`} />
+                          <Switch
+                            checked={bypassUsers.has(u.user_id)}
+                            onCheckedChange={(checked) => toggleBypass(u.user_id, checked)}
+                            disabled={togglingBypass === u.user_id}
+                            className="scale-90"
+                          />
+                        </div>
                         <Select value={u.role} onValueChange={(value) => updateUserRole(u.user_id, u.role_id, value)} disabled={updating === u.user_id}>
                           <SelectTrigger className="w-full sm:w-48">
                             {updating === u.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <SelectValue />}
