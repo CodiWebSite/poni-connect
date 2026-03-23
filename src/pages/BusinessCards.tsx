@@ -460,8 +460,14 @@ function AdminView() {
 /* ──────── Main page ──────── */
 
 const BusinessCards = () => {
+  const { user } = useAuth();
   const { canManageHR, isSuperAdmin, loading: roleLoading } = useUserRole();
   const isAdmin = canManageHR || isSuperAdmin;
+
+  // Restrict access for specific users
+  if (!roleLoading && user?.email === 'marcela.mihai@icmpp.ro') {
+    return <Navigate to="/" replace />;
+  }
 
   if (roleLoading) {
     return (
