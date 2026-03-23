@@ -174,7 +174,6 @@ const EmployeeDashboard = () => {
 
         {/* Side widgets */}
         <div className="space-y-4 sm:space-y-6">
-          <PersonalCalendarWidget />
           <WeatherWidget />
           <ActivityHistory />
         </div>
