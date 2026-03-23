@@ -237,6 +237,10 @@ const Sidebar = () => {
       if (!pageKey) return true;
       // Special: designated approvers always see my-team regardless of role config
       if (pageKey === 'my-team' && isDesignatedApprover) return true;
+      // Leave calendar: only visible to approvers, HR, admin, super_admin
+      if (pageKey === 'leave-calendar') {
+        return isSuperAdmin || canManageHR || isSef || isSefSRUS || isDesignatedApprover;
+      }
       return canAccessPage(pageKey);
     });
 
