@@ -100,6 +100,7 @@ function GlobalChatNotifier() {
 }
 
 const App = () => (
+  <IPAccessGuard>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" storageKey="icmpp-theme">
       <AuthProvider>
@@ -153,6 +154,7 @@ const App = () => (
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
+  </IPAccessGuard>
 );
 
 export default App;
