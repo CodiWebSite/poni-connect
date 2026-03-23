@@ -12,6 +12,7 @@ import { DemoModeProvider } from "@/contexts/DemoModeContext";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
+import IPAccessGuard from "@/components/auth/IPAccessGuard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 
