@@ -87,7 +87,8 @@ const Admin = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserWithRole | null>(null);
-
+  const [bypassUsers, setBypassUsers] = useState<Set<string>>(new Set());
+  const [togglingBypass, setTogglingBypass] = useState<string | null>(null);
   useEffect(() => {
     if (isRealSuperAdmin) fetchUsers();
   }, [isRealSuperAdmin]);
