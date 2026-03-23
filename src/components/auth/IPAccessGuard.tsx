@@ -84,14 +84,26 @@ export default function IPAccessGuard({ children }: IPAccessGuardProps) {
 
       if (data.session) {
         // Re-check with auth token
-        setStatus('checking');
-        await checkAccess(data.session.access_token);
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/check-ip-access`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': `Bearer ${data.session.access_token}`,
+            },
+          }
+        );
+        const result = await res.json();
         
-        if (status === 'denied') {
-          // User doesn't have bypass - sign them out
+        if (result?.allowed) {
+          setStatus('allowed');
+        } else {
           await supabase.auth.signOut();
           setLoginError('Contul tău nu are acces de la distanță. Contactează administratorul.');
-          setStatus('denied');
         }
       }
     } catch {
