@@ -194,6 +194,20 @@ const Admin = () => {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
+  const toggleBypass = async (userId: string, enabled: boolean) => {
+    setTogglingBypass(userId);
+    if (enabled) {
+      const { error } = await supabase.from('ip_bypass_users').insert({ user_id: userId, added_by: user?.id } as any);
+      if (!error) setBypassUsers(prev => new Set([...prev, userId]));
+      else toast({ title: 'Eroare', description: 'Nu s-a putut activa bypass-ul.', variant: 'destructive' });
+    } else {
+      const { error } = await supabase.from('ip_bypass_users').delete().eq('user_id', userId);
+      if (!error) setBypassUsers(prev => { const s = new Set(prev); s.delete(userId); return s; });
+      else toast({ title: 'Eroare', description: 'Nu s-a putut dezactiva bypass-ul.', variant: 'destructive' });
+    }
+    setTogglingBypass(null);
+  };
+
   const filteredUsers = users.filter(u =>
     u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.department?.toLowerCase().includes(searchQuery.toLowerCase())
