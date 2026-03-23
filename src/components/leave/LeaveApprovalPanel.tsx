@@ -168,13 +168,15 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
       // Check if user is an active delegate for any approver
       const today = new Date().toISOString().split('T')[0];
-      const { data: activeDelegations } = await supabase
-        .from('leave_approval_delegates' as any)
+      const { data: activeDelegations, error: delegError } = await supabase
+        .from('leave_approval_delegates')
         .select('delegator_user_id, department')
         .eq('delegate_user_id', user.id)
         .eq('is_active', true)
         .lte('start_date', today)
         .gte('end_date', today);
+      
+      if (delegError) console.error('[LeaveApprovalPanel] delegate query error:', delegError);
 
       const delegatedApproverIds = new Set((activeDelegations || []).map((d: any) => d.delegator_user_id));
       const delegatedDepts = new Set((activeDelegations || []).map((d: any) => (d.department || '').toLowerCase()).filter(Boolean));
