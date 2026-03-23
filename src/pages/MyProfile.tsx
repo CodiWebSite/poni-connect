@@ -129,7 +129,8 @@ const getDocIcon = (name: string) => {
   return { color: 'text-primary bg-primary/10', label: 'FILE' };
 };
 
-const HIDDEN_PROFILE_EMAILS = ['marcela.mihai@icmpp.ro'];
+// Personal identification data (CNP, CI, address) and public profile/QR are hidden for all employees
+// HR can still manage this data from Gestiune HR
 
 const MyProfile = () => {
   const { user } = useAuth();
