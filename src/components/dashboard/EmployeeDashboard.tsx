@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight, UserCircle, FolderDown } from 'lucide-react';
 import WeatherWidget from './WeatherWidget';
-import PersonalCalendarWidget from './PersonalCalendarWidget';
 import ActivityHistory from './ActivityHistory';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
@@ -174,7 +173,6 @@ const EmployeeDashboard = () => {
 
         {/* Side widgets */}
         <div className="space-y-4 sm:space-y-6">
-          <PersonalCalendarWidget />
           <WeatherWidget />
           <ActivityHistory />
         </div>
