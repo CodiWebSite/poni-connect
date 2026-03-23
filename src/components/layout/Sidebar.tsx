@@ -75,12 +75,74 @@ const Sidebar = () => {
 
   // Fetch pending counts for badges
   useEffect(() => {
-    if (!canManageHR && !isSuperAdmin && !isSef && !isSefSRUS) return;
+    if (!canManageHR && !isSuperAdmin && !isSef && !isSefSRUS && !isDesignatedApprover) return;
     const fetchCounts = async () => {
-      // Leave requests badge - for dept heads and HR
-      if (canManageHR || isSef || isSefSRUS) {
-        const { count } = await supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending_department_head' as any);
-        setPendingHR(count || 0);
+      // Leave requests badge - filtered by department for non-super_admin
+      if (canManageHR || isSef || isSefSRUS || isDesignatedApprover) {
+        if (isSuperAdmin) {
+          // Super admin sees all pending requests
+          const { count } = await supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending_department_head' as any);
+          setPendingHR(count || 0);
+        } else {
+          // For dept heads / approvers: fetch all pending, then filter by department
+          const { data: pendingData } = await supabase
+            .from('leave_requests')
+            .select('id, epd_id, approver_id')
+            .eq('status', 'pending_department_head' as any);
+
+          if (!pendingData?.length) {
+            setPendingHR(0);
+          } else {
+            // Get user's department and approver departments
+            const [{ data: myProfile }, { data: myDeptApprovals }, { data: myEmpApprovals }] = await Promise.all([
+              supabase.from('profiles').select('department').eq('user_id', user!.id).maybeSingle(),
+              supabase.from('leave_department_approvers').select('department').eq('approver_user_id', user!.id),
+              supabase.from('leave_approvers').select('employee_user_id').eq('approver_user_id', user!.id),
+            ]);
+
+            const myApproverDepts = new Set((myDeptApprovals || []).map(d => d.department.toLowerCase()));
+
+            // Check active delegations
+            const today = new Date().toISOString().split('T')[0];
+            const { data: activeDelegations } = await supabase
+              .from('leave_approval_delegates' as any)
+              .select('delegator_user_id, department')
+              .eq('delegate_user_id', user!.id)
+              .eq('is_active', true)
+              .lte('start_date', today)
+              .gte('end_date', today);
+            const delegatedApproverIds = new Set((activeDelegations || []).map((d: any) => d.delegator_user_id));
+            const delegatedDepts = new Set((activeDelegations || []).map((d: any) => (d.department || '').toLowerCase()).filter(Boolean));
+
+            // Get EPD data for department matching
+            const epdIds = [...new Set(pendingData.map(r => r.epd_id).filter(Boolean))];
+            let epdDeptMap: Record<string, string> = {};
+            if (epdIds.length > 0) {
+              const { data: epdData } = await supabase
+                .from('employee_personal_data')
+                .select('id, department')
+                .in('id', epdIds);
+              (epdData || []).forEach(e => { epdDeptMap[e.id] = (e.department || '').toLowerCase(); });
+            }
+
+            const count = pendingData.filter(r => {
+              const empDept = epdDeptMap[r.epd_id] || '';
+              // Direct approver assignment
+              if (r.approver_id === user!.id) return true;
+              // Department-level approver
+              if (!r.approver_id && empDept && myApproverDepts.has(empDept)) return true;
+              // Generic dept head (same department)
+              if (!r.approver_id && (isSef || isSefSRUS) && myProfile?.department &&
+                  empDept === myProfile.department.toLowerCase()) return true;
+              // Delegated approver
+              if (r.approver_id && delegatedApproverIds.has(r.approver_id)) return true;
+              if (!r.approver_id && empDept && delegatedDepts.has(empDept)) return true;
+              return false;
+            }).length;
+
+            setPendingHR(count);
+          }
+        }
       }
 
       // Account requests badge - for super admin only
@@ -94,7 +156,7 @@ const Sidebar = () => {
       }
     };
     fetchCounts();
-  }, [canManageHR, isSuperAdmin, isSef, isSefSRUS]);
+  }, [canManageHR, isSuperAdmin, isSef, isSefSRUS, isDesignatedApprover, user]);
 
   // Fetch total unread chat messages count
   useEffect(() => {
