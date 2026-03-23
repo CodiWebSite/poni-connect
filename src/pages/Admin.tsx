@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus, Mail } from 'lucide-react';
+import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus, Mail, Globe } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
