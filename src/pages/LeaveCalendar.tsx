@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useIsApprover } from '@/hooks/useIsApprover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,12 +34,17 @@ const DAY_NAMES: Record<number, string> = { 0: 'Dum', 1: 'Lun', 2: 'Mar', 3: 'Mi
 
 const LeaveCalendar = () => {
   const { user } = useAuth();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS } = useUserRole();
+  const { isDesignatedApprover, loading: approverLoading } = useIsApprover();
   const isMobile = useIsMobile();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [leaves, setLeaves] = useState<DepartmentLeave[]>([]);
   const [customHolidays, setCustomHolidays] = useState<Record<string, string>>({});
   const [department, setDepartment] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Restrict access to approvers/HR/admin only
+  const hasAccess = isSuperAdmin || canManageHR || isSef || isSefSRUS || isDesignatedApprover;
 
   useEffect(() => {
     if (user) fetchData();
@@ -246,6 +254,10 @@ const LeaveCalendar = () => {
     });
     return map;
   }, [leaves]);
+
+  if (!approverLoading && !hasAccess) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <MainLayout title="Calendar Concedii" description={department ? `Departament: ${department}` : 'Vizualizare concedii departament'}>

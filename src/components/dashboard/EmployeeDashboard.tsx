@@ -99,10 +99,9 @@ const EmployeeDashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {[
           { to: '/my-profile', icon: UserCircle, label: 'Profilul Meu', color: 'bg-primary/10 group-hover:bg-primary/20 text-primary' },
-          { to: '/leave-calendar', icon: Calendar, label: 'Calendar', color: 'bg-accent/10 group-hover:bg-accent/20 text-accent' },
           { to: '/formulare', icon: FolderDown, label: 'Formulare', color: 'bg-info/10 group-hover:bg-info/20 text-info' },
         ].map(action => (
           <Link key={action.to} to={action.to} className="group">
