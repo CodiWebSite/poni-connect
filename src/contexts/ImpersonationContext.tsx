@@ -2,18 +2,13 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 import { AppRole } from '@/hooks/useUserRole';
 
 interface ImpersonationState {
-  /** The role being impersonated, or null if not impersonating */
   impersonatedRole: AppRole | null;
-  /** Optional: specific user id being impersonated (for future "view as user") */
   impersonatedUserId: string | null;
   impersonatedUserName: string | null;
-  /** Whether impersonation is currently active */
+  impersonatedUserEmail: string | null;
   isImpersonating: boolean;
-  /** Start impersonating a role */
   startRoleImpersonation: (role: AppRole) => void;
-  /** Start impersonating a specific user */
-  startUserImpersonation: (userId: string, userName: string, role: AppRole) => void;
-  /** Stop impersonation */
+  startUserImpersonation: (userId: string, userName: string, role: AppRole, email?: string) => void;
   stopImpersonation: () => void;
 }
 
