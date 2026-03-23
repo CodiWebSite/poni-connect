@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { ShieldX, Wifi } from 'lucide-react';
 
 interface IPAccessGuardProps {
@@ -16,27 +15,39 @@ export default function IPAccessGuard({ children }: IPAccessGuardProps) {
 
     const checkAccess = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('check-ip-access');
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/check-ip-access`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+            },
+          }
+        );
 
         if (cancelled) return;
 
-        if (error) {
-          // If function fails, allow access (fail-open for now)
-          console.warn('IP check failed, allowing access:', error);
-          setStatus('allowed');
-          return;
-        }
+        const data = await res.json();
 
-        if (data?.allowed) {
+        if (data?.allowed === true) {
           setStatus('allowed');
         } else {
           setStatus('denied');
-          setMessage(data?.message || 'Acces restricționat.');
-          setClientIP(data?.ip || '');
+          setMessage(data?.message || 'Accesul este restricționat. Această platformă poate fi accesată doar din rețeaua institutului.');
+          setClientIP(data?.ip || 'necunoscut');
         }
       } catch (err) {
-        console.warn('IP check error, allowing access:', err);
-        if (!cancelled) setStatus('allowed');
+        console.warn('IP check error:', err);
+        if (!cancelled) {
+          // Fail-closed: block access if we can't verify
+          setStatus('denied');
+          setMessage('Nu s-a putut verifica accesul la rețea. Verificați conexiunea și reîncercați.');
+          setClientIP('necunoscut');
+        }
       }
     };
 
