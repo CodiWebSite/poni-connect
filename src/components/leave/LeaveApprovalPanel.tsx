@@ -177,9 +177,18 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         .gte('end_date', today);
       
       if (delegError) console.error('[LeaveApprovalPanel] delegate query error:', delegError);
+      
+      console.log('[LeaveApprovalPanel] activeDelegations:', activeDelegations);
+      console.log('[LeaveApprovalPanel] myApproverDepts:', [...myApproverDepts]);
+      console.log('[LeaveApprovalPanel] isDeptHead:', isDeptHead);
+      console.log('[LeaveApprovalPanel] myProfile dept:', myProfile?.department);
 
       const delegatedApproverIds = new Set((activeDelegations || []).map((d: any) => d.delegator_user_id));
       const delegatedDepts = new Set((activeDelegations || []).map((d: any) => (d.department || '').toLowerCase()).filter(Boolean));
+      
+      console.log('[LeaveApprovalPanel] delegatedApproverIds:', [...delegatedApproverIds]);
+      console.log('[LeaveApprovalPanel] delegatedDepts:', [...delegatedDepts]);
+      console.log('[LeaveApprovalPanel] enrichedRequests before filter:', enrichedRequests.map(r => ({ id: r.id, approver_id: r.approver_id, dept: r.employee_department })));
 
       enrichedRequests = enrichedRequests.filter(r => {
         // Direct approver assignment
@@ -195,6 +204,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         if (r.approver_id && delegatedApproverIds.has(r.approver_id)) return true;
         // Delegated: department match for non-assigned requests
         if (!r.approver_id && r.employee_department && delegatedDepts.has(r.employee_department.toLowerCase())) return true;
+        console.log('[LeaveApprovalPanel] FILTERED OUT request:', r.id, 'approver_id:', r.approver_id, 'dept:', r.employee_department);
         return false;
       });
     }
