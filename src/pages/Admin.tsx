@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole, AppRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import { Switch } from '@/components/ui/switch';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus, Mail } from 'lucide-react';
+import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus, Mail, Globe } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -86,10 +87,19 @@ const Admin = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserWithRole | null>(null);
-
+  const [bypassUsers, setBypassUsers] = useState<Set<string>>(new Set());
+  const [togglingBypass, setTogglingBypass] = useState<string | null>(null);
   useEffect(() => {
-    if (isRealSuperAdmin) fetchUsers();
+    if (isRealSuperAdmin) {
+      fetchUsers();
+      fetchBypassUsers();
+    }
   }, [isRealSuperAdmin]);
+
+  const fetchBypassUsers = async () => {
+    const { data } = await supabase.from('ip_bypass_users').select('user_id');
+    if (data) setBypassUsers(new Set(data.map(d => d.user_id)));
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -184,6 +194,20 @@ const Admin = () => {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
+  const toggleBypass = async (userId: string, enabled: boolean) => {
+    setTogglingBypass(userId);
+    if (enabled) {
+      const { error } = await supabase.from('ip_bypass_users').insert({ user_id: userId, added_by: user?.id } as any);
+      if (!error) setBypassUsers(prev => new Set([...prev, userId]));
+      else toast({ title: 'Eroare', description: 'Nu s-a putut activa bypass-ul.', variant: 'destructive' });
+    } else {
+      const { error } = await supabase.from('ip_bypass_users').delete().eq('user_id', userId);
+      if (!error) setBypassUsers(prev => { const s = new Set(prev); s.delete(userId); return s; });
+      else toast({ title: 'Eroare', description: 'Nu s-a putut dezactiva bypass-ul.', variant: 'destructive' });
+    }
+    setTogglingBypass(null);
+  };
+
   const filteredUsers = users.filter(u =>
     u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.department?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -257,6 +281,15 @@ const Admin = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5" title={bypassUsers.has(u.user_id) ? 'Acces global activ — poate intra de oriunde' : 'Acces doar din rețeaua institutului'}>
+                          <Globe className={`w-3.5 h-3.5 ${bypassUsers.has(u.user_id) ? 'text-emerald-500' : 'text-muted-foreground/40'}`} />
+                          <Switch
+                            checked={bypassUsers.has(u.user_id)}
+                            onCheckedChange={(checked) => toggleBypass(u.user_id, checked)}
+                            disabled={togglingBypass === u.user_id}
+                            className="scale-90"
+                          />
+                        </div>
                         <Select value={u.role} onValueChange={(value) => updateUserRole(u.user_id, u.role_id, value)} disabled={updating === u.user_id}>
                           <SelectTrigger className="w-full sm:w-48">
                             {updating === u.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <SelectValue />}
