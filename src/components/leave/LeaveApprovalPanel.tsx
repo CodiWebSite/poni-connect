@@ -419,7 +419,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     );
   }
 
-  if (!isDeptHead && !isDesignatedApprover) return null;
+  if (!isDeptHead && !isDesignatedApprover && !isActiveDelegate) return null;
 
   if (requests.length === 0) {
     return (
