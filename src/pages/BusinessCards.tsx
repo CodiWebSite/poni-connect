@@ -464,8 +464,8 @@ const BusinessCards = () => {
   const { canManageHR, isSuperAdmin, loading: roleLoading } = useUserRole();
   const isAdmin = canManageHR || isSuperAdmin;
 
-  // Restrict access for specific users
-  if (!roleLoading && user?.email === 'marcela.mihai@icmpp.ro') {
+  // Business cards are disabled for all employees
+  if (!roleLoading) {
     return <Navigate to="/" replace />;
   }
 

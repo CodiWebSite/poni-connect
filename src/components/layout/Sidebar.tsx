@@ -286,7 +286,7 @@ const Sidebar = () => {
     { icon: Banknote, label: 'Salarizare', path: '/salarizare' },
     { icon: Settings, label: 'Setări', path: '/settings' },
     { icon: ServerCog, label: 'Stare Sistem', path: '/system-status' },
-    ...(user?.email !== 'marcela.mihai@icmpp.ro' ? [{ icon: CreditCard, label: 'Carte de Vizită', path: '/carti-vizita' }] : []),
+    
     { icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin },
     { icon: Newspaper, label: 'Changelog', path: '/changelog' },
   ];
