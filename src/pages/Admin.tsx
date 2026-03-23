@@ -90,8 +90,16 @@ const Admin = () => {
   const [bypassUsers, setBypassUsers] = useState<Set<string>>(new Set());
   const [togglingBypass, setTogglingBypass] = useState<string | null>(null);
   useEffect(() => {
-    if (isRealSuperAdmin) fetchUsers();
+    if (isRealSuperAdmin) {
+      fetchUsers();
+      fetchBypassUsers();
+    }
   }, [isRealSuperAdmin]);
+
+  const fetchBypassUsers = async () => {
+    const { data } = await supabase.from('ip_bypass_users').select('user_id');
+    if (data) setBypassUsers(new Set(data.map(d => d.user_id)));
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
