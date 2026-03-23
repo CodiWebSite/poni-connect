@@ -61,24 +61,9 @@ const ImpersonationBanner = () => {
     if (users.length > 0) return;
     setLoadingUsers(true);
     const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabase.from('profiles').select('user_id, full_name, email:user_id'),
+      supabase.from('profiles').select('user_id, full_name'),
       supabase.from('user_roles').select('user_id, role'),
     ]);
-    // Fetch emails from employee_personal_data via employee_records
-    const userIds = (profiles || []).map(p => p.user_id);
-    let emailMap: Record<string, string> = {};
-    if (userIds.length > 0) {
-      const { data: records } = await supabase.from('employee_records').select('user_id').in('user_id', userIds);
-      const recordUserIds = (records || []).map(r => r.user_id);
-      if (recordUserIds.length > 0) {
-        const { data: epdData } = await supabase.from('employee_personal_data').select('email, employee_record_id').in('employee_record_id', 
-          (await supabase.from('employee_records').select('id, user_id').in('user_id', recordUserIds)).data?.map(r => r.id) || []
-        );
-        const recToUser: Record<string, string> = {};
-        (await supabase.from('employee_records').select('id, user_id').in('user_id', recordUserIds)).data?.forEach(r => { recToUser[r.id] = r.user_id; });
-        (epdData || []).forEach(e => { if (e.employee_record_id && recToUser[e.employee_record_id]) emailMap[recToUser[e.employee_record_id]] = e.email; });
-      }
-    }
     if (profiles && roles) {
       const roleMap = new Map(roles.map(r => [r.user_id, r.role as string]));
       setUsers(
@@ -88,7 +73,6 @@ const ImpersonationBanner = () => {
             user_id: p.user_id,
             full_name: p.full_name || 'Fără nume',
             role: roleMap.get(p.user_id) || 'user',
-            email: emailMap[p.user_id] || '',
           }))
           .sort((a, b) => a.full_name.localeCompare(b.full_name))
       );
