@@ -128,6 +128,8 @@ const getDocIcon = (name: string) => {
   return { color: 'text-primary bg-primary/10', label: 'FILE' };
 };
 
+const HIDDEN_PROFILE_EMAILS = ['marcela.mihai@icmpp.ro'];
+
 const MyProfile = () => {
   const { user } = useAuth();
   const { role, canManageHR } = useUserRole();
