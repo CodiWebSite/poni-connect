@@ -88,7 +88,7 @@ const MobileNav = () => {
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
     ...(isSalarizare ? [{ icon: Banknote, label: 'Salarizare', path: '/salarizare' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
-    ...(user?.email !== 'marcela.mihai@icmpp.ro' ? [{ icon: CreditCard, label: 'Carte de Vizită', path: '/carti-vizita' }] : []),
+    
     ...(isSuperAdmin ? [{ icon: ServerCog, label: 'Stare Sistem', path: '/system-status' }] : []),
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
