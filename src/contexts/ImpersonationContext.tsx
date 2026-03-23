@@ -16,6 +16,7 @@ const ImpersonationContext = createContext<ImpersonationState>({
   impersonatedRole: null,
   impersonatedUserId: null,
   impersonatedUserName: null,
+  impersonatedUserEmail: null,
   isImpersonating: false,
   startRoleImpersonation: () => {},
   startUserImpersonation: () => {},
