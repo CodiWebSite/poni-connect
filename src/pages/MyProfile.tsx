@@ -134,6 +134,7 @@ const HIDDEN_PROFILE_EMAILS = ['marcela.mihai@icmpp.ro'];
 const MyProfile = () => {
   const { user } = useAuth();
   const { role, canManageHR } = useUserRole();
+  const { isImpersonating, impersonatedUserEmail } = useImpersonation();
   const { toast } = useToast();
   
   const [profile, setProfile] = useState<Profile | null>(null);
