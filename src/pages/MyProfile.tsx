@@ -935,8 +935,8 @@ const MyProfile = () => {
               </Card>
             )}
 
-            {/* Personal Data */}
-            {personalData && (
+            {/* Personal Data - hidden for users who opted out */}
+            {personalData && user?.email !== 'marcela.mihai@icmpp.ro' && (
               <Card className="animate-fade-in" style={{ animationDelay: '200ms' }}>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base">
