@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { Calendar, Loader2, Send, AlertTriangle } from 'lucide-react';
-import { format, eachDayOfInterval, parseISO, isWeekend } from 'date-fns';
+import { format, eachDayOfInterval, parseISO, isWeekend, addDays } from 'date-fns';
 
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-');
