@@ -1,0 +1,1 @@
+UPDATE role_page_permissions SET can_access = false WHERE page_key = 'leave-calendar' AND role_key IN ('user', 'bibliotecar', 'salarizare', 'achizitii', 'contabilitate', 'oficiu_juridic', 'compartiment_comunicare', 'secretariat', 'medic_medicina_muncii', 'secretar_stiintific');
