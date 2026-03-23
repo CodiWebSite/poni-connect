@@ -83,7 +83,7 @@ export default function IPAccessGuard({ children }: IPAccessGuardProps) {
               <span>IP detectat: <code className="bg-muted px-1.5 py-0.5 rounded">{clientIP}</code></span>
             </div>
             <p className="text-muted-foreground">
-              Conectați-vă la rețeaua institutului sau folosiți VPN-ul pentru a accesa platforma.
+              Conectați-vă la rețeaua institutului pentru a accesa platforma.
             </p>
           </div>
           <button
