@@ -54,6 +54,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const [detailsDialog, setDetailsDialog] = useState<LeaveRequest | null>(null);
   const [isDesignatedApprover, setIsDesignatedApprover] = useState(false);
   const [isActiveDelegate, setIsActiveDelegate] = useState(false);
+  const [approveDialog, setApproveDialog] = useState<LeaveRequest | null>(null);
   const [approverSignature, setApproverSignature] = useState<string | null>(null);
 
   const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
