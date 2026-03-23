@@ -255,6 +255,10 @@ const LeaveCalendar = () => {
     return map;
   }, [leaves]);
 
+  if (!approverLoading && !hasAccess) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <MainLayout title="Calendar Concedii" description={department ? `Departament: ${department}` : 'Vizualizare concedii departament'}>
       {/* Header */}
