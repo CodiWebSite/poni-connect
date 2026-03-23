@@ -74,17 +74,14 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
   const checkDesignatedApprover = async () => {
     if (!user) return;
-    const { data: empApprovers } = await supabase
-      .from('leave_approvers')
-      .select('id')
-      .eq('approver_user_id', user.id)
-      .limit(1);
-    const { data: deptApprovers } = await supabase
-      .from('leave_department_approvers')
-      .select('id')
-      .eq('approver_user_id', user.id)
-      .limit(1);
-    setIsDesignatedApprover((empApprovers || []).length > 0 || (deptApprovers || []).length > 0);
+    const today = new Date().toISOString().split('T')[0];
+    const [empResult, deptResult, delegResult] = await Promise.all([
+      supabase.from('leave_approvers').select('id').eq('approver_user_id', user.id).limit(1),
+      supabase.from('leave_department_approvers').select('id').eq('approver_user_id', user.id).limit(1),
+      supabase.from('leave_approval_delegates').select('id').eq('delegate_user_id', user.id).eq('is_active', true).lte('start_date', today).gte('end_date', today).limit(1),
+    ]);
+    setIsDesignatedApprover((empResult.data || []).length > 0 || (deptResult.data || []).length > 0);
+    setIsActiveDelegate((delegResult.data || []).length > 0);
   };
 
   const fetchPendingRequests = async () => {
