@@ -179,8 +179,15 @@ const ImpersonationBanner = () => {
                   <button
                     key={u.user_id}
                     className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors text-left"
-                    onClick={() => {
-                      startUserImpersonation(u.user_id, u.full_name, u.role as AppRole);
+                    onClick={async () => {
+                      // Fetch the user's email for impersonation context
+                      const { data: rec } = await supabase.from('employee_records').select('id').eq('user_id', u.user_id).maybeSingle();
+                      let email = '';
+                      if (rec) {
+                        const { data: epd } = await supabase.from('employee_personal_data').select('email').eq('employee_record_id', rec.id).maybeSingle();
+                        email = epd?.email || '';
+                      }
+                      startUserImpersonation(u.user_id, u.full_name, u.role as AppRole, email);
                       setOpen(false);
                     }}
                   >

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -128,9 +129,12 @@ const getDocIcon = (name: string) => {
   return { color: 'text-primary bg-primary/10', label: 'FILE' };
 };
 
+const HIDDEN_PROFILE_EMAILS = ['marcela.mihai@icmpp.ro'];
+
 const MyProfile = () => {
   const { user } = useAuth();
   const { role, canManageHR } = useUserRole();
+  const { isImpersonating, impersonatedUserEmail } = useImpersonation();
   const { toast } = useToast();
   
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -155,6 +159,10 @@ const MyProfile = () => {
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [cnpCopied, setCnpCopied] = useState(false);
   const [epdId, setEpdId] = useState<string | null>(null);
+
+  // Determine if identity/public profile sections should be hidden
+  const effectiveEmail = isImpersonating && impersonatedUserEmail ? impersonatedUserEmail : user?.email;
+  const isProfileHidden = HIDDEN_PROFILE_EMAILS.includes(effectiveEmail || '');
 
   useEffect(() => {
     if (user) fetchData();
@@ -936,7 +944,7 @@ const MyProfile = () => {
             )}
 
             {/* Personal Data - hidden for users who opted out */}
-            {personalData && user?.email !== 'marcela.mihai@icmpp.ro' && (
+            {personalData && !isProfileHidden && (
               <Card className="animate-fade-in" style={{ animationDelay: '200ms' }}>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -1069,7 +1077,7 @@ const MyProfile = () => {
         </div>
       </div>
 
-      {epdId && profile?.full_name && user?.email !== 'marcela.mihai@icmpp.ro' && (
+      {epdId && profile?.full_name && !isProfileHidden && (
         <div className="max-w-4xl mt-6">
           <PublicProfileEditor epdId={epdId} employeeName={profile.full_name} />
         </div>
