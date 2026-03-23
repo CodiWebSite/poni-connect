@@ -1073,7 +1073,7 @@ const MyProfile = () => {
         </div>
       </div>
 
-      {epdId && profile?.full_name && user?.email !== 'marcela.mihai@icmpp.ro' && (
+      {epdId && profile?.full_name && !isProfileHidden && (
         <div className="max-w-4xl mt-6">
           <PublicProfileEditor epdId={epdId} employeeName={profile.full_name} />
         </div>
