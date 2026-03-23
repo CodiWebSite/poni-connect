@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useIsApprover } from '@/hooks/useIsApprover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
