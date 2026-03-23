@@ -45,10 +45,6 @@ const LeaveCalendar = () => {
 
   // Restrict access to approvers/HR/admin only
   const hasAccess = isSuperAdmin || canManageHR || isSef || isSefSRUS || isDesignatedApprover;
-  
-  if (!approverLoading && !hasAccess) {
-    return <Navigate to="/" replace />;
-  }
 
   useEffect(() => {
     if (user) fetchData();
