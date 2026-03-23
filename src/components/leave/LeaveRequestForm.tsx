@@ -476,7 +476,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               type="date"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
-              min={format(new Date(), 'yyyy-MM-dd')}
+              min={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
             />
           </div>
           <div className="space-y-2">
@@ -486,7 +486,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               type="date"
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
-              min={startDate || format(new Date(), 'yyyy-MM-dd')}
+              min={startDate || format(addDays(new Date(), 1), 'yyyy-MM-dd')}
             />
           </div>
         </div>
