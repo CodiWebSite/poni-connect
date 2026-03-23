@@ -202,6 +202,13 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       return;
     }
 
+    // Validate minimum start date is tomorrow
+    const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+    if (startDate < tomorrow) {
+      toast({ title: 'Eroare', description: 'Data de început trebuie să fie cel puțin ziua de mâine. Nu puteți depune concediu pentru ziua curentă sau una trecută.', variant: 'destructive' });
+      return;
+    }
+
     if (workingDays <= 0) {
       toast({ title: 'Eroare', description: 'Perioada selectată nu conține zile lucrătoare.', variant: 'destructive' });
       return;
