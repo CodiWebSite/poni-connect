@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { Calendar, Loader2, Send, AlertTriangle } from 'lucide-react';
-import { format, eachDayOfInterval, parseISO, isWeekend } from 'date-fns';
+import { format, eachDayOfInterval, parseISO, isWeekend, addDays } from 'date-fns';
 
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-');
@@ -199,6 +199,13 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   const handleSubmit = async () => {
     if (!user || !employeeData || !signature || !startDate || !endDate) {
       toast({ title: 'Eroare', description: 'Completați toate câmpurile și semnați cererea.', variant: 'destructive' });
+      return;
+    }
+
+    // Validate minimum start date is tomorrow
+    const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+    if (startDate < tomorrow) {
+      toast({ title: 'Eroare', description: 'Data de început trebuie să fie cel puțin ziua de mâine. Nu puteți depune concediu pentru ziua curentă sau una trecută.', variant: 'destructive' });
       return;
     }
 
@@ -469,7 +476,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               type="date"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
-              min={format(new Date(), 'yyyy-MM-dd')}
+              min={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
             />
           </div>
           <div className="space-y-2">
@@ -479,7 +486,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               type="date"
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
-              min={startDate || format(new Date(), 'yyyy-MM-dd')}
+              min={startDate || format(addDays(new Date(), 1), 'yyyy-MM-dd')}
             />
           </div>
         </div>
