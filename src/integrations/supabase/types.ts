@@ -1222,6 +1222,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ip_bypass_users: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       leave_approval_delegates: {
         Row: {
           created_at: string
@@ -2689,6 +2710,7 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      is_ip_bypass_user: { Args: { _user_id: string }; Returns: boolean }
       is_leave_approver_for_request: {
         Args: { _request_id: string; _user_id: string }
         Returns: boolean
