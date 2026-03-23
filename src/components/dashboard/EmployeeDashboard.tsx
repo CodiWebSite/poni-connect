@@ -7,7 +7,6 @@ import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight, UserCircle, FolderDown } from 'lucide-react';
 import WeatherWidget from './WeatherWidget';
 import ActivityHistory from './ActivityHistory';
-import ActivityHistory from './ActivityHistory';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { QuickActionsSkeleton, LeaveBalanceSkeleton, ChartSkeleton } from './DashboardSkeleton';
