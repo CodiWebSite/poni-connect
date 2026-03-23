@@ -52,14 +52,15 @@ const LeaveRequest = () => {
 
       const today = new Date().toISOString().split('T')[0];
       supabase
-        .from('leave_approval_delegates' as any)
+        .from('leave_approval_delegates')
         .select('id')
         .eq('delegate_user_id', user.id)
         .eq('is_active', true)
         .lte('start_date', today)
         .gte('end_date', today)
         .limit(1)
-        .then(({ data }) => {
+        .then(({ data, error }) => {
+          if (error) console.error('[LeaveRequest] delegate check error:', error);
           setIsActiveDelegate((data || []).length > 0);
         });
     }
