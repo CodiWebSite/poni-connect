@@ -160,6 +160,10 @@ const MyProfile = () => {
   const [cnpCopied, setCnpCopied] = useState(false);
   const [epdId, setEpdId] = useState<string | null>(null);
 
+  // Determine if identity/public profile sections should be hidden
+  const effectiveEmail = isImpersonating && impersonatedUserEmail ? impersonatedUserEmail : user?.email;
+  const isProfileHidden = HIDDEN_PROFILE_EMAILS.includes(effectiveEmail || '');
+
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
