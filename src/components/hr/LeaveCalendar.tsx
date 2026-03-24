@@ -131,6 +131,29 @@ const LeaveCalendar = () => {
       if (userId) userIdToEpdId[userId] = e.id;
     });
 
+    // Fetch carryover data for source labels
+    const allEpdIds = (epdData || []).map(e => e.id);
+    let carryoverMap: Record<string, { from_year: number; initial_days: number }[]> = {};
+    if (allEpdIds.length > 0) {
+      const { data: carryovers } = await supabase
+        .from('leave_carryover')
+        .select('employee_personal_data_id, from_year, initial_days')
+        .in('employee_personal_data_id', allEpdIds);
+      (carryovers || []).forEach(c => {
+        if (!carryoverMap[c.employee_personal_data_id]) carryoverMap[c.employee_personal_data_id] = [];
+        carryoverMap[c.employee_personal_data_id].push({ from_year: c.from_year, initial_days: c.initial_days });
+      });
+    }
+
+    const computeSourceLabel = (epdId: string | null, year: number, workingDays: number): string => {
+      if (!epdId) return `Sold ${year}`;
+      const carryovers = carryoverMap[epdId] || [];
+      const relevantCarryover = carryovers.find(c => c.from_year === year - 1 && c.initial_days > 0);
+      if (!relevantCarryover) return `Sold ${year}`;
+      if (relevantCarryover.initial_days >= workingDays) return `Report ${relevantCarryover.from_year}`;
+      return `Report ${relevantCarryover.from_year} + Sold ${year}`;
+    };
+
     const entries: LeaveEntry[] = [];
     // Track seen leaves by normalized key to avoid duplicates across tables
     const seenLeaveKeys = new Set<string>();
