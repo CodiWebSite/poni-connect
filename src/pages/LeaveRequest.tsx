@@ -199,6 +199,7 @@ const LeaveRequest = () => {
             </TabsTrigger>
           )}
         </TabsList>
+        </div>
 
         <TabsContent value="new">
           <LeaveRequestForm onSubmitted={handleRefresh} />
