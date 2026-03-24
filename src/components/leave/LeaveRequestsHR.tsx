@@ -450,7 +450,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           nr: r.request_number, name: r.employee_name, dept: r.employee_department,
           position: r.employee_position, grade: r.employee_grade || '-',
           period: `${format(parseISO(r.start_date), 'dd.MM.yyyy')} – ${format(parseISO(r.end_date), 'dd.MM.yyyy')}`,
-          days: r.working_days, year: r.year, replacement: r.replacement_name,
+          days: r.working_days, source: r.source_label || `Sold ${r.year}`, replacement: r.replacement_name,
           status: sMap[r.status] || r.status, approver: r.dept_head_name || '-',
           approvalDate: r.dept_head_approved_at ? format(parseISO(r.dept_head_approved_at), 'dd.MM.yyyy') : '-',
           createdAt: format(parseISO(r.created_at), 'dd.MM.yyyy'),
