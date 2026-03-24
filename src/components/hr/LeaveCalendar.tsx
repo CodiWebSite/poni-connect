@@ -94,7 +94,7 @@ const LeaveCalendar = () => {
       .eq('request_type', 'concediu').eq('status', 'approved');
 
     const { data: formalLeaves } = await supabase
-      .from('leave_requests').select('user_id, epd_id, start_date, end_date, working_days, status')
+      .from('leave_requests').select('user_id, epd_id, start_date, end_date, working_days, status, year')
       .eq('status', 'approved');
 
     const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department, avatar_url');
