@@ -145,14 +145,7 @@ const LeaveCalendar = () => {
       });
     }
 
-    const computeSourceLabel = (epdId: string | null, year: number, workingDays: number): string => {
-      if (!epdId) return `Sold ${year}`;
-      const carryovers = carryoverMap[epdId] || [];
-      const relevantCarryover = carryovers.find(c => c.from_year === year - 1 && c.initial_days > 0);
-      if (!relevantCarryover) return `Sold ${year}`;
-      if (relevantCarryover.initial_days >= workingDays) return `Report ${relevantCarryover.from_year}`;
-      return `Report ${relevantCarryover.from_year} + Sold ${year}`;
-    };
+    // We'll assign sourceLabel after collecting all entries using FIFO simulation
 
     const entries: LeaveEntry[] = [];
     // Track seen leaves by normalized key to avoid duplicates across tables
