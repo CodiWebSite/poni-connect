@@ -98,17 +98,19 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
 
     // Get carryover data
     let carryoverDays = 0;
+    let carryoverInitialDays = 0;
     let carryoverFromYear: number | undefined;
     if (request.epd_id) {
-      const { data: carryover } = await supabase
+      const { data: carryoverData } = await supabase
         .from('leave_carryover')
-        .select('remaining_days, from_year')
+        .select('remaining_days, initial_days, from_year')
         .eq('employee_personal_data_id', request.epd_id)
         .eq('to_year', request.year)
         .maybeSingle();
-      if (carryover) {
-        carryoverDays = carryover.remaining_days;
-        carryoverFromYear = carryover.from_year;
+      if (carryoverData) {
+        carryoverDays = carryoverData.remaining_days;
+        carryoverInitialDays = carryoverData.initial_days;
+        carryoverFromYear = carryoverData.from_year;
       }
     }
 
@@ -152,6 +154,7 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       totalLeaveDays: epd?.total_leave_days ?? 0,
       usedLeaveDays: epd?.used_leave_days ?? 0,
       carryoverDays,
+      carryoverInitialDays,
       carryoverFromYear,
       srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
       srusSignature: (lrData as any)?.srus_signature || undefined,
