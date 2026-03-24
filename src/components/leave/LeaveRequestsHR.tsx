@@ -576,7 +576,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                     <TableCell className="text-sm whitespace-nowrap">
                       {format(parseISO(r.start_date), 'dd.MM.yy')} – {format(parseISO(r.end_date), 'dd.MM.yy')}
                     </TableCell>
-                    <TableCell className="text-center font-medium">{r.working_days}</TableCell>
+                     <TableCell className="text-center font-medium">{r.working_days}</TableCell>
+                     <TableCell className="text-center text-sm text-muted-foreground">{r.year}</TableCell>
                     <TableCell>
                       <Badge className={`text-xs ${statusColors[r.status] || ''}`}>
                         {statusLabels[r.status] || r.status}
