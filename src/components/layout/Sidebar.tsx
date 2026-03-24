@@ -323,10 +323,14 @@ const Sidebar = () => {
 
     const innerContent = (
       <>
+        {/* Active indicator bar */}
+        {isActive && !isCollapsed && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary animate-scale-in" />
+        )}
         <div className="relative">
           <item.icon className={cn(
-            "w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-105",
-            isActive && "text-sidebar-primary"
+            "w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110",
+            isActive && "text-sidebar-primary drop-shadow-[0_0_6px_hsl(var(--sidebar-primary)/0.4)]"
           )} />
           {item.badge && item.badge > 0 && isCollapsed && (
             <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center animate-scale-in">
