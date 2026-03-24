@@ -31,6 +31,7 @@ import { EmailSyncImport } from '@/components/hr/EmailSyncImport';
 import HRReportsPanel from '@/components/hr/HRReportsPanel';
 import CertificateGenerator from '@/components/hr/CertificateGenerator';
 import EmployeeDigitalDossier from '@/components/hr/EmployeeDigitalDossier';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Users, 
   UserPlus, 
@@ -59,7 +60,8 @@ import {
   RotateCcw,
   History,
   Gift,
-  FolderOpen
+  FolderOpen,
+  MoreHorizontal
 } from 'lucide-react';
 import { format, isWeekend, eachDayOfInterval, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
