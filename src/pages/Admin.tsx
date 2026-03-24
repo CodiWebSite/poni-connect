@@ -28,6 +28,7 @@ import AnnouncementPublishersPanel from '@/components/admin/AnnouncementPublishe
 import EventPublishersPanel from '@/components/admin/EventPublishersPanel';
 import AccountReminderPanel from '@/components/admin/AccountReminderPanel';
 import OperationalRulesPanel from '@/components/admin/OperationalRulesPanel';
+import UptimeMonitorPanel from '@/components/admin/UptimeMonitorPanel';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -232,6 +233,7 @@ const Admin = () => {
               <TabsTrigger value="event-publishers" className="text-xs sm:text-sm">Evenimente</TabsTrigger>
                 <TabsTrigger value="reminders" className="text-xs sm:text-sm">Remindere</TabsTrigger>
                 <TabsTrigger value="rules" className="text-xs sm:text-sm">Reguli Acces</TabsTrigger>
+                <TabsTrigger value="monitoring" className="text-xs sm:text-sm">Monitoring</TabsTrigger>
                 <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
           </TabsList>
         <TabsContent value="roles" className="space-y-6">
@@ -346,6 +348,9 @@ const Admin = () => {
         </TabsContent>
         <TabsContent value="rules">
           <OperationalRulesPanel />
+        </TabsContent>
+        <TabsContent value="monitoring">
+          <UptimeMonitorPanel />
         </TabsContent>
         <TabsContent value="settings">
           <AppSettingsPanel />
