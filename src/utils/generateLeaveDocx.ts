@@ -132,19 +132,14 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const totalCurrentYear = totalLeaveDays ?? 0;
   const usedDays = usedLeaveDays ?? 0;
   const carryover = carryoverDays ?? 0;
+  // Use initial carryover days for display (what was carried over originally, not remaining)
+  const carryoverInitial = carryoverInitialDays ?? carryover;
 
   // Show pre-leave balance (before this request was deducted)
-  // In auto mode, carryover is used first:
-  // - If carryover remaining > 0 after deduction, ALL workingDays came from carryover
-  //   → pre-leave carryover = current remaining + workingDays, current year unchanged
-  // - If carryover = 0 (depleted or no carryover), days came from current year
-  //   → pre-leave current used = usedDays - workingDays
-  let preLeaveCarryover = carryover;
   let preLeaveCurrentUsed = usedDays;
 
   if (carryover > 0 && workingDays > 0) {
     // Carryover still has remaining → all workingDays came from carryover
-    preLeaveCarryover = carryover + workingDays;
     preLeaveCurrentUsed = usedDays; // current year was not touched
   } else {
     // No carryover or carryover fully depleted → days came from current year
@@ -152,7 +147,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   }
 
   const remainingCurrentYear = totalCurrentYear - preLeaveCurrentUsed;
-  const totalSold = remainingCurrentYear + preLeaveCarryover;
+  const totalSold = remainingCurrentYear + carryoverInitial;
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
