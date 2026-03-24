@@ -160,7 +160,8 @@ const LeaveRequest = () => {
         </div>
       )}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+        <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0 scrollbar-hide">
+        <TabsList className="inline-flex md:flex md:flex-wrap h-auto gap-1 p-1 min-w-max md:min-w-0">
           <TabsTrigger value="new" className="gap-2">
             <Send className="w-4 h-4" />
             Cerere Nouă
