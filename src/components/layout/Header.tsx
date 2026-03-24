@@ -59,14 +59,14 @@ const Header = ({ title, description }: HeaderProps) => {
 
   return (
     <>
-    <header className="sticky top-0 z-40 bg-background/60 backdrop-blur-xl border-b border-border/40 px-4 md:px-6 py-2.5 md:py-3">
+    <header className="sticky top-0 z-40 bg-background/60 backdrop-blur-xl border-b border-border/40 px-3 md:px-6 py-2 md:py-2.5">
       <div className="flex items-center justify-between gap-2 md:gap-4">
         <div className="flex items-center gap-3">
           {/* Mobile menu button */}
           <MobileNav />
           
           <div className="min-w-0">
-            <h1 className="text-lg md:text-2xl font-display font-bold text-foreground truncate">{title}</h1>
+            <h1 className="text-base md:text-2xl font-display font-bold text-foreground truncate">{title}</h1>
             {/* Breadcrumb */}
             {currentRoute !== '/' && breadcrumbLabel && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 hidden sm:flex">
