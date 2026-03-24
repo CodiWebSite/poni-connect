@@ -28,6 +28,7 @@ import AnnouncementPublishersPanel from '@/components/admin/AnnouncementPublishe
 import EventPublishersPanel from '@/components/admin/EventPublishersPanel';
 import AccountReminderPanel from '@/components/admin/AccountReminderPanel';
 import OperationalRulesPanel from '@/components/admin/OperationalRulesPanel';
+import UptimeMonitorPanel from '@/components/admin/UptimeMonitorPanel';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
