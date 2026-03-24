@@ -230,7 +230,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
         const { data: carryover } = await supabase
           .from('leave_carryover')
-          .select('remaining_days, from_year')
+          .select('remaining_days, initial_days, from_year')
           .eq('employee_personal_data_id', request.epd_id)
           .eq('to_year', request.year)
           .maybeSingle();
