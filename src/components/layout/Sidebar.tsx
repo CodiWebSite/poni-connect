@@ -314,19 +314,23 @@ const Sidebar = () => {
     const isActive = !isExternal && location.pathname === item.path;
 
     const commonClasses = cn(
-      "flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 relative group text-[13px] tracking-wide",
+      "flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-300 relative group text-[13px] tracking-wide",
       isActive
         ? "sidebar-item-active text-sidebar-primary font-semibold"
-        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground hover:shadow-[0_0_12px_hsl(var(--sidebar-primary)/0.08)]",
       isCollapsed && isActive && "sidebar-item-active-collapsed justify-center"
     );
 
     const innerContent = (
       <>
+        {/* Active indicator bar */}
+        {isActive && !isCollapsed && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary animate-scale-in" />
+        )}
         <div className="relative">
           <item.icon className={cn(
-            "w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-105",
-            isActive && "text-sidebar-primary"
+            "w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110",
+            isActive && "text-sidebar-primary drop-shadow-[0_0_6px_hsl(var(--sidebar-primary)/0.4)]"
           )} />
           {item.badge && item.badge > 0 && isCollapsed && (
             <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center animate-scale-in">
@@ -439,8 +443,10 @@ const Sidebar = () => {
                   ) : (
                     <User className="w-4 h-4 text-sidebar-foreground/70" />
                   )}
-                  {/* Online dot */}
-                  <span className="absolute bottom-0 right-0 w-2 h-2 bg-success rounded-full ring-2 ring-[hsl(var(--sidebar-background))]" />
+                   {/* Online dot with pulse */}
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full ring-2 ring-[hsl(var(--sidebar-background))]">
+                    <span className="absolute inset-0 rounded-full bg-success animate-ping opacity-75" />
+                  </span>
                 </div>
               </div>
               {!isCollapsed && fullName && (
@@ -460,12 +466,13 @@ const Sidebar = () => {
       <nav className="flex-1 p-3 overflow-y-auto sidebar-scrollbar">
         {/* Main section */}
         {!isCollapsed && (
-          <div className="flex items-center gap-2 px-3 mb-3 mt-1">
-            <span className="h-px flex-1 bg-sidebar-border/30" />
-            <span className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/35 font-semibold">
+          <div className="flex items-center gap-2.5 px-3 mb-3 mt-1">
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent via-sidebar-border/40 to-transparent" />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/35 font-semibold flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-sidebar-primary/40" />
               Meniu Principal
             </span>
-            <span className="h-px flex-1 bg-sidebar-border/30" />
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent via-sidebar-border/40 to-transparent" />
           </div>
         )}
         <div className="space-y-0.5">
@@ -477,12 +484,13 @@ const Sidebar = () => {
 
         {/* Management section */}
         {!isCollapsed && (
-          <div className="flex items-center gap-2 px-3 mb-3">
-            <span className="h-px flex-1 bg-sidebar-border/30" />
-            <span className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/35 font-semibold">
+          <div className="flex items-center gap-2.5 px-3 mb-3">
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent via-sidebar-border/40 to-transparent" />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/35 font-semibold flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-accent/50" />
               Administrare
             </span>
-            <span className="h-px flex-1 bg-sidebar-border/30" />
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent via-sidebar-border/40 to-transparent" />
           </div>
         )}
         <div className="space-y-0.5">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { LEAVE_TYPES } from '@/utils/leaveTypes';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -1239,11 +1240,11 @@ const HRManagement = () => {
         {/* Employees Tab */}
         <TabsContent value="employees" className="space-y-6">
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
-            <div className="relative max-w-md w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <div className="relative max-w-md w-full group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <Input
                 placeholder="Caută după nume, email, departament..."
-                className="pl-10"
+                className="pl-10 transition-shadow duration-300 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -1269,81 +1270,98 @@ const HRManagement = () => {
                 Redenumește
               </Button>
             )}
-            <div className="flex gap-1 rounded-lg border border-border p-1 bg-muted/50">
-              <Button
-                variant={accountFilter === 'all' ? 'default' : 'ghost'}
-                size="sm"
+            <div className="flex gap-0.5 rounded-xl border border-border p-1 bg-muted/30 backdrop-blur-sm relative">
+              <button
                 onClick={() => setAccountFilter('all')}
-                className="text-xs h-8"
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 flex items-center gap-1.5",
+                  accountFilter === 'all'
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
               >
-                <Users className="w-3.5 h-3.5 mr-1" />
+                <Users className="w-3.5 h-3.5" />
                 Toți ({employees.length})
-              </Button>
-              <Button
-                variant={accountFilter === 'with_account' ? 'default' : 'ghost'}
-                size="sm"
+              </button>
+              <button
                 onClick={() => setAccountFilter('with_account')}
-                className="text-xs h-8"
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 flex items-center gap-1.5",
+                  accountFilter === 'with_account'
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
               >
-                <UserCheck className="w-3.5 h-3.5 mr-1" />
+                <UserCheck className="w-3.5 h-3.5" />
                 Cu cont ({employeesWithAccounts.length})
-              </Button>
-              <Button
-                variant={accountFilter === 'without_account' ? 'default' : 'ghost'}
-                size="sm"
+              </button>
+              <button
                 onClick={() => setAccountFilter('without_account')}
-                className="text-xs h-8"
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 flex items-center gap-1.5",
+                  accountFilter === 'without_account'
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
               >
-                <UserX className="w-3.5 h-3.5 mr-1" />
+                <UserX className="w-3.5 h-3.5" />
                 Fără cont ({employees.length - employeesWithAccounts.length})
-              </Button>
+              </button>
             </div>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
+            <Card className="border-border/60 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <Users className="w-8 h-8 text-primary" />
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-info flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110">
+                    <Users className="w-5 h-5 text-primary-foreground" />
+                  </div>
                   <div>
-                    <p className="text-2xl font-bold">{employees.length}</p>
-                    <p className="text-xs text-muted-foreground">Total Angajați</p>
+                    <p className="text-2xl font-bold tracking-tight">{employees.length}</p>
+                    <p className="text-xs text-muted-foreground font-medium">Total Angajați</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/60 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <UserCheck className="w-8 h-8 text-green-500" />
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-success to-accent flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110">
+                    <UserCheck className="w-5 h-5 text-success-foreground" />
+                  </div>
                   <div>
-                    <p className="text-2xl font-bold">{employeesWithAccounts.length}</p>
-                    <p className="text-xs text-muted-foreground">Cu Cont Activ</p>
+                    <p className="text-2xl font-bold tracking-tight">{employeesWithAccounts.length}</p>
+                    <p className="text-xs text-muted-foreground font-medium">Cu Cont Activ</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/60 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-8 h-8 text-blue-500" />
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-info to-primary flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110">
+                    <FileText className="w-5 h-5 text-info-foreground" />
+                  </div>
                   <div>
-                    <p className="text-2xl font-bold">
+                    <p className="text-2xl font-bold tracking-tight">
                       {employees.reduce((acc, e) => acc + (e.documents?.length || 0), 0)}
                     </p>
-                    <p className="text-xs text-muted-foreground">Documente</p>
+                    <p className="text-xs text-muted-foreground font-medium">Documente</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/60 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <Clock className="w-8 h-8 text-amber-500" />
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-warning to-destructive/70 flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110">
+                    <Clock className="w-5 h-5 text-warning-foreground" />
+                  </div>
                   <div>
-                    <p className="text-2xl font-bold">{incompleteEmployees.length}</p>
-                    <p className="text-xs text-muted-foreground">Date Incomplete</p>
+                    <p className="text-2xl font-bold tracking-tight">{incompleteEmployees.length}</p>
+                    <p className="text-xs text-muted-foreground font-medium">Date Incomplete</p>
                   </div>
                 </div>
               </CardContent>
@@ -1375,17 +1393,28 @@ const HRManagement = () => {
                   {filteredEmployees.map((employee) => (
                     <div
                       key={employee.id}
-                      className="p-4 bg-secondary/30 rounded-lg border border-border"
+                      className={cn(
+                        "p-4 rounded-xl border transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5 relative overflow-hidden",
+                        "bg-card border-border/60",
+                        "border-l-[3px]",
+                        (!employee.department || !employee.position)
+                          ? "border-l-destructive"
+                          : employee.hasAccount
+                            ? "border-l-success"
+                            : "border-l-muted-foreground/30"
+                      )}
                     >
                       <div className="flex flex-col lg:flex-row gap-4">
                         {/* Employee Info */}
                         <div className="flex items-start gap-3 flex-1">
-                          <Avatar className="w-12 h-12 flex-shrink-0">
-                            {employee.avatar_url && <AvatarImage src={employee.avatar_url} alt={employee.full_name} />}
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {getInitials(employee.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div className="avatar-gradient-ring flex-shrink-0">
+                            <Avatar className="w-11 h-11">
+                              {employee.avatar_url && <AvatarImage src={employee.avatar_url} alt={employee.full_name} />}
+                              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                {getInitials(employee.full_name)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
                           
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
