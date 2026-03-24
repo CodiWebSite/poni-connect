@@ -218,24 +218,26 @@ const Admin = () => {
 
   return (
     <MainLayout title="Administrare" description="Gestionează rolurile și configurările sistemului">
-      <Tabs defaultValue="roles" className="space-y-6">
-         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
-           <TabsTrigger value="roles" className="text-xs sm:text-sm">Roluri</TabsTrigger>
-           <TabsTrigger value="preassign" className="text-xs sm:text-sm">Pre-atribuire</TabsTrigger>
-           <TabsTrigger value="create-account" className="text-xs sm:text-sm">Creare Cont</TabsTrigger>
-           <TabsTrigger value="account-requests" className="text-xs sm:text-sm">Cereri Cont</TabsTrigger>
-           <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit</TabsTrigger>
-           <TabsTrigger value="auth-log" className="text-xs sm:text-sm">Autentificări</TabsTrigger>
-           <TabsTrigger value="inventory" className="text-xs sm:text-sm">Inventar</TabsTrigger>
-             <TabsTrigger value="invitations" className="text-xs sm:text-sm">Invitații</TabsTrigger>
-              <TabsTrigger value="helpdesk" className="text-xs sm:text-sm">HelpDesk</TabsTrigger>
-              <TabsTrigger value="publishers" className="text-xs sm:text-sm">Anunțuri</TabsTrigger>
-              <TabsTrigger value="event-publishers" className="text-xs sm:text-sm">Evenimente</TabsTrigger>
-                <TabsTrigger value="reminders" className="text-xs sm:text-sm">Remindere</TabsTrigger>
-                <TabsTrigger value="rules" className="text-xs sm:text-sm">Reguli Acces</TabsTrigger>
-                <TabsTrigger value="monitoring" className="text-xs sm:text-sm">Monitoring</TabsTrigger>
-                <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="roles" className="space-y-4 md:space-y-6">
+         <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0 scrollbar-hide">
+           <TabsList className="inline-flex md:flex md:flex-wrap h-auto gap-1 p-1 min-w-max md:min-w-0">
+             <TabsTrigger value="roles" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Roluri</TabsTrigger>
+             <TabsTrigger value="preassign" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Pre-atribuire</TabsTrigger>
+             <TabsTrigger value="create-account" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Creare Cont</TabsTrigger>
+             <TabsTrigger value="account-requests" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Cereri Cont</TabsTrigger>
+             <TabsTrigger value="audit" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Audit</TabsTrigger>
+             <TabsTrigger value="auth-log" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Autentificări</TabsTrigger>
+             <TabsTrigger value="inventory" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Inventar</TabsTrigger>
+             <TabsTrigger value="invitations" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Invitații</TabsTrigger>
+             <TabsTrigger value="helpdesk" className="text-[11px] sm:text-sm px-2.5 sm:px-3">HelpDesk</TabsTrigger>
+             <TabsTrigger value="publishers" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Anunțuri</TabsTrigger>
+             <TabsTrigger value="event-publishers" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Evenimente</TabsTrigger>
+             <TabsTrigger value="reminders" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Remindere</TabsTrigger>
+             <TabsTrigger value="rules" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Reguli Acces</TabsTrigger>
+             <TabsTrigger value="monitoring" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Monitoring</TabsTrigger>
+             <TabsTrigger value="settings" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Setări</TabsTrigger>
+           </TabsList>
+         </div>
         <TabsContent value="roles" className="space-y-6">
           <Card>
             <CardHeader>
@@ -265,24 +267,24 @@ const Admin = () => {
               ) : (
                 <div className="space-y-3">
                   {filteredUsers.map((u) => (
-                    <div key={u.user_id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 bg-secondary/30 rounded-lg border border-border">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <Avatar className="w-10 h-10 flex-shrink-0">
-                          <AvatarFallback className="bg-primary/10 text-primary">{getInitials(u.full_name)}</AvatarFallback>
+                    <div key={u.user_id} className="flex flex-col gap-3 p-3 sm:p-4 bg-secondary/30 rounded-lg border border-border">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs sm:text-sm">{getInitials(u.full_name)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-medium text-foreground truncate">{u.full_name}</p>
-                            <Badge className={`${roleBadgeColors[u.role] || roleBadgeColors.user} text-xs`} variant="secondary">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <p className="font-medium text-sm text-foreground truncate">{u.full_name}</p>
+                            <Badge className={`${roleBadgeColors[u.role] || roleBadgeColors.user} text-[10px] sm:text-xs`} variant="secondary">
                               {roleLabels[u.role] || 'Angajat'}
                             </Badge>
                           </div>
-                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                          <p className="text-[11px] sm:text-sm text-muted-foreground truncate">
                             {u.position || 'Fără funcție'} • {u.department || 'Fără departament'}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <div className="flex items-center gap-1.5" title={bypassUsers.has(u.user_id) ? 'Acces global activ — poate intra de oriunde' : 'Acces doar din rețeaua institutului'}>
                           <Globe className={`w-3.5 h-3.5 ${bypassUsers.has(u.user_id) ? 'text-emerald-500' : 'text-muted-foreground/40'}`} />
                           <Switch
@@ -293,7 +295,7 @@ const Admin = () => {
                           />
                         </div>
                         <Select value={u.role} onValueChange={(value) => updateUserRole(u.user_id, u.role_id, value)} disabled={updating === u.user_id}>
-                          <SelectTrigger className="w-full sm:w-48">
+                          <SelectTrigger className="flex-1 min-w-[140px] sm:w-48 sm:flex-none text-xs sm:text-sm">
                             {updating === u.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <SelectValue />}
                           </SelectTrigger>
                           <SelectContent>
@@ -302,7 +304,7 @@ const Admin = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Button variant="ghost" size="icon" className="flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteConfirmUser(u)} disabled={u.user_id === user?.id} title={u.user_id === user?.id ? 'Nu îți poți șterge propriul cont' : 'Șterge cont'}>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteConfirmUser(u)} disabled={u.user_id === user?.id} title={u.user_id === user?.id ? 'Nu îți poți șterge propriul cont' : 'Șterge cont'}>
                           <UserX className="w-4 h-4" />
                         </Button>
                       </div>

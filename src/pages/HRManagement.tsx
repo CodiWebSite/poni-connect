@@ -1191,7 +1191,8 @@ const HRManagement = () => {
         </div>
 
         {/* Tabs navigation */}
-        <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+        <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0 scrollbar-hide">
+          <TabsList className="inline-flex md:flex md:flex-wrap h-auto gap-1 p-1 min-w-max md:min-w-0">
           <TabsTrigger value="employees" className="gap-2">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Angajați</span>
@@ -1232,7 +1233,8 @@ const HRManagement = () => {
             <FolderOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Dosare</span>
           </TabsTrigger>
-        </TabsList>
+          </TabsList>
+        </div>
 
         {/* Employees Tab */}
         <TabsContent value="employees" className="space-y-6">
