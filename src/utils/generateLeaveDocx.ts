@@ -240,7 +240,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         t(' zile rămase aferente anului ', { size: S }),
         t(`${year}`, { bold: true, size: S }),
         t(' și ', { size: S }),
-        t(`${carryoverInitial}`, { bold: true, size: S }),
+        t(`${carryoverBeforeRequest}`, { bold: true, size: S }),
         t(' zile rămase aferente anului', { size: S }),
       ],
     }),
