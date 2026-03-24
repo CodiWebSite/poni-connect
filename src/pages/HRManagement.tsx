@@ -1233,6 +1233,7 @@ const HRManagement = () => {
             <FolderOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Dosare</span>
           </TabsTrigger>
+          </TabsList>
         </div>
 
         {/* Employees Tab */}
