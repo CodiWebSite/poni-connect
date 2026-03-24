@@ -93,7 +93,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats */}
-      <div className={`grid grid-cols-1 ${isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 mb-6`}>
+      <div className={`grid grid-cols-1 ${isSuperAdmin ? 'sm:grid-cols-2 md:grid-cols-3' : 'md:grid-cols-2'} gap-3 md:gap-4 mb-4 md:mb-6`}>
         <StatCard
           title="Angajați"
           value={stats.employees}
@@ -106,27 +106,27 @@ const Dashboard = () => {
 
       {/* Analytics de adopție - doar admin */}
       {(isSuperAdmin || role === 'admin') && (
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <AnalyticsWidget />
         </div>
       )}
 
       {/* HR Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
         <div className="lg:col-span-2">
           <AdoptionTrendChart />
         </div>
         <HRAlerts />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
         <div className="lg:col-span-2">
           <LeaveByDepartment />
         </div>
         <ChangelogWidget />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
         <div className="lg:col-span-2">
           <PersonalCalendarWidget />
         </div>
@@ -134,7 +134,7 @@ const Dashboard = () => {
       </div>
 
       {/* Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="lg:col-span-2">
           <ActivityHistory />
         </div>
