@@ -313,11 +313,17 @@ const Admin = () => {
               ) : (
                 <div className="space-y-3">
                   {filteredUsers.map((u) => (
-                    <div key={u.user_id} className="flex flex-col gap-3 p-3 sm:p-4 bg-secondary/30 rounded-lg border border-border">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs sm:text-sm">{getInitials(u.full_name)}</AvatarFallback>
-                        </Avatar>
+                    <div key={u.user_id} className={cn(
+                      "flex flex-col gap-3 p-3 sm:p-4 rounded-xl border transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5",
+                      "bg-card border-border/60 border-l-[3px]",
+                      u.role === 'super_admin' ? "border-l-destructive" : u.role === 'user' ? "border-l-muted-foreground/30" : "border-l-primary"
+                    )}>
+                       <div className="flex items-center gap-3 min-w-0">
+                         <div className="avatar-gradient-ring flex-shrink-0">
+                           <Avatar className="w-9 h-9 sm:w-10 sm:h-10">
+                             <AvatarFallback className="bg-primary/10 text-primary text-xs sm:text-sm font-semibold">{getInitials(u.full_name)}</AvatarFallback>
+                           </Avatar>
+                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                             <p className="font-medium text-sm text-foreground truncate">{u.full_name}</p>
