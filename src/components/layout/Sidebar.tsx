@@ -484,12 +484,13 @@ const Sidebar = () => {
 
         {/* Management section */}
         {!isCollapsed && (
-          <div className="flex items-center gap-2 px-3 mb-3">
-            <span className="h-px flex-1 bg-sidebar-border/30" />
-            <span className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/35 font-semibold">
+          <div className="flex items-center gap-2.5 px-3 mb-3">
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent via-sidebar-border/40 to-transparent" />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/35 font-semibold flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-accent/50" />
               Administrare
             </span>
-            <span className="h-px flex-1 bg-sidebar-border/30" />
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent via-sidebar-border/40 to-transparent" />
           </div>
         )}
         <div className="space-y-0.5">
