@@ -31,6 +31,7 @@ import { EmailSyncImport } from '@/components/hr/EmailSyncImport';
 import HRReportsPanel from '@/components/hr/HRReportsPanel';
 import CertificateGenerator from '@/components/hr/CertificateGenerator';
 import EmployeeDigitalDossier from '@/components/hr/EmployeeDigitalDossier';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Users, 
   UserPlus, 
@@ -59,7 +60,8 @@ import {
   RotateCcw,
   History,
   Gift,
-  FolderOpen
+  FolderOpen,
+  MoreHorizontal
 } from 'lucide-react';
 import { format, isWeekend, eachDayOfInterval, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -1168,8 +1170,8 @@ const HRManagement = () => {
   return (
     <MainLayout title="Gestiune HR" description="Administrare date angajați - Confidențial">
       <Tabs defaultValue="employees" className="space-y-6">
-        {/* Action buttons row */}
-        <div className="flex flex-wrap gap-2 justify-end">
+        {/* Sticky toolbar */}
+        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border/40 -mx-4 px-4 py-2 md:-mx-6 md:px-6 flex flex-wrap gap-2 justify-end items-center">
           <Button variant="outline" size="sm" onClick={syncEmployees} disabled={syncing}>
             <RefreshCw className={`w-4 h-4 sm:mr-2 ${syncing ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">{syncing ? 'Sincronizare...' : 'Sincronizează'}</span>
@@ -1444,6 +1446,7 @@ const HRManagement = () => {
                             </p>
                             <p className="text-xs text-muted-foreground">{employee.email}</p>
                             
+                            {/* Primary badges */}
                             <div className="flex flex-wrap gap-2 mt-2">
                               <Badge variant="outline" className="text-xs">
                                 <Calendar className="w-3 h-3 mr-1" />
@@ -1460,38 +1463,38 @@ const HRManagement = () => {
                                   +{employee.bonusDays} bonus
                                 </Badge>
                               )}
-                              {employee.employment_date && (
-                                <Badge variant="outline" className="text-xs">
-                                  Angajat: {format(new Date(employee.employment_date), 'dd MMM yyyy', { locale: ro })}
-                                </Badge>
-                              )}
                               {(!employee.department || !employee.position) && (
                                 <Badge variant="destructive" className="text-xs">
                                   Date incomplete
                                 </Badge>
                               )}
                               {employee.documents && employee.documents.length > 0 && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80" onClick={() => employee.hasAccount && employee.user_id && setUploadingFor(employee)}>
                                   <FileText className="w-3 h-3 mr-1" />
                                   {employee.documents.length} doc.
                                 </Badge>
                               )}
                               {employee.leaveHistory && employee.leaveHistory.length > 0 && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80" onClick={() => setLeaveHistoryEmployee(employee)}>
                                   <Calendar className="w-3 h-3 mr-1" />
                                   {employee.leaveHistory.length} concedii
                                 </Badge>
                               )}
-                              {employee.updated_at && (
-                                <Badge variant="outline" className="text-xs text-muted-foreground">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  Actualizat: {format(new Date(employee.updated_at), 'dd.MM.yyyy HH:mm', { locale: ro })}
-                                  {employee.last_updated_by_name && (
-                                    <span className="ml-1">de {employee.last_updated_by_name}</span>
-                                  )}
-                                </Badge>
-                              )}
                             </div>
+                            {/* Secondary info */}
+                            {(employee.employment_date || employee.updated_at) && (
+                              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[11px] text-muted-foreground">
+                                {employee.employment_date && (
+                                  <span>Angajat: {format(new Date(employee.employment_date), 'dd MMM yyyy', { locale: ro })}</span>
+                                )}
+                                {employee.updated_at && (
+                                  <span>
+                                    Actualizat: {format(new Date(employee.updated_at), 'dd.MM.yyyy', { locale: ro })}
+                                    {employee.last_updated_by_name && ` de ${employee.last_updated_by_name}`}
+                                  </span>
+                                )}
+                              </div>
+                            )}
 
                             {/* Leave periods summary */}
                             {employee.leaveHistory && employee.leaveHistory.length > 0 && (
@@ -1514,15 +1517,15 @@ const HRManagement = () => {
                             </div>
                           </div>
 
-                        {/* Actions */}
-                        <div className="flex flex-wrap gap-2 lg:flex-shrink-0">
+                        {/* Actions — 2 primary + dropdown */}
+                        <div className="flex items-center gap-2 lg:flex-shrink-0">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => openEditDialog(employee)}
                           >
                             <Edit className="w-4 h-4 mr-1" />
-                            Editează
+                            <span className="hidden sm:inline">Editează</span>
                           </Button>
                           <Button
                             variant="outline"
@@ -1534,90 +1537,45 @@ const HRManagement = () => {
                             }}
                           >
                             <Calendar className="w-4 h-4 mr-1" />
-                            Concediu
+                            <span className="hidden sm:inline">Concediu</span>
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setLeaveHistoryEmployee(employee)}
-                          >
-                            <History className="w-4 h-4 mr-1" />
-                            Istoric
-                          </Button>
-                          {employee.hasAccount && employee.user_id && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setUploadingFor(employee)}
-                            >
-                              <Upload className="w-4 h-4 mr-1" />
-                              Doc.
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingPersonalData(employee)}
-                          >
-                            <CreditCard className="w-4 h-4 mr-1" />
-                            Date CI
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setBonusEmployee(employee)}
-                          >
-                            <Gift className="w-4 h-4 mr-1" />
-                            Sold+
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => archiveEmployee(employee)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Arhivează
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => setLeaveHistoryEmployee(employee)}>
+                                <History className="w-4 h-4 mr-2" />
+                                Istoric Concedii
+                              </DropdownMenuItem>
+                              {employee.hasAccount && employee.user_id && (
+                                <DropdownMenuItem onClick={() => setUploadingFor(employee)}>
+                                  <Upload className="w-4 h-4 mr-2" />
+                                  Încarcă Document
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={() => setEditingPersonalData(employee)}>
+                                <CreditCard className="w-4 h-4 mr-2" />
+                                Date CI
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setBonusEmployee(employee)}>
+                                <Gift className="w-4 h-4 mr-2" />
+                                Sold+
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => archiveEmployee(employee)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Arhivează
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
-
-                      {/* Documents Preview */}
-                      {employee.documents && employee.documents.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-border">
-                          <p className="text-sm font-medium mb-2">Documente:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {employee.documents.slice(0, 5).map((doc) => (
-                              <div
-                                key={doc.id}
-                                className="flex items-center gap-1 px-2 py-1 bg-background rounded text-xs border"
-                              >
-                                <FileText className="w-3 h-3" />
-                                <span className="max-w-[100px] truncate">{doc.name}</span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="w-5 h-5"
-                                  onClick={() => downloadDocument(doc)}
-                                >
-                                  <Download className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="w-5 h-5 text-destructive"
-                                  onClick={() => deleteDocument(doc)}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            ))}
-                            {employee.documents.length > 5 && (
-                              <Badge variant="secondary">+{employee.documents.length - 5} mai multe</Badge>
-                            )}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
