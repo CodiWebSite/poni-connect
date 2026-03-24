@@ -1407,12 +1407,14 @@ const HRManagement = () => {
                       <div className="flex flex-col lg:flex-row gap-4">
                         {/* Employee Info */}
                         <div className="flex items-start gap-3 flex-1">
-                          <Avatar className="w-12 h-12 flex-shrink-0">
-                            {employee.avatar_url && <AvatarImage src={employee.avatar_url} alt={employee.full_name} />}
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {getInitials(employee.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div className="avatar-gradient-ring flex-shrink-0">
+                            <Avatar className="w-11 h-11">
+                              {employee.avatar_url && <AvatarImage src={employee.avatar_url} alt={employee.full_name} />}
+                              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                {getInitials(employee.full_name)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
                           
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
