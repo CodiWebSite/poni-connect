@@ -152,6 +152,7 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       totalLeaveDays: epd?.total_leave_days ?? 0,
       usedLeaveDays: epd?.used_leave_days ?? 0,
       carryoverDays,
+      carryoverInitialDays: carryover?.initial_days ?? carryoverDays,
       carryoverFromYear,
       srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
       srusSignature: (lrData as any)?.srus_signature || undefined,

@@ -265,6 +265,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         totalLeaveDays,
         usedLeaveDays,
         carryoverDays,
+        carryoverInitialDays: carryover?.initial_days ?? carryoverDays,
         carryoverFromYear,
         srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
         srusSignature: (lrData as any)?.srus_signature || undefined,
