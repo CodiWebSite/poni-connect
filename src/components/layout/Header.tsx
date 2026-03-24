@@ -66,7 +66,7 @@ const Header = ({ title, description }: HeaderProps) => {
           <MobileNav />
           
           <div className="min-w-0">
-            <h1 className="text-lg md:text-2xl font-display font-bold text-foreground truncate">{title}</h1>
+            <h1 className="text-base md:text-2xl font-display font-bold text-foreground truncate">{title}</h1>
             {/* Breadcrumb */}
             {currentRoute !== '/' && breadcrumbLabel && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 hidden sm:flex">
