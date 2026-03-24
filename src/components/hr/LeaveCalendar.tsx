@@ -33,6 +33,7 @@ interface LeaveEntry {
   leaveType?: string;
   avatarUrl?: string | null;
   sourceYear?: number | null;
+  sourceLabel?: string | null;
 }
 
 const LeaveCalendar = () => {
