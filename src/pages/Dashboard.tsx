@@ -24,9 +24,9 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 
 const quickActions = [
-  { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile', color: 'bg-primary/10 text-primary' },
-  { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar', color: 'bg-accent/10 text-accent' },
-  { icon: FolderDown, label: 'Formulare', path: '/formulare', color: 'bg-info/10 text-info' },
+  { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile', gradient: 'from-primary to-info' },
+  { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar', gradient: 'from-accent to-success' },
+  { icon: FolderDown, label: 'Formulare', path: '/formulare', gradient: 'from-info to-primary' },
 ];
 
 const Dashboard = () => {
@@ -80,10 +80,12 @@ const Dashboard = () => {
       <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4 md:mb-6">
         {quickActions.map((action) => (
           <Link key={action.path} to={action.path} className="group">
-            <Card className="hover:shadow-md transition-all duration-200 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5">
-              <CardContent className="p-2.5 sm:p-4 flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
-                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${action.color} group-hover:scale-105 transition-transform`}>
-                  <action.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Card className="hover:shadow-card-hover transition-all duration-300 hover:border-primary/30 hover:-translate-y-1 overflow-hidden relative">
+              {/* Shimmer effect on hover */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/[0.04] to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700 pointer-events-none" />
+              <CardContent className="p-2.5 sm:p-4 flex flex-col sm:flex-row items-center gap-2 sm:gap-3 relative">
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${action.gradient} shadow-md group-hover:scale-110 transition-transform duration-300`}>
+                  <action.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
                 </div>
                 <span className="text-[11px] sm:text-sm font-medium text-foreground text-center sm:text-left leading-tight">{action.label}</span>
               </CardContent>
@@ -98,7 +100,7 @@ const Dashboard = () => {
           title="Angajați"
           value={stats.employees}
           icon={Users}
-          iconClassName="bg-primary"
+          iconClassName="from-primary to-info"
         />
         <ActivationChart />
         {isSuperAdmin && <OnlineUsersWidget />}
