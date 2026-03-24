@@ -1356,7 +1356,7 @@ const HRManagement = () => {
             <Card className="border-border/60 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-warning to-amber-400 flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-warning to-destructive/70 flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110">
                     <Clock className="w-5 h-5 text-warning-foreground" />
                   </div>
                   <div>
