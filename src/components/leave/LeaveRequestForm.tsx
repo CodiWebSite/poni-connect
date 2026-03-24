@@ -476,7 +476,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               type="date"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
-              min={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
+              min={format(new Date(), 'yyyy-MM-dd')}
             />
           </div>
           <div className="space-y-2">
