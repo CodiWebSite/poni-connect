@@ -606,7 +606,21 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                       {format(parseISO(r.start_date), 'dd.MM.yy')} – {format(parseISO(r.end_date), 'dd.MM.yy')}
                     </TableCell>
                      <TableCell className="text-center font-medium">{r.working_days}</TableCell>
-                     <TableCell className="text-center text-sm text-muted-foreground">{r.year}</TableCell>
+                     <TableCell className="text-center text-xs">
+                       {r.source_label?.includes('+') ? (
+                         <div className="flex flex-col gap-0.5">
+                           {r.source_label.split(' + ').map((s, i) => (
+                             <Badge key={i} variant="outline" className={`text-[10px] px-1.5 py-0 ${s.startsWith('Report') ? 'border-blue-300 text-blue-700 dark:border-blue-600 dark:text-blue-400' : 'border-emerald-300 text-emerald-700 dark:border-emerald-600 dark:text-emerald-400'}`}>
+                               {s}
+                             </Badge>
+                           ))}
+                         </div>
+                       ) : (
+                         <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${r.source_label?.startsWith('Report') ? 'border-blue-300 text-blue-700 dark:border-blue-600 dark:text-blue-400' : 'border-emerald-300 text-emerald-700 dark:border-emerald-600 dark:text-emerald-400'}`}>
+                           {r.source_label || `Sold ${r.year}`}
+                         </Badge>
+                       )}
+                     </TableCell>
                     <TableCell>
                       <Badge className={`text-xs ${statusColors[r.status] || ''}`}>
                         {statusLabels[r.status] || r.status}
