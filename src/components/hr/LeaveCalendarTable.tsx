@@ -189,6 +189,15 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                         })}
                       </div>
                     </td>
+                    <td className="sticky left-[250px] z-10 border border-border px-1 py-1 text-center bg-inherit">
+                      <div className="flex flex-col items-center gap-0.5">
+                        {Array.from(emp.sourceYears).sort().map(yr => (
+                          <span key={yr} className="font-semibold text-[9px] text-muted-foreground">
+                            {yr}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
                     {days.map((day) => {
                       const dateStr = format(day, 'yyyy-MM-dd');
                       const weekend = isWeekend(day);
