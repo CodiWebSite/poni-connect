@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole, AppRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus, Mail, Globe } from 'lucide-react';
+import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus, Mail, Globe, Lock, ClipboardList, UserCheck, Activity, Package, Settings, Headset, Megaphone, CalendarDays, Bell, MonitorCheck, FileText } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -220,22 +221,67 @@ const Admin = () => {
     <MainLayout title="Administrare" description="Gestionează rolurile și configurările sistemului">
       <Tabs defaultValue="roles" className="space-y-4 md:space-y-6">
          <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0 scrollbar-hide">
-           <TabsList className="inline-flex md:flex md:flex-wrap h-auto gap-1 p-1 min-w-max md:min-w-0">
-             <TabsTrigger value="roles" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Roluri</TabsTrigger>
-             <TabsTrigger value="preassign" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Pre-atribuire</TabsTrigger>
-             <TabsTrigger value="create-account" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Creare Cont</TabsTrigger>
-             <TabsTrigger value="account-requests" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Cereri Cont</TabsTrigger>
-             <TabsTrigger value="audit" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Audit</TabsTrigger>
-             <TabsTrigger value="auth-log" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Autentificări</TabsTrigger>
-             <TabsTrigger value="inventory" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Inventar</TabsTrigger>
-             <TabsTrigger value="invitations" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Invitații</TabsTrigger>
-             <TabsTrigger value="helpdesk" className="text-[11px] sm:text-sm px-2.5 sm:px-3">HelpDesk</TabsTrigger>
-             <TabsTrigger value="publishers" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Anunțuri</TabsTrigger>
-             <TabsTrigger value="event-publishers" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Evenimente</TabsTrigger>
-             <TabsTrigger value="reminders" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Remindere</TabsTrigger>
-             <TabsTrigger value="rules" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Reguli Acces</TabsTrigger>
-             <TabsTrigger value="monitoring" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Monitoring</TabsTrigger>
-             <TabsTrigger value="settings" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Setări</TabsTrigger>
+           <TabsList className="inline-flex md:flex md:flex-wrap h-auto gap-1 p-1.5 min-w-max md:min-w-0 bg-muted/50 backdrop-blur-sm">
+             <TabsTrigger value="roles" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <Shield className="w-3.5 h-3.5" />
+               Roluri
+             </TabsTrigger>
+             <TabsTrigger value="preassign" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <Lock className="w-3.5 h-3.5" />
+               Pre-atribuire
+             </TabsTrigger>
+             <TabsTrigger value="create-account" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <UserPlus className="w-3.5 h-3.5" />
+               Creare Cont
+             </TabsTrigger>
+             <TabsTrigger value="account-requests" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <ClipboardList className="w-3.5 h-3.5" />
+               Cereri Cont
+             </TabsTrigger>
+             <TabsTrigger value="audit" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <FileText className="w-3.5 h-3.5" />
+               Audit
+             </TabsTrigger>
+             <TabsTrigger value="auth-log" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <Activity className="w-3.5 h-3.5" />
+               Autentificări
+             </TabsTrigger>
+             <TabsTrigger value="inventory" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <Package className="w-3.5 h-3.5" />
+               Inventar
+             </TabsTrigger>
+             <TabsTrigger value="invitations" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <Mail className="w-3.5 h-3.5" />
+               Invitații
+             </TabsTrigger>
+             <TabsTrigger value="helpdesk" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <Headset className="w-3.5 h-3.5" />
+               HelpDesk
+             </TabsTrigger>
+             <TabsTrigger value="publishers" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <Megaphone className="w-3.5 h-3.5" />
+               Anunțuri
+             </TabsTrigger>
+             <TabsTrigger value="event-publishers" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <CalendarDays className="w-3.5 h-3.5" />
+               Evenimente
+             </TabsTrigger>
+             <TabsTrigger value="reminders" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <Bell className="w-3.5 h-3.5" />
+               Remindere
+             </TabsTrigger>
+             <TabsTrigger value="rules" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <Settings className="w-3.5 h-3.5" />
+               Reguli Acces
+             </TabsTrigger>
+             <TabsTrigger value="monitoring" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <MonitorCheck className="w-3.5 h-3.5" />
+               Monitoring
+             </TabsTrigger>
+             <TabsTrigger value="settings" className="text-[11px] sm:text-sm px-2.5 sm:px-3 gap-1.5 data-[state=active]:shadow-md">
+               <Settings className="w-3.5 h-3.5" />
+               Setări
+             </TabsTrigger>
            </TabsList>
          </div>
         <TabsContent value="roles" className="space-y-6">
@@ -249,9 +295,9 @@ const Admin = () => {
             </CardHeader>
             <CardContent className="space-y-4">
                <div className="flex flex-col sm:flex-row gap-3">
-                 <div className="relative flex-1">
-                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                   <Input placeholder="Caută utilizatori..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <div className="relative flex-1 group">
+                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                   <Input placeholder="Caută utilizatori..." className="pl-10 transition-shadow duration-300 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)]" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                  </div>
                </div>
 
@@ -267,11 +313,17 @@ const Admin = () => {
               ) : (
                 <div className="space-y-3">
                   {filteredUsers.map((u) => (
-                    <div key={u.user_id} className="flex flex-col gap-3 p-3 sm:p-4 bg-secondary/30 rounded-lg border border-border">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs sm:text-sm">{getInitials(u.full_name)}</AvatarFallback>
-                        </Avatar>
+                    <div key={u.user_id} className={cn(
+                      "flex flex-col gap-3 p-3 sm:p-4 rounded-xl border transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5",
+                      "bg-card border-border/60 border-l-[3px]",
+                      u.role === 'super_admin' ? "border-l-destructive" : u.role === 'user' ? "border-l-muted-foreground/30" : "border-l-primary"
+                    )}>
+                       <div className="flex items-center gap-3 min-w-0">
+                         <div className="avatar-gradient-ring flex-shrink-0">
+                           <Avatar className="w-9 h-9 sm:w-10 sm:h-10">
+                             <AvatarFallback className="bg-primary/10 text-primary text-xs sm:text-sm font-semibold">{getInitials(u.full_name)}</AvatarFallback>
+                           </Avatar>
+                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                             <p className="font-medium text-sm text-foreground truncate">{u.full_name}</p>
