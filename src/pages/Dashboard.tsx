@@ -55,7 +55,7 @@ const Dashboard = () => {
         )}
         <DashboardAnnouncements />
         <EmployeeDashboard />
-        <div className="mt-6">
+        <div className="mt-4 md:mt-6">
           <ChangelogWidget />
         </div>
       </MainLayout>
