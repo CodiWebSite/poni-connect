@@ -32,6 +32,7 @@ interface LeaveEntry {
   numberOfDays: number;
   leaveType?: string;
   avatarUrl?: string | null;
+  sourceYear?: number | null;
 }
 
 const LeaveCalendar = () => {
@@ -93,7 +94,7 @@ const LeaveCalendar = () => {
       .eq('request_type', 'concediu').eq('status', 'approved');
 
     const { data: formalLeaves } = await supabase
-      .from('leave_requests').select('user_id, epd_id, start_date, end_date, working_days, status')
+      .from('leave_requests').select('user_id, epd_id, start_date, end_date, working_days, status, year')
       .eq('status', 'approved');
 
     const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department, avatar_url');
@@ -165,6 +166,7 @@ const LeaveCalendar = () => {
             numberOfDays: d.numberOfDays || 0,
             leaveType: d.leaveType || d.leave_type || 'co',
             avatarUrl: empInfo.avatarUrl || null,
+            sourceYear: d.startDate ? new Date(d.startDate).getFullYear() : null,
           });
         }
       }
@@ -197,6 +199,7 @@ const LeaveCalendar = () => {
             numberOfDays: lr.working_days || 0,
             leaveType: 'co',
             avatarUrl: empInfo.avatarUrl || null,
+            sourceYear: lr.year || null,
           });
         }
       }

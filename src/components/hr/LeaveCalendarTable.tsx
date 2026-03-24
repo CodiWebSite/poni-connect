@@ -20,6 +20,7 @@ interface LeaveEntry {
   numberOfDays: number;
   leaveType?: string;
   avatarUrl?: string | null;
+  sourceYear?: number | null;
 }
 
 interface LeaveCalendarTableProps {
@@ -45,7 +46,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
 
   // Unique employees with their leave types for the month
   const employees = useMemo(() => {
-    const nameMap = new Map<string, { name: string; department: string | null; leaveTypes: Set<string>; avatarUrl: string | null }>();
+    const nameMap = new Map<string, { name: string; department: string | null; leaveTypes: Set<string>; avatarUrl: string | null; sourceYears: Set<number> }>();
     leaves.forEach(l => {
       const leaveStart = parseISO(l.startDate);
       const leaveEnd = parseISO(l.endDate);
@@ -54,12 +55,13 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
       if (leaveEnd < mStart || leaveStart > mEnd) return;
       
       if (!nameMap.has(l.employeeName)) {
-        nameMap.set(l.employeeName, { name: l.employeeName, department: l.department, leaveTypes: new Set(), avatarUrl: l.avatarUrl || null });
+        nameMap.set(l.employeeName, { name: l.employeeName, department: l.department, leaveTypes: new Set(), avatarUrl: l.avatarUrl || null, sourceYears: new Set() });
       }
-      nameMap.get(l.employeeName)!.leaveTypes.add(l.leaveType || 'co');
-      // Update avatar if we get one
-      if (l.avatarUrl && !nameMap.get(l.employeeName)!.avatarUrl) {
-        nameMap.get(l.employeeName)!.avatarUrl = l.avatarUrl;
+      const entry = nameMap.get(l.employeeName)!;
+      entry.leaveTypes.add(l.leaveType || 'co');
+      if (l.sourceYear) entry.sourceYears.add(l.sourceYear);
+      if (l.avatarUrl && !entry.avatarUrl) {
+        entry.avatarUrl = l.avatarUrl;
       }
     });
     return Array.from(nameMap.values()).sort((a, b) => a.name.localeCompare(b.name));
@@ -86,6 +88,9 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                 </th>
                 <th className="sticky left-[190px] z-10 bg-background border border-border px-2 py-2 text-center font-semibold text-sm min-w-[60px] w-[60px]">
                   TIP
+                </th>
+                <th className="sticky left-[250px] z-10 bg-background border border-border px-2 py-2 text-center font-semibold text-sm min-w-[50px] w-[50px]">
+                  AN
                 </th>
                 {days.map((day) => {
                   const weekend = isWeekend(day);
@@ -120,6 +125,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                 <tr>
                   <th className="sticky left-0 z-10 bg-background border border-border px-3 py-0.5"></th>
                   <th className="sticky left-[190px] z-10 bg-background border border-border px-2 py-0.5"></th>
+                  <th className="sticky left-[250px] z-10 bg-background border border-border px-2 py-0.5"></th>
                   {days.map((day) => {
                     const dateStr = format(day, 'yyyy-MM-dd');
                     const pubName = getPublicHolidayName(day);
@@ -149,7 +155,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
             <tbody>
               {employees.length === 0 ? (
                 <tr>
-                  <td colSpan={days.length + 2} className="border border-border px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={days.length + 3} className="border border-border px-4 py-8 text-center text-muted-foreground">
                     Nu există concedii înregistrate în această lună.
                   </td>
                 </tr>
@@ -183,6 +189,15 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                         })}
                       </div>
                     </td>
+                    <td className="sticky left-[250px] z-10 border border-border px-1 py-1 text-center bg-inherit">
+                      <div className="flex flex-col items-center gap-0.5">
+                        {Array.from(emp.sourceYears).sort().map(yr => (
+                          <span key={yr} className="font-semibold text-[9px] text-muted-foreground">
+                            {yr}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
                     {days.map((day) => {
                       const dateStr = format(day, 'yyyy-MM-dd');
                       const weekend = isWeekend(day);
@@ -202,7 +217,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                             customH && !pubHoliday && !leave && 'bg-amber-500/8',
                             leave && leaveStyle?.bg,
                           )}
-                          title={leave ? `${emp.name}: ${leaveStyle?.label || 'CO'}` : undefined}
+                          title={leave ? `${emp.name}: ${leaveStyle?.label || 'CO'} (${leave.sourceYear || ''})` : undefined}
                         >
                           {leave && (
                             <span className={cn('font-bold text-[10px]', leaveStyle?.color)}>
