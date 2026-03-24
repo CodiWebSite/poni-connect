@@ -437,7 +437,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         { header: 'Grad/Treaptă', key: 'grade', width: 16 },
         { header: 'Perioada', key: 'period', width: 22 },
         { header: 'Zile', key: 'days', width: 8 },
-        { header: 'An', key: 'year', width: 8 },
+        { header: 'Sursă Zile', key: 'source', width: 22 },
         { header: 'Înlocuitor', key: 'replacement', width: 22 },
         { header: 'Status', key: 'status', width: 18 },
         { header: 'Aprobat de', key: 'approver', width: 22 },
