@@ -544,7 +544,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                   <TableHead>Departament</TableHead>
                   <TableHead>Funcție / Grad</TableHead>
                   <TableHead>Perioada</TableHead>
-                  <TableHead>Zile</TableHead>
+                   <TableHead>Zile</TableHead>
+                   <TableHead>An</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aprobat de</TableHead>
                   <TableHead>Acțiuni</TableHead>
