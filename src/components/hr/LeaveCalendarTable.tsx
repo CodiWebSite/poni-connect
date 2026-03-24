@@ -89,6 +89,9 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                 <th className="sticky left-[190px] z-10 bg-background border border-border px-2 py-2 text-center font-semibold text-sm min-w-[60px] w-[60px]">
                   TIP
                 </th>
+                <th className="sticky left-[250px] z-10 bg-background border border-border px-2 py-2 text-center font-semibold text-sm min-w-[50px] w-[50px]">
+                  AN
+                </th>
                 {days.map((day) => {
                   const weekend = isWeekend(day);
                   const pubHoliday = isPublicHoliday(day);
