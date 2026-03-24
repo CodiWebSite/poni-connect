@@ -1239,11 +1239,11 @@ const HRManagement = () => {
         {/* Employees Tab */}
         <TabsContent value="employees" className="space-y-6">
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
-            <div className="relative max-w-md w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <div className="relative max-w-md w-full group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <Input
                 placeholder="Caută după nume, email, departament..."
-                className="pl-10"
+                className="pl-10 transition-shadow duration-300 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -1269,34 +1269,43 @@ const HRManagement = () => {
                 Redenumește
               </Button>
             )}
-            <div className="flex gap-1 rounded-lg border border-border p-1 bg-muted/50">
-              <Button
-                variant={accountFilter === 'all' ? 'default' : 'ghost'}
-                size="sm"
+            <div className="flex gap-0.5 rounded-xl border border-border p-1 bg-muted/30 backdrop-blur-sm relative">
+              <button
                 onClick={() => setAccountFilter('all')}
-                className="text-xs h-8"
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 flex items-center gap-1.5",
+                  accountFilter === 'all'
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
               >
-                <Users className="w-3.5 h-3.5 mr-1" />
+                <Users className="w-3.5 h-3.5" />
                 Toți ({employees.length})
-              </Button>
-              <Button
-                variant={accountFilter === 'with_account' ? 'default' : 'ghost'}
-                size="sm"
+              </button>
+              <button
                 onClick={() => setAccountFilter('with_account')}
-                className="text-xs h-8"
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 flex items-center gap-1.5",
+                  accountFilter === 'with_account'
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
               >
-                <UserCheck className="w-3.5 h-3.5 mr-1" />
+                <UserCheck className="w-3.5 h-3.5" />
                 Cu cont ({employeesWithAccounts.length})
-              </Button>
-              <Button
-                variant={accountFilter === 'without_account' ? 'default' : 'ghost'}
-                size="sm"
+              </button>
+              <button
                 onClick={() => setAccountFilter('without_account')}
-                className="text-xs h-8"
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 flex items-center gap-1.5",
+                  accountFilter === 'without_account'
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
               >
-                <UserX className="w-3.5 h-3.5 mr-1" />
+                <UserX className="w-3.5 h-3.5" />
                 Fără cont ({employees.length - employeesWithAccounts.length})
-              </Button>
+              </button>
             </div>
           </div>
 
