@@ -36,6 +36,7 @@ interface LeaveDocxParams {
   totalLeaveDays?: number;
   usedLeaveDays?: number;
   carryoverDays?: number;
+  carryoverInitialDays?: number;
   carryoverFromYear?: number;
   srusOfficerName?: string;
   srusSignature?: string | null;
