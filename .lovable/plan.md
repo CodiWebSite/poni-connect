@@ -1,38 +1,46 @@
 
 
-# Modul Medicină a Muncii — Implementat ✅
+# Îmbunătățiri vizuale pentru experiență premium
 
-## Ce s-a creat
+Am analizat platforma în detaliu. Iată ce propun pentru un upgrade vizual semnificativ:
 
-### Bază de date
-- Rol nou `medic_medicina_muncii` în enum-ul `app_role`
-- Enum-uri: `medical_fitness_status`, `consultation_type`, `exam_status`
-- Funcții RLS: `can_manage_medical()`, `can_view_medical_status()`
-- 4 tabele: `medical_records`, `medical_consultations`, `medical_scheduled_exams`, `medical_documents`
-- Storage bucket privat: `medical-documents`
-- RLS strict: medicul — acces complet; HR — doar status avize (SELECT)
+---
 
-### Pagini & componente
-- `/medicina-muncii` — pagină principală cu dashboard, statistici, tabel angajați
-- Fișă medicală per angajat cu tab-uri (info, consultații, programări, documente)
-- Formulare CRUD: creare/editare fișă, adăugare consultație, programare examen
-- Upload/descărcare/ștergere documente medicale
+## 1. Banner de salut — redesign premium
+**Problema:** Banner-ul actual cu emoji 👋 pare basic/informal.
+**Soluția:** Gradient subtil animat, fără emoji, cu icon SVG elegant, ora curentă afișată și un mesaj motivațional rotativ zilnic. Design glassmorphism consistent cu restul platformei.
 
-### Sidebar & routing
-- Intrare „Medicină Muncii" vizibilă doar pentru `medic_medicina_muncii` și HR
-- Rută `/medicina-muncii` în App.tsx
+## 2. Quick Actions — carduri cu micro-interacțiuni
+**Problema:** Cardurile de acțiuni rapide sunt plate și generice.
+**Soluția:** Adaug icon-uri cu gradient individual per card, un efect shimmer subtil la hover, și o micro-animație de "lift" mai pronunțată. Fiecare card va avea un accent de culoare diferit.
 
-## Funcționalități implementate
-1. ✅ Fișe medicale per angajat (apt/apt_conditionat/inapt/pending)
-2. ✅ Istoric consultații medicale
-3. ✅ Programări controale periodice cu status tracking
-4. ✅ Upload documente medicale (bucket privat)
-5. ✅ Statistici dashboard (total, apt, condiționat, inapt, expirate, expiră curând)
-6. ✅ Filtrare pe departament și căutare
-7. ✅ HR vede doar status avize, fără diagnostice/note
+## 3. Stat Cards — indicatori vizuali îmbunătățiți
+**Problema:** Icon-urile din StatCard-uri sunt transparente/slabe vizual.
+**Soluția:** Icon-uri cu fundal gradient solid (nu transparent), adaug un „glow" subtil, și un efect de pulsare ușoară la numărul animat.
 
-## De implementat ulterior
-- Edge function `check-medical-expirations` (cron zilnic)
-- Notificări email la expirare avize
-- Export Excel rapoarte
-- Calendar vizual programări
+## 4. Secțiunea de anunțuri — card redesenat
+**Problema:** Anunțurile arată ca o listă simplă fără ierarhie vizuală clară.
+**Soluția:** Adaug o linie colorată pe stânga fiecărui anunț (accent bar) bazată pe prioritate, typography mai clară, și separatoare mai elegante între anunțuri.
+
+## 5. Header-ul principal — polish final
+**Problema:** Header-ul e funcțional dar lipsesc detalii premium.
+**Soluția:** Avatar cu ring animat gradient, butonul de temă cu tranziție smooth (rotație icon), search bar cu efect de focus glow.
+
+## 6. Loading states & tranziții
+**Problema:** Tranzițiile între pagini și skeleton-urile sunt basic.
+**Soluția:** Skeleton-uri cu gradient animat (shimmer effect), tranziții între pagini cu fade+slide mai smooth.
+
+---
+
+## Fișiere afectate
+- `src/components/dashboard/SpringDecoration.tsx` — redesign banner salut
+- `src/components/dashboard/StatCard.tsx` — upgrade vizual carduri statistici
+- `src/components/dashboard/DashboardAnnouncements.tsx` — accent bars pe anunțuri
+- `src/pages/Dashboard.tsx` — quick actions cu culori individuale
+- `src/components/layout/Header.tsx` — avatar ring, search glow
+- `src/components/dashboard/DashboardSkeleton.tsx` — shimmer upgrade
+- `src/index.css` — animații noi (shimmer, glow pulse)
+
+## Notă
+Toate modificările sunt pur vizuale/CSS — nu afectează funcționalitatea existentă. Fiecare componentă păstrează structura actuală, doar stilizarea se îmbunătățește.
+
