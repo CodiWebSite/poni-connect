@@ -267,24 +267,24 @@ const Admin = () => {
               ) : (
                 <div className="space-y-3">
                   {filteredUsers.map((u) => (
-                    <div key={u.user_id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 bg-secondary/30 rounded-lg border border-border">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <Avatar className="w-10 h-10 flex-shrink-0">
-                          <AvatarFallback className="bg-primary/10 text-primary">{getInitials(u.full_name)}</AvatarFallback>
+                    <div key={u.user_id} className="flex flex-col gap-3 p-3 sm:p-4 bg-secondary/30 rounded-lg border border-border">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs sm:text-sm">{getInitials(u.full_name)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-medium text-foreground truncate">{u.full_name}</p>
-                            <Badge className={`${roleBadgeColors[u.role] || roleBadgeColors.user} text-xs`} variant="secondary">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <p className="font-medium text-sm text-foreground truncate">{u.full_name}</p>
+                            <Badge className={`${roleBadgeColors[u.role] || roleBadgeColors.user} text-[10px] sm:text-xs`} variant="secondary">
                               {roleLabels[u.role] || 'Angajat'}
                             </Badge>
                           </div>
-                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                          <p className="text-[11px] sm:text-sm text-muted-foreground truncate">
                             {u.position || 'Fără funcție'} • {u.department || 'Fără departament'}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <div className="flex items-center gap-1.5" title={bypassUsers.has(u.user_id) ? 'Acces global activ — poate intra de oriunde' : 'Acces doar din rețeaua institutului'}>
                           <Globe className={`w-3.5 h-3.5 ${bypassUsers.has(u.user_id) ? 'text-emerald-500' : 'text-muted-foreground/40'}`} />
                           <Switch
@@ -295,7 +295,7 @@ const Admin = () => {
                           />
                         </div>
                         <Select value={u.role} onValueChange={(value) => updateUserRole(u.user_id, u.role_id, value)} disabled={updating === u.user_id}>
-                          <SelectTrigger className="w-full sm:w-48">
+                          <SelectTrigger className="flex-1 min-w-[140px] sm:w-48 sm:flex-none text-xs sm:text-sm">
                             {updating === u.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <SelectValue />}
                           </SelectTrigger>
                           <SelectContent>
@@ -304,7 +304,7 @@ const Admin = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Button variant="ghost" size="icon" className="flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteConfirmUser(u)} disabled={u.user_id === user?.id} title={u.user_id === user?.id ? 'Nu îți poți șterge propriul cont' : 'Șterge cont'}>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteConfirmUser(u)} disabled={u.user_id === user?.id} title={u.user_id === user?.id ? 'Nu îți poți șterge propriul cont' : 'Șterge cont'}>
                           <UserX className="w-4 h-4" />
                         </Button>
                       </div>
