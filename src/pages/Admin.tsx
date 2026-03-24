@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole, AppRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus, Mail, Globe } from 'lucide-react';
+import { Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus, Mail, Globe, Lock, ClipboardList, UserCheck, Activity, Package, Settings, Headset, Megaphone, CalendarDays, Bell, MonitorCheck, FileText } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
