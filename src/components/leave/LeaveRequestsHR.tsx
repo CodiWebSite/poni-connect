@@ -197,31 +197,61 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     }
 
     // Fetch carryover data to determine source (Report vs Sold)
-    const currentYear = new Date().getFullYear();
-    let carryoverMap: Record<string, { from_year: number; initial_days: number; remaining_days: number }[]> = {};
+    let carryoverInitialMap: Record<string, { from_year: number; initial_days: number }[]> = {};
     if (epdIds.length > 0) {
       const { data: carryovers } = await supabase
         .from('leave_carryover')
-        .select('employee_personal_data_id, from_year, initial_days, remaining_days, to_year')
+        .select('employee_personal_data_id, from_year, initial_days, to_year')
         .in('employee_personal_data_id', epdIds);
       (carryovers || []).forEach(c => {
-        if (!carryoverMap[c.employee_personal_data_id]) carryoverMap[c.employee_personal_data_id] = [];
-        carryoverMap[c.employee_personal_data_id].push({ from_year: c.from_year, initial_days: c.initial_days, remaining_days: c.remaining_days });
+        if (!carryoverInitialMap[c.employee_personal_data_id]) carryoverInitialMap[c.employee_personal_data_id] = [];
+        carryoverInitialMap[c.employee_personal_data_id].push({ from_year: c.from_year, initial_days: c.initial_days });
       });
     }
 
-    const computeSourceLabel = (r: any): string => {
-      if (!r.epd_id) return `Sold ${r.year}`;
-      const carryovers = carryoverMap[r.epd_id] || [];
-      const relevantCarryover = carryovers.find(c => c.from_year === r.year - 1 && c.initial_days > 0);
-      if (!relevantCarryover) return `Sold ${r.year}`;
-      // FIFO: carryover first
-      if (relevantCarryover.initial_days >= r.working_days) {
-        return `Report ${relevantCarryover.from_year}`;
-      }
-      // Split
-      return `Report ${relevantCarryover.from_year} + Sold ${r.year}`;
-    };
+    // FIFO simulation per employee: sort approved requests chronologically, 
+    // consume carryover first, then current year
+    const approvedData = (data || []).filter((r: any) => r.status === 'approved' || r.status === 'pending_srus' || r.status === 'pending_department_head');
+    const sourceLabels: Record<string, string> = {};
+
+    // Group by epd_id
+    const byEpd: Record<string, any[]> = {};
+    approvedData.forEach((r: any) => {
+      if (!r.epd_id) return;
+      if (!byEpd[r.epd_id]) byEpd[r.epd_id] = [];
+      byEpd[r.epd_id].push(r);
+    });
+
+    Object.entries(byEpd).forEach(([epdId, reqs]) => {
+      // Sort by start_date chronologically
+      reqs.sort((a, b) => a.start_date.localeCompare(b.start_date));
+      
+      // Group by year
+      const byYear: Record<number, any[]> = {};
+      reqs.forEach(r => {
+        if (!byYear[r.year]) byYear[r.year] = [];
+        byYear[r.year].push(r);
+      });
+
+      Object.entries(byYear).forEach(([yearStr, yearReqs]) => {
+        const year = Number(yearStr);
+        const carryovers = carryoverInitialMap[epdId] || [];
+        const relevantCarryover = carryovers.find(c => c.from_year === year - 1 && c.initial_days > 0);
+        let carryoverRemaining = relevantCarryover?.initial_days || 0;
+
+        yearReqs.forEach(r => {
+          if (carryoverRemaining <= 0) {
+            sourceLabels[r.id] = `Sold ${year}`;
+          } else if (carryoverRemaining >= r.working_days) {
+            sourceLabels[r.id] = `Report ${year - 1}`;
+            carryoverRemaining -= r.working_days;
+          } else {
+            sourceLabels[r.id] = `Report ${year - 1} + Sold ${year}`;
+            carryoverRemaining = 0;
+          }
+        });
+      });
+    });
 
     setRequests(
       (data || []).map(r => ({
@@ -234,7 +264,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         dept_head_signature: (r as any).dept_head_signature || null,
         director_name: r.director_id ? approverMap[r.director_id] || '' : '',
         avatar_url: r.epd_id ? avatarMap[r.epd_id] || null : null,
-        source_label: computeSourceLabel(r),
+        source_label: sourceLabels[r.id] || `Sold ${r.year}`,
       }))
     );
     setLoading(false);
