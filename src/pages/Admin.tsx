@@ -349,6 +349,9 @@ const Admin = () => {
         <TabsContent value="rules">
           <OperationalRulesPanel />
         </TabsContent>
+        <TabsContent value="monitoring">
+          <UptimeMonitorPanel />
+        </TabsContent>
         <TabsContent value="settings">
           <AppSettingsPanel />
         </TabsContent>
