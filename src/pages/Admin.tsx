@@ -218,24 +218,26 @@ const Admin = () => {
 
   return (
     <MainLayout title="Administrare" description="Gestionează rolurile și configurările sistemului">
-      <Tabs defaultValue="roles" className="space-y-6">
-         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
-           <TabsTrigger value="roles" className="text-xs sm:text-sm">Roluri</TabsTrigger>
-           <TabsTrigger value="preassign" className="text-xs sm:text-sm">Pre-atribuire</TabsTrigger>
-           <TabsTrigger value="create-account" className="text-xs sm:text-sm">Creare Cont</TabsTrigger>
-           <TabsTrigger value="account-requests" className="text-xs sm:text-sm">Cereri Cont</TabsTrigger>
-           <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit</TabsTrigger>
-           <TabsTrigger value="auth-log" className="text-xs sm:text-sm">Autentificări</TabsTrigger>
-           <TabsTrigger value="inventory" className="text-xs sm:text-sm">Inventar</TabsTrigger>
-             <TabsTrigger value="invitations" className="text-xs sm:text-sm">Invitații</TabsTrigger>
-              <TabsTrigger value="helpdesk" className="text-xs sm:text-sm">HelpDesk</TabsTrigger>
-              <TabsTrigger value="publishers" className="text-xs sm:text-sm">Anunțuri</TabsTrigger>
-              <TabsTrigger value="event-publishers" className="text-xs sm:text-sm">Evenimente</TabsTrigger>
-                <TabsTrigger value="reminders" className="text-xs sm:text-sm">Remindere</TabsTrigger>
-                <TabsTrigger value="rules" className="text-xs sm:text-sm">Reguli Acces</TabsTrigger>
-                <TabsTrigger value="monitoring" className="text-xs sm:text-sm">Monitoring</TabsTrigger>
-                <TabsTrigger value="settings" className="text-xs sm:text-sm">Setări</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="roles" className="space-y-4 md:space-y-6">
+         <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0 scrollbar-hide">
+           <TabsList className="inline-flex md:flex md:flex-wrap h-auto gap-1 p-1 min-w-max md:min-w-0">
+             <TabsTrigger value="roles" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Roluri</TabsTrigger>
+             <TabsTrigger value="preassign" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Pre-atribuire</TabsTrigger>
+             <TabsTrigger value="create-account" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Creare Cont</TabsTrigger>
+             <TabsTrigger value="account-requests" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Cereri Cont</TabsTrigger>
+             <TabsTrigger value="audit" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Audit</TabsTrigger>
+             <TabsTrigger value="auth-log" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Autentificări</TabsTrigger>
+             <TabsTrigger value="inventory" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Inventar</TabsTrigger>
+             <TabsTrigger value="invitations" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Invitații</TabsTrigger>
+             <TabsTrigger value="helpdesk" className="text-[11px] sm:text-sm px-2.5 sm:px-3">HelpDesk</TabsTrigger>
+             <TabsTrigger value="publishers" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Anunțuri</TabsTrigger>
+             <TabsTrigger value="event-publishers" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Evenimente</TabsTrigger>
+             <TabsTrigger value="reminders" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Remindere</TabsTrigger>
+             <TabsTrigger value="rules" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Reguli Acces</TabsTrigger>
+             <TabsTrigger value="monitoring" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Monitoring</TabsTrigger>
+             <TabsTrigger value="settings" className="text-[11px] sm:text-sm px-2.5 sm:px-3">Setări</TabsTrigger>
+           </TabsList>
+         </div>
         <TabsContent value="roles" className="space-y-6">
           <Card>
             <CardHeader>
