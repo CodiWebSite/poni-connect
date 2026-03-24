@@ -314,10 +314,10 @@ const Sidebar = () => {
     const isActive = !isExternal && location.pathname === item.path;
 
     const commonClasses = cn(
-      "flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 relative group text-[13px] tracking-wide",
+      "flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-300 relative group text-[13px] tracking-wide",
       isActive
         ? "sidebar-item-active text-sidebar-primary font-semibold"
-        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground hover:shadow-[0_0_12px_hsl(var(--sidebar-primary)/0.08)]",
       isCollapsed && isActive && "sidebar-item-active-collapsed justify-center"
     );
 
