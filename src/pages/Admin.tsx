@@ -295,9 +295,9 @@ const Admin = () => {
             </CardHeader>
             <CardContent className="space-y-4">
                <div className="flex flex-col sm:flex-row gap-3">
-                 <div className="relative flex-1">
-                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                   <Input placeholder="Caută utilizatori..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <div className="relative flex-1 group">
+                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                   <Input placeholder="Caută utilizatori..." className="pl-10 transition-shadow duration-300 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)]" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                  </div>
                </div>
 
