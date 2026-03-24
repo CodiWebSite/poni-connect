@@ -217,6 +217,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       let totalLeaveDays = 0;
       let usedLeaveDays = 0;
       let carryoverDays = 0;
+      let carryoverInitialDays = 0;
       let carryoverFromYear: number | undefined;
 
       if (request.epd_id) {
@@ -228,15 +229,16 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         totalLeaveDays = epd?.total_leave_days ?? 0;
         usedLeaveDays = epd?.used_leave_days ?? 0;
 
-        const { data: carryover } = await supabase
+        const { data: carryoverData } = await supabase
           .from('leave_carryover')
           .select('remaining_days, initial_days, from_year')
           .eq('employee_personal_data_id', request.epd_id)
           .eq('to_year', request.year)
           .maybeSingle();
-        if (carryover) {
-          carryoverDays = carryover.remaining_days;
-          carryoverFromYear = carryover.from_year;
+        if (carryoverData) {
+          carryoverDays = carryoverData.remaining_days;
+          carryoverInitialDays = carryoverData.initial_days;
+          carryoverFromYear = carryoverData.from_year;
         }
       }
 
