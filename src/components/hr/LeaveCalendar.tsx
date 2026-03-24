@@ -145,14 +145,7 @@ const LeaveCalendar = () => {
       });
     }
 
-    const computeSourceLabel = (epdId: string | null, year: number, workingDays: number): string => {
-      if (!epdId) return `Sold ${year}`;
-      const carryovers = carryoverMap[epdId] || [];
-      const relevantCarryover = carryovers.find(c => c.from_year === year - 1 && c.initial_days > 0);
-      if (!relevantCarryover) return `Sold ${year}`;
-      if (relevantCarryover.initial_days >= workingDays) return `Report ${relevantCarryover.from_year}`;
-      return `Report ${relevantCarryover.from_year} + Sold ${year}`;
-    };
+    // We'll assign sourceLabel after collecting all entries using FIFO simulation
 
     const entries: LeaveEntry[] = [];
     // Track seen leaves by normalized key to avoid duplicates across tables
@@ -191,7 +184,7 @@ const LeaveCalendar = () => {
             leaveType: d.leaveType || d.leave_type || 'co',
             avatarUrl: empInfo.avatarUrl || null,
             sourceYear: d.startDate ? new Date(d.startDate).getFullYear() : null,
-            sourceLabel: d.source || computeSourceLabel(d.epd_id || null, d.startDate ? new Date(d.startDate).getFullYear() : new Date().getFullYear(), d.numberOfDays || 0),
+            sourceLabel: null, // will be computed via FIFO below
           });
         }
       }
@@ -225,13 +218,72 @@ const LeaveCalendar = () => {
             leaveType: 'co',
             avatarUrl: empInfo.avatarUrl || null,
             sourceYear: lr.year || null,
-            sourceLabel: computeSourceLabel(lr.epd_id || null, lr.year || new Date().getFullYear(), lr.working_days || 0),
+            sourceLabel: null, // will be computed via FIFO below
           });
         }
       }
     });
 
-    entries.sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+    entries.sort((a, b) => a.employeeName.localeCompare(b.employeeName) || a.startDate.localeCompare(b.startDate));
+
+    // FIFO simulation: assign sourceLabel per employee based on carryover consumption
+    const nameToEpdId: Record<string, string> = {};
+    Object.entries(epdMap).forEach(([epdId, info]) => {
+      nameToEpdId[info.name] = epdId;
+    });
+
+    // Group CO entries by employee
+    const coByEmployee: Record<string, LeaveEntry[]> = {};
+    entries.forEach(e => {
+      if (e.leaveType === 'co') {
+        if (!coByEmployee[e.employeeName]) coByEmployee[e.employeeName] = [];
+        coByEmployee[e.employeeName].push(e);
+      }
+    });
+
+    Object.entries(coByEmployee).forEach(([empName, empEntries]) => {
+      const epdId = nameToEpdId[empName];
+      if (!epdId) {
+        empEntries.forEach(e => { e.sourceLabel = `Sold ${e.sourceYear || new Date().getFullYear()}`; });
+        return;
+      }
+      const carryovers = carryoverMap[epdId] || [];
+      
+      // Group by year
+      const byYear: Record<number, LeaveEntry[]> = {};
+      empEntries.forEach(e => {
+        const yr = e.sourceYear || new Date().getFullYear();
+        if (!byYear[yr]) byYear[yr] = [];
+        byYear[yr].push(e);
+      });
+
+      Object.entries(byYear).forEach(([yearStr, yearEntries]) => {
+        const year = Number(yearStr);
+        const relevantCarryover = carryovers.find(c => c.from_year === year - 1 && c.initial_days > 0);
+        let carryoverRemaining = relevantCarryover?.initial_days || 0;
+
+        yearEntries.forEach(e => {
+          const days = e.numberOfDays || 0;
+          if (carryoverRemaining <= 0) {
+            e.sourceLabel = `Sold ${year}`;
+          } else if (carryoverRemaining >= days) {
+            e.sourceLabel = `Report ${year - 1}`;
+            carryoverRemaining -= days;
+          } else {
+            e.sourceLabel = `Report ${year - 1} + Sold ${year}`;
+            carryoverRemaining = 0;
+          }
+        });
+      });
+    });
+
+    // Assign default label for non-CO entries
+    entries.forEach(e => {
+      if (!e.sourceLabel) {
+        e.sourceLabel = e.leaveType !== 'co' ? (e.leaveType?.toUpperCase() || '') : `Sold ${e.sourceYear || new Date().getFullYear()}`;
+      }
+    });
+
     setLeaves(entries);
     setLoading(false);
   };
