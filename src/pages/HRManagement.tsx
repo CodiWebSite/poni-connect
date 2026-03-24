@@ -1170,8 +1170,8 @@ const HRManagement = () => {
   return (
     <MainLayout title="Gestiune HR" description="Administrare date angajați - Confidențial">
       <Tabs defaultValue="employees" className="space-y-6">
-        {/* Action buttons row */}
-        <div className="flex flex-wrap gap-2 justify-end">
+        {/* Sticky toolbar */}
+        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border/40 -mx-4 px-4 py-2 md:-mx-6 md:px-6 flex flex-wrap gap-2 justify-end items-center">
           <Button variant="outline" size="sm" onClick={syncEmployees} disabled={syncing}>
             <RefreshCw className={`w-4 h-4 sm:mr-2 ${syncing ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">{syncing ? 'Sincronizare...' : 'Sincronizează'}</span>
