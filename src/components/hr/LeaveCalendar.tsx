@@ -225,6 +225,7 @@ const LeaveCalendar = () => {
             leaveType: 'co',
             avatarUrl: empInfo.avatarUrl || null,
             sourceYear: lr.year || null,
+            sourceLabel: computeSourceLabel(lr.epd_id || null, lr.year || new Date().getFullYear(), lr.working_days || 0),
           });
         }
       }
