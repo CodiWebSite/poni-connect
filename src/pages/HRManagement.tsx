@@ -1393,7 +1393,16 @@ const HRManagement = () => {
                   {filteredEmployees.map((employee) => (
                     <div
                       key={employee.id}
-                      className="p-4 bg-secondary/30 rounded-lg border border-border"
+                      className={cn(
+                        "p-4 rounded-xl border transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5 relative overflow-hidden",
+                        "bg-card border-border/60",
+                        "border-l-[3px]",
+                        (!employee.department || !employee.position)
+                          ? "border-l-destructive"
+                          : employee.hasAccount
+                            ? "border-l-success"
+                            : "border-l-muted-foreground/30"
+                      )}
                     >
                       <div className="flex flex-col lg:flex-row gap-4">
                         {/* Employee Info */}
