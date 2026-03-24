@@ -193,11 +193,22 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                     </td>
                     <td className="sticky left-[250px] z-10 border border-border px-1 py-1 text-center bg-inherit">
                       <div className="flex flex-col items-center gap-0.5">
-                        {Array.from(emp.sourceYears).sort().map(yr => (
-                          <span key={yr} className="font-semibold text-[9px] text-muted-foreground">
-                            {yr}
-                          </span>
-                        ))}
+                        {emp.sourceLabels.size > 0 ? (
+                          Array.from(emp.sourceLabels).map((label, i) => (
+                            <span key={i} className={cn(
+                              'font-semibold text-[9px] px-1 py-0.5 rounded',
+                              label.startsWith('Report') ? 'text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30' : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
+                            )}>
+                              {label}
+                            </span>
+                          ))
+                        ) : (
+                          Array.from(emp.sourceYears).sort().map(yr => (
+                            <span key={yr} className="font-semibold text-[9px] text-muted-foreground">
+                              {yr}
+                            </span>
+                          ))
+                        )}
                       </div>
                     </td>
                     {days.map((day) => {
