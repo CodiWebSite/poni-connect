@@ -48,9 +48,9 @@ const Dashboard = () => {
     return (
       <MainLayout title="Dashboard" description={<span className="inline-flex items-center gap-1">Bine ați venit în intranetul ICMPP <ContextualHelp title="Dashboard" content="Aceasta este pagina principală a platformei. De aici accesați rapid profilul, calendarul de concedii și formulare." /></span>}>
         {settings.homepage_message && (
-          <div className="mb-4 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+          <div className="mb-3 md:mb-4 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 md:px-4 py-2 md:py-3">
             <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-foreground whitespace-pre-line">{settings.homepage_message}</p>
+            <p className="text-xs md:text-sm text-foreground whitespace-pre-line">{settings.homepage_message}</p>
           </div>
         )}
         <DashboardAnnouncements />
