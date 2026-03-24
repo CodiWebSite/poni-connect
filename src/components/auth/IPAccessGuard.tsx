@@ -20,24 +20,17 @@ export default function IPAccessGuard({ children }: IPAccessGuardProps) {
 
   const checkAccess = async (authToken?: string) => {
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'apikey': anonKey,
-      };
-
+      const headers: Record<string, string> = {};
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/check-ip-access`,
-        { method: 'POST', headers }
-      );
+      const { data, error: fnError } = await supabase.functions.invoke('check-ip-access', {
+        body: {},
+        headers,
+      });
 
-      const data = await res.json();
+      if (fnError) throw fnError;
 
       if (data?.allowed === true) {
         setStatus('allowed');
