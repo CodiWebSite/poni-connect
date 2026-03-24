@@ -155,7 +155,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
             <tbody>
               {employees.length === 0 ? (
                 <tr>
-                  <td colSpan={days.length + 2} className="border border-border px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={days.length + 3} className="border border-border px-4 py-8 text-center text-muted-foreground">
                     Nu există concedii înregistrate în această lună.
                   </td>
                 </tr>
