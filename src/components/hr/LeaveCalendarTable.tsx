@@ -20,6 +20,7 @@ interface LeaveEntry {
   numberOfDays: number;
   leaveType?: string;
   avatarUrl?: string | null;
+  sourceYear?: number | null;
 }
 
 interface LeaveCalendarTableProps {
