@@ -47,7 +47,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
 
   // Unique employees with their leave types for the month
   const employees = useMemo(() => {
-    const nameMap = new Map<string, { name: string; department: string | null; leaveTypes: Set<string>; avatarUrl: string | null; sourceYears: Set<number> }>();
+    const nameMap = new Map<string, { name: string; department: string | null; leaveTypes: Set<string>; avatarUrl: string | null; sourceYears: Set<number>; sourceLabels: Set<string> }>();
     leaves.forEach(l => {
       const leaveStart = parseISO(l.startDate);
       const leaveEnd = parseISO(l.endDate);
@@ -56,11 +56,12 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
       if (leaveEnd < mStart || leaveStart > mEnd) return;
       
       if (!nameMap.has(l.employeeName)) {
-        nameMap.set(l.employeeName, { name: l.employeeName, department: l.department, leaveTypes: new Set(), avatarUrl: l.avatarUrl || null, sourceYears: new Set() });
+        nameMap.set(l.employeeName, { name: l.employeeName, department: l.department, leaveTypes: new Set(), avatarUrl: l.avatarUrl || null, sourceYears: new Set(), sourceLabels: new Set() });
       }
       const entry = nameMap.get(l.employeeName)!;
       entry.leaveTypes.add(l.leaveType || 'co');
       if (l.sourceYear) entry.sourceYears.add(l.sourceYear);
+      if (l.sourceLabel) entry.sourceLabels.add(l.sourceLabel);
       if (l.avatarUrl && !entry.avatarUrl) {
         entry.avatarUrl = l.avatarUrl;
       }
