@@ -1311,48 +1311,56 @@ const HRManagement = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
+            <Card className="border-border/60 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <Users className="w-8 h-8 text-primary" />
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-info flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110">
+                    <Users className="w-5 h-5 text-primary-foreground" />
+                  </div>
                   <div>
-                    <p className="text-2xl font-bold">{employees.length}</p>
-                    <p className="text-xs text-muted-foreground">Total Angajați</p>
+                    <p className="text-2xl font-bold tracking-tight">{employees.length}</p>
+                    <p className="text-xs text-muted-foreground font-medium">Total Angajați</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/60 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <UserCheck className="w-8 h-8 text-green-500" />
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-success to-emerald-400 flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110">
+                    <UserCheck className="w-5 h-5 text-success-foreground" />
+                  </div>
                   <div>
-                    <p className="text-2xl font-bold">{employeesWithAccounts.length}</p>
-                    <p className="text-xs text-muted-foreground">Cu Cont Activ</p>
+                    <p className="text-2xl font-bold tracking-tight">{employeesWithAccounts.length}</p>
+                    <p className="text-xs text-muted-foreground font-medium">Cu Cont Activ</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/60 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-8 h-8 text-blue-500" />
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-info to-blue-400 flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110">
+                    <FileText className="w-5 h-5 text-info-foreground" />
+                  </div>
                   <div>
-                    <p className="text-2xl font-bold">
+                    <p className="text-2xl font-bold tracking-tight">
                       {employees.reduce((acc, e) => acc + (e.documents?.length || 0), 0)}
                     </p>
-                    <p className="text-xs text-muted-foreground">Documente</p>
+                    <p className="text-xs text-muted-foreground font-medium">Documente</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/60 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <Clock className="w-8 h-8 text-amber-500" />
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-warning to-amber-400 flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110">
+                    <Clock className="w-5 h-5 text-warning-foreground" />
+                  </div>
                   <div>
-                    <p className="text-2xl font-bold">{incompleteEmployees.length}</p>
-                    <p className="text-xs text-muted-foreground">Date Incomplete</p>
+                    <p className="text-2xl font-bold tracking-tight">{incompleteEmployees.length}</p>
+                    <p className="text-xs text-muted-foreground font-medium">Date Incomplete</p>
                   </div>
                 </div>
               </CardContent>
