@@ -199,6 +199,7 @@ const LeaveCalendar = () => {
             numberOfDays: lr.working_days || 0,
             leaveType: 'co',
             avatarUrl: empInfo.avatarUrl || null,
+            sourceYear: lr.year || null,
           });
         }
       }
