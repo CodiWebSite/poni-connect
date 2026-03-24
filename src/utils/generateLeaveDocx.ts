@@ -132,22 +132,25 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const totalCurrentYear = totalLeaveDays ?? 0;
   const usedDays = usedLeaveDays ?? 0;
   const carryover = carryoverDays ?? 0;
-  // Use initial carryover days for display (what was carried over originally, not remaining)
-  const carryoverInitial = carryoverInitialDays ?? carryover;
 
-  // Show pre-leave balance (before this request was deducted)
+  // SRUS trebuie să arate soldul de report dinaintea cererii curente (nu soldul rămas după cerere și nici totalul anual inițial).
+  const carryoverBeforeRequest = carryover > 0 && workingDays > 0
+    ? carryover + workingDays
+    : carryover;
+
+  // Show pre-leave current-year balance (before this request was deducted)
   let preLeaveCurrentUsed = usedDays;
 
   if (carryover > 0 && workingDays > 0) {
-    // Carryover still has remaining → all workingDays came from carryover
-    preLeaveCurrentUsed = usedDays; // current year was not touched
+    // Request consumed carryover; current-year pool stays untouched
+    preLeaveCurrentUsed = usedDays;
   } else {
-    // No carryover or carryover fully depleted → days came from current year
+    // Request consumed current-year pool
     preLeaveCurrentUsed = Math.max(0, usedDays - workingDays);
   }
 
   const remainingCurrentYear = totalCurrentYear - preLeaveCurrentUsed;
-  const totalSold = remainingCurrentYear + carryoverInitial;
+  const totalSold = remainingCurrentYear + carryoverBeforeRequest;
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
@@ -237,7 +240,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
         t(' zile rămase aferente anului ', { size: S }),
         t(`${year}`, { bold: true, size: S }),
         t(' și ', { size: S }),
-        t(`${carryoverInitial}`, { bold: true, size: S }),
+        t(`${carryoverBeforeRequest}`, { bold: true, size: S }),
         t(' zile rămase aferente anului', { size: S }),
       ],
     }),
