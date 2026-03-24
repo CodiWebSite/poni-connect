@@ -1446,6 +1446,7 @@ const HRManagement = () => {
                             </p>
                             <p className="text-xs text-muted-foreground">{employee.email}</p>
                             
+                            {/* Primary badges */}
                             <div className="flex flex-wrap gap-2 mt-2">
                               <Badge variant="outline" className="text-xs">
                                 <Calendar className="w-3 h-3 mr-1" />
@@ -1462,38 +1463,38 @@ const HRManagement = () => {
                                   +{employee.bonusDays} bonus
                                 </Badge>
                               )}
-                              {employee.employment_date && (
-                                <Badge variant="outline" className="text-xs">
-                                  Angajat: {format(new Date(employee.employment_date), 'dd MMM yyyy', { locale: ro })}
-                                </Badge>
-                              )}
                               {(!employee.department || !employee.position) && (
                                 <Badge variant="destructive" className="text-xs">
                                   Date incomplete
                                 </Badge>
                               )}
                               {employee.documents && employee.documents.length > 0 && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80" onClick={() => employee.hasAccount && employee.user_id && setUploadingFor(employee)}>
                                   <FileText className="w-3 h-3 mr-1" />
                                   {employee.documents.length} doc.
                                 </Badge>
                               )}
                               {employee.leaveHistory && employee.leaveHistory.length > 0 && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80" onClick={() => setLeaveHistoryEmployee(employee)}>
                                   <Calendar className="w-3 h-3 mr-1" />
                                   {employee.leaveHistory.length} concedii
                                 </Badge>
                               )}
-                              {employee.updated_at && (
-                                <Badge variant="outline" className="text-xs text-muted-foreground">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  Actualizat: {format(new Date(employee.updated_at), 'dd.MM.yyyy HH:mm', { locale: ro })}
-                                  {employee.last_updated_by_name && (
-                                    <span className="ml-1">de {employee.last_updated_by_name}</span>
-                                  )}
-                                </Badge>
-                              )}
                             </div>
+                            {/* Secondary info */}
+                            {(employee.employment_date || employee.updated_at) && (
+                              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[11px] text-muted-foreground">
+                                {employee.employment_date && (
+                                  <span>Angajat: {format(new Date(employee.employment_date), 'dd MMM yyyy', { locale: ro })}</span>
+                                )}
+                                {employee.updated_at && (
+                                  <span>
+                                    Actualizat: {format(new Date(employee.updated_at), 'dd.MM.yyyy', { locale: ro })}
+                                    {employee.last_updated_by_name && ` de ${employee.last_updated_by_name}`}
+                                  </span>
+                                )}
+                              </div>
+                            )}
 
                             {/* Leave periods summary */}
                             {employee.leaveHistory && employee.leaveHistory.length > 0 && (
