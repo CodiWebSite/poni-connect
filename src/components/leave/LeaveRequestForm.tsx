@@ -202,10 +202,10 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       return;
     }
 
-    // Validate minimum start date is tomorrow
-    const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
-    if (startDate < tomorrow) {
-      toast({ title: 'Eroare', description: 'Data de început trebuie să fie cel puțin ziua de mâine. Nu puteți depune concediu pentru ziua curentă sau una trecută.', variant: 'destructive' });
+    // Validate minimum start date is today (no past dates allowed)
+    const today = format(new Date(), 'yyyy-MM-dd');
+    if (startDate < today) {
+      toast({ title: 'Eroare', description: 'Data de început trebuie să fie cel puțin ziua de azi. Nu puteți depune concediu pentru o dată trecută.', variant: 'destructive' });
       return;
     }
 
@@ -476,7 +476,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               type="date"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
-              min={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
+              min={format(new Date(), 'yyyy-MM-dd')}
             />
           </div>
           <div className="space-y-2">
@@ -486,7 +486,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               type="date"
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
-              min={startDate || format(addDays(new Date(), 1), 'yyyy-MM-dd')}
+              min={startDate || format(new Date(), 'yyyy-MM-dd')}
             />
           </div>
         </div>
