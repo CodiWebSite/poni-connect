@@ -59,7 +59,7 @@ const Header = ({ title, description }: HeaderProps) => {
 
   return (
     <>
-    <header className="sticky top-0 z-40 bg-background/60 backdrop-blur-xl border-b border-border/40 px-4 md:px-6 py-2.5 md:py-3">
+    <header className="sticky top-0 z-40 bg-background/60 backdrop-blur-xl border-b border-border/40 px-3 md:px-6 py-2 md:py-2.5">
       <div className="flex items-center justify-between gap-2 md:gap-4">
         <div className="flex items-center gap-3">
           {/* Mobile menu button */}
