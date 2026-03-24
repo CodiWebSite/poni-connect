@@ -125,6 +125,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                 <tr>
                   <th className="sticky left-0 z-10 bg-background border border-border px-3 py-0.5"></th>
                   <th className="sticky left-[190px] z-10 bg-background border border-border px-2 py-0.5"></th>
+                  <th className="sticky left-[250px] z-10 bg-background border border-border px-2 py-0.5"></th>
                   {days.map((day) => {
                     const dateStr = format(day, 'yyyy-MM-dd');
                     const pubName = getPublicHolidayName(day);
