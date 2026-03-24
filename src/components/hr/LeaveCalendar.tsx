@@ -33,6 +33,7 @@ interface LeaveEntry {
   leaveType?: string;
   avatarUrl?: string | null;
   sourceYear?: number | null;
+  sourceLabel?: string | null;
 }
 
 const LeaveCalendar = () => {
@@ -130,6 +131,29 @@ const LeaveCalendar = () => {
       if (userId) userIdToEpdId[userId] = e.id;
     });
 
+    // Fetch carryover data for source labels
+    const allEpdIds = (epdData || []).map(e => e.id);
+    let carryoverMap: Record<string, { from_year: number; initial_days: number }[]> = {};
+    if (allEpdIds.length > 0) {
+      const { data: carryovers } = await supabase
+        .from('leave_carryover')
+        .select('employee_personal_data_id, from_year, initial_days')
+        .in('employee_personal_data_id', allEpdIds);
+      (carryovers || []).forEach(c => {
+        if (!carryoverMap[c.employee_personal_data_id]) carryoverMap[c.employee_personal_data_id] = [];
+        carryoverMap[c.employee_personal_data_id].push({ from_year: c.from_year, initial_days: c.initial_days });
+      });
+    }
+
+    const computeSourceLabel = (epdId: string | null, year: number, workingDays: number): string => {
+      if (!epdId) return `Sold ${year}`;
+      const carryovers = carryoverMap[epdId] || [];
+      const relevantCarryover = carryovers.find(c => c.from_year === year - 1 && c.initial_days > 0);
+      if (!relevantCarryover) return `Sold ${year}`;
+      if (relevantCarryover.initial_days >= workingDays) return `Report ${relevantCarryover.from_year}`;
+      return `Report ${relevantCarryover.from_year} + Sold ${year}`;
+    };
+
     const entries: LeaveEntry[] = [];
     // Track seen leaves by normalized key to avoid duplicates across tables
     const seenLeaveKeys = new Set<string>();
@@ -167,6 +191,7 @@ const LeaveCalendar = () => {
             leaveType: d.leaveType || d.leave_type || 'co',
             avatarUrl: empInfo.avatarUrl || null,
             sourceYear: d.startDate ? new Date(d.startDate).getFullYear() : null,
+            sourceLabel: d.source || computeSourceLabel(d.epd_id || null, d.startDate ? new Date(d.startDate).getFullYear() : new Date().getFullYear(), d.numberOfDays || 0),
           });
         }
       }
@@ -200,6 +225,7 @@ const LeaveCalendar = () => {
             leaveType: 'co',
             avatarUrl: empInfo.avatarUrl || null,
             sourceYear: lr.year || null,
+            sourceLabel: computeSourceLabel(lr.epd_id || null, lr.year || new Date().getFullYear(), lr.working_days || 0),
           });
         }
       }

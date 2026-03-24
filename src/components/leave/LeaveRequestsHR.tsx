@@ -46,6 +46,7 @@ interface LeaveRequestRow {
   avatar_url?: string | null;
   epd_id?: string;
   user_id: string;
+  source_label?: string;
 }
 
 const statusLabels: Record<string, string> = {
@@ -195,6 +196,33 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       }
     }
 
+    // Fetch carryover data to determine source (Report vs Sold)
+    const currentYear = new Date().getFullYear();
+    let carryoverMap: Record<string, { from_year: number; initial_days: number; remaining_days: number }[]> = {};
+    if (epdIds.length > 0) {
+      const { data: carryovers } = await supabase
+        .from('leave_carryover')
+        .select('employee_personal_data_id, from_year, initial_days, remaining_days, to_year')
+        .in('employee_personal_data_id', epdIds);
+      (carryovers || []).forEach(c => {
+        if (!carryoverMap[c.employee_personal_data_id]) carryoverMap[c.employee_personal_data_id] = [];
+        carryoverMap[c.employee_personal_data_id].push({ from_year: c.from_year, initial_days: c.initial_days, remaining_days: c.remaining_days });
+      });
+    }
+
+    const computeSourceLabel = (r: any): string => {
+      if (!r.epd_id) return `Sold ${r.year}`;
+      const carryovers = carryoverMap[r.epd_id] || [];
+      const relevantCarryover = carryovers.find(c => c.from_year === r.year - 1 && c.initial_days > 0);
+      if (!relevantCarryover) return `Sold ${r.year}`;
+      // FIFO: carryover first
+      if (relevantCarryover.initial_days >= r.working_days) {
+        return `Report ${relevantCarryover.from_year}`;
+      }
+      // Split
+      return `Report ${relevantCarryover.from_year} + Sold ${r.year}`;
+    };
+
     setRequests(
       (data || []).map(r => ({
         ...r,
@@ -206,6 +234,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         dept_head_signature: (r as any).dept_head_signature || null,
         director_name: r.director_id ? approverMap[r.director_id] || '' : '',
         avatar_url: r.epd_id ? avatarMap[r.epd_id] || null : null,
+        source_label: computeSourceLabel(r),
       }))
     );
     setLoading(false);
@@ -408,7 +437,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         { header: 'Grad/Treaptă', key: 'grade', width: 16 },
         { header: 'Perioada', key: 'period', width: 22 },
         { header: 'Zile', key: 'days', width: 8 },
-        { header: 'An', key: 'year', width: 8 },
+        { header: 'Sursă Zile', key: 'source', width: 22 },
         { header: 'Înlocuitor', key: 'replacement', width: 22 },
         { header: 'Status', key: 'status', width: 18 },
         { header: 'Aprobat de', key: 'approver', width: 22 },
@@ -421,7 +450,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           nr: r.request_number, name: r.employee_name, dept: r.employee_department,
           position: r.employee_position, grade: r.employee_grade || '-',
           period: `${format(parseISO(r.start_date), 'dd.MM.yyyy')} – ${format(parseISO(r.end_date), 'dd.MM.yyyy')}`,
-          days: r.working_days, year: r.year, replacement: r.replacement_name,
+          days: r.working_days, source: r.source_label || `Sold ${r.year}`, replacement: r.replacement_name,
           status: sMap[r.status] || r.status, approver: r.dept_head_name || '-',
           approvalDate: r.dept_head_approved_at ? format(parseISO(r.dept_head_approved_at), 'dd.MM.yyyy') : '-',
           createdAt: format(parseISO(r.created_at), 'dd.MM.yyyy'),
@@ -545,7 +574,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                   <TableHead>Funcție / Grad</TableHead>
                   <TableHead>Perioada</TableHead>
                    <TableHead>Zile</TableHead>
-                   <TableHead>An</TableHead>
+                   <TableHead className="text-center">Sursă</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aprobat de</TableHead>
                   <TableHead>Acțiuni</TableHead>
@@ -577,7 +606,21 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                       {format(parseISO(r.start_date), 'dd.MM.yy')} – {format(parseISO(r.end_date), 'dd.MM.yy')}
                     </TableCell>
                      <TableCell className="text-center font-medium">{r.working_days}</TableCell>
-                     <TableCell className="text-center text-sm text-muted-foreground">{r.year}</TableCell>
+                     <TableCell className="text-center text-xs">
+                       {r.source_label?.includes('+') ? (
+                         <div className="flex flex-col gap-0.5">
+                           {r.source_label.split(' + ').map((s, i) => (
+                             <Badge key={i} variant="outline" className={`text-[10px] px-1.5 py-0 ${s.startsWith('Report') ? 'border-blue-300 text-blue-700 dark:border-blue-600 dark:text-blue-400' : 'border-emerald-300 text-emerald-700 dark:border-emerald-600 dark:text-emerald-400'}`}>
+                               {s}
+                             </Badge>
+                           ))}
+                         </div>
+                       ) : (
+                         <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${r.source_label?.startsWith('Report') ? 'border-blue-300 text-blue-700 dark:border-blue-600 dark:text-blue-400' : 'border-emerald-300 text-emerald-700 dark:border-emerald-600 dark:text-emerald-400'}`}>
+                           {r.source_label || `Sold ${r.year}`}
+                         </Badge>
+                       )}
+                     </TableCell>
                     <TableCell>
                       <Badge className={`text-xs ${statusColors[r.status] || ''}`}>
                         {statusLabels[r.status] || r.status}
