@@ -217,7 +217,7 @@ const LeaveCalendarTable = ({ currentMonth, leaves, customHolidays }: LeaveCalen
                             customH && !pubHoliday && !leave && 'bg-amber-500/8',
                             leave && leaveStyle?.bg,
                           )}
-                          title={leave ? `${emp.name}: ${leaveStyle?.label || 'CO'}` : undefined}
+                          title={leave ? `${emp.name}: ${leaveStyle?.label || 'CO'} (${leave.sourceYear || ''})` : undefined}
                         >
                           {leave && (
                             <span className={cn('font-bold text-[10px]', leaveStyle?.color)}>
