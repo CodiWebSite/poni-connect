@@ -46,6 +46,7 @@ interface LeaveRequestRow {
   avatar_url?: string | null;
   epd_id?: string;
   user_id: string;
+  source_label?: string;
 }
 
 const statusLabels: Record<string, string> = {
