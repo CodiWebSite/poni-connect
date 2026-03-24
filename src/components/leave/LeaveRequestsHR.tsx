@@ -197,20 +197,28 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     }
 
     // Fetch carryover data to determine source (Report vs Sold)
-    let carryoverInitialMap: Record<string, { from_year: number; initial_days: number }[]> = {};
+    let carryoverMap: Record<string, { from_year: number; to_year: number; initial_days: number; remaining_days: number; updated_at: string }[]> = {};
     if (epdIds.length > 0) {
       const { data: carryovers } = await supabase
         .from('leave_carryover')
-        .select('employee_personal_data_id, from_year, initial_days, to_year')
+        .select('employee_personal_data_id, from_year, to_year, initial_days, remaining_days, updated_at')
         .in('employee_personal_data_id', epdIds);
       (carryovers || []).forEach(c => {
-        if (!carryoverInitialMap[c.employee_personal_data_id]) carryoverInitialMap[c.employee_personal_data_id] = [];
-        carryoverInitialMap[c.employee_personal_data_id].push({ from_year: c.from_year, initial_days: c.initial_days });
+        if (!carryoverMap[c.employee_personal_data_id]) carryoverMap[c.employee_personal_data_id] = [];
+        carryoverMap[c.employee_personal_data_id].push({
+          from_year: c.from_year,
+          to_year: c.to_year,
+          initial_days: c.initial_days,
+          remaining_days: c.remaining_days,
+          updated_at: c.updated_at,
+        });
       });
     }
 
-    // FIFO simulation per employee: sort approved requests chronologically, 
-    // consume carryover first, then current year
+    // FIFO simulation per employee:
+    // - dacă reportul a fost deja actualizat înainte de prima cerere din anul respectiv,
+    //   pornim din remaining_days (snapshot real, include consumuri istorice/import)
+    // - altfel, pornim din initial_days și simulăm FIFO pe cererile existente
     const approvedData = (data || []).filter((r: any) => r.status === 'approved' || r.status === 'pending_srus' || r.status === 'pending_department_head');
     const sourceLabels: Record<string, string> = {};
 
@@ -235,16 +243,39 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
       Object.entries(byYear).forEach(([yearStr, yearReqs]) => {
         const year = Number(yearStr);
-        const carryovers = carryoverInitialMap[epdId] || [];
-        const relevantCarryover = carryovers.find(c => c.from_year === year - 1 && c.initial_days > 0);
-        let carryoverRemaining = relevantCarryover?.initial_days || 0;
+        const carryovers = carryoverMap[epdId] || [];
+        const relevantCarryover = carryovers.find(c => c.to_year === year && c.from_year === year - 1);
+
+        const earliestRequestCreatedAt = yearReqs.reduce<string | null>((earliest, req) => {
+          if (!req?.created_at) return earliest;
+          if (!earliest) return req.created_at;
+          return req.created_at < earliest ? req.created_at : earliest;
+        }, null);
+
+        const useSnapshotRemaining = Boolean(
+          relevantCarryover &&
+          earliestRequestCreatedAt &&
+          relevantCarryover.updated_at &&
+          new Date(relevantCarryover.updated_at).getTime() <= new Date(earliestRequestCreatedAt).getTime()
+        );
+
+        let carryoverRemaining = useSnapshotRemaining
+          ? Math.max(relevantCarryover?.remaining_days || 0, 0)
+          : Math.max(relevantCarryover?.initial_days || 0, 0);
+
+        yearReqs.sort((a, b) => {
+          const byStartDate = (a.start_date || '').localeCompare(b.start_date || '');
+          if (byStartDate !== 0) return byStartDate;
+          return (a.created_at || '').localeCompare(b.created_at || '');
+        });
 
         yearReqs.forEach(r => {
-          if (carryoverRemaining <= 0) {
+          const days = Number(r.working_days) || 0;
+          if (carryoverRemaining <= 0 || days <= 0) {
             sourceLabels[r.id] = `Sold ${year}`;
-          } else if (carryoverRemaining >= r.working_days) {
+          } else if (carryoverRemaining >= days) {
             sourceLabels[r.id] = `Report ${year - 1}`;
-            carryoverRemaining -= r.working_days;
+            carryoverRemaining -= days;
           } else {
             sourceLabels[r.id] = `Report ${year - 1} + Sold ${year}`;
             carryoverRemaining = 0;
