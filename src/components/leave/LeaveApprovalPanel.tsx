@@ -164,6 +164,13 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         .eq('approver_user_id', user.id);
       const myApproverDepts = new Set((myDeptApprovals || []).map(d => d.department.toLowerCase()));
 
+      // Fetch individual employee-to-approver mappings (leave_approvers table)
+      const { data: myIndividualApprovals } = await supabase
+        .from('leave_approvers')
+        .select('employee_user_id')
+        .eq('approver_user_id', user.id);
+      const myIndividualEmployeeIds = new Set((myIndividualApprovals || []).map(a => a.employee_user_id).filter(Boolean));
+
       // Check if user is an active delegate for any approver
       const today = new Date().toISOString().split('T')[0];
       const { data: activeDelegations, error: delegError } = await supabase
@@ -175,22 +182,29 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         .gte('end_date', today);
       
       if (delegError) console.error('[LeaveApprovalPanel] delegate query error:', delegError);
-      
-      console.log('[LeaveApprovalPanel] activeDelegations:', activeDelegations);
-      console.log('[LeaveApprovalPanel] myApproverDepts:', [...myApproverDepts]);
-      console.log('[LeaveApprovalPanel] isDeptHead:', isDeptHead);
-      console.log('[LeaveApprovalPanel] myProfile dept:', myProfile?.department);
 
       const delegatedApproverIds = new Set((activeDelegations || []).map((d: any) => d.delegator_user_id));
       const delegatedDepts = new Set((activeDelegations || []).map((d: any) => (d.department || '').toLowerCase()).filter(Boolean));
-      
+
+      // For delegated approvers, also fetch their individual employee mappings
+      let delegatedIndividualEmployeeIds = new Set<string>();
+      if (delegatedApproverIds.size > 0) {
+        const { data: delegatedApprovals } = await supabase
+          .from('leave_approvers')
+          .select('employee_user_id')
+          .in('approver_user_id', [...delegatedApproverIds]);
+        delegatedIndividualEmployeeIds = new Set((delegatedApprovals || []).map(a => a.employee_user_id).filter(Boolean));
+      }
+
+      console.log('[LeaveApprovalPanel] myIndividualEmployeeIds:', [...myIndividualEmployeeIds]);
+      console.log('[LeaveApprovalPanel] myApproverDepts:', [...myApproverDepts]);
       console.log('[LeaveApprovalPanel] delegatedApproverIds:', [...delegatedApproverIds]);
-      console.log('[LeaveApprovalPanel] delegatedDepts:', [...delegatedDepts]);
-      console.log('[LeaveApprovalPanel] enrichedRequests before filter:', enrichedRequests.map(r => ({ id: r.id, approver_id: r.approver_id, dept: r.employee_department })));
 
       enrichedRequests = enrichedRequests.filter(r => {
-        // Direct approver assignment
+        // Direct approver assignment on the request
         if (r.approver_id === user.id) return true;
+        // Individual employee-to-approver mapping from leave_approvers table
+        if (myIndividualEmployeeIds.has(r.user_id)) return true;
         // Department-level approver
         if (!r.approver_id && r.employee_department && myApproverDepts.has(r.employee_department.toLowerCase())) return true;
         // Generic dept head
@@ -200,9 +214,10 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         }
         // Delegated: the request's approver is someone who delegated to me
         if (r.approver_id && delegatedApproverIds.has(r.approver_id)) return true;
+        // Delegated: individual employee mapping of delegated approver
+        if (delegatedIndividualEmployeeIds.has(r.user_id)) return true;
         // Delegated: department match for non-assigned requests
         if (!r.approver_id && r.employee_department && delegatedDepts.has(r.employee_department.toLowerCase())) return true;
-        console.log('[LeaveApprovalPanel] FILTERED OUT request:', r.id, 'approver_id:', r.approver_id, 'dept:', r.employee_department);
         return false;
       });
     }
