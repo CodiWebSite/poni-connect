@@ -207,7 +207,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         // Delegated: the request's approver is someone who delegated to me
         if (r.approver_id && delegatedApproverIds.has(r.approver_id)) return true;
         // Delegated: individual employee mapping of delegated approver
-        if (delegatedIndividualEmployeeIds.has(r.user_id)) return true;
+        // Delegation does NOT apply to individual employee mappings (global rule)
         // Delegated: department match for non-assigned requests
         if (!r.approver_id && r.employee_department && delegatedDepts.has(r.employee_department.toLowerCase())) return true;
         return false;
