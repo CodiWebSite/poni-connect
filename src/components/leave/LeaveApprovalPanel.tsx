@@ -186,15 +186,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       const delegatedApproverIds = new Set((activeDelegations || []).map((d: any) => d.delegator_user_id));
       const delegatedDepts = new Set((activeDelegations || []).map((d: any) => (d.department || '').toLowerCase()).filter(Boolean));
 
-      // For delegated approvers, also fetch their individual employee mappings
-      let delegatedIndividualEmployeeIds = new Set<string>();
-      if (delegatedApproverIds.size > 0) {
-        const { data: delegatedApprovals } = await supabase
-          .from('leave_approvers')
-          .select('employee_user_id')
-          .in('approver_user_id', [...delegatedApproverIds]);
-        delegatedIndividualEmployeeIds = new Set((delegatedApprovals || []).map(a => a.employee_user_id).filter(Boolean));
-      }
+      // NOTE: Delegation only applies to department-level approvals, NOT individual employee mappings
 
       console.log('[LeaveApprovalPanel] myIndividualEmployeeIds:', [...myIndividualEmployeeIds]);
       console.log('[LeaveApprovalPanel] myApproverDepts:', [...myApproverDepts]);
