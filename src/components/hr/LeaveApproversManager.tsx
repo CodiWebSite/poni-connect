@@ -552,7 +552,6 @@ export function LeaveApproversManager() {
                           )}
                         </div>
                         {m.notes && <span className="text-xs text-muted-foreground italic">({m.notes})</span>}
-                        {delegate && <DelegateBadge delegate={delegate} />}
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(m.id)} className="text-destructive hover:text-destructive">
                         <Trash2 className="w-4 h-4" />
