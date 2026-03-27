@@ -42,6 +42,9 @@ import Archive from "./pages/Archive";
 import PublicProfile from "./pages/PublicProfile";
 import BusinessCards from "./pages/BusinessCards";
 import Changelog from "./pages/Changelog";
+import Inventory from "./pages/Inventory";
+import InventoryProfile from "./pages/InventoryProfile";
+import InventoryPublicView from "./pages/InventoryPublicView";
 
 const queryClient = new QueryClient();
 
@@ -52,7 +55,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   // Allow auth and kiosk routes always
-  if (location.pathname.startsWith('/auth') || location.pathname === '/kiosk' || location.pathname.startsWith('/profil/')) return <>{children}</>;
+  if (location.pathname.startsWith('/auth') || location.pathname === '/kiosk' || location.pathname.startsWith('/profil/') || location.pathname.startsWith('/echipament/')) return <>{children}</>;
 
   // Wait for settings to load before making any maintenance decision
   if (settingsLoading) return <>{children}</>;
@@ -143,6 +146,9 @@ const App = () => (
                 <Route path="/profil/:id" element={<PublicProfile />} />
                 <Route path="/carti-vizita" element={<BusinessCards />} />
                 <Route path="/changelog" element={<Changelog />} />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/inventory/:id" element={<InventoryProfile />} />
+                <Route path="/echipament/:id" element={<InventoryPublicView />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>

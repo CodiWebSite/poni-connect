@@ -39,6 +39,7 @@ import {
   Archive,
   CreditCard,
   Newspaper,
+  Package,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -257,6 +258,7 @@ const Sidebar = () => {
       '/hr-management': 'hr-management', '/salarizare': 'salarizare', '/settings': 'settings',
       '/system-status': 'system-status', '/carti-vizita': 'carti-vizita', '/admin': 'admin',
       '/changelog': 'changelog',
+      '/inventory': 'admin',
     };
     return map[path] || null;
   };
@@ -288,6 +290,7 @@ const Sidebar = () => {
     { icon: ServerCog, label: 'Stare Sistem', path: '/system-status' },
     
     { icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin },
+    { icon: Package, label: 'Inventar IT', path: '/inventory' },
     { icon: Newspaper, label: 'Changelog', path: '/changelog' },
   ];
 
