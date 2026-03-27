@@ -146,6 +146,9 @@ const App = () => (
                 <Route path="/profil/:id" element={<PublicProfile />} />
                 <Route path="/carti-vizita" element={<BusinessCards />} />
                 <Route path="/changelog" element={<Changelog />} />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/inventory/:id" element={<InventoryProfile />} />
+                <Route path="/echipament/:id" element={<InventoryPublicView />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
