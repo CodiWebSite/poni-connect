@@ -72,7 +72,7 @@ const InventoryProfile = () => {
   if (!item) return <MainLayout title="Profil Echipament"><div className="text-center py-20 text-muted-foreground">Echipamentul nu a fost găsit.</div></MainLayout>;
 
   return (
-    <MainLayout>
+    <MainLayout title="Profil Echipament">
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/inventory')}>

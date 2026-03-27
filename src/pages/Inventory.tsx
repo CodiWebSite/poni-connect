@@ -104,7 +104,7 @@ const Inventory = () => {
             <Card key={cat}>
               <CardContent className="pt-4 pb-3 text-center">
                 <p className="text-2xl font-bold">{count}</p>
-                <p className="text-xs text-muted-foreground">{categoryLabels[cat] || cat}</p>
+                <p className="text-xs text-muted-foreground">{categoryLabels[cat as string] || cat}</p>
               </CardContent>
             </Card>
           ))}
