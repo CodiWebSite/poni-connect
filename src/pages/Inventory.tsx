@@ -82,7 +82,7 @@ const Inventory = () => {
   ).sort((a, b) => (b[1] as number) - (a[1] as number));
 
   return (
-    <MainLayout>
+    <MainLayout title="Inventar IT" description="Gestiune avansată echipamente și software">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
