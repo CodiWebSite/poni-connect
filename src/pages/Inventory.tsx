@@ -103,7 +103,7 @@ const Inventory = () => {
           {byCategory.slice(0, 3).map(([cat, count]) => (
             <Card key={cat}>
               <CardContent className="pt-4 pb-3 text-center">
-                <p className="text-2xl font-bold">{count}</p>
+                <p className="text-2xl font-bold">{count as number}</p>
                 <p className="text-xs text-muted-foreground">{categoryLabels[cat as string] || cat}</p>
               </CardContent>
             </Card>
