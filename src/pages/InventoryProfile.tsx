@@ -65,11 +65,11 @@ const InventoryProfile = () => {
     setLoading(false);
   };
 
-  if (authLoading || roleLoading) return <MainLayout><div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></MainLayout>;
+  if (authLoading || roleLoading) return <MainLayout title="Profil Echipament"><div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></MainLayout>;
   if (!isSuperAdmin) return <Navigate to="/" replace />;
 
-  if (loading) return <MainLayout><div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></MainLayout>;
-  if (!item) return <MainLayout><div className="text-center py-20 text-muted-foreground">Echipamentul nu a fost găsit.</div></MainLayout>;
+  if (loading) return <MainLayout title="Profil Echipament"><div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></MainLayout>;
+  if (!item) return <MainLayout title="Profil Echipament"><div className="text-center py-20 text-muted-foreground">Echipamentul nu a fost găsit.</div></MainLayout>;
 
   return (
     <MainLayout>
