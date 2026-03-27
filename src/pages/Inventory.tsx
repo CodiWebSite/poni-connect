@@ -75,11 +75,11 @@ const Inventory = () => {
   // Stats
   const totalItems = items.length;
   const byCategory = Object.entries(
-    items.reduce((acc: Record<string, number>, i) => { acc[i.category] = (acc[i.category] || 0) + 1; return acc; }, {})
-  ).sort((a, b) => b[1] - a[1]);
+    items.reduce((acc: Record<string, number>, i) => { acc[i.category] = (acc[i.category] || 0) + 1; return acc; }, {} as Record<string, number>)
+  ).sort((a, b) => (b[1] as number) - (a[1] as number));
   const byBuilding = Object.entries(
-    items.reduce((acc: Record<string, number>, i) => { if (i.building) acc[i.building] = (acc[i.building] || 0) + 1; return acc; }, {})
-  ).sort((a, b) => b[1] - a[1]);
+    items.reduce((acc: Record<string, number>, i) => { if (i.building) acc[i.building] = (acc[i.building] || 0) + 1; return acc; }, {} as Record<string, number>)
+  ).sort((a, b) => (b[1] as number) - (a[1] as number));
 
   return (
     <MainLayout>
