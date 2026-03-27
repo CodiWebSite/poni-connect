@@ -1,48 +1,90 @@
 
 
-# Îmbunătățiri Premium — Sidebar + Gestiune HR
+## Sistem Avansat de Inventariere IT — Plan Actualizat
 
-## 1. Sidebar — Polish premium
+### Structura fișierului Excel (2 sheet-uri)
 
-**Ce se schimbă:**
-- Adaug un efect subtil de **hover glow** pe item-urile de navigare (o lumină albastră ușoară la hover)
-- **Active item** — indicator lateral animat (o linie verticală colorată pe stânga care apare cu tranziție smooth)
-- **Section headers** cu icon mic decorativ și font spacing mai aerisit
-- **Footer** — butonul de deconectare cu o separare vizuală mai clară, avatar cu status indicator animat (pulse verde)
-- **Collapsed mode** — tooltip-urile cu efect de glassmorphism (deja parțial, dar consolidez)
+**Sheet 1 — `inventar_echipamente`:**
+Clădire, Etaj, Nr. Încăpere, Tip echipament, Brand/Model, Nr. inventar, Serie, Status, Observații
 
-**Fișiere:** `src/components/layout/Sidebar.tsx`, `src/index.css`
+**Sheet 2 — `Software_calculatoare`:**
+Clădire, Etaj, Încăpere, Tip activitate, Nr. inventar PC, Nume PC, Sistem de operare, An licență, Tip licență, Antivirus, An antivirus, Aplicații instalate, Licențiate, Observații
 
-## 2. HR Management — Redesign premium al listei de angajați
+### Ce există acum
+- Tabel `equipment_items` cu: name, category, serial_number, description, status, assigned_to_user_id
+- Categorii limitate: laptop, card_acces, cheie, telefon, altele
+- Doar Super Admin, RLS deja configurat
 
-**Problema:** Cardurile de angajați sunt dense, cu multe badge-uri lipite, greu de scanat vizual. Stats cards-urile sunt plate. Tab-urile funcționează dar arată generic.
+---
 
-**Soluția:**
-- **Stats Cards** (Total Angajați, Cu Cont, Documente, Date Incomplete) — le dau același tratament premium ca pe Dashboard: icon cu fundal gradient, glow subtil, text animat
-- **Employee Cards** — redesign cu:
-  - Linie laterală colorată pe stânga (verde = cont activ, gri = fără cont, roșu = date incomplete)
-  - Avatar mai mare cu ring gradient (ca pe sidebar)
-  - Secțiune separată vizual pentru badge-uri vs informații de bază
-  - Butoanele de acțiune grupate într-un dropdown menu pe mobil (în loc de rând lung de butoane)
-  - Hover effect cu shadow lift
-- **Search bar** — focus glow effect (ca pe header)
-- **Tab triggers** — icon-uri cu culori individuale, active tab cu accent bar inferior
+### Planul de implementare
 
-**Fișiere:** `src/pages/HRManagement.tsx`
+#### 1. Extindere baza de date (2 migrări)
 
-## 3. HR Filtre — Segment control premium
+**Extindere `equipment_items`** — coloane noi:
+- `building` (text) — Clădire
+- `floor` (integer) — Etaj
+- `room` (text) — Nr. Încăpere
+- `brand_model` (text) — Brand/Model
+- `inventory_number` (text, unique) — Nr. inventar
+- `qr_pin_hash` (text) — PIN hash pentru acces QR
 
-**Problema:** Butoanele de filtrare (Toți / Cu cont / Fără cont) arată ca butoane generice.
+**Tabel nou `equipment_software`:**
+- `id`, `equipment_id` (FK → equipment_items), `activity_type` (Cercetare etc.)
+- `pc_name`, `os`, `license_year`, `license_type` (Retail/Free)
+- `antivirus`, `antivirus_year`, `installed_apps`, `licensed_count`
+- `notes`
+- RLS: doar Super Admin
 
-**Soluția:** Le transform în segment control cu background animated slider (sliding indicator care se mută la selecție), similar cu un toggle group premium.
+**Tabel `equipment_pin_settings`:**
+- `id`, `global_pin_hash`, `max_attempts`, `lockout_minutes`
 
-**Fișiere:** `src/pages/HRManagement.tsx`
+#### 2. Import CSV/XLS (2 fișiere noi)
 
-## Fișiere afectate
-- `src/components/layout/Sidebar.tsx` — hover glow, active indicator animat
-- `src/pages/HRManagement.tsx` — stats cards premium, employee cards redesign, filtre segment control, search glow
-- `src/index.css` — animații noi necesare
+- `src/utils/parseInventoryXls.ts` — parser pentru ambele sheet-uri folosind xlsx library
+- `src/components/inventory/InventoryImport.tsx` — UI cu upload, preview, validare, import în masă
+- Legătura între sheet-uri se face prin `Nr. inventar` (inventory_number)
 
-## Notă
-Toate modificările sunt pur vizuale — nu se schimbă funcționalitatea sau structura datelor.
+#### 3. Profil individual echipament + QR
+
+- `src/pages/InventoryProfile.tsx` — pagină completă per echipament cu:
+  - Info fizic (clădire/etaj/cameră/brand/serie)
+  - Software instalat (tab sau secțiune separată)
+  - Istoric operații (din equipment_history existent)
+- `src/components/inventory/EquipmentQRCode.tsx` — generare QR cu `qrcode.react`, buton print
+- `src/pages/InventoryPublicView.tsx` — pagina accesibilă prin scanare QR
+
+#### 4. Securizare PIN pentru pagina publică QR
+
+- `src/components/inventory/PinGate.tsx` — input PIN 4-6 cifre, blocare după 3 încercări
+- Edge function `verify-inventory-pin` — validare server-side cu bcrypt, rate limiting
+- Super Admin accesează fără PIN (autentificat)
+
+#### 5. Pagina principală Inventar
+
+- `src/pages/Inventory.tsx` — dashboard cu:
+  - Statistici (total, per tip, per clădire/etaj)
+  - Filtrare/căutare avansată
+  - Tabel cu toate echipamentele
+  - Buton import XLS
+  - Link QR per rând
+- Rută nouă în `App.tsx`: `/inventory`
+- Link în Sidebar sub secțiunea Admin
+
+#### 6. Actualizare categorii
+
+Extindere categorii pentru `Tip echipament`: laptop, pc, monitor, imprimantă, telefon, card_acces, cheie, altele — conform datelor din fișier.
+
+### Securitate
+- RLS pe toate tabelele noi — doar `super_admin`
+- PIN hash-uit cu bcrypt (nu plain text)
+- Edge function cu rate limiting pentru verificare PIN
+- Pagina publică QR arată doar info minimale (denumire, serie, status, locație)
+
+### Ordinea implementării
+1. Migrări baza de date (tabele + coloane noi)
+2. Parser XLS + import UI
+3. Pagina Inventar + profil individual
+4. QR code + PIN gate + edge function
+5. Integrare în navigație
 
