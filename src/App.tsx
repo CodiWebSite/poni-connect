@@ -42,6 +42,9 @@ import Archive from "./pages/Archive";
 import PublicProfile from "./pages/PublicProfile";
 import BusinessCards from "./pages/BusinessCards";
 import Changelog from "./pages/Changelog";
+import Inventory from "./pages/Inventory";
+import InventoryProfile from "./pages/InventoryProfile";
+import InventoryPublicView from "./pages/InventoryPublicView";
 
 const queryClient = new QueryClient();
 
