@@ -258,6 +258,7 @@ const Sidebar = () => {
       '/hr-management': 'hr-management', '/salarizare': 'salarizare', '/settings': 'settings',
       '/system-status': 'system-status', '/carti-vizita': 'carti-vizita', '/admin': 'admin',
       '/changelog': 'changelog',
+      '/inventory': 'admin',
     };
     return map[path] || null;
   };
