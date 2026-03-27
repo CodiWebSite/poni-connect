@@ -55,7 +55,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   // Allow auth and kiosk routes always
-  if (location.pathname.startsWith('/auth') || location.pathname === '/kiosk' || location.pathname.startsWith('/profil/')) return <>{children}</>;
+  if (location.pathname.startsWith('/auth') || location.pathname === '/kiosk' || location.pathname.startsWith('/profil/') || location.pathname.startsWith('/echipament/')) return <>{children}</>;
 
   // Wait for settings to load before making any maintenance decision
   if (settingsLoading) return <>{children}</>;
