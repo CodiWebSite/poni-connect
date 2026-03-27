@@ -289,6 +289,7 @@ const Sidebar = () => {
     { icon: ServerCog, label: 'Stare Sistem', path: '/system-status' },
     
     { icon: Shield, label: 'Administrare', path: '/admin', badge: pendingAdmin },
+    { icon: Package, label: 'Inventar IT', path: '/inventory' },
     { icon: Newspaper, label: 'Changelog', path: '/changelog' },
   ];
 

@@ -39,3 +39,5 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = false
   [functions.check-ip-access]
     verify_jwt = false
+  [functions.verify-inventory-pin]
+    verify_jwt = false
