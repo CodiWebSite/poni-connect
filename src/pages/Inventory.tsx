@@ -53,7 +53,7 @@ const Inventory = () => {
     setLoading(false);
   };
 
-  if (authLoading || roleLoading) return <MainLayout><div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></MainLayout>;
+  if (authLoading || roleLoading) return <MainLayout title="Inventar IT"><div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></MainLayout>;
   if (!isSuperAdmin) return <Navigate to="/" replace />;
 
   const buildings = [...new Set(items.map(i => i.building).filter(Boolean))];
