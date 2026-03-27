@@ -1013,12 +1013,18 @@ export type Database = {
         Row: {
           assigned_at: string | null
           assigned_to_user_id: string | null
+          brand_model: string | null
+          building: string | null
           category: string | null
           created_at: string
           created_by: string | null
           description: string | null
+          floor: number | null
           id: string
+          inventory_number: string | null
           name: string
+          qr_pin_hash: string | null
+          room: string | null
           serial_number: string | null
           status: string
           updated_at: string
@@ -1026,12 +1032,18 @@ export type Database = {
         Insert: {
           assigned_at?: string | null
           assigned_to_user_id?: string | null
+          brand_model?: string | null
+          building?: string | null
           category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          floor?: number | null
           id?: string
+          inventory_number?: string | null
           name: string
+          qr_pin_hash?: string | null
+          room?: string | null
           serial_number?: string | null
           status?: string
           updated_at?: string
@@ -1039,17 +1051,109 @@ export type Database = {
         Update: {
           assigned_at?: string | null
           assigned_to_user_id?: string | null
+          brand_model?: string | null
+          building?: string | null
           category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          floor?: number | null
           id?: string
+          inventory_number?: string | null
           name?: string
+          qr_pin_hash?: string | null
+          room?: string | null
           serial_number?: string | null
           status?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      equipment_pin_settings: {
+        Row: {
+          created_at: string
+          global_pin_hash: string | null
+          id: string
+          lockout_minutes: number
+          max_attempts: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          global_pin_hash?: string | null
+          id?: string
+          lockout_minutes?: number
+          max_attempts?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          global_pin_hash?: string | null
+          id?: string
+          lockout_minutes?: number
+          max_attempts?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      equipment_software: {
+        Row: {
+          activity_type: string | null
+          antivirus: string | null
+          antivirus_year: number | null
+          created_at: string
+          equipment_id: string
+          id: string
+          installed_apps: string | null
+          license_type: string | null
+          license_year: number | null
+          licensed_count: string | null
+          notes: string | null
+          os: string | null
+          pc_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          activity_type?: string | null
+          antivirus?: string | null
+          antivirus_year?: number | null
+          created_at?: string
+          equipment_id: string
+          id?: string
+          installed_apps?: string | null
+          license_type?: string | null
+          license_year?: number | null
+          licensed_count?: string | null
+          notes?: string | null
+          os?: string | null
+          pc_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: string | null
+          antivirus?: string | null
+          antivirus_year?: number | null
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          installed_apps?: string | null
+          license_type?: string | null
+          license_year?: number | null
+          licensed_count?: string | null
+          notes?: string | null
+          os?: string | null
+          pc_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_software_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_publishers: {
         Row: {
