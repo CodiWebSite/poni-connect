@@ -21,7 +21,7 @@ const QuickActionsGrid = ({ actions, columns = 3 }: QuickActionsGridProps) => {
   return (
     <div className={`grid ${gridCols} gap-2 md:gap-3`}>
       {actions.map((action) => (
-        <Link key={action.path} to={action.path} className="group">
+        <Link key={`${action.path}-${action.label}`} to={action.path} className="group">
           <Card className="hover:shadow-card-hover transition-all duration-300 hover:border-primary/30 hover:-translate-y-1 overflow-hidden relative h-full">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/[0.04] to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700 pointer-events-none" />
             <CardContent className="p-3 sm:p-4 flex flex-col items-center gap-2 relative">
