@@ -15,6 +15,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { SignaturePad } from '@/components/shared/SignaturePad';
+import { getClientIP } from '@/utils/getClientIP';
+
+const DIGITAL_SIGNATURE_EMAIL = 'tofan.dragos@icmpp.ro';
 
 interface LeaveRequest {
   id: string;
