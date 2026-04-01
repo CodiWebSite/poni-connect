@@ -1530,6 +1530,7 @@ export type Database = {
           created_at: string
           dept_head_approved_at: string | null
           dept_head_id: string | null
+          dept_head_ip: string | null
           dept_head_notes: string | null
           dept_head_signature: string | null
           director_approved_at: string | null
@@ -1563,6 +1564,7 @@ export type Database = {
           created_at?: string
           dept_head_approved_at?: string | null
           dept_head_id?: string | null
+          dept_head_ip?: string | null
           dept_head_notes?: string | null
           dept_head_signature?: string | null
           director_approved_at?: string | null
@@ -1596,6 +1598,7 @@ export type Database = {
           created_at?: string
           dept_head_approved_at?: string | null
           dept_head_id?: string | null
+          dept_head_ip?: string | null
           dept_head_notes?: string | null
           dept_head_signature?: string | null
           director_approved_at?: string | null
