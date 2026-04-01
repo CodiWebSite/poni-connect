@@ -79,7 +79,7 @@ const PendingActionsWidget = ({ title = 'Necesită acțiune', actions, loading }
                   key={action.id}
                   to={action.link}
                   className={cn(
-                    'flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 hover:scale-[1.01] group',
+                    'flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg border transition-all duration-200 hover:scale-[1.01] group',
                     severityStyles[action.severity]
                   )}
                 >

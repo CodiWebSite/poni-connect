@@ -125,7 +125,7 @@ const EmployeeDashboard = () => {
                 <ScrollArea className={myRequests.length > 4 ? 'h-[200px]' : undefined}>
                   <div className="space-y-2">
                     {myRequests.map(req => (
-                      <div key={req.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border/60 hover:bg-muted/30 transition-colors">
+                      <div key={req.id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg border border-border/60 hover:bg-muted/30 transition-colors">
                         <FileText className="w-4 h-4 text-primary shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium">{getRequestLabel(req.type)}</p>

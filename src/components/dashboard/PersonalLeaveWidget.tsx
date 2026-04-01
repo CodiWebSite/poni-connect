@@ -64,24 +64,24 @@ const PersonalLeaveWidget = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4">
           <ProgressRing value={progress} size={90} strokeWidth={8}>
             <div className="text-center">
               <p className="text-lg font-bold text-foreground">{animatedRemaining}</p>
               <p className="text-[9px] text-muted-foreground">disponibile</p>
             </div>
           </ProgressRing>
-          <div className="grid grid-cols-3 gap-2 flex-1">
+          <div className="grid grid-cols-3 gap-2 flex-1 w-full">
             <div className="text-center p-2 bg-success/10 rounded-lg border border-success/20">
-              <p className="text-lg font-bold text-success">{record.remaining}</p>
+              <p className="text-base sm:text-lg font-bold text-success">{record.remaining}</p>
               <p className="text-[9px] text-muted-foreground">Libere</p>
             </div>
             <div className="text-center p-2 bg-info/10 rounded-lg border border-info/20">
-              <p className="text-lg font-bold text-info">{record.used}</p>
+              <p className="text-base sm:text-lg font-bold text-info">{record.used}</p>
               <p className="text-[9px] text-muted-foreground">Utilizate</p>
             </div>
             <div className="text-center p-2 bg-muted rounded-lg border border-border">
-              <p className="text-lg font-bold text-foreground">{record.total}</p>
+              <p className="text-base sm:text-lg font-bold text-foreground">{record.total}</p>
               <p className="text-[9px] text-muted-foreground">Total</p>
             </div>
           </div>
