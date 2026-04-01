@@ -129,9 +129,10 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   try { logoData = await fetchImageAsUint8Array('/logo_doc.jpg'); } catch { logoData = new Uint8Array(0); }
 
   const isDigitalSrus = srusSignature === 'digital';
+  const isDigitalDeptHead = deptHeadSignature === 'digital';
   const [signatureData, deptHeadSigData, srusSigData] = await Promise.all([
     parseSignatureData(employeeSignature),
-    parseSignatureData(deptHeadSignature),
+    isDigitalDeptHead ? Promise.resolve(null) : parseSignatureData(deptHeadSignature),
     isDigitalSrus ? Promise.resolve(null) : parseSignatureData(srusSignature),
   ]);
 
