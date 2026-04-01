@@ -288,17 +288,18 @@ const LeaveCalendar = () => {
     setLoading(false);
   };
 
-  // Get unique departments for filter — dynamic from data + ensure Oficiu Juridic is always present
-  const dynamicDepts = leaves.map(l => l.department).filter(Boolean) as string[];
-  if (!dynamicDepts.includes('Oficiu Juridic')) {
-    dynamicDepts.push('Oficiu Juridic');
+  // Get unique departments for filter — normalize known duplicates
+  const normalizeDept = (d: string) => d.trim() === 'Oficiu Juridic' ? 'Oficiu juridic' : d.trim();
+  const dynamicDepts = leaves.map(l => l.department ? normalizeDept(l.department) : '').filter(Boolean);
+  if (!dynamicDepts.includes('Oficiu juridic')) {
+    dynamicDepts.push('Oficiu juridic');
   }
   const departments = [...new Set(dynamicDepts)];
 
   // Filter leaves by department
   const filteredLeaves = departmentFilter === 'all'
     ? leaves
-    : leaves.filter(l => l.department === departmentFilter);
+    : leaves.filter(l => l.department && normalizeDept(l.department) === departmentFilter);
 
   const handleExportExcel = async () => {
     setExporting(true);
