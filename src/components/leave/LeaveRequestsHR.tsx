@@ -391,20 +391,21 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   };
 
   const handleSrusApprove = async () => {
-    if (!srusApproveDialog || !srusApproveSig) {
-      toast({ title: 'Semnătură necesară', description: 'Vă rugăm să semnați înainte de validare.', variant: 'destructive' });
-      return;
-    }
+    if (!srusApproveDialog) return;
     setProcessing(srusApproveDialog.id);
+    setFetchingIP(true);
     const now = new Date().toISOString();
+    const ip = await getClientIP();
+    setFetchingIP(false);
 
     const { error } = await supabase
       .from('leave_requests')
       .update({
         status: 'approved' as any,
         srus_officer_name: srusApproveOfficer,
-        srus_signature: srusApproveSig,
+        srus_signature: 'digital',
         srus_signed_at: now,
+        srus_ip: ip,
       } as any)
       .eq('id', srusApproveDialog.id);
 
