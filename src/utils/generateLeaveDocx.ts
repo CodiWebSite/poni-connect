@@ -45,6 +45,8 @@ interface LeaveDocxParams {
   approvalDate?: string;
   deptHeadSignature?: string | null;
   deptHeadName?: string;
+  deptHeadIP?: string | null;
+  deptHeadSignedAt?: string | null;
   directorName?: string;
   directorApprovalDate?: string;
 }
