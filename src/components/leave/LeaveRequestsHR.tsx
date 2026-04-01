@@ -365,8 +365,10 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         srusSignedAt: (lrData as any)?.srus_signed_at || undefined,
         srusIP: (lrData as any)?.srus_ip || undefined,
         approvalDate: request.dept_head_approved_at ? format(parseISO(request.dept_head_approved_at), 'dd.MM.yyyy') : undefined,
-        deptHeadSignature: request.dept_head_signature,
+        deptHeadSignature: (lrData as any)?.dept_head_signature || request.dept_head_signature,
         deptHeadName: request.dept_head_name,
+        deptHeadIP: (lrData as any)?.dept_head_ip || undefined,
+        deptHeadSignedAt: (lrData as any)?.dept_head_approved_at || request.dept_head_approved_at || undefined,
         directorName: request.director_name,
         directorApprovalDate: request.director_approved_at ? format(parseISO(request.director_approved_at), 'dd.MM.yyyy') : undefined,
       });
