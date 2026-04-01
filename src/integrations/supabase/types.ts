@@ -1547,6 +1547,7 @@ export type Database = {
           replacement_name: string
           replacement_position: string | null
           request_number: string
+          srus_ip: string | null
           srus_officer_name: string | null
           srus_signature: string | null
           srus_signed_at: string | null
@@ -1579,6 +1580,7 @@ export type Database = {
           replacement_name: string
           replacement_position?: string | null
           request_number?: string
+          srus_ip?: string | null
           srus_officer_name?: string | null
           srus_signature?: string | null
           srus_signed_at?: string | null
@@ -1611,6 +1613,7 @@ export type Database = {
           replacement_name?: string
           replacement_position?: string | null
           request_number?: string
+          srus_ip?: string | null
           srus_officer_name?: string | null
           srus_signature?: string | null
           srus_signed_at?: string | null
