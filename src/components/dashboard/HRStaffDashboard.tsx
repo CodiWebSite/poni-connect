@@ -50,9 +50,9 @@ const HRStaffDashboard = () => {
   };
 
   const pendingActions: PendingAction[] = [
-    { id: 'corrections', icon: FileWarning, label: 'Cereri corecție date', count: pending.corrections, severity: 'warning', link: '/hr' },
-    { id: 'hr', icon: Inbox, label: 'Cereri HR în așteptare', count: pending.hrPending, severity: pending.hrPending > 5 ? 'critical' : 'warning', link: '/hr' },
-    { id: 'ci', icon: CreditCard, label: 'CI expiră curând (90 zile)', count: pending.ciExpiring, severity: pending.ciExpiring > 0 ? 'warning' : 'info', link: '/hr' },
+    { id: 'corrections', icon: FileWarning, label: 'Cereri corecție date', count: pending.corrections, severity: 'warning', link: '/hr-management' },
+    { id: 'hr', icon: Inbox, label: 'Cereri HR în așteptare', count: pending.hrPending, severity: pending.hrPending > 5 ? 'critical' : 'warning', link: '/hr-management' },
+    { id: 'ci', icon: CreditCard, label: 'CI expiră curând (90 zile)', count: pending.ciExpiring, severity: pending.ciExpiring > 0 ? 'warning' : 'info', link: '/hr-management' },
   ];
 
   const quickActions: QuickAction[] = [

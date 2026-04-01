@@ -65,7 +65,7 @@ const OperationalRoleDashboard = ({ role }: OperationalRoleDashboardProps) => {
     config.moduleAction,
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile', gradient: 'from-primary to-info' },
     { icon: Calendar, label: 'Calendar', path: '/leave-calendar', gradient: 'from-accent to-success' },
-    { icon: FolderDown, label: 'Formulare', path: '/formulare', gradient: 'from-info to-primary' },
+    { icon: FolderDown, label: 'Formulare', path: '/formulare', gradient: 'from-warning to-accent' },
   ];
 
   return (

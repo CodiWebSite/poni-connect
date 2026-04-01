@@ -67,11 +67,11 @@ const SuperAdminDashboard = () => {
   };
 
   const pendingActions: PendingAction[] = [
-    { id: 'helpdesk', icon: TicketCheck, label: 'Tichete HelpDesk noi', count: pending.helpdesk, severity: pending.helpdesk > 5 ? 'critical' : 'warning', link: '/admin' },
-    { id: 'accounts', icon: UserPlus, label: 'Cereri de cont', count: pending.accountRequests, severity: 'warning', link: '/admin' },
-    { id: 'corrections', icon: FileWarning, label: 'Cereri corecție date', count: pending.corrections, severity: 'info', link: '/hr' },
-    { id: 'hr', icon: Inbox, label: 'Cereri HR în așteptare', count: pending.hrPending, severity: pending.hrPending > 10 ? 'critical' : 'warning', link: '/hr' },
-    { id: 'norole', icon: UserX, label: 'Utilizatori fără rol', count: stats.usersNoRole, severity: stats.usersNoRole > 0 ? 'warning' : 'info', link: '/admin' },
+    { id: 'helpdesk', icon: TicketCheck, label: 'Tichete HelpDesk noi', count: pending.helpdesk, severity: pending.helpdesk > 5 ? 'critical' : 'warning', link: '/admin?tab=helpdesk' },
+    { id: 'accounts', icon: UserPlus, label: 'Cereri de cont', count: pending.accountRequests, severity: 'warning', link: '/admin?tab=conturi' },
+    { id: 'corrections', icon: FileWarning, label: 'Cereri corecție date', count: pending.corrections, severity: 'info', link: '/hr-management' },
+    { id: 'hr', icon: Inbox, label: 'Cereri HR în așteptare', count: pending.hrPending, severity: pending.hrPending > 10 ? 'critical' : 'warning', link: '/hr-management' },
+    { id: 'norole', icon: UserX, label: 'Utilizatori fără rol', count: stats.usersNoRole, severity: stats.usersNoRole > 0 ? 'warning' : 'info', link: '/admin?tab=roluri' },
   ];
 
   const quickActions: QuickAction[] = [

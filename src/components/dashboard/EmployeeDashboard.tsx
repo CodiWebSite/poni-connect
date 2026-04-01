@@ -88,7 +88,7 @@ const EmployeeDashboard = () => {
     { icon: Plane, label: 'Cerere Concediu', path: '/leave-request', gradient: 'from-primary to-info', badge: pendingCount },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile', gradient: 'from-accent to-success' },
     { icon: Calendar, label: 'Calendar', path: '/leave-calendar', gradient: 'from-info to-primary' },
-    { icon: FolderDown, label: 'Formulare', path: '/formulare', gradient: 'from-warning to-destructive' },
+    { icon: FolderDown, label: 'Formulare', path: '/formulare', gradient: 'from-warning to-accent' },
   ];
 
   return (
