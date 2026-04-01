@@ -34,7 +34,7 @@ export function useUserRole() {
       }
 
       const validRoles: AppRole[] = [
-        'super_admin', 'admin', 'hr', 'sef_srus', 'salarizare', 'sef',
+        'super_admin', 'hr', 'sef_srus', 'salarizare', 'sef',
         'director_institut', 'director_adjunct', 'secretar_stiintific',
         'bibliotecar', 'achizitii', 'contabilitate', 'oficiu_juridic',
         'compartiment_comunicare', 'secretariat', 'medic_medicina_muncii', 'user'
