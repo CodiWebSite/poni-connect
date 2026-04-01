@@ -50,16 +50,16 @@ const HRStaffDashboard = () => {
   };
 
   const pendingActions: PendingAction[] = [
-    { id: 'corrections', icon: FileWarning, label: 'Cereri corecție date', count: pending.corrections, severity: 'warning', link: '/hr' },
-    { id: 'hr', icon: Inbox, label: 'Cereri HR în așteptare', count: pending.hrPending, severity: pending.hrPending > 5 ? 'critical' : 'warning', link: '/hr' },
-    { id: 'ci', icon: CreditCard, label: 'CI expiră curând (90 zile)', count: pending.ciExpiring, severity: pending.ciExpiring > 0 ? 'warning' : 'info', link: '/hr' },
+    { id: 'corrections', icon: FileWarning, label: 'Cereri corecție date', count: pending.corrections, severity: 'warning', link: '/hr-management' },
+    { id: 'hr', icon: Inbox, label: 'Cereri HR în așteptare', count: pending.hrPending, severity: pending.hrPending > 5 ? 'critical' : 'warning', link: '/hr-management' },
+    { id: 'ci', icon: CreditCard, label: 'CI expiră curând (90 zile)', count: pending.ciExpiring, severity: pending.ciExpiring > 0 ? 'warning' : 'info', link: '/hr-management' },
   ];
 
   const quickActions: QuickAction[] = [
-    { icon: ClipboardList, label: 'Gestiune HR', path: '/hr', gradient: 'from-primary to-info', badge: pending.hrPending },
+    { icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', gradient: 'from-primary to-info', badge: pending.hrPending },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar', gradient: 'from-accent to-success' },
-    { icon: FolderOpen, label: 'Documente', path: '/hr', gradient: 'from-info to-primary' },
-    { icon: AlertTriangle, label: 'Alerte HR', path: '/hr', gradient: 'from-warning to-destructive' },
+    { icon: FolderOpen, label: 'Documente', path: '/hr-management?tab=documente', gradient: 'from-info to-primary' },
+    { icon: AlertTriangle, label: 'Alerte HR', path: '/hr-management?tab=alerte', gradient: 'from-warning to-destructive' },
   ];
 
   return (

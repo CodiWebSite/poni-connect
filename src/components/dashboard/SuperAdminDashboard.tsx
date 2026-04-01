@@ -67,19 +67,19 @@ const SuperAdminDashboard = () => {
   };
 
   const pendingActions: PendingAction[] = [
-    { id: 'helpdesk', icon: TicketCheck, label: 'Tichete HelpDesk noi', count: pending.helpdesk, severity: pending.helpdesk > 5 ? 'critical' : 'warning', link: '/admin' },
-    { id: 'accounts', icon: UserPlus, label: 'Cereri de cont', count: pending.accountRequests, severity: 'warning', link: '/admin' },
-    { id: 'corrections', icon: FileWarning, label: 'Cereri corecție date', count: pending.corrections, severity: 'info', link: '/hr' },
-    { id: 'hr', icon: Inbox, label: 'Cereri HR în așteptare', count: pending.hrPending, severity: pending.hrPending > 10 ? 'critical' : 'warning', link: '/hr' },
-    { id: 'norole', icon: UserX, label: 'Utilizatori fără rol', count: stats.usersNoRole, severity: stats.usersNoRole > 0 ? 'warning' : 'info', link: '/admin' },
+    { id: 'helpdesk', icon: TicketCheck, label: 'Tichete HelpDesk noi', count: pending.helpdesk, severity: pending.helpdesk > 5 ? 'critical' : 'warning', link: '/admin?tab=helpdesk' },
+    { id: 'accounts', icon: UserPlus, label: 'Cereri de cont', count: pending.accountRequests, severity: 'warning', link: '/admin?tab=conturi' },
+    { id: 'corrections', icon: FileWarning, label: 'Cereri corecție date', count: pending.corrections, severity: 'info', link: '/hr-management' },
+    { id: 'hr', icon: Inbox, label: 'Cereri HR în așteptare', count: pending.hrPending, severity: pending.hrPending > 10 ? 'critical' : 'warning', link: '/hr-management' },
+    { id: 'norole', icon: UserX, label: 'Utilizatori fără rol', count: stats.usersNoRole, severity: stats.usersNoRole > 0 ? 'warning' : 'info', link: '/admin?tab=roluri' },
   ];
 
   const quickActions: QuickAction[] = [
-    { icon: UserPlus, label: 'Creează Cont', path: '/admin', gradient: 'from-primary to-info' },
-    { icon: ShieldCheck, label: 'Roluri', path: '/admin', gradient: 'from-accent to-success' },
-    { icon: ScrollText, label: 'Audit', path: '/admin', gradient: 'from-info to-primary' },
+    { icon: UserPlus, label: 'Creează Cont', path: '/admin?tab=conturi', gradient: 'from-primary to-info' },
+    { icon: ShieldCheck, label: 'Roluri', path: '/admin?tab=roluri', gradient: 'from-accent to-success' },
+    { icon: ScrollText, label: 'Audit', path: '/admin?tab=audit', gradient: 'from-info to-primary' },
     { icon: Settings, label: 'Admin', path: '/admin', gradient: 'from-muted-foreground to-foreground' },
-    { icon: Activity, label: 'System Health', path: '/admin', gradient: 'from-success to-accent' },
+    { icon: Activity, label: 'System Health', path: '/admin?tab=system-health', gradient: 'from-success to-accent' },
     { icon: HeartPulse, label: 'Status Sistem', path: '/system-status', gradient: 'from-destructive to-warning' },
   ];
 
