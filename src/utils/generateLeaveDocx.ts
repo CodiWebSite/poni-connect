@@ -45,6 +45,8 @@ interface LeaveDocxParams {
   approvalDate?: string;
   deptHeadSignature?: string | null;
   deptHeadName?: string;
+  deptHeadIP?: string | null;
+  deptHeadSignedAt?: string | null;
   directorName?: string;
   directorApprovalDate?: string;
 }
@@ -112,7 +114,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     requestDate, requestNumber, isApproved, employeeSignature,
     totalLeaveDays, usedLeaveDays, carryoverDays, carryoverInitialDays, carryoverFromYear, srusOfficerName, srusSignature,
     srusSignedAt, srusIP,
-    approvalDate, deptHeadSignature, deptHeadName,
+    approvalDate, deptHeadSignature, deptHeadName, deptHeadIP, deptHeadSignedAt,
     directorName, directorApprovalDate,
   } = params;
 
@@ -127,9 +129,10 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   try { logoData = await fetchImageAsUint8Array('/logo_doc.jpg'); } catch { logoData = new Uint8Array(0); }
 
   const isDigitalSrus = srusSignature === 'digital';
+  const isDigitalDeptHead = deptHeadSignature === 'digital';
   const [signatureData, deptHeadSigData, srusSigData] = await Promise.all([
     parseSignatureData(employeeSignature),
-    parseSignatureData(deptHeadSignature),
+    isDigitalDeptHead ? Promise.resolve(null) : parseSignatureData(deptHeadSignature),
     isDigitalSrus ? Promise.resolve(null) : parseSignatureData(srusSignature),
   ]);
 
@@ -174,8 +177,19 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     );
   }
 
-  // Signature only (no stamp)
-  if (deptHeadSigData) {
+  if (isDigitalDeptHead && deptHeadIP) {
+    const deptHeadFormattedDate = deptHeadSignedAt
+      ? new Date(deptHeadSignedAt).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      : (approvalDate || '');
+    leftApprovalChildren.push(
+      new Paragraph({ spacing: { after: 0 }, children: [
+        t(`Semnat digital de ${deptHeadName || 'Șef compartiment'}`, { size: 16, italics: true, color: '1a3ba3' }),
+      ]}),
+      new Paragraph({ spacing: { after: 0 }, children: [
+        t(`IP: ${deptHeadIP} | ${deptHeadFormattedDate}`, { size: 14, italics: true, color: '1a3ba3' }),
+      ]})
+    );
+  } else if (deptHeadSigData) {
     leftApprovalChildren.push(
       new Paragraph({ spacing: { after: 0 }, children: [
         new ImageRun({ data: deptHeadSigData, transformation: { width: 130, height: 50 }, type: 'png' }),

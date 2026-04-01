@@ -15,6 +15,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { SignaturePad } from '@/components/shared/SignaturePad';
+import { getClientIP } from '@/utils/getClientIP';
+
+const DIGITAL_SIGNATURE_EMAIL = 'tofan.dragos@icmpp.ro';
 
 interface LeaveRequest {
   id: string;
@@ -56,6 +59,9 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const [isActiveDelegate, setIsActiveDelegate] = useState(false);
   const [approveDialog, setApproveDialog] = useState<LeaveRequest | null>(null);
   const [approverSignature, setApproverSignature] = useState<string | null>(null);
+  const [fetchingIP, setFetchingIP] = useState(false);
+
+  const isTofanDragos = (user?.email || '').toLowerCase() === DIGITAL_SIGNATURE_EMAIL;
 
   const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
 
@@ -220,22 +226,40 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
   const handleApproveWithSignature = async () => {
     if (!user || !approveDialog) return;
-    if (!approverSignature) {
-      toast({ title: 'Semnătură necesară', description: 'Vă rugăm să semnați înainte de aprobare.', variant: 'destructive' });
-      return;
-    }
-    
+
     setProcessing(approveDialog.id);
     const now = new Date().toISOString();
 
+    let signatureValue = approverSignature;
+    let ipValue: string | null = null;
+
+    if (isTofanDragos) {
+      // Digital signature with IP
+      setFetchingIP(true);
+      ipValue = await getClientIP();
+      setFetchingIP(false);
+      signatureValue = 'digital';
+    } else {
+      if (!approverSignature) {
+        toast({ title: 'Semnătură necesară', description: 'Vă rugăm să semnați înainte de aprobare.', variant: 'destructive' });
+        setProcessing(null);
+        return;
+      }
+    }
+
+    const updateData: any = {
+      status: 'pending_srus' as any,
+      dept_head_id: user.id,
+      dept_head_approved_at: now,
+      dept_head_signature: signatureValue,
+    };
+    if (ipValue) {
+      updateData.dept_head_ip = ipValue;
+    }
+
     const { error } = await supabase
       .from('leave_requests')
-      .update({
-        status: 'pending_srus' as any,
-        dept_head_id: user.id,
-        dept_head_approved_at: now,
-        dept_head_signature: approverSignature,
-      } as any)
+      .update(updateData)
       .eq('id', approveDialog.id);
 
     if (error) {
@@ -512,21 +536,30 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
               Perioada: {approveDialog && format(parseISO(approveDialog.start_date), 'dd.MM.yyyy')} – {approveDialog && format(parseISO(approveDialog.end_date), 'dd.MM.yyyy')}<br />
               Zile: <strong>{approveDialog?.working_days}</strong>
             </p>
-            <SignaturePad
-              onSave={(sig) => setApproverSignature(sig)}
-              existingSignature={approverSignature}
-              label="Semnătura Șef Compartiment"
-            />
+            {isTofanDragos ? (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30 p-3 space-y-1">
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-300">🔏 Semnătură digitală</p>
+                <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                  La apăsarea butonului, cererea va fi semnată digital cu numele dvs., adresa IP și data/ora exactă.
+                </p>
+              </div>
+            ) : (
+              <SignaturePad
+                onSave={(sig) => setApproverSignature(sig)}
+                existingSignature={approverSignature}
+                label="Semnătura Șef Compartiment"
+              />
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setApproveDialog(null); setApproverSignature(null); }}>Anulează</Button>
             <Button 
               onClick={handleApproveWithSignature} 
-              disabled={processing === approveDialog?.id || !approverSignature}
+              disabled={processing === approveDialog?.id || fetchingIP || (!isTofanDragos && !approverSignature)}
               className="bg-green-600 hover:bg-green-700"
             >
-              {processing === approveDialog?.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-              Semnează și Aprobă
+              {(processing === approveDialog?.id || fetchingIP) ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+              {isTofanDragos ? 'Aprobă și Semnează Digital' : 'Semnează și Aprobă'}
             </Button>
           </DialogFooter>
         </DialogContent>
