@@ -299,7 +299,7 @@ const LeaveCalendar = () => {
   // Filter leaves by department
   const filteredLeaves = departmentFilter === 'all'
     ? leaves
-    : leaves.filter(l => l.department === departmentFilter);
+    : leaves.filter(l => l.department && normalizeDept(l.department) === departmentFilter);
 
   const handleExportExcel = async () => {
     setExporting(true);
