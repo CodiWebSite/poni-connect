@@ -17,7 +17,7 @@ import { ro } from 'date-fns/locale';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { getClientIP } from '@/utils/getClientIP';
 
-const DIGITAL_SIGNATURE_EMAIL = 'tofan.dragos@icmpp.ro';
+// Digital IP signature is used by sef_srus role instead of manual SignaturePad
 
 interface LeaveRequest {
   id: string;
