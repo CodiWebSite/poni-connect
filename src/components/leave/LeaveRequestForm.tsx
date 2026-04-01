@@ -288,7 +288,14 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
     if (error) {
       console.error('Error creating leave request:', error);
-      toast({ title: 'Eroare', description: 'Nu s-a putut trimite cererea.', variant: 'destructive' });
+      const isDuplicate = error.code === '23505';
+      toast({
+        title: isDuplicate ? 'Cerere duplicat' : 'Eroare',
+        description: isDuplicate
+          ? 'Există deja o cerere activă pentru aceeași perioadă. Nu se poate trimite din nou.'
+          : 'Nu s-a putut trimite cererea.',
+        variant: 'destructive',
+      });
     } else {
       // Skip notifications and emails in demo mode
       if (!isDemo && insertedRequest) {
