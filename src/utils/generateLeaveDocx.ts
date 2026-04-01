@@ -111,6 +111,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
     totalLeaveDays, usedLeaveDays, carryoverDays, carryoverInitialDays, carryoverFromYear, srusOfficerName, srusSignature,
+    srusSignedAt, srusIP,
     approvalDate, deptHeadSignature, deptHeadName,
     directorName, directorApprovalDate,
   } = params;
