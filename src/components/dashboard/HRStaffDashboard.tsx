@@ -56,10 +56,10 @@ const HRStaffDashboard = () => {
   ];
 
   const quickActions: QuickAction[] = [
-    { icon: ClipboardList, label: 'Gestiune HR', path: '/hr', gradient: 'from-primary to-info', badge: pending.hrPending },
+    { icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', gradient: 'from-primary to-info', badge: pending.hrPending },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar', gradient: 'from-accent to-success' },
-    { icon: FolderOpen, label: 'Documente', path: '/hr', gradient: 'from-info to-primary' },
-    { icon: AlertTriangle, label: 'Alerte HR', path: '/hr', gradient: 'from-warning to-destructive' },
+    { icon: FolderOpen, label: 'Documente', path: '/hr-management?tab=documente', gradient: 'from-info to-primary' },
+    { icon: AlertTriangle, label: 'Alerte HR', path: '/hr-management?tab=alerte', gradient: 'from-warning to-destructive' },
   ];
 
   return (
