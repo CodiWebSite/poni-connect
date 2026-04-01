@@ -86,6 +86,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const [srusApproveOfficer, setSrusApproveOfficer] = useState<string>('Cătălina Bălan');
   const [srusApproveSig, setSrusApproveSig] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [fetchingIP, setFetchingIP] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
 
   useEffect(() => {
