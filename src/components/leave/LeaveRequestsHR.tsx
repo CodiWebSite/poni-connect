@@ -362,6 +362,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         carryoverFromYear,
         srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
         srusSignature: (lrData as any)?.srus_signature || undefined,
+        srusSignedAt: (lrData as any)?.srus_signed_at || undefined,
+        srusIP: (lrData as any)?.srus_ip || undefined,
         approvalDate: request.dept_head_approved_at ? format(parseISO(request.dept_head_approved_at), 'dd.MM.yyyy') : undefined,
         deptHeadSignature: request.dept_head_signature,
         deptHeadName: request.dept_head_name,
