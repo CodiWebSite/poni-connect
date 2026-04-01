@@ -126,10 +126,11 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   let logoData: Uint8Array;
   try { logoData = await fetchImageAsUint8Array('/logo_doc.jpg'); } catch { logoData = new Uint8Array(0); }
 
+  const isDigitalSrus = srusSignature === 'digital';
   const [signatureData, deptHeadSigData, srusSigData] = await Promise.all([
     parseSignatureData(employeeSignature),
     parseSignatureData(deptHeadSignature),
-    parseSignatureData(srusSignature),
+    isDigitalSrus ? Promise.resolve(null) : parseSignatureData(srusSignature),
   ]);
 
   const totalCurrentYear = totalLeaveDays ?? 0;
