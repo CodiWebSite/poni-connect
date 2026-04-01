@@ -75,11 +75,11 @@ const SuperAdminDashboard = () => {
   ];
 
   const quickActions: QuickAction[] = [
-    { icon: UserPlus, label: 'Creează Cont', path: '/admin', gradient: 'from-primary to-info' },
-    { icon: ShieldCheck, label: 'Roluri', path: '/admin', gradient: 'from-accent to-success' },
-    { icon: ScrollText, label: 'Audit', path: '/admin', gradient: 'from-info to-primary' },
+    { icon: UserPlus, label: 'Creează Cont', path: '/admin?tab=conturi', gradient: 'from-primary to-info' },
+    { icon: ShieldCheck, label: 'Roluri', path: '/admin?tab=roluri', gradient: 'from-accent to-success' },
+    { icon: ScrollText, label: 'Audit', path: '/admin?tab=audit', gradient: 'from-info to-primary' },
     { icon: Settings, label: 'Admin', path: '/admin', gradient: 'from-muted-foreground to-foreground' },
-    { icon: Activity, label: 'System Health', path: '/admin', gradient: 'from-success to-accent' },
+    { icon: Activity, label: 'System Health', path: '/admin?tab=system-health', gradient: 'from-success to-accent' },
     { icon: HeartPulse, label: 'Status Sistem', path: '/system-status', gradient: 'from-destructive to-warning' },
   ];
 
