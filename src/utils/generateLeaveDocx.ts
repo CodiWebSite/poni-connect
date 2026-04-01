@@ -40,6 +40,8 @@ interface LeaveDocxParams {
   carryoverFromYear?: number;
   srusOfficerName?: string;
   srusSignature?: string | null;
+  srusSignedAt?: string | null;
+  srusIP?: string | null;
   approvalDate?: string;
   deptHeadSignature?: string | null;
   deptHeadName?: string;

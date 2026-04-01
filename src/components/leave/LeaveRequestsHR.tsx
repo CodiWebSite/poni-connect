@@ -818,7 +818,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
             </p>
             <div className="space-y-2">
               <Label>Salariat SRUS</Label>
-              <Select value={srusApproveOfficer} onValueChange={(v) => { setSrusApproveOfficer(v); setSrusApproveSig(null); }}>
+              <Select value={srusApproveOfficer} onValueChange={(v) => setSrusApproveOfficer(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -828,21 +828,22 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                 </SelectContent>
               </Select>
             </div>
-            <SignaturePad
-              label="Semnătura salariat SRUS"
-              onSave={(sig) => setSrusApproveSig(sig)}
-              existingSignature={srusApproveSig}
-            />
+            <div className="rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30 p-3 space-y-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-300">🔏 Semnătură digitală</p>
+              <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                La apăsarea butonului, cererea va fi semnată digital cu numele dvs., adresa IP și data/ora exactă.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setSrusApproveDialog(null); setSrusApproveSig(null); }}>Anulează</Button>
             <Button
               onClick={handleSrusApprove}
-              disabled={!srusApproveSig || processing === srusApproveDialog?.id}
+              disabled={processing === srusApproveDialog?.id || fetchingIP}
               className="bg-green-600 hover:bg-green-700"
             >
-              {processing === srusApproveDialog?.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-              Validează și Aprobă
+              {(processing === srusApproveDialog?.id || fetchingIP) ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+              Aprobă și Semnează Digital
             </Button>
           </DialogFooter>
         </DialogContent>
