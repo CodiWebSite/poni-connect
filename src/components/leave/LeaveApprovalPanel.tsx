@@ -61,7 +61,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const [approverSignature, setApproverSignature] = useState<string | null>(null);
   const [fetchingIP, setFetchingIP] = useState(false);
 
-  const isTofanDragos = role === 'sef_srus';
+  const useDigitalSignature = role === 'sef_srus' || role === 'secretar_stiintific';
 
   const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
 
