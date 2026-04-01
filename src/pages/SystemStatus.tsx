@@ -468,6 +468,9 @@ function BackupTab({ userId }: { userId: string }) {
             <Button onClick={handleBackup} disabled={backingUp} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               {backingUp ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Se creează...</> : <><Download className="w-4 h-4 mr-2" />Backup Date</>}
             </Button>
+            <Button onClick={handleExportSQL} disabled={exportingSQL} variant="outline" className="border-blue-500 text-blue-700 hover:bg-blue-50">
+              {exportingSQL ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Export SQL...</> : <><Database className="w-4 h-4 mr-2" />Export SQL (Migrare)</>}
+            </Button>
             <Button onClick={handleStorageBackup} disabled={backingUpStorage} variant="outline">
               {backingUpStorage ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Export storage...</> : <><FolderArchive className="w-4 h-4 mr-2" />Export Fișiere</>}
             </Button>
