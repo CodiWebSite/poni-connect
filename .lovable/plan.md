@@ -1,175 +1,146 @@
 
 
-# Plan: Refacere completă modul HR — Centru Profesionist de Administrare ICMPP
+# Plan: Dashboard Inteligent Diferențiat pe Rol — ICMPP
 
 ## Rezumat
 
-Transformarea fișierului monolitic `HRManagement.tsx` (2785 linii, 10 tab-uri) într-o arhitectură modulară cu 7 secțiuni principale, fiecare în propriul fișier. Eliminarea dependenței de rolul `admin` din întregul proiect.
+Înlocuirea dashboard-ului actual (care are doar 2 variante: admin vs employee) cu un sistem modular de dashboard-uri specializate pe rol. Fiecare rol primește componente specifice responsabilităților sale, organizate ierarhic: alerte → acțiuni → statistici → activitate → scurtături.
 
-## Structura nouă de fișiere
+## Arhitectura
 
 ```text
-src/pages/HRManagement.tsx                    (refăcut — shell cu 7 tab-uri)
-src/components/hr/
-  ├── HRDashboard.tsx                         (NOU — KPI-uri + alerte + activitate)
-  ├── EmployeeHub.tsx                         (NOU — listă + dosar angajat cu sub-taburi)
-  ├── EmployeeFileDialog.tsx                  (NOU — dialog dosar individual cu 6 taburi)
-  ├── EmployeeLifecycle.tsx                   (NOU — onboarding/arhivare/reactivare)
-  ├── DataQualityPanel.tsx                    (NOU — audit calitate date)
-  ├── DocumentsExpirationsPanel.tsx           (NOU — documente + expirări + remindere)
-  ├── HRRequestsInbox.tsx                     (NOU — inbox cereri HR unificat)
-  ├── HRNotificationsRules.tsx                (NOU — reguli notificări HR)
-  ├── ... (componentele existente rămân neschimbate)
+src/pages/Dashboard.tsx                          (router pe rol)
+src/components/dashboard/
+  ├── SuperAdminDashboard.tsx                    (NOU — Control Center complet)
+  ├── HRDashboard.tsx                            (NOU — centru operațional HR)  
+  ├── SefDepartmentDashboard.tsx                 (NOU — echipă + aprobări)
+  ├── MedicMunciiDashboard.tsx                   (NOU — fișe medicale + alerte)
+  ├── OperationalRoleDashboard.tsx               (NOU — roluri de serviciu generic)
+  ├── EmployeeDashboard.tsx                      (REFĂCUT — orientat pe acțiune)
+  ├── DashboardAlertsBanner.tsx                  (NOU — alerte urgente universale)
+  ├── PendingActionsWidget.tsx                   (NOU — "Necesită acțiune")
+  ├── SystemHealthMini.tsx                       (NOU — mini status sistem pt SA)
+  ├── QuickActionsGrid.tsx                       (NOU — grid reutilizabil scurtături)
+  ├── ... (componente existente păstrate)
 ```
 
-## Secțiunile detaliate
+## Dashboard pe Rol — Detalii
 
-### 1. HR Dashboard (HRDashboard.tsx)
+### 1. SuperAdminDashboard.tsx
+**Secțiuni** (în ordine):
+- **Alerte Sistem** — edge functions down, backup vechi, storage plin, erori recente (din `health_check_logs`)
+- **Necesită Atenție** — utilizatori fără rol (profiles vs user_roles), angajați fără cont, tichete helpdesk noi, cereri cont noi, cereri HR pending
+- **Stare Sistem** — mini cards: Auth OK, DB OK, Storage OK, Edge Functions OK (din ultimul health check)
+- **Statistici** — total utilizatori, angajați activi, online acum (OnlineUsersWidget), activare conturi (ActivationChart)
+- **Analytics Adopție** — AnalyticsWidget + AdoptionTrendChart (existente)
+- **Activitate Administrativă** — ultimele 15 audit_logs
+- **Acțiuni Rapide** — Creează Cont, Gestionează Roluri, Audit, Admin, System Health, Cereri Pendinte
 
-**KPI Cards** (grid responsive 2x3 → 3x2):
-- Total angajați activi (query `employee_personal_data` WHERE `is_archived = false`)
-- Angajați noi (luna curentă, filtru pe `employment_date`)
-- Angajați arhivați (count `is_archived = true`)
-- Angajați fără cont (`employee_record_id IS NULL`)
-- Angajați fără rol (profiles fără intrare în `user_roles`)
-- Documente lipsă / expirate (din `employee_documents` + `employee_personal_data.ci_expiry_date`)
+### 2. HRDashboard.tsx (pentru rolurile `hr` și `sef_srus`)
+**Secțiuni**:
+- **Alerte HR** — documente expirate, CI expirate, fișe medicale expirate
+- **Necesită Acțiune** — cereri corecție date pending, adeverințe pending, concedii la nivel SRUS/HR
+- **Statistici HR** — angajați activi, fără cont, fără rol, documente lipsă
+- **HRAlerts** (componenta existentă, integrată)
+- **Concedii pe Departament** — LeaveByDepartment (existent)
+- **Activitate HR** — ultimele acțiuni HR din audit_logs
+- **Acțiuni Rapide** — Deschide HR, Documente, Cereri, Calendar Concedii, Alerte
 
-**Alerte prioritare** (carduri colorate):
-- Cereri de corecție date în așteptare (din `data_correction_requests` WHERE `status = 'pending'`)
-- Cereri HR în așteptare (din `hr_requests` WHERE `status = 'pending'`)
-- Documente care expiră în 30/60/90 zile
-- Fișe medicale expirate
+### 3. SefDepartmentDashboard.tsx (pentru `sef`, `director_institut`, `director_adjunct`, `secretar_stiintific`)
+**Secțiuni**:
+- **Cereri de Aprobat** — leave requests pending la semnătura șefului (din `hr_requests` cu status pending)
+- **Echipa Azi** — cine e absent, cine intră în concediu curând
+- **Rezumat Echipă** — total membri departament, în concediu, activi
+- **Activitate Departament** — ultimele acțiuni
+- **Acțiuni Rapide** — Aprobă Cereri, Echipa Mea, Calendar Departament, Profil
 
-**Activitate recentă HR** — timeline cu ultimele 15 `audit_logs` WHERE `entity_type IN ('employee_personal_data', 'employee_records', 'hr_request', ...)`
+### 4. MedicMunciiDashboard.tsx
+**Secțiuni**:
+- **Alerte Medicale** — fișe expirate, fișe care expiră în 30/60/90 zile (din `medical_dossiers.next_checkup_date`)
+- **Statistici** — total dosare, expirate, expiră curând
+- **Acțiuni Rapide** — Zona Medicală, Dosare, Calendar
 
-### 2. Employee Hub (EmployeeHub.tsx + EmployeeFileDialog.tsx)
+### 5. OperationalRoleDashboard.tsx (bibliotecar, salarizare, secretariat, achizitii, contabilitate, oficiu_juridic, compartiment_comunicare)
+Dashboard compact generic:
+- **Notificări Relevante** — ultimele notificări
+- **Anunțuri** — DashboardAnnouncements
+- **Sold Concediu** — widgetul personal existent
+- **Acțiuni Rapide** — personalizate pe rol (ex: bibliotecar → Bibliotecă; salarizare → Salarizare)
+- **Activitate Personală** — ActivityHistory
 
-**Lista angajaților** — preia logica existentă din HRManagement.tsx:
-- Toolbar: search, filtru departament, filtru cont, filtru status
-- Tabel profesional cu coloane: Avatar+Nume, Email, Departament, Funcție/Grad, Contract, Status cont, Rol platformă, Acțiuni
-- Sortare pe coloane, leadership badges
+### 6. EmployeeDashboard.tsx (REFĂCUT — pentru `user`)
+Structura actualizată:
+- **Anunțuri Urgente** — banner dacă există
+- **Cererile Mele** — statusul ultimelor cereri HR (pending/approved/rejected) cu badge-uri
+- **Sold Concediu** — ring progress (existent, păstrat)
+- **Documentele Mele** — count documente, alerte dacă lipsesc
+- **Activitate Recentă** — ActivityHistory (existent)
+- **Acțiuni Rapide** — Cerere Concediu, Profilul Meu, Documentele Mele, Calendar, Formulare
 
-**Dosar Angajat** (EmployeeFileDialog.tsx) — dialog/sheet full-screen cu 6 sub-taburi:
-1. **Date Personale** — CNP, CI, adresă (integrează `PersonalDataEditor` existent)
-2. **Date Profesionale** — departament, funcție, grad, contract, data angajării, superior direct
-3. **Cont și Acces** — status cont platformă, roluri, IP bypass
-4. **Documente** — listă documente, upload, tip, status, cine a încărcat, expirare
-5. **Concedii** — sold, istoric (integrează `EmployeeLeaveHistory`), carryover, bonus
-6. **Istoric** — audit trail per angajat (filtrare `audit_logs` pe `entity_id`)
+## Routing în Dashboard.tsx
 
-### 3. Employee Lifecycle (EmployeeLifecycle.tsx)
+```typescript
+// Dashboard.tsx devine un router simplu
+const Dashboard = () => {
+  const { role, isSuperAdmin, isHR, isSefSRUS, isSef, isMedicMuncii } = useUserRole();
+  
+  if (isSuperAdmin) return <SuperAdminDashboard />;
+  if (isHR || isSefSRUS) return <HRDashboard />;
+  if (role === 'sef' || role === 'director_institut' || ...) return <SefDepartmentDashboard />;
+  if (isMedicMuncii) return <MedicMunciiDashboard />;
+  if (['bibliotecar','salarizare',...].includes(role)) return <OperationalRoleDashboard />;
+  return <EmployeeDashboard />;
+};
+```
 
-Wizard/acțiuni pentru ciclul de viață:
-- **Onboarding** — checklist nou angajat (creare fișă, documente necesare, asociere cont)
-- **Creare fișă angajat** — preia logica `showAddEmployee` din HRManagement
-- **Asociere cont** — link angajat EPD cu profil existent (preia `syncEmployees`)
-- **Schimbare departament/funcție** — formular rapid cu audit log
-- **Arhivare** — preia logica existentă de arhivare cu motiv
-- **Reactivare** — preia `restoreEmployee`
-- **Încetare activitate** — arhivare cu motiv specific
+## Componente Reutilizabile Noi
 
-### 4. Data Quality (DataQualityPanel.tsx)
+### QuickActionsGrid.tsx
+Grid configurabil de acțiuni rapide, acceptă array de `{icon, label, path, gradient}`.
 
-Verificări automate cu badge-uri de severitate:
-- Angajați fără email valid (email = `*@fara-email.local`)
-- Profil fără angajat (profiles fără match în EPD)
-- Angajat fără profil (EPD cu `employee_record_id` dar fără profil)
-- Angajat fără rol (user_id există dar lipsă din `user_roles`)
-- Duplicate CNP
-- Funcție lipsă, departament lipsă, superior lipsă
-- Date CI lipsă (`ci_series`, `ci_number` null)
-- CNP lipsă sau invalid
-- Inconsistențe employee_records vs employee_personal_data (total_leave_days diferit)
+### PendingActionsWidget.tsx
+Card cu lista de elemente care necesită acțiune, cu badge-uri numerice, link-uri și severitate (warning/critical/info).
 
-Fiecare categorie: count + listă expandabilă + acțiune rapidă de remediere.
+### DashboardAlertsBanner.tsx
+Banner alert universal pentru mesaje urgente (homepage_message + anunțuri urgente).
 
-### 5. Documents & Expirations (DocumentsExpirationsPanel.tsx)
+### SystemHealthMini.tsx
+4 mini-cards cu statusul serviciilor (query `health_check_logs` ultimul row).
 
-**Categorii documente**: CI, contract, acte adiționale, diplome, adeverințe, fișe medicale, documente HR, scanări
+## Surse de Date
 
-**Tabel centralizat** cu:
-- Angajat, tip document, nume, status (valid/expirat/lipsă/expiră curând), data upload, uploadat de, data expirare
-- Filtre: tip, status, departament
-- Upload rapid
-
-**Alerte expirare**:
-- CI expirate (din `ci_expiry_date`)
-- Fișe medicale expirate (din `medical_dossiers.next_checkup_date`)
-- Documente care expiră în 30/60/90 zile
-
-**Reminder automat** — buton pentru a declanșa notificări batch.
-
-### 6. HR Requests (HRRequestsInbox.tsx)
-
-**Inbox unificat** combinând:
-- `data_correction_requests` (cereri corecție date) — rutate către HR
-- `hr_requests` WHERE `request_type = 'adeverinta'` — rutate către HR
-- Preia și extinde `CorrectionRequestsManager` existent
-
-**Coloane**: Solicitant, Tip cerere, Data, Status, Acțiuni rapide (Aprobă/Respinge/Notă)
-
-**Filtre**: status (pending/approved/rejected), tip, perioadă
-
-**Istoric decizii**: cine a rezolvat, când, notele admin
-
-### 7. Notifications (HRNotificationsRules.tsx)
-
-Panou de vizualizare reguli active:
-- Cerere corecție date → notificare HR
-- Cerere adeverință → notificare HR  
-- Expirare fișă medicală → notificare `medic_medicina_muncii`
-- Document lipsă → alertă dashboard HR
-- Document care expiră curând → alertă dashboard HR
-
-Afișare clară a rutărilor, fără editare (doar vizualizare reguli hardcodate).
-
-## Eliminare rol `admin`
-
-Fișiere afectate (schimbări punctuale):
-- `src/hooks/useUserRole.tsx` — elimină `'admin'` din `AppRole` type și `validRoles`
-- `src/App.tsx` — elimină `role === 'admin'` din `canBypassMaintenance`
-- `src/pages/Admin.tsx` — verificări existente folosesc deja `super_admin`, dar auditez referințele
-- Queries SQL/RLS cu `'admin'::app_role` rămân funcționale (rolul poate exista în DB dar nu e folosit în UI)
-
-## Access Control
-
-| Rol | Acces HR |
-|---|---|
-| `super_admin` | Tot — control complet |
-| `sef_srus` | Tot — administrare completă modul HR |
-| `hr` | Operațional HR — angajați, documente, cereri, rapoarte |
-| `medic_medicina_muncii` | Doar zona medicală și alertele de fișe medicale |
-| `sef` | Subordonații din departamentul propriu (read-only) |
-| `user` | Propriile date, documente permise, cereri proprii |
+Toate datele vin din tabelele existente — nu sunt necesare migrații:
+- `employee_personal_data` — statistici angajați, CI expiry
+- `employee_records` — sold concediu
+- `hr_requests` — cereri pending
+- `data_correction_requests` — corecții pending  
+- `helpdesk_tickets` — tichete noi
+- `account_requests` — cereri cont
+- `user_roles` + `profiles` — utilizatori fără rol
+- `health_check_logs` — stare sistem
+- `audit_logs` — activitate recentă
+- `medical_dossiers` — fișe medicale expirate
+- `employee_documents` — documente lipsă/expirate
 
 ## Design
 
-- **Navigare**: 7 tab-uri cu iconuri, responsive (scroll horizontal pe mobil)
-- **KPI Cards**: gradient pe icon, counter animat (useAnimatedCounter existent)
-- **Tabele**: componenta Table din shadcn, hover states, sort headers
-- **Dosar angajat**: Dialog full-width cu sub-taburi verticale pe desktop, orizontale pe mobil
-- **Status badges**: culori consistente — emerald (ok), amber (warning), red (critical), blue (info)
-- **Empty states**: icon + mesaj + acțiune sugerată
-- **Loading**: skeleton shimmer pattern
+- Cards cu gradient pe icon, hover elevation
+- Alerte: roșu (critical), amber (warning), verde (ok), albastru (info)
+- Badge-uri numerice pe acțiuni pending
+- Skeleton shimmer pe loading
+- Empty states cu icon + mesaj + sugestie
+- Layout responsive: grid colapse pe mobil
+- Ierarhie clară: alerte → acțiuni → statistici → activitate → scurtături
 
-## Pași de implementare
+## Pași de Implementare
 
-1. Elimină referințele la rolul `admin` din codebase (useUserRole, App.tsx)
-2. Creează `HRDashboard.tsx` — KPI-uri cu queries reale + alerte + activitate
-3. Creează `EmployeeFileDialog.tsx` — dosar angajat cu 6 sub-taburi
-4. Creează `EmployeeHub.tsx` — listă angajați + integrare dosar
-5. Creează `EmployeeLifecycle.tsx` — wizard ciclu de viață
-6. Creează `DataQualityPanel.tsx` — audit calitate date
-7. Creează `DocumentsExpirationsPanel.tsx` — documente centralizate + expirări
-8. Creează `HRRequestsInbox.tsx` — inbox cereri HR unificat
-9. Creează `HRNotificationsRules.tsx` — vizualizare reguli notificări
-10. Refă `HRManagement.tsx` — shell cu 7 tab-uri, delegare la componente noi
-11. Integrează taburile existente (Calendar, Import, Rapoarte, Adeverințe, Aprobatori) ca sub-secțiuni în zonele corespunzătoare
-
-## Note tehnice
-
-- **Nu sunt necesare migrații SQL** — toate datele există deja
-- Logica existentă din HRManagement.tsx (fetchEmployees, saveEmployeeRecord, uploadDocument, etc.) este redistribuită în componentele noi, nu rescrisă
-- Componentele existente (PersonalDataEditor, EmployeeLeaveHistory, CorrectionRequestsManager, etc.) sunt refolosite ca sub-componente
-- Shared state (employees, loading) este gestionat prin props sau un context dedicat dacă e necesar
+1. Creează componentele reutilizabile (QuickActionsGrid, PendingActionsWidget, DashboardAlertsBanner, SystemHealthMini)
+2. Creează SuperAdminDashboard cu toate secțiunile
+3. Creează HRDashboard  
+4. Creează SefDepartmentDashboard
+5. Creează MedicMunciiDashboard
+6. Creează OperationalRoleDashboard
+7. Refă EmployeeDashboard cu focus pe acțiuni proprii
+8. Refă Dashboard.tsx ca router pe rol
+9. Păstrează componentele existente (StatCard, WeatherWidget, etc.) integrate în dashboard-urile noi
 
