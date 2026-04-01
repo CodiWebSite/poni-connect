@@ -44,7 +44,7 @@ const SefDepartmentDashboard = () => {
     const { data: leaves } = await supabase
       .from('leave_requests')
       .select('id, start_date, end_date, working_days, status, user_id')
-      .in('status', ['pending_department_head', 'pending_director', 'pending'])
+      .in('status', ['pending_department_head', 'pending_director', 'draft'] as any)
       .order('created_at', { ascending: false })
       .limit(20);
 

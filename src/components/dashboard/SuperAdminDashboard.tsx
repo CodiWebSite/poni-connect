@@ -42,7 +42,7 @@ const SuperAdminDashboard = () => {
       supabase.from('helpdesk_tickets').select('id').eq('status', 'open'),
       supabase.from('account_requests').select('id').eq('status', 'pending'),
       supabase.from('data_correction_requests').select('id').eq('status', 'pending'),
-      supabase.from('hr_requests').select('id').in('status', ['pending', 'pending_department_head', 'pending_director']),
+      supabase.from('hr_requests').select('id').in('status', ['pending', 'pending_department_head', 'pending_director'] as any),
       supabase.from('profiles').select('user_id'),
       supabase.from('user_roles').select('user_id'),
       supabase.from('employee_personal_data').select('email').eq('is_archived', false),

@@ -36,7 +36,7 @@ const HRStaffDashboard = () => {
     ] = await Promise.all([
       supabase.from('employee_personal_data').select('*', { count: 'exact', head: true }).eq('is_archived', false),
       supabase.from('data_correction_requests').select('id').eq('status', 'pending'),
-      supabase.from('hr_requests').select('id').in('status', ['pending', 'pending_department_head', 'pending_director']),
+      supabase.from('hr_requests').select('id').in('status', ['pending', 'pending_department_head', 'pending_director'] as any),
       supabase.from('employee_personal_data').select('id').eq('is_archived', false).not('ci_expiry_date', 'is', null).lte('ci_expiry_date', in90Days),
     ]);
 

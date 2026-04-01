@@ -72,12 +72,12 @@ const PersonalLeaveWidget = () => {
             </div>
           </ProgressRing>
           <div className="grid grid-cols-3 gap-2 flex-1">
-            <div className="text-center p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-              <p className="text-lg font-bold text-green-600">{record.remaining}</p>
+            <div className="text-center p-2 bg-success/10 rounded-lg border border-success/20">
+              <p className="text-lg font-bold text-success">{record.remaining}</p>
               <p className="text-[9px] text-muted-foreground">Libere</p>
             </div>
-            <div className="text-center p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-              <p className="text-lg font-bold text-blue-600">{record.used}</p>
+            <div className="text-center p-2 bg-info/10 rounded-lg border border-info/20">
+              <p className="text-lg font-bold text-info">{record.used}</p>
               <p className="text-[9px] text-muted-foreground">Utilizate</p>
             </div>
             <div className="text-center p-2 bg-muted rounded-lg border border-border">
