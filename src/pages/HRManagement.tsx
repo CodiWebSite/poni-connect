@@ -190,23 +190,25 @@ const HRManagement = () => {
     <MainLayout title="Gestiune HR" description="Centru Profesionist de Administrare Personal">
       <Tabs defaultValue="dashboard" className="space-y-6">
         {/* Sticky toolbar */}
-        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border/40 -mx-4 px-4 py-2 md:-mx-6 md:px-6 flex flex-wrap gap-2 justify-between items-center">
-          <div className="overflow-x-auto scrollbar-hide flex-1">
-            <TabsList className="inline-flex h-auto gap-1 p-1 min-w-max">
-              <TabsTrigger value="dashboard" className="gap-2"><LayoutDashboard className="h-4 w-4" /><span className="hidden sm:inline">Dashboard</span></TabsTrigger>
-              <TabsTrigger value="employees" className="gap-2"><Users className="h-4 w-4" /><span className="hidden sm:inline">Angajați</span></TabsTrigger>
-              <TabsTrigger value="lifecycle" className="gap-2"><UserPlus className="h-4 w-4" /><span className="hidden sm:inline">Ciclu de Viață</span></TabsTrigger>
-              <TabsTrigger value="quality" className="gap-2"><Shield className="h-4 w-4" /><span className="hidden sm:inline">Calitate Date</span></TabsTrigger>
-              <TabsTrigger value="documents" className="gap-2"><FileText className="h-4 w-4" /><span className="hidden sm:inline">Documente</span></TabsTrigger>
-              <TabsTrigger value="requests" className="gap-2"><Inbox className="h-4 w-4" /><span className="hidden sm:inline">Cereri HR</span></TabsTrigger>
-              <TabsTrigger value="notifications" className="gap-2"><Bell className="h-4 w-4" /><span className="hidden sm:inline">Notificări</span></TabsTrigger>
-              <TabsTrigger value="calendar" className="gap-2"><Calendar className="h-4 w-4" /><span className="hidden sm:inline">Calendar</span></TabsTrigger>
-              <TabsTrigger value="approvers" className="gap-2"><UserCheck className="h-4 w-4" /><span className="hidden sm:inline">Aprobatori</span></TabsTrigger>
-              <TabsTrigger value="import" className="gap-2"><Upload className="h-4 w-4" /><span className="hidden sm:inline">Import</span></TabsTrigger>
-              <TabsTrigger value="reports" className="gap-2"><BarChart3 className="h-4 w-4" /><span className="hidden sm:inline">Rapoarte</span></TabsTrigger>
-              <TabsTrigger value="certificates" className="gap-2"><Award className="h-4 w-4" /><span className="hidden sm:inline">Adeverințe</span></TabsTrigger>
-              <TabsTrigger value="dossier" className="gap-2"><FolderOpen className="h-4 w-4" /><span className="hidden sm:inline">Dosare</span></TabsTrigger>
-            </TabsList>
+        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border/40 -mx-4 px-4 py-2 md:-mx-6 md:px-6 flex flex-col gap-2">
+          <div className="flex gap-2 justify-between items-center">
+            <div className="w-full overflow-x-auto pb-1">
+              <TabsList className="inline-flex min-w-max h-auto flex-nowrap gap-1 p-1">
+                <TabsTrigger value="dashboard" className="gap-1.5 text-xs px-2.5 py-1.5"><LayoutDashboard className="h-3.5 w-3.5" /><span className="hidden md:inline">Dashboard</span></TabsTrigger>
+                <TabsTrigger value="employees" className="gap-1.5 text-xs px-2.5 py-1.5"><Users className="h-3.5 w-3.5" /><span className="hidden md:inline">Angajați</span></TabsTrigger>
+                <TabsTrigger value="lifecycle" className="gap-1.5 text-xs px-2.5 py-1.5"><UserPlus className="h-3.5 w-3.5" /><span className="hidden md:inline">Ciclu de Viață</span></TabsTrigger>
+                <TabsTrigger value="quality" className="gap-1.5 text-xs px-2.5 py-1.5"><Shield className="h-3.5 w-3.5" /><span className="hidden md:inline">Calitate Date</span></TabsTrigger>
+                <TabsTrigger value="documents" className="gap-1.5 text-xs px-2.5 py-1.5"><FileText className="h-3.5 w-3.5" /><span className="hidden md:inline">Documente</span></TabsTrigger>
+                <TabsTrigger value="requests" className="gap-1.5 text-xs px-2.5 py-1.5"><Inbox className="h-3.5 w-3.5" /><span className="hidden md:inline">Cereri HR</span></TabsTrigger>
+                <TabsTrigger value="notifications" className="gap-1.5 text-xs px-2.5 py-1.5"><Bell className="h-3.5 w-3.5" /><span className="hidden md:inline">Notificări</span></TabsTrigger>
+                <TabsTrigger value="calendar" className="gap-1.5 text-xs px-2.5 py-1.5"><Calendar className="h-3.5 w-3.5" /><span className="hidden md:inline">Calendar</span></TabsTrigger>
+                <TabsTrigger value="approvers" className="gap-1.5 text-xs px-2.5 py-1.5"><UserCheck className="h-3.5 w-3.5" /><span className="hidden md:inline">Aprobatori</span></TabsTrigger>
+                <TabsTrigger value="import" className="gap-1.5 text-xs px-2.5 py-1.5"><Upload className="h-3.5 w-3.5" /><span className="hidden md:inline">Import</span></TabsTrigger>
+                <TabsTrigger value="reports" className="gap-1.5 text-xs px-2.5 py-1.5"><BarChart3 className="h-3.5 w-3.5" /><span className="hidden md:inline">Rapoarte</span></TabsTrigger>
+                <TabsTrigger value="certificates" className="gap-1.5 text-xs px-2.5 py-1.5"><Award className="h-3.5 w-3.5" /><span className="hidden md:inline">Adeverințe</span></TabsTrigger>
+                <TabsTrigger value="dossier" className="gap-1.5 text-xs px-2.5 py-1.5"><FolderOpen className="h-3.5 w-3.5" /><span className="hidden md:inline">Dosare</span></TabsTrigger>
+              </TabsList>
+            </div>
           </div>
           <div className="flex gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={syncEmployees} disabled={syncing}>
