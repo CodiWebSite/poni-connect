@@ -17,7 +17,7 @@ import ExcelJS from 'exceljs';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { generateLeaveDocx } from '@/utils/generateLeaveDocx';
-import { SignaturePad } from '@/components/shared/SignaturePad';
+import { getClientIP } from '@/utils/getClientIP';
 
 interface LeaveRequestRow {
   id: string;
@@ -86,6 +86,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const [srusApproveOfficer, setSrusApproveOfficer] = useState<string>('Cătălina Bălan');
   const [srusApproveSig, setSrusApproveSig] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [fetchingIP, setFetchingIP] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
 
   useEffect(() => {
@@ -335,7 +336,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       // Fetch stored SRUS data from the leave request
       const { data: lrData } = await supabase
         .from('leave_requests')
-        .select('srus_officer_name, srus_signature, srus_signed_at')
+        .select('srus_officer_name, srus_signature, srus_signed_at, srus_ip')
         .eq('id', request.id)
         .maybeSingle();
 
@@ -361,6 +362,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         carryoverFromYear,
         srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
         srusSignature: (lrData as any)?.srus_signature || undefined,
+        srusSignedAt: (lrData as any)?.srus_signed_at || undefined,
+        srusIP: (lrData as any)?.srus_ip || undefined,
         approvalDate: request.dept_head_approved_at ? format(parseISO(request.dept_head_approved_at), 'dd.MM.yyyy') : undefined,
         deptHeadSignature: request.dept_head_signature,
         deptHeadName: request.dept_head_name,
@@ -390,20 +393,21 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   };
 
   const handleSrusApprove = async () => {
-    if (!srusApproveDialog || !srusApproveSig) {
-      toast({ title: 'Semnătură necesară', description: 'Vă rugăm să semnați înainte de validare.', variant: 'destructive' });
-      return;
-    }
+    if (!srusApproveDialog) return;
     setProcessing(srusApproveDialog.id);
+    setFetchingIP(true);
     const now = new Date().toISOString();
+    const ip = await getClientIP();
+    setFetchingIP(false);
 
     const { error } = await supabase
       .from('leave_requests')
       .update({
         status: 'approved' as any,
         srus_officer_name: srusApproveOfficer,
-        srus_signature: srusApproveSig,
+        srus_signature: 'digital',
         srus_signed_at: now,
+        srus_ip: ip,
       } as any)
       .eq('id', srusApproveDialog.id);
 
@@ -816,7 +820,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
             </p>
             <div className="space-y-2">
               <Label>Salariat SRUS</Label>
-              <Select value={srusApproveOfficer} onValueChange={(v) => { setSrusApproveOfficer(v); setSrusApproveSig(null); }}>
+              <Select value={srusApproveOfficer} onValueChange={(v) => setSrusApproveOfficer(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -826,21 +830,22 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                 </SelectContent>
               </Select>
             </div>
-            <SignaturePad
-              label="Semnătura salariat SRUS"
-              onSave={(sig) => setSrusApproveSig(sig)}
-              existingSignature={srusApproveSig}
-            />
+            <div className="rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30 p-3 space-y-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-300">🔏 Semnătură digitală</p>
+              <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                La apăsarea butonului, cererea va fi semnată digital cu numele dvs., adresa IP și data/ora exactă.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setSrusApproveDialog(null); setSrusApproveSig(null); }}>Anulează</Button>
             <Button
               onClick={handleSrusApprove}
-              disabled={!srusApproveSig || processing === srusApproveDialog?.id}
+              disabled={processing === srusApproveDialog?.id || fetchingIP}
               className="bg-green-600 hover:bg-green-700"
             >
-              {processing === srusApproveDialog?.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-              Validează și Aprobă
+              {(processing === srusApproveDialog?.id || fetchingIP) ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+              Aprobă și Semnează Digital
             </Button>
           </DialogFooter>
         </DialogContent>
