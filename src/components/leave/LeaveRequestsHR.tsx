@@ -336,7 +336,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       // Fetch stored SRUS data from the leave request
       const { data: lrData } = await supabase
         .from('leave_requests')
-        .select('srus_officer_name, srus_signature, srus_signed_at, srus_ip')
+        .select('srus_officer_name, srus_signature, srus_signed_at, srus_ip, dept_head_ip, dept_head_approved_at, dept_head_signature')
         .eq('id', request.id)
         .maybeSingle();
 
