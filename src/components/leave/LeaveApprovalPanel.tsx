@@ -61,7 +61,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const [approverSignature, setApproverSignature] = useState<string | null>(null);
   const [fetchingIP, setFetchingIP] = useState(false);
 
-  const isTofanDragos = role === 'sef_srus';
+  const useDigitalSignature = role === 'sef_srus' || role === 'secretar_stiintific';
 
   const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
 
@@ -233,7 +233,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     let signatureValue = approverSignature;
     let ipValue: string | null = null;
 
-    if (isTofanDragos) {
+    if (useDigitalSignature) {
       // Digital signature with IP
       setFetchingIP(true);
       ipValue = await getClientIP();
@@ -536,7 +536,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
               Perioada: {approveDialog && format(parseISO(approveDialog.start_date), 'dd.MM.yyyy')} – {approveDialog && format(parseISO(approveDialog.end_date), 'dd.MM.yyyy')}<br />
               Zile: <strong>{approveDialog?.working_days}</strong>
             </p>
-            {isTofanDragos ? (
+            {useDigitalSignature ? (
               <div className="rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30 p-3 space-y-1">
                 <p className="text-sm font-medium text-blue-800 dark:text-blue-300">🔏 Semnătură digitală</p>
                 <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
@@ -555,11 +555,11 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
             <Button variant="outline" onClick={() => { setApproveDialog(null); setApproverSignature(null); }}>Anulează</Button>
             <Button 
               onClick={handleApproveWithSignature} 
-              disabled={processing === approveDialog?.id || fetchingIP || (!isTofanDragos && !approverSignature)}
+              disabled={processing === approveDialog?.id || fetchingIP || (!useDigitalSignature && !approverSignature)}
               className="bg-green-600 hover:bg-green-700"
             >
               {(processing === approveDialog?.id || fetchingIP) ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-              {isTofanDragos ? 'Aprobă și Semnează Digital' : 'Semnează și Aprobă'}
+              {useDigitalSignature ? 'Aprobă și Semnează Digital' : 'Semnează și Aprobă'}
             </Button>
           </DialogFooter>
         </DialogContent>
