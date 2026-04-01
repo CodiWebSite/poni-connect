@@ -288,8 +288,15 @@ const LeaveCalendar = () => {
     setLoading(false);
   };
 
-  // Get unique departments for filter
-  const departments = [...new Set(leaves.map(l => l.department).filter(Boolean))] as string[];
+  // Get unique departments for filter — include all known institutional departments
+  const KNOWN_DEPARTMENTS = [
+    'SRUS', 'Contabilitate', 'Resurse Umane', 'Achiziții', 'IT', 'Administrativ',
+    'Oficiu Juridic', 'Compartiment Comunicare', 'Salarizare', 'Secretariat', 'Bibliotecă',
+  ];
+  const departments = [...new Set([
+    ...KNOWN_DEPARTMENTS,
+    ...leaves.map(l => l.department).filter(Boolean),
+  ])] as string[];
 
   // Filter leaves by department
   const filteredLeaves = departmentFilter === 'all'
