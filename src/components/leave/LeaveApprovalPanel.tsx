@@ -536,21 +536,30 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
               Perioada: {approveDialog && format(parseISO(approveDialog.start_date), 'dd.MM.yyyy')} – {approveDialog && format(parseISO(approveDialog.end_date), 'dd.MM.yyyy')}<br />
               Zile: <strong>{approveDialog?.working_days}</strong>
             </p>
-            <SignaturePad
-              onSave={(sig) => setApproverSignature(sig)}
-              existingSignature={approverSignature}
-              label="Semnătura Șef Compartiment"
-            />
+            {isTofanDragos ? (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30 p-3 space-y-1">
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-300">🔏 Semnătură digitală</p>
+                <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                  La apăsarea butonului, cererea va fi semnată digital cu numele dvs., adresa IP și data/ora exactă.
+                </p>
+              </div>
+            ) : (
+              <SignaturePad
+                onSave={(sig) => setApproverSignature(sig)}
+                existingSignature={approverSignature}
+                label="Semnătura Șef Compartiment"
+              />
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setApproveDialog(null); setApproverSignature(null); }}>Anulează</Button>
             <Button 
               onClick={handleApproveWithSignature} 
-              disabled={processing === approveDialog?.id || !approverSignature}
+              disabled={processing === approveDialog?.id || fetchingIP || (!isTofanDragos && !approverSignature)}
               className="bg-green-600 hover:bg-green-700"
             >
-              {processing === approveDialog?.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-              Semnează și Aprobă
+              {(processing === approveDialog?.id || fetchingIP) ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+              {isTofanDragos ? 'Aprobă și Semnează Digital' : 'Semnează și Aprobă'}
             </Button>
           </DialogFooter>
         </DialogContent>
