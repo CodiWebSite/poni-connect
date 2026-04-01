@@ -83,7 +83,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Auth + role loaded — check bypass
-  const canBypassMaintenance = isSuperAdmin || role === 'admin' || role === 'hr' || role === 'sef_srus' || role === 'salarizare';
+  const canBypassMaintenance = isSuperAdmin || role === 'hr' || role === 'sef_srus' || role === 'salarizare';
   
   if (canBypassMaintenance) {
     return <>{children}</>;

@@ -31,7 +31,7 @@ const quickActions = [
 
 const Dashboard = () => {
   const { role, isSuperAdmin, isHR, isSefSRUS, loading: roleLoading } = useUserRole();
-  const isAdminDashboard = isSuperAdmin || role === 'admin' || isHR || isSefSRUS;
+  const isAdminDashboard = isSuperAdmin || isHR || isSefSRUS;
   const { settings } = useAppSettings();
   const [stats, setStats] = useState({ employees: 0 });
 
@@ -107,7 +107,7 @@ const Dashboard = () => {
       </div>
 
       {/* Analytics de adopție - doar admin */}
-      {(isSuperAdmin || role === 'admin') && (
+      {isSuperAdmin && (
         <div className="mb-4 md:mb-6">
           <AnalyticsWidget />
         </div>
