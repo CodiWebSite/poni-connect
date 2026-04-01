@@ -226,22 +226,40 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
   const handleApproveWithSignature = async () => {
     if (!user || !approveDialog) return;
-    if (!approverSignature) {
-      toast({ title: 'Semnătură necesară', description: 'Vă rugăm să semnați înainte de aprobare.', variant: 'destructive' });
-      return;
-    }
-    
+
     setProcessing(approveDialog.id);
     const now = new Date().toISOString();
 
+    let signatureValue = approverSignature;
+    let ipValue: string | null = null;
+
+    if (isTofanDragos) {
+      // Digital signature with IP
+      setFetchingIP(true);
+      ipValue = await getClientIP();
+      setFetchingIP(false);
+      signatureValue = 'digital';
+    } else {
+      if (!approverSignature) {
+        toast({ title: 'Semnătură necesară', description: 'Vă rugăm să semnați înainte de aprobare.', variant: 'destructive' });
+        setProcessing(null);
+        return;
+      }
+    }
+
+    const updateData: any = {
+      status: 'pending_srus' as any,
+      dept_head_id: user.id,
+      dept_head_approved_at: now,
+      dept_head_signature: signatureValue,
+    };
+    if (ipValue) {
+      updateData.dept_head_ip = ipValue;
+    }
+
     const { error } = await supabase
       .from('leave_requests')
-      .update({
-        status: 'pending_srus' as any,
-        dept_head_id: user.id,
-        dept_head_approved_at: now,
-        dept_head_signature: approverSignature,
-      } as any)
+      .update(updateData)
       .eq('id', approveDialog.id);
 
     if (error) {
