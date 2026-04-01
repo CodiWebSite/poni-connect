@@ -333,6 +333,43 @@ function BackupTab({ userId }: { userId: string }) {
     setBackingUp(false);
   };
 
+  const [exportingSQL, setExportingSQL] = useState(false);
+
+  const handleExportSQL = async () => {
+    setExportingSQL(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error('Nu ești autentificat');
+
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/export-database`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `HTTP ${res.status}`);
+      }
+
+      const sqlText = await res.text();
+      const blob = new Blob([sqlText], { type: 'application/sql; charset=utf-8' });
+      saveAs(blob, `poni_export_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.sql`);
+
+      toast.success('Export SQL complet descărcat cu succes!');
+      fetchLogs();
+    } catch (err: any) {
+      toast.error('Eroare la export SQL: ' + (err?.message || 'Necunoscută'));
+    }
+    setExportingSQL(false);
+  };
+
   const handleStorageBackup = async () => {
     setBackingUpStorage(true);
     try {
