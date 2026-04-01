@@ -107,7 +107,7 @@ const Dashboard = () => {
       </div>
 
       {/* Analytics de adopție - doar admin */}
-      {(isSuperAdmin || role === 'admin') && (
+      {isSuperAdmin && (
         <div className="mb-4 md:mb-6">
           <AnalyticsWidget />
         </div>
