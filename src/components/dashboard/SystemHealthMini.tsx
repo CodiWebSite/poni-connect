@@ -73,7 +73,7 @@ const SystemHealthMini = () => {
             Niciun health check disponibil. <Link to="/admin" className="text-primary hover:underline">Rulează verificare</Link>
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {services.map(([key, val]) => {
               const Icon = serviceIcons[key] || Activity;
               const ok = val.status === 'healthy' || val.status === 'ok';
