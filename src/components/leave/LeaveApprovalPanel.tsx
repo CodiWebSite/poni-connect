@@ -17,7 +17,7 @@ import { ro } from 'date-fns/locale';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { getClientIP } from '@/utils/getClientIP';
 
-const DIGITAL_SIGNATURE_EMAIL = 'tofan.dragos@icmpp.ro';
+// Digital IP signature is used by sef_srus role instead of manual SignaturePad
 
 interface LeaveRequest {
   id: string;
@@ -61,7 +61,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const [approverSignature, setApproverSignature] = useState<string | null>(null);
   const [fetchingIP, setFetchingIP] = useState(false);
 
-  const isTofanDragos = (user?.email || '').toLowerCase() === DIGITAL_SIGNATURE_EMAIL;
+  const isTofanDragos = role === 'sef_srus';
 
   const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
 
