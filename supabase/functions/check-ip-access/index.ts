@@ -43,6 +43,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Allow Lovable preview/dev origins to bypass IP check
+    const origin = req.headers.get("origin") || "";
+    const isLovablePreview = origin.includes(".lovableproject.com") || origin.includes(".lovable.app");
+    if (isLovablePreview) {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "preview";
+      return new Response(
+        JSON.stringify({ allowed: true, ip, message: "Acces permis (preview)" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") ||
