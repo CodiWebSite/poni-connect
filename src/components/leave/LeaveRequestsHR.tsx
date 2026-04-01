@@ -17,7 +17,7 @@ import ExcelJS from 'exceljs';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { generateLeaveDocx } from '@/utils/generateLeaveDocx';
-import { SignaturePad } from '@/components/shared/SignaturePad';
+import { getClientIP } from '@/utils/getClientIP';
 
 interface LeaveRequestRow {
   id: string;
