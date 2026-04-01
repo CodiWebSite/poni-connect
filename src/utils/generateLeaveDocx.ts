@@ -282,7 +282,15 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
             width: { size: 25, type: WidthType.PERCENTAGE },
             borders: CELL_BORDERS,
             children: [
-              ...(srusSigData ? [
+              ...(isDigitalSrus && srusSignedAt ? [
+                new Paragraph({ spacing: { after: 0 }, children: [
+                  t('Semnat digital de ', { size: 16, italics: true, color: BLUE_PEN }),
+                  t(srusOfficerName || '', { size: 16, bold: true, color: BLUE_PEN }),
+                ] }),
+                new Paragraph({ spacing: { after: 0 }, children: [
+                  t(`IP: ${srusIP || 'N/A'} | ${new Date(srusSignedAt).toLocaleString('ro-RO')}`, { size: 14, italics: true, color: BLUE_PEN }),
+                ] }),
+              ] : srusSigData ? [
                 new Paragraph({ spacing: { after: 0 }, children: [new ImageRun({ data: srusSigData, transformation: { width: 140, height: 55 }, type: 'png' })] }),
               ] : [
                 new Paragraph({ spacing: { after: 0 }, children: [t('___________________', { size: S })] }),
