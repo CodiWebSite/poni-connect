@@ -177,8 +177,19 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     );
   }
 
-  // Signature only (no stamp)
-  if (deptHeadSigData) {
+  if (isDigitalDeptHead && deptHeadIP) {
+    const deptHeadFormattedDate = deptHeadSignedAt
+      ? new Date(deptHeadSignedAt).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      : (approvalDate || '');
+    leftApprovalChildren.push(
+      new Paragraph({ spacing: { after: 0 }, children: [
+        t(`Semnat digital de ${deptHeadName || 'Șef compartiment'}`, { size: 16, italics: true, color: '1a3ba3' }),
+      ]}),
+      new Paragraph({ spacing: { after: 0 }, children: [
+        t(`IP: ${deptHeadIP} | ${deptHeadFormattedDate}`, { size: 14, italics: true, color: '1a3ba3' }),
+      ]})
+    );
+  } else if (deptHeadSigData) {
     leftApprovalChildren.push(
       new Paragraph({ spacing: { after: 0 }, children: [
         new ImageRun({ data: deptHeadSigData, transformation: { width: 130, height: 50 }, type: 'png' }),
