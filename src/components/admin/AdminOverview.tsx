@@ -88,7 +88,7 @@ const AdminOverview = () => {
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('profiles').select('user_id', { count: 'exact', head: true })
           .not('user_id', 'in', `(SELECT user_id FROM user_roles)`),
-        supabase.from('leave_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('leave_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending_department_head'),
         supabase.from('backup_logs').select('created_at, status').order('created_at', { ascending: false }).limit(1),
         supabase.from('audit_logs').select('id, action, entity_type, user_id, created_at, details').order('created_at', { ascending: false }).limit(10),
         supabase.from('employee_personal_data').select('*', { count: 'exact', head: true }).eq('is_archived', false),
