@@ -247,22 +247,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         const carryovers = carryoverMap[epdId] || [];
         const relevantCarryover = carryovers.find(c => c.to_year === year && c.from_year === year - 1);
 
-        const earliestRequestCreatedAt = yearReqs.reduce<string | null>((earliest, req) => {
-          if (!req?.created_at) return earliest;
-          if (!earliest) return req.created_at;
-          return req.created_at < earliest ? req.created_at : earliest;
-        }, null);
-
-        const useSnapshotRemaining = Boolean(
-          relevantCarryover &&
-          earliestRequestCreatedAt &&
-          relevantCarryover.updated_at &&
-          new Date(relevantCarryover.updated_at).getTime() <= new Date(earliestRequestCreatedAt).getTime()
-        );
-
-        let carryoverRemaining = useSnapshotRemaining
-          ? Math.max(relevantCarryover?.remaining_days || 0, 0)
-          : Math.max(relevantCarryover?.initial_days || 0, 0);
+        let carryoverRemaining = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
 
         yearReqs.sort((a, b) => {
           const byStartDate = (a.start_date || '').localeCompare(b.start_date || '');

@@ -133,15 +133,15 @@ const LeaveCalendar = () => {
 
     // Fetch carryover data for source labels
     const allEpdIds = (epdData || []).map(e => e.id);
-    let carryoverMap: Record<string, { from_year: number; initial_days: number }[]> = {};
+    let carryoverMap: Record<string, { from_year: number; initial_days: number; remaining_days: number }[]> = {};
     if (allEpdIds.length > 0) {
       const { data: carryovers } = await supabase
         .from('leave_carryover')
-        .select('employee_personal_data_id, from_year, initial_days')
+        .select('employee_personal_data_id, from_year, initial_days, remaining_days')
         .in('employee_personal_data_id', allEpdIds);
       (carryovers || []).forEach(c => {
         if (!carryoverMap[c.employee_personal_data_id]) carryoverMap[c.employee_personal_data_id] = [];
-        carryoverMap[c.employee_personal_data_id].push({ from_year: c.from_year, initial_days: c.initial_days });
+        carryoverMap[c.employee_personal_data_id].push({ from_year: c.from_year, initial_days: c.initial_days, remaining_days: c.remaining_days });
       });
     }
 
@@ -260,7 +260,7 @@ const LeaveCalendar = () => {
       Object.entries(byYear).forEach(([yearStr, yearEntries]) => {
         const year = Number(yearStr);
         const relevantCarryover = carryovers.find(c => c.from_year === year - 1 && c.initial_days > 0);
-        let carryoverRemaining = relevantCarryover?.initial_days || 0;
+        let carryoverRemaining = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
 
         yearEntries.forEach(e => {
           const days = e.numberOfDays || 0;
