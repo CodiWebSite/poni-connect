@@ -1,146 +1,99 @@
 
+# IRIS — Asistent AI pentru Platforma ICMPP
 
-# Plan: Dashboard Inteligent Diferențiat pe Rol — ICMPP
+## Ce este IRIS
 
-## Rezumat
-
-Înlocuirea dashboard-ului actual (care are doar 2 variante: admin vs employee) cu un sistem modular de dashboard-uri specializate pe rol. Fiecare rol primește componente specifice responsabilităților sale, organizate ierarhic: alerte → acțiuni → statistici → activitate → scurtături.
+IRIS (Inteligență pentru Resurse Interne și Suport) este un chatbot AI integrat în platformă, accesibil printr-un buton flotant pe toate paginile. Folosește Lovable AI (deja disponibil — LOVABLE_API_KEY configurat) pentru a răspunde la întrebări despre platforma, datele utilizatorului și procedurile institutului.
 
 ## Arhitectura
 
 ```text
-src/pages/Dashboard.tsx                          (router pe rol)
-src/components/dashboard/
-  ├── SuperAdminDashboard.tsx                    (NOU — Control Center complet)
-  ├── HRDashboard.tsx                            (NOU — centru operațional HR)  
-  ├── SefDepartmentDashboard.tsx                 (NOU — echipă + aprobări)
-  ├── MedicMunciiDashboard.tsx                   (NOU — fișe medicale + alerte)
-  ├── OperationalRoleDashboard.tsx               (NOU — roluri de serviciu generic)
-  ├── EmployeeDashboard.tsx                      (REFĂCUT — orientat pe acțiune)
-  ├── DashboardAlertsBanner.tsx                  (NOU — alerte urgente universale)
-  ├── PendingActionsWidget.tsx                   (NOU — "Necesită acțiune")
-  ├── SystemHealthMini.tsx                       (NOU — mini status sistem pt SA)
-  ├── QuickActionsGrid.tsx                       (NOU — grid reutilizabil scurtături)
-  ├── ... (componente existente păstrate)
+src/components/iris/
+  ├── IrisButton.tsx          ← Buton flotant (colț dreapta-jos)
+  ├── IrisChatPanel.tsx       ← Panoul de chat (slide-up / drawer pe mobil)
+  └── IrisMessageBubble.tsx   ← Bule de mesaj cu markdown rendering
+
+supabase/functions/iris-chat/index.ts  ← Edge function care:
+  1. Primește mesajul + context utilizator
+  2. Query-uri automate pe tabelele platformei (rol, concediu, documente, cereri)
+  3. Construiește system prompt cu context real
+  4. Streamează răspunsul via Lovable AI Gateway
 ```
 
-## Dashboard pe Rol — Detalii
+## Funcționalități IRIS
 
-### 1. SuperAdminDashboard.tsx
-**Secțiuni** (în ordine):
-- **Alerte Sistem** — edge functions down, backup vechi, storage plin, erori recente (din `health_check_logs`)
-- **Necesită Atenție** — utilizatori fără rol (profiles vs user_roles), angajați fără cont, tichete helpdesk noi, cereri cont noi, cereri HR pending
-- **Stare Sistem** — mini cards: Auth OK, DB OK, Storage OK, Edge Functions OK (din ultimul health check)
-- **Statistici** — total utilizatori, angajați activi, online acum (OnlineUsersWidget), activare conturi (ActivationChart)
-- **Analytics Adopție** — AnalyticsWidget + AdoptionTrendChart (existente)
-- **Activitate Administrativă** — ultimele 15 audit_logs
-- **Acțiuni Rapide** — Creează Cont, Gestionează Roluri, Audit, Admin, System Health, Cereri Pendinte
+### 1. Navigare și căutare inteligentă
+IRIS știe structura platformei și poate răspunde la:
+- „Câte zile de concediu mai am?" → query `employee_records` pt user curent
+- „Unde depun o cerere de concediu?" → link direct `/leave-request`
+- „Ce documente îmi expiră?" → query `employee_documents` + `employee_personal_data.ci_expiry_date`
+- „Cine e în concediu azi?" → query `leave_requests` active azi
+- „Ce anunțuri noi sunt?" → query `announcements` recente
 
-### 2. HRDashboard.tsx (pentru rolurile `hr` și `sef_srus`)
-**Secțiuni**:
-- **Alerte HR** — documente expirate, CI expirate, fișe medicale expirate
-- **Necesită Acțiune** — cereri corecție date pending, adeverințe pending, concedii la nivel SRUS/HR
-- **Statistici HR** — angajați activi, fără cont, fără rol, documente lipsă
-- **HRAlerts** (componenta existentă, integrată)
-- **Concedii pe Departament** — LeaveByDepartment (existent)
-- **Activitate HR** — ultimele acțiuni HR din audit_logs
-- **Acțiuni Rapide** — Deschide HR, Documente, Cereri, Calendar Concedii, Alerte
+### 2. Asistent HR și documente
+- Explică tipurile de concediu disponibile (CO, medical, etc.)
+- Ghidează prin procesul de completare a cererilor
+- Verifică ce documente lipsesc din dosarul digital
+- Explică fluxul de aprobare (cine aprobă, ce etape)
 
-### 3. SefDepartmentDashboard.tsx (pentru `sef`, `director_institut`, `director_adjunct`, `secretar_stiintific`)
-**Secțiuni**:
-- **Cereri de Aprobat** — leave requests pending la semnătura șefului (din `hr_requests` cu status pending)
-- **Echipa Azi** — cine e absent, cine intră în concediu curând
-- **Rezumat Echipă** — total membri departament, în concediu, activi
-- **Activitate Departament** — ultimele acțiuni
-- **Acțiuni Rapide** — Aprobă Cereri, Echipa Mea, Calendar Departament, Profil
+### 3. Rezumate și rapoarte
+- „Ce s-a întâmplat săptămâna asta?" → rezumat anunțuri + cereri
+- „Care sunt alertele mele?" → notificări recente
+- „Ce e nou în platformă?" → changelog entries recente
 
-### 4. MedicMunciiDashboard.tsx
-**Secțiuni**:
-- **Alerte Medicale** — fișe expirate, fișe care expiră în 30/60/90 zile (din `medical_dossiers.next_checkup_date`)
-- **Statistici** — total dosare, expirate, expiră curând
-- **Acțiuni Rapide** — Zona Medicală, Dosare, Calendar
+### 4. Ghid platformă interactiv
+- Explică funcționalitățile platformei
+- Oferă link-uri directe către secțiuni relevante
+- Adaptează răspunsurile în funcție de rol (HR vede altceva decât angajat)
 
-### 5. OperationalRoleDashboard.tsx (bibliotecar, salarizare, secretariat, achizitii, contabilitate, oficiu_juridic, compartiment_comunicare)
-Dashboard compact generic:
-- **Notificări Relevante** — ultimele notificări
-- **Anunțuri** — DashboardAnnouncements
-- **Sold Concediu** — widgetul personal existent
-- **Acțiuni Rapide** — personalizate pe rol (ex: bibliotecar → Bibliotecă; salarizare → Salarizare)
-- **Activitate Personală** — ActivityHistory
+## Implementare Detaliată
 
-### 6. EmployeeDashboard.tsx (REFĂCUT — pentru `user`)
-Structura actualizată:
-- **Anunțuri Urgente** — banner dacă există
-- **Cererile Mele** — statusul ultimelor cereri HR (pending/approved/rejected) cu badge-uri
-- **Sold Concediu** — ring progress (existent, păstrat)
-- **Documentele Mele** — count documente, alerte dacă lipsesc
-- **Activitate Recentă** — ActivityHistory (existent)
-- **Acțiuni Rapide** — Cerere Concediu, Profilul Meu, Documentele Mele, Calendar, Formulare
+### Edge Function: `supabase/functions/iris-chat/index.ts`
+- Primește: `{ messages, context_type? }` + auth token
+- Extrage user_id din JWT
+- Face query-uri contextuale pe baza întrebării:
+  - Dacă întreabă de concediu → query `employee_records` pentru sold
+  - Dacă întreabă de documente → query `employee_documents` + expirări
+  - Dacă întreabă de cereri → query `hr_requests` pentru status
+  - Dacă întreabă de echipă → query profiles din departament
+  - Dacă întreabă de anunțuri → query `announcements` recente
+- Construiește system prompt cu:
+  - Rolul utilizatorului
+  - Numele complet
+  - Departamentul
+  - Datele contextuale extrase
+  - Maparea rutelor platformei
+- Streamează răspunsul via Lovable AI Gateway (google/gemini-3-flash-preview)
+- Răspunde DOAR în limba română
 
-## Routing în Dashboard.tsx
+### Frontend: Buton Flotant + Panel
+- Buton rotund cu icon IRIS (Sparkles/Brain) în colțul dreapta-jos
+- Click → deschide panel de chat (400px lățime pe desktop, full-screen pe mobil)
+- Streaming token-by-token cu markdown rendering (react-markdown)
+- Istoricul conversației se păstrează în session (useState), NU persistent
+- Sugestii rapide la deschidere: „Câte zile de concediu am?", „Ce documente îmi expiră?", „Ghid platformă"
+- Badge animat pulsating pentru prima deschidere
 
-```typescript
-// Dashboard.tsx devine un router simplu
-const Dashboard = () => {
-  const { role, isSuperAdmin, isHR, isSefSRUS, isSef, isMedicMuncii } = useUserRole();
-  
-  if (isSuperAdmin) return <SuperAdminDashboard />;
-  if (isHR || isSefSRUS) return <HRDashboard />;
-  if (role === 'sef' || role === 'director_institut' || ...) return <SefDepartmentDashboard />;
-  if (isMedicMuncii) return <MedicMunciiDashboard />;
-  if (['bibliotecar','salarizare',...].includes(role)) return <OperationalRoleDashboard />;
-  return <EmployeeDashboard />;
-};
-```
+### Integrare în App
+- `IrisButton` adăugat direct în `App.tsx`, vizibil pe toate paginile (doar pt utilizatori autentificați)
+- Nu blochează navigarea, nu interferează cu alte elemente
 
-## Componente Reutilizabile Noi
-
-### QuickActionsGrid.tsx
-Grid configurabil de acțiuni rapide, acceptă array de `{icon, label, path, gradient}`.
-
-### PendingActionsWidget.tsx
-Card cu lista de elemente care necesită acțiune, cu badge-uri numerice, link-uri și severitate (warning/critical/info).
-
-### DashboardAlertsBanner.tsx
-Banner alert universal pentru mesaje urgente (homepage_message + anunțuri urgente).
-
-### SystemHealthMini.tsx
-4 mini-cards cu statusul serviciilor (query `health_check_logs` ultimul row).
-
-## Surse de Date
-
-Toate datele vin din tabelele existente — nu sunt necesare migrații:
-- `employee_personal_data` — statistici angajați, CI expiry
-- `employee_records` — sold concediu
-- `hr_requests` — cereri pending
-- `data_correction_requests` — corecții pending  
-- `helpdesk_tickets` — tichete noi
-- `account_requests` — cereri cont
-- `user_roles` + `profiles` — utilizatori fără rol
-- `health_check_logs` — stare sistem
-- `audit_logs` — activitate recentă
-- `medical_dossiers` — fișe medicale expirate
-- `employee_documents` — documente lipsă/expirate
+## Securitate
+- Edge function validează JWT-ul utilizatorului
+- Query-urile sunt filtrate pe user_id-ul autentificat
+- Nu se expune informații sensibile ale altor utilizatori
+- Rolurile avansate (HR, super_admin) primesc context extins
 
 ## Design
-
-- Cards cu gradient pe icon, hover elevation
-- Alerte: roșu (critical), amber (warning), verde (ok), albastru (info)
-- Badge-uri numerice pe acțiuni pending
-- Skeleton shimmer pe loading
-- Empty states cu icon + mesaj + sugestie
-- Layout responsive: grid colapse pe mobil
-- Ierarhie clară: alerte → acțiuni → statistici → activitate → scurtături
+- Panel elegant cu gradient header (brand ICMPP)
+- Bule de mesaj clare: utilizator dreapta, IRIS stânga
+- Sugestii ca chip-uri clicabile
+- Animație smooth la deschidere/închidere
+- Dark mode suportat
+- Responsive complet
 
 ## Pași de Implementare
-
-1. Creează componentele reutilizabile (QuickActionsGrid, PendingActionsWidget, DashboardAlertsBanner, SystemHealthMini)
-2. Creează SuperAdminDashboard cu toate secțiunile
-3. Creează HRDashboard  
-4. Creează SefDepartmentDashboard
-5. Creează MedicMunciiDashboard
-6. Creează OperationalRoleDashboard
-7. Refă EmployeeDashboard cu focus pe acțiuni proprii
-8. Refă Dashboard.tsx ca router pe rol
-9. Păstrează componentele existente (StatCard, WeatherWidget, etc.) integrate în dashboard-urile noi
-
+1. Creează edge function `iris-chat` cu system prompt, context queries și streaming
+2. Creează componentele UI (IrisButton, IrisChatPanel, IrisMessageBubble)  
+3. Integrează IrisButton în App.tsx (vizibil doar pt utilizatori autentificați)
+4. Adaugă în changelog
