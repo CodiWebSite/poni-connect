@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import irisLogo from "@/assets/iris-logo.png";
 
 interface IrisMessageBubbleProps {
   role: "user" | "assistant";
@@ -33,8 +33,8 @@ export default function IrisMessageBubble({ role, content }: IrisMessageBubblePr
 
   return (
     <div className="flex gap-2.5 animate-in fade-in slide-in-from-left-2 duration-200">
-      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mt-0.5">
-        <Sparkles className="w-3.5 h-3.5 text-white" />
+      <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden mt-0.5">
+        <img src={irisLogo} alt="IRIS" className="w-full h-full object-cover" />
       </div>
       <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-muted px-4 py-2.5 text-sm">
         <div
