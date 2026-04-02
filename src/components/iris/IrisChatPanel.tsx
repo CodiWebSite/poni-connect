@@ -9,6 +9,7 @@ import IrisQuickActions from "./IrisQuickActions";
 import IrisContextHints from "./IrisContextHints";
 import IrisConfirmationCard from "./IrisConfirmationCard";
 import IrisActionPreview from "./IrisActionPreview";
+import IrisFeedbackDialog from "./IrisFeedbackDialog";
 import { toast } from "sonner";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -48,6 +49,7 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [actionResults, setActionResults] = useState<Map<number, ActionResult>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -265,7 +267,21 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
     }
   };
 
-  if (!open) return null;
+  if (!open && !showFeedback) return null;
+
+  if (showFeedback) {
+    return (
+      <IrisFeedbackDialog
+        open={showFeedback}
+        onClose={() => {
+          setShowFeedback(false);
+          setMessages([]);
+          setActionResults(new Map());
+        }}
+        conversation={messages}
+      />
+    );
+  }
 
   return (
     <div className="fixed bottom-20 right-4 z-40 w-[420px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-2xl border border-border bg-background shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 sm:bottom-20 sm:right-4 max-sm:inset-0 max-sm:bottom-0 max-sm:right-0 max-sm:w-full max-sm:h-full max-sm:max-w-none max-sm:max-h-none max-sm:rounded-none">
@@ -279,7 +295,14 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
           <p className="text-[10px] opacity-80 truncate">Copilot operațional ICMPP</p>
         </div>
         <button
-          onClick={onClose}
+          onClick={() => {
+            if (messages.length > 0) {
+              setShowFeedback(true);
+              onClose();
+            } else {
+              onClose();
+            }
+          }}
           className="w-7 h-7 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors"
         >
           <X className="w-4 h-4" />
