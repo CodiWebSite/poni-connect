@@ -49,6 +49,7 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [actionResults, setActionResults] = useState<Map<number, ActionResult>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
