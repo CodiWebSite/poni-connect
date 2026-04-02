@@ -38,7 +38,7 @@ export default function IrisFeedbackPanel() {
     }
 
     // Fetch profile names
-    const userIds = [...new Set((data || []).map((f: any) => f.user_id))];
+    const userIds: string[] = [...new Set((data || []).map((f: any) => f.user_id as string))];
     const { data: profiles } = await supabase
       .from("profiles")
       .select("user_id, full_name")
