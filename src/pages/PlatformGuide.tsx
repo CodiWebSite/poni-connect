@@ -149,6 +149,14 @@ const PlatformGuide = () => {
                     <div><strong>Bibliotecă</strong> – catalogul de cărți și reviste al institutului (vizibil pentru bibliotecari).</div>
                   </div>
                   <div className="flex items-start gap-2">
+                    <Activity className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Medicină Muncii</strong> – dosarele medicale ale angajaților (vizibil pentru medic, HR, admin).</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Archive className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Arhivă Online</strong> – documente instituționale arhivate conform nomenclatorului.</div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <ExternalLink className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <div><strong>Adeverințe</strong> – link extern către sistemul de adeverințe ICMPP (se deschide în tab nou).</div>
                   </div>
