@@ -13,6 +13,7 @@ import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
 import IPAccessGuard from "@/components/auth/IPAccessGuard";
+import IrisButton from "@/components/iris/IrisButton";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 
