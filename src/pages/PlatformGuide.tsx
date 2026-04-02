@@ -688,6 +688,59 @@ const PlatformGuide = () => {
                 </InfoBox>
               </GuideSection>
 
+              {/* ─── IRIS – ASISTENT AI ─── */}
+              <GuideSection icon={Sparkles} title="IRIS – Asistentul AI al platformei">
+                <p className="mb-2">IRIS este asistentul inteligent integrat în platformă, accesibil prin butonul plutitor din colțul din dreapta-jos:</p>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">💬 Ce poate face IRIS</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• <strong>Răspunde la întrebări</strong> despre funcționalitățile platformei și proceduri interne.</p>
+                  <p>• <strong>Verifică soldul de concediu</strong> – întrebați „Câte zile de concediu mai am?" și primiți răspunsul instant.</p>
+                  <p>• <strong>Informează despre statusul cererilor</strong> – „Ce cereri am în așteptare?"</p>
+                  <p>• <strong>Ghidează prin procese</strong> – cum se depune o cerere, cum se rezervă o sală etc.</p>
+                  <p>• <strong>Sugestii contextuale</strong> – IRIS oferă sugestii rapide bazate pe pagina curentă.</p>
+                </div>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">⭐ Feedback</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• La închiderea conversației, vi se solicită un <strong>rating cu stele</strong> (1-5) și un comentariu opțional.</p>
+                  <p>• Feedback-ul ajută la îmbunătățirea continuă a asistentului.</p>
+                  <p>• Conversația completă este salvată automat pentru context.</p>
+                </div>
+
+                <InfoBox title="💡 Sfat">
+                  <p>IRIS este în dezvoltare continuă. Folosiți <strong>acțiunile rapide</strong> (butoanele de sub bara de input) pentru a accesa cele mai comune funcționalități fără a scrie textul complet.</p>
+                </InfoBox>
+              </GuideSection>
+
+              {/* ─── BIBLIOTECĂ ─── */}
+              <GuideSection icon={BookOpen} title="Bibliotecă – Catalogul institutului">
+                <p className="mb-2">Modulul Bibliotecă permite accesul la catalogul de cărți și reviste al institutului:</p>
+                <div className="space-y-1.5">
+                  <p>• <strong>Cărți</strong> – căutați după titlu, autor sau cotă. Vedeți statusul (disponibilă / împrumutată).</p>
+                  <p>• <strong>Reviste</strong> – catalog organizat pe ani, volume și numere.</p>
+                  <p>• <strong>Împrumut</strong> – bibliotecarii pot înregistra împrumuturi și returnări.</p>
+                  <p>• <strong>Istoric</strong> – fiecare carte/revistă are un istoric complet al împrumuturilor.</p>
+                </div>
+                <InfoBox title="💡 Acces">
+                  <p>Catalogul este vizibil angajaților cu rolul de <strong>bibliotecar</strong>. Contactați administratorul dacă aveți nevoie de acces.</p>
+                </InfoBox>
+              </GuideSection>
+
+              {/* ─── ARHIVĂ ONLINE ─── */}
+              <GuideSection icon={Archive} title="Arhivă Online – Documente instituționale">
+                <p className="mb-2">Arhiva Online centralizează documentele instituționale conform nomenclatorului de arhivare:</p>
+                <div className="space-y-1.5">
+                  <p>• <strong>Categorii</strong> – documentele sunt organizate pe categorii de nomenclator cu termen de retenție.</p>
+                  <p>• <strong>Departamente</strong> – fiecare document este asociat unui departament.</p>
+                  <p>• <strong>Număr de înregistrare</strong> – identificator unic pentru fiecare document.</p>
+                  <p>• <strong>Fișiere atașate</strong> – documentele pot avea fișiere digitale asociate (PDF, scanări).</p>
+                  <p>• <strong>Jurnal de acces</strong> – fiecare vizualizare sau descărcare este înregistrată pentru audit.</p>
+                </div>
+              </GuideSection>
+
               {/* ─── NOTIFICĂRI ─── */}
               <GuideSection icon={Bell} title="Notificări – Cum funcționează">
                 <div className="space-y-1.5">
