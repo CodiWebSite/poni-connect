@@ -8,27 +8,19 @@ interface IrisQuickActionsProps {
 const BASE_SUGGESTIONS = [
   "Câte zile de concediu mai am?",
   "Depune o cerere de concediu",
-  "Ce documente îmi expiră?",
-  "Cum depun o cerere de concediu?",
   "Raportează o problemă",
-  "Ce e nou în platformă?",
 ];
 
 const APPROVER_SUGGESTIONS = [
-  "Arată aprobările în așteptare",
-  "Cine e în concediu azi?",
+  "Aprobări în așteptare",
 ];
 
 const HR_SUGGESTIONS = [
-  "Câte cereri sunt în așteptare?",
-  "Documente ce expiră luna aceasta",
-  "Rezumat activitate săptămânală",
+  "Documente ce expiră curând",
 ];
 
 const ADMIN_SUGGESTIONS = [
-  "Rezumat operațional zilnic",
-  "Angajați fără cont",
-  "Care este starea sistemului?",
+  "Rezumat operațional",
 ];
 
 export default function IrisQuickActions({ onSelect, userRole }: IrisQuickActionsProps) {
