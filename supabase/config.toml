@@ -43,3 +43,5 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = false
   [functions.export-database]
     verify_jwt = false
+  [functions.iris-chat]
+    verify_jwt = false
