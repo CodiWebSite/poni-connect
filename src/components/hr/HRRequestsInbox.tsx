@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { CorrectionRequestsManager } from '@/components/hr/CorrectionRequestsManager';
-import { Inbox, FileText, MessageSquare, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
+import { Inbox, FileText, MessageSquare, CheckCircle, XCircle, Clock, Loader2, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { generateCertificateBuffer, type EmployeeData, type CertificateType } from '@/utils/generateCertificate';
 
 interface HRRequest {
   id: string;
@@ -53,13 +54,153 @@ export default function HRRequestsInbox() {
     setLoading(false);
   };
 
+  const generateAndSaveCertificate = async (req: HRRequest): Promise<boolean> => {
+    try {
+      // Get employee personal data by matching user profile name
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', req.user_id)
+        .single();
+
+      // Find EPD via employee_records link
+      const { data: empRecord } = await supabase
+        .from('employee_records')
+        .select('id')
+        .eq('user_id', req.user_id)
+        .maybeSingle();
+
+      let epdData: any = null;
+      if (empRecord) {
+        const { data: epd } = await supabase
+          .from('employee_personal_data')
+          .select('*')
+          .eq('employee_record_id', empRecord.id)
+          .eq('is_archived', false)
+          .maybeSingle();
+        epdData = epd;
+      }
+
+      // Fallback: match by name
+      if (!epdData) {
+        const nameParts = (userProfile?.full_name || '').split(' ');
+        if (nameParts.length >= 2) {
+          const { data: epdByName } = await supabase
+            .from('employee_personal_data')
+            .select('*')
+            .eq('is_archived', false)
+            .ilike('last_name', nameParts[0])
+            .ilike('first_name', nameParts.slice(1).join(' '))
+            .maybeSingle();
+          epdData = epdByName;
+          if (!epdData) {
+            const { data: epdReversed } = await supabase
+              .from('employee_personal_data')
+              .select('*')
+              .eq('is_archived', false)
+              .ilike('first_name', nameParts[0])
+              .ilike('last_name', nameParts.slice(1).join(' '))
+              .maybeSingle();
+            epdData = epdReversed;
+          }
+        }
+      }
+
+      if (!epdData) {
+        toast({ title: 'Avertisment', description: 'Nu s-au găsit datele angajatului pentru generarea adeverinței. Cererea a fost aprobată fără document.', variant: 'destructive' });
+        return false;
+      }
+
+      const empData: EmployeeData = {
+        full_name: `${epdData.first_name} ${epdData.last_name}`,
+        first_name: epdData.first_name,
+        last_name: epdData.last_name,
+        cnp: epdData.cnp,
+        department: epdData.department,
+        position: epdData.position,
+        grade: epdData.grade,
+        employment_date: epdData.employment_date,
+        contract_type: epdData.contract_type,
+        ci_series: epdData.ci_series,
+        ci_number: epdData.ci_number,
+        ci_issued_by: epdData.ci_issued_by,
+        ci_issued_date: epdData.ci_issued_date,
+        address_street: epdData.address_street,
+        address_number: epdData.address_number,
+        address_block: epdData.address_block,
+        address_floor: epdData.address_floor,
+        address_apartment: epdData.address_apartment,
+        address_city: epdData.address_city,
+        address_county: epdData.address_county,
+      };
+
+      const purpose = req.details?.details || req.details?.purpose || undefined;
+      const { blob, filename } = await generateCertificateBuffer(empData, 'salariat', purpose);
+
+      // Upload to storage
+      const storagePath = `${req.user_id}/${Date.now()}_${filename}`;
+      const { error: uploadError } = await supabase.storage
+        .from('employee-documents')
+        .upload(storagePath, blob, { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        toast({ title: 'Avertisment', description: 'Adeverința nu a putut fi salvată în storage, dar cererea a fost aprobată.', variant: 'destructive' });
+        return false;
+      }
+
+      // Save reference in employee_documents
+      const { error: docError } = await supabase.from('employee_documents').insert({
+        user_id: req.user_id,
+        document_type: 'adeverinta',
+        name: filename,
+        description: `Adeverință generată automat la aprobarea cererii din ${format(new Date(req.created_at), 'dd.MM.yyyy', { locale: ro })}`,
+        file_url: storagePath,
+        uploaded_by: user?.id,
+      });
+
+      if (docError) {
+        console.error('Document record error:', docError);
+      }
+
+      // Notify employee
+      await supabase.from('notifications').insert({
+        user_id: req.user_id,
+        title: 'Adeverință aprobată',
+        message: 'Adeverința solicitată a fost aprobată și este disponibilă pentru descărcare în Profilul Meu → Documentele Mele.',
+        type: 'success',
+        related_type: 'hr_request',
+        related_id: req.id,
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Certificate generation error:', err);
+      return false;
+    }
+  };
+
   const updateStatus = async (id: string, status: 'approved' | 'rejected') => {
     setProcessing(id);
     const { error } = await supabase.from('hr_requests').update({ status, approver_id: user?.id, updated_at: new Date().toISOString() }).eq('id', id);
     if (error) {
       toast({ title: 'Eroare', description: 'Nu s-a putut actualiza cererea.', variant: 'destructive' });
     } else {
-      toast({ title: 'Succes', description: `Cererea a fost ${status === 'approved' ? 'aprobată' : 'respinsă'}.` });
+      // If approved, generate and save certificate
+      if (status === 'approved') {
+        const req = requests.find(r => r.id === id);
+        if (req) {
+          const generated = await generateAndSaveCertificate(req);
+          toast({
+            title: 'Cerere aprobată',
+            description: generated
+              ? 'Adeverința a fost generată și salvată în dosarul angajatului.'
+              : 'Cererea a fost aprobată. Adeverința poate fi generată manual din Generatorul de Adeverințe.',
+          });
+        }
+      } else {
+        toast({ title: 'Succes', description: 'Cererea a fost respinsă.' });
+      }
       fetchRequests();
     }
     setProcessing(null);
