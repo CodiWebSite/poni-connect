@@ -328,8 +328,8 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
 
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex gap-2.5">
-            <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
+            <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden">
+              <img src={irisLogo} alt="IRIS" className="w-full h-full object-cover" />
             </div>
             <div className="rounded-2xl bg-muted px-4 py-3 flex items-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
