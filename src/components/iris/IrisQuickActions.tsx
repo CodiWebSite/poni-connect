@@ -31,7 +31,10 @@ export default function IrisQuickActions({ onSelect, userRole }: IrisQuickAction
     suggestions.push(...APPROVER_SUGGESTIONS);
   }
   if (["hr", "sef_srus", "super_admin"].includes(userRole || "")) {
-    suggestions.push(...HR_SUGGESTIONS, ...APPROVER_SUGGESTIONS);
+    suggestions.push(...HR_SUGGESTIONS);
+  }
+  if (approverRoles.includes(userRole || "")) {
+    suggestions.push(...APPROVER_SUGGESTIONS);
   }
   if (userRole === "super_admin") {
     suggestions.push(...ADMIN_SUGGESTIONS);
