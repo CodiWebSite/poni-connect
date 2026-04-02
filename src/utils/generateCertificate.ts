@@ -312,7 +312,7 @@ function buildVechimeContent(emp: EmployeeData, purpose?: string): Paragraph[] {
   ];
 }
 
-export async function generateCertificateDocx(emp: EmployeeData, type: CertificateType, purpose?: string) {
+function buildCertificateDoc(emp: EmployeeData, type: CertificateType, purpose?: string): { doc: Document; filename: string } {
   let children: Paragraph[];
   let filename: string;
 
@@ -335,7 +335,7 @@ export async function generateCertificateDocx(emp: EmployeeData, type: Certifica
     sections: [{
       properties: {
         page: {
-          size: { width: 11906, height: 16838 }, // A4
+          size: { width: 11906, height: 16838 },
           margin: { top: 1134, right: 1134, bottom: 1134, left: 1417 },
         },
       },
@@ -343,6 +343,17 @@ export async function generateCertificateDocx(emp: EmployeeData, type: Certifica
     }],
   });
 
+  return { doc, filename };
+}
+
+export async function generateCertificateDocx(emp: EmployeeData, type: CertificateType, purpose?: string) {
+  const { doc, filename } = buildCertificateDoc(emp, type, purpose);
   const buffer = await Packer.toBlob(doc);
   saveAs(buffer, `${filename}.docx`);
+}
+
+export async function generateCertificateBuffer(emp: EmployeeData, type: CertificateType, purpose?: string): Promise<{ blob: Blob; filename: string }> {
+  const { doc, filename } = buildCertificateDoc(emp, type, purpose);
+  const blob = await Packer.toBlob(doc);
+  return { blob, filename: `${filename}.docx` };
 }
