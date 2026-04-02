@@ -1347,6 +1347,33 @@ export type Database = {
         }
         Relationships: []
       }
+      iris_feedback: {
+        Row: {
+          comment: string | null
+          conversation: Json
+          created_at: string
+          id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          conversation?: Json
+          created_at?: string
+          id?: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          conversation?: Json
+          created_at?: string
+          id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       leave_approval_delegates: {
         Row: {
           created_at: string
