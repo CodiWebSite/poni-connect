@@ -9,6 +9,7 @@ import IrisQuickActions from "./IrisQuickActions";
 import IrisContextHints from "./IrisContextHints";
 import IrisConfirmationCard from "./IrisConfirmationCard";
 import IrisActionPreview from "./IrisActionPreview";
+import IrisFeedbackDialog from "./IrisFeedbackDialog";
 import { toast } from "sonner";
 
 type Msg = { role: "user" | "assistant"; content: string };
