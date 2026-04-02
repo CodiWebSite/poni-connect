@@ -13,6 +13,7 @@ import {
   ClipboardList, Shield, Users, BookOpen, Bell, Home, Search, Moon,
   Eye, Download, History, UserCheck, AlertTriangle, HelpCircle, MessageCircle,
   DoorOpen, PartyPopper, ExternalLink, Mail, Smartphone, CloudSun,
+  Sparkles, Archive, Activity, Package, Banknote, Newspaper,
 } from 'lucide-react';
 import {
   SidebarMockup, HeaderMockup, DashboardMockup, ProfileMockup,
@@ -146,6 +147,14 @@ const PlatformGuide = () => {
                   <div className="flex items-start gap-2">
                     <BookOpen className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <div><strong>Bibliotecă</strong> – catalogul de cărți și reviste al institutului (vizibil pentru bibliotecari).</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Activity className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Medicină Muncii</strong> – dosarele medicale ale angajaților (vizibil pentru medic, HR, admin).</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Archive className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <div><strong>Arhivă Online</strong> – documente instituționale arhivate conform nomenclatorului.</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <ExternalLink className="w-4 h-4 mt-0.5 text-primary shrink-0" />
@@ -687,6 +696,59 @@ const PlatformGuide = () => {
                 </InfoBox>
               </GuideSection>
 
+              {/* ─── IRIS – ASISTENT AI ─── */}
+              <GuideSection icon={Sparkles} title="IRIS – Asistentul AI al platformei">
+                <p className="mb-2">IRIS este asistentul inteligent integrat în platformă, accesibil prin butonul plutitor din colțul din dreapta-jos:</p>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">💬 Ce poate face IRIS</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• <strong>Răspunde la întrebări</strong> despre funcționalitățile platformei și proceduri interne.</p>
+                  <p>• <strong>Verifică soldul de concediu</strong> – întrebați „Câte zile de concediu mai am?" și primiți răspunsul instant.</p>
+                  <p>• <strong>Informează despre statusul cererilor</strong> – „Ce cereri am în așteptare?"</p>
+                  <p>• <strong>Ghidează prin procese</strong> – cum se depune o cerere, cum se rezervă o sală etc.</p>
+                  <p>• <strong>Sugestii contextuale</strong> – IRIS oferă sugestii rapide bazate pe pagina curentă.</p>
+                </div>
+
+                <Separator className="my-3" />
+                <p className="font-medium text-foreground text-xs uppercase tracking-wider">⭐ Feedback</p>
+                <div className="space-y-1.5 mt-2">
+                  <p>• La închiderea conversației, vi se solicită un <strong>rating cu stele</strong> (1-5) și un comentariu opțional.</p>
+                  <p>• Feedback-ul ajută la îmbunătățirea continuă a asistentului.</p>
+                  <p>• Conversația completă este salvată automat pentru context.</p>
+                </div>
+
+                <InfoBox title="💡 Sfat">
+                  <p>IRIS este în dezvoltare continuă. Folosiți <strong>acțiunile rapide</strong> (butoanele de sub bara de input) pentru a accesa cele mai comune funcționalități fără a scrie textul complet.</p>
+                </InfoBox>
+              </GuideSection>
+
+              {/* ─── BIBLIOTECĂ ─── */}
+              <GuideSection icon={BookOpen} title="Bibliotecă – Catalogul institutului">
+                <p className="mb-2">Modulul Bibliotecă permite accesul la catalogul de cărți și reviste al institutului:</p>
+                <div className="space-y-1.5">
+                  <p>• <strong>Cărți</strong> – căutați după titlu, autor sau cotă. Vedeți statusul (disponibilă / împrumutată).</p>
+                  <p>• <strong>Reviste</strong> – catalog organizat pe ani, volume și numere.</p>
+                  <p>• <strong>Împrumut</strong> – bibliotecarii pot înregistra împrumuturi și returnări.</p>
+                  <p>• <strong>Istoric</strong> – fiecare carte/revistă are un istoric complet al împrumuturilor.</p>
+                </div>
+                <InfoBox title="💡 Acces">
+                  <p>Catalogul este vizibil angajaților cu rolul de <strong>bibliotecar</strong>. Contactați administratorul dacă aveți nevoie de acces.</p>
+                </InfoBox>
+              </GuideSection>
+
+              {/* ─── ARHIVĂ ONLINE ─── */}
+              <GuideSection icon={Archive} title="Arhivă Online – Documente instituționale">
+                <p className="mb-2">Arhiva Online centralizează documentele instituționale conform nomenclatorului de arhivare:</p>
+                <div className="space-y-1.5">
+                  <p>• <strong>Categorii</strong> – documentele sunt organizate pe categorii de nomenclator cu termen de retenție.</p>
+                  <p>• <strong>Departamente</strong> – fiecare document este asociat unui departament.</p>
+                  <p>• <strong>Număr de înregistrare</strong> – identificator unic pentru fiecare document.</p>
+                  <p>• <strong>Fișiere atașate</strong> – documentele pot avea fișiere digitale asociate (PDF, scanări).</p>
+                  <p>• <strong>Jurnal de acces</strong> – fiecare vizualizare sau descărcare este înregistrată pentru audit.</p>
+                </div>
+              </GuideSection>
+
               {/* ─── NOTIFICĂRI ─── */}
               <GuideSection icon={Bell} title="Notificări – Cum funcționează">
                 <div className="space-y-1.5">
@@ -842,6 +904,21 @@ const PlatformGuide = () => {
                   </div>
                 </GuideSection>
 
+                <GuideSection icon={Activity} title="Medicină Muncii – Fișe medicale și consultații">
+                  <p className="mb-2">Modulul de Medicină a Muncii permite gestionarea dosarelor medicale ale angajaților:</p>
+                  <div className="space-y-1.5">
+                    <p>• <strong>Fișe medicale</strong> – fiecare angajat are un dosar medical cu aptitudinea, restricțiile și condițiile cronice.</p>
+                    <p>• <strong>Consultații</strong> – înregistrarea consultațiilor periodice, de angajare și de control.</p>
+                    <p>• <strong>Programări examene</strong> – planificarea și urmărirea examenelor medicale obligatorii.</p>
+                    <p>• <strong>Valabilitate fișe</strong> – alertă automată când fișele de aptitudine expiră.</p>
+                    <p>• <strong>Documente</strong> – atașare de fișe de aptitudine, analize și alte documente medicale.</p>
+                    <p>• <strong>Dosar medical complet</strong> – antecedente, condiții de lucru, traseu profesional.</p>
+                  </div>
+                  <InfoBox title="💡 Acces">
+                    <p>Modulul este accesibil rolurilor <strong>medic_medicina_muncii</strong>, <strong>hr</strong>, <strong>sef_srus</strong> și <strong>super_admin</strong>.</p>
+                  </InfoBox>
+                </GuideSection>
+
               </Accordion>
             </CardContent>
           </Card>
@@ -960,6 +1037,46 @@ const PlatformGuide = () => {
                     <p>• Administratorii, HR și șefii SRUS pot accesa platforma normal.</p>
                     <p>• Utilizatorii se pot abona pentru a primi un email când platforma revine online.</p>
                     <p>• Activare: Administrare → Setări Aplicație → „Mod Mentenanță" → ON.</p>
+                  </div>
+                </GuideSection>
+
+                <GuideSection icon={Package} title="Inventar IT – Registrul echipamentelor">
+                  <div className="space-y-1.5">
+                    <p>• <strong>Catalogul echipamentelor</strong> – toate echipamentele IT (calculatoare, monitoare, imprimante etc.) cu număr de inventar, serie, model.</p>
+                    <p>• <strong>Asignare</strong> – fiecare echipament poate fi asignat unui angajat cu dată de asignare.</p>
+                    <p>• <strong>Locație</strong> – clădire, etaj, cameră pentru fiecare echipament.</p>
+                    <p>• <strong>Software</strong> – evidența sistemelor de operare, licențelor și aplicațiilor instalate.</p>
+                    <p>• <strong>Cod QR</strong> – generare cod QR pentru identificare rapidă a echipamentelor.</p>
+                    <p>• <strong>Istoric</strong> – fiecare echipament are un jurnal complet al transferurilor și modificărilor.</p>
+                    <p>• <strong>Import</strong> – import în lot din fișiere Excel.</p>
+                  </div>
+                </GuideSection>
+
+                <GuideSection icon={Banknote} title="Salarizare – Date salariale">
+                  <div className="space-y-1.5">
+                    <p>• Modulul de Salarizare este accesibil rolului <strong>salarizare</strong> și <strong>super_admin</strong>.</p>
+                    <p>• Centralizează informațiile salariale ale angajaților.</p>
+                    <p>• Datele sunt protejate și vizibile doar utilizatorilor autorizați.</p>
+                  </div>
+                </GuideSection>
+
+                <GuideSection icon={Sparkles} title="IRIS Feedback – Monitorizare asistent AI">
+                  <div className="space-y-1.5">
+                    <p>• Tab-ul <strong>„IRIS Feedback"</strong> din Centrul de Control afișează toate evaluările primite de IRIS.</p>
+                    <p>• <strong>Statistici</strong> – rating mediu, distribuția pe stele (1-5) și numărul total de evaluări.</p>
+                    <p>• <strong>Lista feedback-urilor</strong> – fiecare evaluare cu rating, comentariu și data.</p>
+                    <p>• <strong>Conversații complete</strong> – puteți vizualiza conversația integrală asociată fiecărei evaluări.</p>
+                    <p>• Util pentru a identifica ce funcționalități trebuie îmbunătățite la IRIS.</p>
+                  </div>
+                </GuideSection>
+
+                <GuideSection icon={Newspaper} title="Changelog – Istoricul actualizărilor">
+                  <div className="space-y-1.5">
+                    <p>• Pagina <strong>Changelog</strong> documentează cronologic toate actualizările platformei.</p>
+                    <p>• <strong>Versiuni</strong> – organizat pe versiuni majore (1.x, 2.x, 3.x etc.).</p>
+                    <p>• <strong>Categorii</strong> – Major, Minor, Fix – cu culori distincte pentru fiecare tip.</p>
+                    <p>• <strong>Filtre</strong> – căutare în timp real, filtrare pe module.</p>
+                    <p>• <strong>Export</strong> – exportul istoricului în format Excel, colorat semantic.</p>
                   </div>
                 </GuideSection>
 
