@@ -1,4 +1,5 @@
-import { CheckCircle2, XCircle, ExternalLink, Sparkles } from "lucide-react";
+import { CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import irisLogo from "@/assets/iris-logo.png";
 
 interface IrisActionPreviewProps {
   success: boolean;
