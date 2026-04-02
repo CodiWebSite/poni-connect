@@ -293,8 +293,8 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 && (
           <div className="text-center py-6">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-violet-500/10 to-indigo-600/10 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-violet-500" />
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full overflow-hidden">
+              <img src={irisLogo} alt="IRIS" className="w-full h-full object-cover" />
             </div>
             <p className="text-sm font-medium text-foreground mb-1">Bună! Sunt IRIS v2.</p>
             <p className="text-xs text-muted-foreground">
