@@ -522,7 +522,7 @@ TIPURI DE ACȚIUNI VALIDE (folosește EXACT aceste valori pentru "type"):
 - "create_leave" — Cerere de concediu. Data: { startDate, endDate, replacementName }
 - "create_helpdesk_ticket" — Tichet HelpDesk. Data: { subject, message, senderEmail? }
 - "create_correction_request" — Corecție date personale. Data: { fieldName, currentValue?, requestedValue, reason? }
-- "create_hr_request" — Cerere HR (adeverință, etc). Data: { requestType: "adeverinta_salariu"|"adeverinta_vechime"|"adeverinta_generala", details? }
+- "create_hr_request" — Cerere HR (adeverință, delegație, demisie). Data: { requestType: "adeverinta"|"delegatie"|"demisie"|"concediu", details? }
 
 NU folosi alte tipuri de acțiuni precum "create_request" — acestea nu sunt suportate.
 
