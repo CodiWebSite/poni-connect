@@ -314,7 +314,17 @@ async function executeAction(
   profile: any,
   ip: string,
 ) {
-  switch (actionType) {
+  // Normalize common AI mismatches
+  const typeMap: Record<string, string> = {
+    "create_request": "create_hr_request",
+    "create_ticket": "create_helpdesk_ticket",
+    "create_correction": "create_correction_request",
+    "submit_leave": "create_leave",
+    "request_leave": "create_leave",
+  };
+  const normalizedType = typeMap[actionType] || actionType;
+
+  switch (normalizedType) {
     case "create_leave": {
       const result = await createLeaveRequest(
         supabase, supabase, userId,
