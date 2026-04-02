@@ -271,8 +271,8 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
     <div className="fixed bottom-20 right-4 z-40 w-[420px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-2xl border border-border bg-background shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 sm:bottom-20 sm:right-4 max-sm:inset-0 max-sm:bottom-0 max-sm:right-0 max-sm:w-full max-sm:h-full max-sm:max-w-none max-sm:max-h-none max-sm:rounded-none">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 rounded-t-2xl max-sm:rounded-none bg-gradient-to-r from-violet-600 to-indigo-600 text-white">
-        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-          <Sparkles className="w-4 h-4" />
+        <div className="w-8 h-8 rounded-full overflow-hidden bg-white/20">
+          <img src={irisLogo} alt="IRIS" className="w-full h-full object-cover" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm">IRIS <span className="text-[10px] opacity-70 font-normal">v2</span></h3>
