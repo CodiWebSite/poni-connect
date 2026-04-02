@@ -6,19 +6,48 @@ import { useLocation } from "react-router-dom";
 import IrisMessageBubble from "./IrisMessageBubble";
 import IrisQuickActions from "./IrisQuickActions";
 import IrisContextHints from "./IrisContextHints";
+import IrisConfirmationCard from "./IrisConfirmationCard";
+import IrisActionPreview from "./IrisActionPreview";
 import { toast } from "sonner";
 
 type Msg = { role: "user" | "assistant"; content: string };
+
+interface PendingAction {
+  type: string;
+  data: Record<string, any>;
+  label: string;
+}
+
+interface ActionResult {
+  success: boolean;
+  message: string;
+  details?: Record<string, string>;
+  link?: { label: string; href: string };
+}
 
 interface IrisChatPanelProps {
   open: boolean;
   onClose: () => void;
 }
 
+function parseActionBlocks(content: string): { text: string; actions: PendingAction[] } {
+  const actions: PendingAction[] = [];
+  const text = content.replace(/\[IRIS_ACTION:(.*?)\]/gs, (_, json) => {
+    try {
+      actions.push(JSON.parse(json));
+    } catch { /* ignore */ }
+    return "";
+  });
+  return { text: text.trim(), actions };
+}
+
 export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [actionResults, setActionResults] = useState<Map<number, ActionResult>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { session } = useAuth();
@@ -29,15 +58,8 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
-
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 200);
-    }
-  }, [open]);
+  useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
+  useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 200); }, [open]);
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading || !session?.access_token) return;
@@ -47,6 +69,7 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
+    setPendingAction(null);
 
     let assistantSoFar = "";
 
@@ -66,8 +89,7 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
 
       if (!resp.ok) {
         const errBody = await resp.json().catch(() => ({}));
-        const errMsg = errBody.error || "Eroare la comunicarea cu IRIS";
-        toast.error(errMsg);
+        toast.error(errBody.error || "Eroare la comunicarea cu IRIS");
         setIsLoading(false);
         return;
       }
@@ -110,10 +132,7 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
           if (!line.startsWith("data: ")) continue;
 
           const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") {
-            streamDone = true;
-            break;
-          }
+          if (jsonStr === "[DONE]") { streamDone = true; break; }
 
           try {
             const parsed = JSON.parse(jsonStr);
@@ -139,10 +158,14 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) upsertAssistant(content);
-          } catch {
-            /* ignore partial leftovers */
-          }
+          } catch { /* ignore */ }
         }
+      }
+
+      // Check for action blocks in final content
+      const { actions } = parseActionBlocks(assistantSoFar);
+      if (actions.length > 0) {
+        setPendingAction(actions[0]);
       }
     } catch (e) {
       console.error("IRIS stream error:", e);
@@ -150,6 +173,88 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleConfirmAction = async () => {
+    if (!pendingAction || !session?.access_token) return;
+    setIsExecuting(true);
+
+    try {
+      const chatUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/iris-chat`;
+      const resp = await fetch(chatUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          executeAction: {
+            type: pendingAction.type,
+            data: pendingAction.data,
+          },
+        }),
+      });
+
+      const result = await resp.json();
+      const msgIndex = messages.length - 1;
+
+      if (result.error) {
+        setActionResults(new Map(actionResults.set(msgIndex, {
+          success: false,
+          message: result.error,
+        })));
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: `❌ ${result.error}`,
+        }]);
+      } else {
+        const details: Record<string, string> = {};
+        let link: { label: string; href: string } | undefined;
+
+        if (pendingAction.type === "create_leave") {
+          details["Nr. cerere"] = result.requestNumber || "N/A";
+          details["Zile lucrătoare"] = `${result.workingDays}`;
+          details["Status"] = "Trimisă spre aprobare";
+          details["Aprobator"] = result.approverName || "Nedesemnat";
+          link = { label: "Vezi cererea", href: "/leave-calendar" };
+        } else if (pendingAction.type === "create_helpdesk_ticket") {
+          details["ID Tichet"] = result.ticketId || "N/A";
+          details["Status"] = "Deschis";
+        } else if (pendingAction.type === "create_correction_request") {
+          details["ID Cerere"] = result.requestId || "N/A";
+          details["Status"] = "Trimisă spre HR";
+        } else if (pendingAction.type === "create_hr_request") {
+          details["ID Cerere"] = result.requestId || "N/A";
+          details["Status"] = "Trimisă spre HR";
+        }
+
+        setActionResults(new Map(actionResults.set(msgIndex, {
+          success: true,
+          message: "Acțiune executată cu succes!",
+          details,
+          link,
+        })));
+
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: `✅ Acțiunea a fost executată cu succes!${result.requestNumber ? ` Nr. cerere: **${result.requestNumber}**` : ""}`,
+        }]);
+      }
+    } catch (e) {
+      console.error("Execute action error:", e);
+      toast.error("Eroare la executarea acțiunii.");
+    } finally {
+      setIsExecuting(false);
+      setPendingAction(null);
+    }
+  };
+
+  const handleCancelAction = () => {
+    setPendingAction(null);
+    setMessages((prev) => [...prev, {
+      role: "assistant",
+      content: "Acțiunea a fost anulată. Puteți continua cu altceva.",
+    }]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -169,8 +274,8 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
           <Sparkles className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm">IRIS</h3>
-          <p className="text-[10px] opacity-80 truncate">Inteligență pentru Resurse Interne și Suport</p>
+          <h3 className="font-semibold text-sm">IRIS <span className="text-[10px] opacity-70 font-normal">v2</span></h3>
+          <p className="text-[10px] opacity-80 truncate">Copilot operațional ICMPP</p>
         </div>
         <button
           onClick={onClose}
@@ -190,13 +295,36 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
             <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-violet-500/10 to-indigo-600/10 flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-violet-500" />
             </div>
-            <p className="text-sm font-medium text-foreground mb-1">Bună! Sunt IRIS.</p>
-            <p className="text-xs text-muted-foreground">Vă pot ajuta cu informații despre platformă, concedii, documente și multe altele.</p>
+            <p className="text-sm font-medium text-foreground mb-1">Bună! Sunt IRIS v2.</p>
+            <p className="text-xs text-muted-foreground">
+              Vă pot ajuta cu informații, dar și să executez acțiuni — cereri de concediu, tichete, adeverințe și multe altele.
+            </p>
           </div>
         )}
-        {messages.map((msg, i) => (
-          <IrisMessageBubble key={i} role={msg.role} content={msg.content} />
-        ))}
+        {messages.map((msg, i) => {
+          const { text, actions } = msg.role === "assistant" ? parseActionBlocks(msg.content) : { text: msg.content, actions: [] };
+          const result = actionResults.get(i);
+
+          return (
+            <div key={i}>
+              <IrisMessageBubble role={msg.role} content={text || msg.content} />
+              {result && (
+                <IrisActionPreview {...result} />
+              )}
+            </div>
+          );
+        })}
+
+        {/* Pending action confirmation */}
+        {pendingAction && (
+          <IrisConfirmationCard
+            action={pendingAction}
+            onConfirm={handleConfirmAction}
+            onCancel={handleCancelAction}
+            isExecuting={isExecuting}
+          />
+        )}
+
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex gap-2.5">
             <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
@@ -204,7 +332,7 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
             </div>
             <div className="rounded-2xl bg-muted px-4 py-3 flex items-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">IRIS scrie...</span>
+              <span className="text-xs text-muted-foreground">IRIS analizează...</span>
             </div>
           </div>
         )}
@@ -224,14 +352,14 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Întrebați-mă ceva..."
+            placeholder="Întrebați-mă ceva sau cereți o acțiune..."
             rows={1}
             className="flex-1 bg-transparent text-sm resize-none outline-none max-h-24 min-h-[1.5rem]"
-            disabled={isLoading}
+            disabled={isLoading || isExecuting}
           />
           <button
             onClick={() => sendMessage(input)}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoading || isExecuting}
             className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-opacity flex-shrink-0"
           >
             <Send className="w-3.5 h-3.5" />
