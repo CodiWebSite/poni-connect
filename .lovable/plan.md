@@ -1,99 +1,92 @@
 
-# IRIS — Asistent AI pentru Platforma ICMPP
 
-## Ce este IRIS
+# IRIS — Asistent AI Academic ICMPP
 
-IRIS (Inteligență pentru Resurse Interne și Suport) este un chatbot AI integrat în platformă, accesibil printr-un buton flotant pe toate paginile. Folosește Lovable AI (deja disponibil — LOVABLE_API_KEY configurat) pentru a răspunde la întrebări despre platforma, datele utilizatorului și procedurile institutului.
+## Rezumat
+Implementarea completă a asistentului AI **IRIS** (Inteligență pentru Resurse Interne și Suport) — un copilot intern academic, read-only în v1, integrat direct în platformă cu context real din baza de date, respectând strict rolurile și permisiunile existente.
 
-## Arhitectura
+## Fișiere Noi
 
-```text
-src/components/iris/
-  ├── IrisButton.tsx          ← Buton flotant (colț dreapta-jos)
-  ├── IrisChatPanel.tsx       ← Panoul de chat (slide-up / drawer pe mobil)
-  └── IrisMessageBubble.tsx   ← Bule de mesaj cu markdown rendering
+### 1. `supabase/functions/iris-chat/index.ts`
+Edge function principală:
+- Validare JWT manuală + extragere user_id
+- Query-uri contextuale pe baza rolului:
+  - **Toți**: `profiles` (nume, dept, funcție), `employee_records` (sold concediu), `leave_requests` (cererile proprii), `notifications` (alerte), `announcements` (recente), `changelog_entries` (noutăți)
+  - **HR/sef_srus/super_admin**: `hr_requests` (cereri pending), `employee_personal_data` (documente expirate global)
+  - **super_admin**: `health_check_logs`, `audit_logs` (rezumat activitate)
+- System prompt detaliat cu:
+  - Identitate IRIS (ton academic, cald, profesionist, exclusiv română)
+  - Regulile de business (read-only, nu inventa date, nu expune date fără drept, spune clar când nu știe)
+  - Harta completă a rutelor platformei cu descriere pentru fiecare modul
+  - Datele contextuale reale ale utilizatorului
+  - Rolul utilizatorului + ce module are acces
+- Primește `currentRoute` de la client pentru context pagină curentă
+- Streaming via Lovable AI Gateway (`google/gemini-3-flash-preview`)
+- CORS headers standard
 
-supabase/functions/iris-chat/index.ts  ← Edge function care:
-  1. Primește mesajul + context utilizator
-  2. Query-uri automate pe tabelele platformei (rol, concediu, documente, cereri)
-  3. Construiește system prompt cu context real
-  4. Streamează răspunsul via Lovable AI Gateway
-```
+### 2. `src/components/iris/IrisButton.tsx`
+Buton flotant fixed bottom-right:
+- Icon Sparkles cu gradient animat
+- Pulsating badge la prima vizită (localStorage flag)
+- Tooltip "IRIS — Asistent AI"
+- Ascuns pe `/kiosk`, `/auth`, rute publice
+- Vizibil doar pentru utilizatori autentificați
+- z-index 40 (sub modals/dialogs)
 
-## Funcționalități IRIS
+### 3. `src/components/iris/IrisChatPanel.tsx`
+Panel principal de chat:
+- Desktop: panel 420px fixed bottom-right cu slide-up animation
+- Mobil: full-screen drawer
+- Header cu gradient brand + titlu IRIS + buton close
+- Zona de mesaje cu auto-scroll
+- Sugestii rapide (IrisQuickActions) afișate când conversația e goală
+- Input cu Enter to send + buton send
+- Streaming SSE token-by-token cu react-markdown rendering
+- Indicator "IRIS scrie..." cu shimmer animation
+- Trimite `currentRoute` (window.location.pathname) la fiecare mesaj
+- Sesiune în memorie (useState), nu persistentă
 
-### 1. Navigare și căutare inteligentă
-IRIS știe structura platformei și poate răspunde la:
-- „Câte zile de concediu mai am?" → query `employee_records` pt user curent
-- „Unde depun o cerere de concediu?" → link direct `/leave-request`
-- „Ce documente îmi expiră?" → query `employee_documents` + `employee_personal_data.ci_expiry_date`
-- „Cine e în concediu azi?" → query `leave_requests` active azi
-- „Ce anunțuri noi sunt?" → query `announcements` recente
+### 4. `src/components/iris/IrisMessageBubble.tsx`
+Componentă mesaj:
+- User: bulă albastră/primară, aliniat dreapta
+- IRIS: bulă gri/muted, aliniat stânga, cu avatar IRIS (Sparkles icon)
+- Markdown rendering cu react-markdown (prose styling)
+- Fade-in animation
 
-### 2. Asistent HR și documente
-- Explică tipurile de concediu disponibile (CO, medical, etc.)
-- Ghidează prin procesul de completare a cererilor
-- Verifică ce documente lipsesc din dosarul digital
-- Explică fluxul de aprobare (cine aprobă, ce etape)
+### 5. `src/components/iris/IrisQuickActions.tsx`
+Chip-uri de sugestii rapide, adaptate pe rol:
+- **Toți**: "Câte zile de concediu am?", "Ce documente îmi expiră?", "Cum depun o cerere?", "Ce e nou în platformă?"
+- **HR/staff**: + "Câte cereri sunt în așteptare?", "Rezumat activitate săptămânală"
+- **super_admin**: + "Starea sistemului", "Cine s-a logat recent?"
+- Click pe chip → trimite ca mesaj
 
-### 3. Rezumate și rapoarte
-- „Ce s-a întâmplat săptămâna asta?" → rezumat anunțuri + cereri
-- „Care sunt alertele mele?" → notificări recente
-- „Ce e nou în platformă?" → changelog entries recente
+### 6. `src/components/iris/IrisContextHints.tsx`
+Hints contextuale bazate pe ruta curentă:
+- Pe `/leave-request`: "Pot să te ajut cu cererea de concediu"
+- Pe `/hr-management`: "Întreabă-mă despre angajați sau documente"
+- Pe `/admin`: "Pot verifica starea sistemului"
+- Afișate ca banner subtil în panelul de chat
 
-### 4. Ghid platformă interactiv
-- Explică funcționalitățile platformei
-- Oferă link-uri directe către secțiuni relevante
-- Adaptează răspunsurile în funcție de rol (HR vede altceva decât angajat)
+## Fișiere Modificate
 
-## Implementare Detaliată
+### 7. `src/App.tsx`
+- Import `IrisButton`
+- Render `<IrisButton />` în interiorul provider-ilor, condiționat de autentificare (verificat cu `useAuth`)
+- Plasat lângă `ImpersonationBanner`, vizibil pe toate paginile (mai puțin kiosk/auth)
 
-### Edge Function: `supabase/functions/iris-chat/index.ts`
-- Primește: `{ messages, context_type? }` + auth token
-- Extrage user_id din JWT
-- Face query-uri contextuale pe baza întrebării:
-  - Dacă întreabă de concediu → query `employee_records` pentru sold
-  - Dacă întreabă de documente → query `employee_documents` + expirări
-  - Dacă întreabă de cereri → query `hr_requests` pentru status
-  - Dacă întreabă de echipă → query profiles din departament
-  - Dacă întreabă de anunțuri → query `announcements` recente
-- Construiește system prompt cu:
-  - Rolul utilizatorului
-  - Numele complet
-  - Departamentul
-  - Datele contextuale extrase
-  - Maparea rutelor platformei
-- Streamează răspunsul via Lovable AI Gateway (google/gemini-3-flash-preview)
-- Răspunde DOAR în limba română
+### 8. `supabase/config.toml`
+- Adăugare `[functions.iris-chat]` cu `verify_jwt = false` (validare JWT în cod)
 
-### Frontend: Buton Flotant + Panel
-- Buton rotund cu icon IRIS (Sparkles/Brain) în colțul dreapta-jos
-- Click → deschide panel de chat (400px lățime pe desktop, full-screen pe mobil)
-- Streaming token-by-token cu markdown rendering (react-markdown)
-- Istoricul conversației se păstrează în session (useState), NU persistent
-- Sugestii rapide la deschidere: „Câte zile de concediu am?", „Ce documente îmi expiră?", „Ghid platformă"
-- Badge animat pulsating pentru prima deschidere
+## Reguli de Securitate în Edge Function
+- Toate query-urile filtrate pe `user_id` autentificat
+- HR/admin query-uri condiționate de verificarea rolului prin `user_roles` table
+- Nu se returnează CNP, CI, adresă, telefon — niciodată
+- System prompt instrucționează explicit: "Nu inventa date", "Spune clar când nu ai informația", "Nu expune date ale altor utilizatori"
+- Rolul `admin` nu este recunoscut — doar `super_admin` are acces total
 
-### Integrare în App
-- `IrisButton` adăugat direct în `App.tsx`, vizibil pe toate paginile (doar pt utilizatori autentificați)
-- Nu blochează navigarea, nu interferează cu alte elemente
+## Dependințe
+- `react-markdown` — trebuie instalat (rendering răspunsuri AI)
 
-## Securitate
-- Edge function validează JWT-ul utilizatorului
-- Query-urile sunt filtrate pe user_id-ul autentificat
-- Nu se expune informații sensibile ale altor utilizatori
-- Rolurile avansate (HR, super_admin) primesc context extins
+## Changelog
+- Insert în `changelog_entries` cu versiunea corespunzătoare documentând lansarea IRIS
 
-## Design
-- Panel elegant cu gradient header (brand ICMPP)
-- Bule de mesaj clare: utilizator dreapta, IRIS stânga
-- Sugestii ca chip-uri clicabile
-- Animație smooth la deschidere/închidere
-- Dark mode suportat
-- Responsive complet
-
-## Pași de Implementare
-1. Creează edge function `iris-chat` cu system prompt, context queries și streaming
-2. Creează componentele UI (IrisButton, IrisChatPanel, IrisMessageBubble)  
-3. Integrează IrisButton în App.tsx (vizibil doar pt utilizatori autentificați)
-4. Adaugă în changelog
