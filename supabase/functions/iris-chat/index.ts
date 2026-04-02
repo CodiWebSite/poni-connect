@@ -1,5 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { logIrisAction, getClientIP } from "../_shared/iris-tools/audit.ts";
+import {
+  checkLeaveBalance,
+  checkLeaveOverlaps,
+  calculateWorkingDays,
+  findApprover,
+  createLeaveRequest,
+  getPendingApprovals,
+  getTeamOnLeave,
+} from "../_shared/iris-tools/leave.ts";
+import {
+  createCorrectionRequest,
+  createHelpdeskTicket,
+  createHRRequest,
+} from "../_shared/iris-tools/requests.ts";
+import {
+  getEmployeeSummary,
+  getExpiringDocuments,
+  getEmployeesWithoutAccounts,
+} from "../_shared/iris-tools/hr.ts";
+import { getSystemSummary } from "../_shared/iris-tools/system.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,23 +30,22 @@ const corsHeaders = {
 
 const PLATFORM_ROUTES = `
 Harta rutelor platformei ICMPP:
-- / → Dashboard (pagina principală, rezumat activitate)
+- / → Dashboard (pagina principală)
 - /leave-request → Depunere cerere de concediu
-- /leave-calendar → Calendar concedii (vizualizare departament/institut)
-- /my-profile → Profilul meu (date personale, sold concediu)
-- /my-team → Echipa mea (membrii departamentului)
-- /hr-management → Gestiune HR (doar HR/sef_srus/super_admin)
-- /medicina-muncii → Medicina Muncii (dosare medicale)
-- /admin → Administrare platformă (doar super_admin)
+- /leave-calendar → Calendar concedii
+- /my-profile → Profilul meu
+- /my-team → Echipa mea
+- /hr-management → Gestiune HR (HR/sef_srus/super_admin)
+- /medicina-muncii → Medicina Muncii
+- /admin → Administrare (super_admin)
 - /settings → Setări cont
 - /formulare → Formulare și șabloane
-- /library → Bibliotecă instituțională
-- /salarizare → Salarizare (doar rol salarizare/super_admin)
+- /library → Bibliotecă
+- /salarizare → Salarizare
 - /announcements → Anunțuri
 - /room-bookings → Rezervări săli
 - /activitati → Activități recreative
 - /chat → Mesagerie internă
-- /install → Instalare aplicație
 - /arhiva → Arhivă documente
 - /system-status → Stare sistem
 - /changelog → Noutăți platformă
@@ -52,10 +72,313 @@ const ROLE_ACCESS_MAP: Record<string, string> = {
   user: "Dashboard, concedii proprii, profil, mesagerie, anunțuri.",
 };
 
+// ---- TOOL DEFINITIONS ----
+const IRIS_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "check_leave_balance",
+      description: "Verifică soldul de concediu al utilizatorului curent (zile totale, folosite, rămase, report, bonus).",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "prepare_leave_request",
+      description: "Pregătește o cerere de concediu de odihnă. Verifică soldul, suprapunerile, calculează zilele lucrătoare și găsește aprobatorul. Returnează un rezumat pentru confirmare.",
+      parameters: {
+        type: "object",
+        properties: {
+          start_date: { type: "string", description: "Data început (YYYY-MM-DD)" },
+          end_date: { type: "string", description: "Data sfârșit (YYYY-MM-DD)" },
+          replacement_name: { type: "string", description: "Numele înlocuitorului (opțional, implicit '—')" },
+        },
+        required: ["start_date", "end_date"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_pending_approvals",
+      description: "Afișează cererile de concediu în așteptare de aprobare. Disponibil pentru șefi de departament, HR și super_admin.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_team_on_leave",
+      description: "Verifică cine din echipă/departament este în concediu într-o perioadă.",
+      parameters: {
+        type: "object",
+        properties: {
+          start_date: { type: "string", description: "Data început perioadă (YYYY-MM-DD, implicit azi)" },
+          end_date: { type: "string", description: "Data sfârșit perioadă (YYYY-MM-DD, implicit azi)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "prepare_helpdesk_ticket",
+      description: "Pregătește un tichet HelpDesk. Returnează rezumatul pentru confirmare.",
+      parameters: {
+        type: "object",
+        properties: {
+          subject: { type: "string", description: "Subiectul tichetului" },
+          message: { type: "string", description: "Descrierea problemei" },
+        },
+        required: ["subject", "message"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "prepare_correction_request",
+      description: "Pregătește o cerere de corecție a datelor personale. Returnează rezumatul pentru confirmare.",
+      parameters: {
+        type: "object",
+        properties: {
+          field_name: { type: "string", description: "Numele câmpului de corectat" },
+          current_value: { type: "string", description: "Valoarea curentă (dacă e cunoscută)" },
+          requested_value: { type: "string", description: "Valoarea corectă dorită" },
+          reason: { type: "string", description: "Motivul corecției" },
+        },
+        required: ["field_name", "requested_value"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "prepare_hr_request",
+      description: "Pregătește o cerere HR (adeverință de salariat, adeverință vechime, etc.). Returnează rezumatul pentru confirmare.",
+      parameters: {
+        type: "object",
+        properties: {
+          request_type: { type: "string", description: "Tipul cererii: adeverinta_salariat, adeverinta_vechime, adeverinta_venit, alt_document" },
+          details: { type: "string", description: "Detalii suplimentare despre cerere" },
+        },
+        required: ["request_type"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_employee_summary",
+      description: "Rezumat complet despre un angajat: date personale, sold concediu, documente, cereri. Disponibil doar pentru HR, sef_srus și super_admin.",
+      parameters: {
+        type: "object",
+        properties: {
+          employee_name: { type: "string", description: "Numele (parțial sau complet) al angajatului" },
+        },
+        required: ["employee_name"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_expiring_documents",
+      description: "Documente CI ce expiră în perioada specificată. Doar HR/super_admin.",
+      parameters: {
+        type: "object",
+        properties: {
+          days: { type: "number", description: "Număr de zile în viitor (implicit 90)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_system_summary",
+      description: "Rezumat operațional complet al sistemului: stare, cereri, tichete, utilizatori. Doar super_admin.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+];
+
+// ---- TOOL EXECUTOR ----
+async function executeTool(
+  toolName: string,
+  args: Record<string, any>,
+  supabase: any,
+  userId: string,
+  userRole: string,
+  profile: any,
+): Promise<any> {
+  const hrRoles = ["super_admin", "hr", "sef_srus"];
+  const approverRoles = ["super_admin", "hr", "sef_srus", "sef", "director_institut", "director_adjunct", "secretar_stiintific"];
+
+  switch (toolName) {
+    case "check_leave_balance":
+      return await checkLeaveBalance(supabase, userId);
+
+    case "prepare_leave_request": {
+      const balance = await checkLeaveBalance(supabase, userId);
+      if (balance.error) return balance;
+      const wd = calculateWorkingDays(args.start_date, args.end_date);
+      if (wd <= 0) return { error: "Perioada selectată nu conține zile lucrătoare." };
+      if (wd > balance.totalAvailable) return { error: `Sold insuficient: ${balance.totalAvailable} zile disponibile, cererea necesită ${wd}.` };
+      const overlaps = await checkLeaveOverlaps(supabase, userId, args.start_date, args.end_date);
+      if (overlaps.length > 0) return { error: `Suprapunere cu cererea existentă ${overlaps[0].start_date} — ${overlaps[0].end_date}.` };
+      const approver = await findApprover(supabase, userId);
+      return {
+        action_required: true,
+        action_type: "create_leave",
+        summary: {
+          startDate: args.start_date,
+          endDate: args.end_date,
+          workingDays: wd,
+          replacementName: args.replacement_name || "—",
+          approverName: approver?.name || "Nedesemnat",
+          currentBalance: balance.totalAvailable,
+          balanceAfter: balance.totalAvailable - wd,
+        },
+      };
+    }
+
+    case "get_pending_approvals":
+      if (!approverRoles.includes(userRole)) return { error: "Nu aveți permisiunea de a vedea aprobările în așteptare." };
+      return await getPendingApprovals(supabase, userId, userRole);
+
+    case "get_team_on_leave":
+      return await getTeamOnLeave(supabase, userId, args.start_date, args.end_date);
+
+    case "prepare_helpdesk_ticket":
+      return {
+        action_required: true,
+        action_type: "create_helpdesk_ticket",
+        summary: {
+          subject: args.subject,
+          message: args.message,
+          senderName: profile?.full_name || "Necunoscut",
+          senderEmail: profile?.email || "necunoscut",
+        },
+      };
+
+    case "prepare_correction_request":
+      return {
+        action_required: true,
+        action_type: "create_correction_request",
+        summary: {
+          fieldName: args.field_name,
+          currentValue: args.current_value || "necunoscut",
+          requestedValue: args.requested_value,
+          reason: args.reason || "Corecție solicitată prin IRIS",
+        },
+      };
+
+    case "prepare_hr_request":
+      return {
+        action_required: true,
+        action_type: "create_hr_request",
+        summary: {
+          requestType: args.request_type,
+          details: args.details || "",
+        },
+      };
+
+    case "get_employee_summary":
+      if (!hrRoles.includes(userRole)) return { error: "Nu aveți permisiunea de a accesa dosarele angajaților." };
+      return await getEmployeeSummary(supabase, args.employee_name);
+
+    case "get_expiring_documents":
+      if (!hrRoles.includes(userRole)) return { error: "Nu aveți permisiunea de a vedea documentele expirate." };
+      return await getExpiringDocuments(supabase, args.days || 90);
+
+    case "get_system_summary":
+      if (userRole !== "super_admin") return { error: "Doar super_admin poate accesa rezumatul de sistem." };
+      return await getSystemSummary(supabase);
+
+    default:
+      return { error: `Tool necunoscut: ${toolName}` };
+  }
+}
+
+// ---- ACTION EXECUTOR (after user confirmation) ----
+async function executeAction(
+  actionType: string,
+  data: Record<string, any>,
+  supabase: any,
+  userId: string,
+  userRole: string,
+  profile: any,
+  ip: string,
+) {
+  switch (actionType) {
+    case "create_leave": {
+      const result = await createLeaveRequest(
+        supabase, supabase, userId,
+        data.startDate, data.endDate,
+        data.replacementName || "—", ip
+      );
+      if (result.error) return result;
+      await logIrisAction(supabase, userId, "create_leave_request", "leave_request", result.requestId, {
+        start_date: data.startDate,
+        end_date: data.endDate,
+        working_days: result.workingDays,
+        request_number: result.requestNumber,
+      }, ip);
+      return result;
+    }
+
+    case "create_helpdesk_ticket": {
+      const result = await createHelpdeskTicket(
+        supabase, profile?.full_name || "Necunoscut",
+        data.senderEmail || profile?.email || "necunoscut@icmpp.ro",
+        data.subject, data.message
+      );
+      if (result.error) return result;
+      await logIrisAction(supabase, userId, "create_helpdesk_ticket", "helpdesk_ticket", result.ticketId, {
+        subject: data.subject,
+      }, ip);
+      return result;
+    }
+
+    case "create_correction_request": {
+      const result = await createCorrectionRequest(
+        supabase, userId,
+        data.fieldName, data.currentValue || "",
+        data.requestedValue, data.reason || "Corecție solicitată prin IRIS"
+      );
+      if (result.error) return result;
+      await logIrisAction(supabase, userId, "create_correction_request", "data_correction", result.requestId, {
+        field_name: data.fieldName,
+        requested_value: data.requestedValue,
+      }, ip);
+      return result;
+    }
+
+    case "create_hr_request": {
+      const result = await createHRRequest(
+        supabase, userId,
+        data.requestType, { details: data.details || "", initiated_via: "iris" }
+      );
+      if (result.error) return result;
+      await logIrisAction(supabase, userId, "create_hr_request", "hr_request", result.requestId, {
+        request_type: data.requestType,
+      }, ip);
+      return result;
+    }
+
+    default:
+      return { error: `Tip de acțiune necunoscut: ${actionType}` };
+  }
+}
+
+// ---- CONTEXT BUILDER ----
 async function getContext(supabase: any, userId: string, userRole: string) {
   const ctx: Record<string, any> = {};
 
-  // Profile
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, department, position")
@@ -63,7 +386,6 @@ async function getContext(supabase: any, userId: string, userRole: string) {
     .single();
   ctx.profile = profile;
 
-  // Leave balance
   const { data: leave } = await supabase
     .from("employee_records")
     .select("total_leave_days, used_leave_days, remaining_leave_days, hire_date, contract_type")
@@ -71,7 +393,6 @@ async function getContext(supabase: any, userId: string, userRole: string) {
     .single();
   ctx.leave = leave;
 
-  // Recent leave requests (own)
   const { data: myRequests } = await supabase
     .from("leave_requests")
     .select("id, start_date, end_date, working_days, status, created_at")
@@ -80,7 +401,6 @@ async function getContext(supabase: any, userId: string, userRole: string) {
     .limit(5);
   ctx.myRequests = myRequests || [];
 
-  // Recent announcements
   const { data: announcements } = await supabase
     .from("announcements")
     .select("title, priority, created_at")
@@ -88,7 +408,6 @@ async function getContext(supabase: any, userId: string, userRole: string) {
     .limit(5);
   ctx.announcements = announcements || [];
 
-  // Changelog
   const { data: changelog } = await supabase
     .from("changelog_entries")
     .select("title, version, created_at")
@@ -96,7 +415,6 @@ async function getContext(supabase: any, userId: string, userRole: string) {
     .limit(3);
   ctx.changelog = changelog || [];
 
-  // Unread notifications count
   const { count: unreadNotifs } = await supabase
     .from("notifications")
     .select("id", { count: "exact", head: true })
@@ -104,13 +422,11 @@ async function getContext(supabase: any, userId: string, userRole: string) {
     .eq("read", false);
   ctx.unreadNotifications = unreadNotifs || 0;
 
-  // HR/admin extended context
-  const privilegedRoles = ["super_admin", "hr", "sef_srus"];
-  if (privilegedRoles.includes(userRole)) {
+  if (["super_admin", "hr", "sef_srus"].includes(userRole)) {
     const { count: pendingLeave } = await supabase
       .from("leave_requests")
       .select("id", { count: "exact", head: true })
-      .eq("status", "pending");
+      .in("status", ["pending_department_head", "pending_srus"]);
     ctx.pendingLeaveRequests = pendingLeave || 0;
 
     const { count: pendingHR } = await supabase
@@ -119,7 +435,6 @@ async function getContext(supabase: any, userId: string, userRole: string) {
       .eq("status", "pending");
     ctx.pendingHRRequests = pendingHR || 0;
 
-    // Expiring CI documents (next 90 days)
     const in90Days = new Date();
     in90Days.setDate(in90Days.getDate() + 90);
     const { count: expiringDocs } = await supabase
@@ -131,7 +446,6 @@ async function getContext(supabase: any, userId: string, userRole: string) {
     ctx.expiringDocuments = expiringDocs || 0;
   }
 
-  // Super admin extra
   if (userRole === "super_admin") {
     const { data: healthCheck } = await supabase
       .from("health_check_logs")
@@ -149,6 +463,7 @@ function buildSystemPrompt(userRole: string, context: Record<string, any>, curre
   const profile = context.profile || {};
   const leave = context.leave || {};
   const roleAccess = ROLE_ACCESS_MAP[userRole] || ROLE_ACCESS_MAP["user"];
+  const remaining = leave.remaining_leave_days ?? (leave.total_leave_days != null ? leave.total_leave_days - (leave.used_leave_days || 0) : "nedisponibil");
 
   let contextData = `
 DATELE UTILIZATORULUI CURENT:
@@ -158,73 +473,62 @@ DATELE UTILIZATORULUI CURENT:
 - Rol platformă: ${userRole}
 - Acces module: ${roleAccess}
 
-SOLD CONCEDIU:
-- Total zile: ${leave.total_leave_days ?? "nedisponibil"}
-- Zile folosite: ${leave.used_leave_days ?? "nedisponibil"}
-- Zile rămase: ${leave.remaining_leave_days ?? (leave.total_leave_days != null ? leave.total_leave_days - (leave.used_leave_days || 0) : "nedisponibil")}
-- Tip contract: ${leave.contract_type || "nedisponibil"}
+SOLD CONCEDIU: Total ${leave.total_leave_days ?? "N/A"} | Folosite ${leave.used_leave_days ?? "N/A"} | Rămase ${remaining}
 
-CERERI CONCEDIU RECENTE (ale utilizatorului):
-${context.myRequests?.length ? context.myRequests.map((r: any) => `- ${r.start_date} → ${r.end_date} (${r.working_days} zile) — Status: ${r.status}`).join("\n") : "Nicio cerere recentă."}
-
-ANUNȚURI RECENTE:
-${context.announcements?.length ? context.announcements.map((a: any) => `- ${a.title} (${a.priority || "normal"}) — ${a.created_at?.split("T")[0]}`).join("\n") : "Niciun anunț recent."}
-
-NOUTĂȚI PLATFORMĂ:
-${context.changelog?.length ? context.changelog.map((c: any) => `- v${c.version}: ${c.title}`).join("\n") : "Nicio noutate recentă."}
+CERERI RECENTE: ${context.myRequests?.length ? context.myRequests.map((r: any) => `${r.start_date}→${r.end_date} (${r.working_days}z, ${r.status})`).join("; ") : "Nicio cerere"}
 
 NOTIFICĂRI NECITITE: ${context.unreadNotifications}
 `;
 
   if (["super_admin", "hr", "sef_srus"].includes(userRole)) {
-    contextData += `
-CONTEXT ADMINISTRATIV:
-- Cereri concediu în așteptare: ${context.pendingLeaveRequests ?? "N/A"}
-- Cereri HR în așteptare: ${context.pendingHRRequests ?? "N/A"}
-- Documente CI ce expiră în 90 zile: ${context.expiringDocuments ?? "N/A"}
-`;
+    contextData += `\nCONTEXT ADMIN: Concedii pending: ${context.pendingLeaveRequests ?? 0} | HR pending: ${context.pendingHRRequests ?? 0} | CI expiră 90z: ${context.expiringDocuments ?? 0}`;
   }
-
   if (userRole === "super_admin" && context.systemHealth) {
-    contextData += `- Stare sistem: ${context.systemHealth.overall} (verificat: ${context.systemHealth.checked_at?.split("T")[0]})\n`;
+    contextData += ` | Sistem: ${context.systemHealth.overall}`;
   }
 
-  return `Ești IRIS — Inteligență pentru Resurse Interne și Suport — asistentul AI al platformei intranet ICMPP (Institutul de Chimie Macromoleculară "Petru Poni" din Iași).
+  return `Ești IRIS v2 — Inteligență pentru Resurse Interne și Suport — copilotul operațional al platformei intranet ICMPP (Institutul de Chimie Macromoleculară "Petru Poni" din Iași).
 
-IDENTITATE ȘI TON:
-- Răspunzi EXCLUSIV în limba română
-- Ton academic, clar, politicos, cald, profesionist
-- Ești calm, util, precis — fără răspunsuri pompoase sau robotice
-- Te adresezi cu "dumneavoastră" utilizatorului
-- Ești un copilot intern academic, nu un chatbot generalist
+IDENTITATE: Ton academic, clar, politicos, profesionist. Te adresezi cu "dumneavoastră". Răspunzi EXCLUSIV în limba română.
+
+MODURI DE LUCRU:
+1. READ MODE: Explici, cauți, rezumi, orientezi, arăți statusuri, explici fluxuri, oferi linkuri.
+2. ACTION MODE: Pregătești acțiuni (cereri concediu, tichete, corecții), CERI CONFIRMARE, execuți doar după confirmare.
 
 REGULI STRICTE:
-1. NU inventa date — dacă nu ai o informație, spune clar "Nu am acces la această informație" sau "Nu pot confirma acest lucru"
-2. NU expune date ale altor utilizatori — răspunzi DOAR cu datele utilizatorului curent
-3. NU faci modificări — ești read-only, ghidezi utilizatorul către acțiunea corectă
-4. NU aprobi cereri, NU modifici roluri, NU ștergi date
-5. Rolul "admin" NU există în platformă — doar "super_admin" are acces total
-6. Respectă strict rolurile și permisiunile platformei
-7. Când nu poți ajuta, redirecționează către modulul/pagina potrivită sau către administratorul de sistem
-8. Nu expune CNP, CI, adresă, telefon — niciodată, nici măcar datele proprii ale utilizatorului (acestea sunt restricționate global)
+- NU inventa date. Dacă nu ai informația, spune clar.
+- NU expune date ale altor utilizatori (cu excepția HR-ului care accesează dosare angajați).
+- Rolul "admin" NU există — doar "super_admin" are acces total.
+- NU expune CNP, CI, adresă, telefon — niciodată.
+- Orice acțiune write necesită CONFIRMARE explicită.
 
-CE POȚI FACE:
-- Răspunde la întrebări despre platformă și funcționalitățile ei
-- Oferă ghidaj contextual (ce pagină să acceseze, ce pași să urmeze)
-- Rezumă informații relevante (sold concediu, cereri, anunțuri, noutăți)
-- Explică statusuri, pași și fluxuri (ex: cum se depune o cerere de concediu)
-- Ajută la navigare (link-uri directe către module)
-- Interoghează datele existente ale utilizatorului
+TOOL-URI DISPONIBILE:
+Ai acces la funcții pe care le poți apela. Când AI-ul returnează un rezultat cu "action_required: true", TREBUIE să incluzi blocul de confirmare astfel:
+[IRIS_ACTION:{"type":"<action_type>","data":{...datele},"label":"<descriere scurtă>"}]
 
-PAGINA CURENTĂ A UTILIZATORULUI: ${currentRoute}
+Utilizatorul va vedea un card de confirmare. După confirmare, acțiunea va fi executată automat.
 
+FLUX CONCEDIU:
+1. Angajat depune cerere → status: pending_department_head
+2. Șef departament aprobă → status: pending_srus
+3. SRUS validează → status: approved
+Deducerea zilelor se face la pasul 3.
+
+RUTĂRI CERERI:
+- Adeverință → HR
+- Cerere creare cont → Super Admin
+- Concediu odihnă → Șef Departament → SRUS
+- Corecție date → HR
+- Tichet HelpDesk → Super Admin
+
+PAGINA CURENTĂ: ${currentRoute}
 ${PLATFORM_ROUTES}
-
 ${contextData}
 
-Răspunde concis și util. Dacă utilizatorul întreabă ceva ce nu ține de platformă, redirecționează-l politicos. Oferă link-uri către paginile relevante când este cazul (ex: "Puteți accesa [Cerere concediu](/leave-request) pentru a depune o cerere.").`;
+Răspunde concis. Oferă linkuri markdown către pagini relevante. Folosește tool-urile când e nevoie.`;
 }
 
+// ---- MAIN HANDLER ----
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -242,26 +546,22 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-
-    if (!lovableApiKey) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    if (!lovableApiKey) throw new Error("LOVABLE_API_KEY is not configured");
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
       return new Response(JSON.stringify({ error: "Neautorizat" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
-    // Get user role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -270,8 +570,30 @@ serve(async (req) => {
       .single();
     const userRole = roleData?.role || "user";
 
-    const { messages, currentRoute } = await req.json();
+    const ip = getClientIP(req.headers);
+    const body = await req.json();
 
+    // ---- EXECUTE ACTION (confirmation flow) ----
+    if (body.executeAction) {
+      const { type, data } = body.executeAction;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, department, position")
+        .eq("user_id", userId)
+        .single();
+
+      // Get user email
+      const userEmail = user.email || "";
+      const profileWithEmail = { ...profile, email: userEmail };
+
+      const result = await executeAction(type, data, supabase, userId, userRole, profileWithEmail, ip);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ---- CHAT FLOW ----
+    const { messages, currentRoute } = body;
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "Mesaje lipsă" }), {
         status: 400,
@@ -279,11 +601,16 @@ serve(async (req) => {
       });
     }
 
-    // Build context
     const context = await getContext(supabase, userId, userRole);
     const systemPrompt = buildSystemPrompt(userRole, context, currentRoute || "/");
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // First call with tools
+    const aiMessages = [{ role: "system", content: systemPrompt }, ...messages];
+
+    let finalResponse = await callAIWithTools(lovableApiKey, aiMessages, supabase, userId, userRole, context.profile);
+
+    // Stream the final response
+    const streamResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${lovableApiKey}`,
@@ -291,33 +618,30 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        messages: finalResponse,
         stream: true,
       }),
     });
 
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Limită de cereri depășită. Încercați din nou mai târziu." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!streamResp.ok) {
+      if (streamResp.status === 429) {
+        return new Response(JSON.stringify({ error: "Limită de cereri depășită. Încercați din nou." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "Credite insuficiente pentru AI. Contactați administratorul." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (streamResp.status === 402) {
+        return new Response(JSON.stringify({ error: "Credite insuficiente pentru AI." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const errText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errText);
-      return new Response(JSON.stringify({ error: "Eroare la serviciul AI" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const errText = await streamResp.text();
+      console.error("AI gateway error:", streamResp.status, errText);
+      return new Response(JSON.stringify({ error: "Eroare AI" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(aiResponse.body, {
+    return new Response(streamResp.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
@@ -328,3 +652,72 @@ serve(async (req) => {
     );
   }
 });
+
+// ---- AI TOOL-CALLING LOOP ----
+async function callAIWithTools(
+  apiKey: string,
+  messages: any[],
+  supabase: any,
+  userId: string,
+  userRole: string,
+  profile: any,
+  depth = 0,
+): Promise<any[]> {
+  if (depth > 5) return messages; // safety limit
+
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages,
+      tools: IRIS_TOOLS,
+      tool_choice: "auto",
+    }),
+  });
+
+  if (!resp.ok) {
+    console.error("Tool call AI error:", resp.status);
+    return messages;
+  }
+
+  const data = await resp.json();
+  const choice = data.choices?.[0];
+  if (!choice) return messages;
+
+  const msg = choice.message;
+  messages.push(msg);
+
+  // If no tool calls, return messages as-is for streaming
+  if (!msg.tool_calls || msg.tool_calls.length === 0) {
+    // Remove the last message (non-streamed) and return for re-streaming
+    messages.pop();
+    return messages;
+  }
+
+  // Execute each tool call
+  for (const tc of msg.tool_calls) {
+    const fn = tc.function;
+    let args: Record<string, any> = {};
+    try {
+      args = typeof fn.arguments === "string" ? JSON.parse(fn.arguments) : fn.arguments || {};
+    } catch {
+      args = {};
+    }
+
+    console.log(`IRIS tool call: ${fn.name}`, args);
+    const result = await executeTool(fn.name, args, supabase, userId, userRole, profile);
+
+    messages.push({
+      role: "tool",
+      tool_call_id: tc.id,
+      content: JSON.stringify(result),
+    });
+  }
+
+  // Recurse in case AI wants to call more tools
+  return callAIWithTools(apiKey, messages, supabase, userId, userRole, profile, depth + 1);
+}
