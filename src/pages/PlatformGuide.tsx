@@ -13,6 +13,7 @@ import {
   ClipboardList, Shield, Users, BookOpen, Bell, Home, Search, Moon,
   Eye, Download, History, UserCheck, AlertTriangle, HelpCircle, MessageCircle,
   DoorOpen, PartyPopper, ExternalLink, Mail, Smartphone, CloudSun,
+  Sparkles, Archive, Activity, Package, Banknote, Newspaper,
 } from 'lucide-react';
 import {
   SidebarMockup, HeaderMockup, DashboardMockup, ProfileMockup,
