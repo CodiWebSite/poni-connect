@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import irisLogo from "@/assets/iris-logo.png";
 
 interface IrisMessageBubbleProps {
   role: "user" | "assistant";
