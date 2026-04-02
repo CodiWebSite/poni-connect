@@ -56,15 +56,12 @@ export default function HRRequestsInbox() {
 
   const generateAndSaveCertificate = async (req: HRRequest): Promise<boolean> => {
     try {
-      // Get employee personal data by matching user_id through email
+      // Get employee personal data by matching user profile name
       const { data: userProfile } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('user_id', req.user_id)
         .single();
-
-      // Find EPD by matching auth email
-      const { data: { user: reqUser } } = await supabase.auth.admin.getUser(req.user_id).catch(() => ({ data: { user: null } }));
 
       // Try matching by profile name or direct query
       const { data: epd } = await supabase
