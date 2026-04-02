@@ -8,27 +8,19 @@ interface IrisQuickActionsProps {
 const BASE_SUGGESTIONS = [
   "Câte zile de concediu mai am?",
   "Depune o cerere de concediu",
-  "Ce documente îmi expiră?",
-  "Cum depun o cerere de concediu?",
   "Raportează o problemă",
-  "Ce e nou în platformă?",
 ];
 
 const APPROVER_SUGGESTIONS = [
-  "Arată aprobările în așteptare",
-  "Cine e în concediu azi?",
+  "Aprobări în așteptare",
 ];
 
 const HR_SUGGESTIONS = [
-  "Câte cereri sunt în așteptare?",
-  "Documente ce expiră luna aceasta",
-  "Rezumat activitate săptămânală",
+  "Documente ce expiră curând",
 ];
 
 const ADMIN_SUGGESTIONS = [
-  "Rezumat operațional zilnic",
-  "Angajați fără cont",
-  "Care este starea sistemului?",
+  "Rezumat operațional",
 ];
 
 export default function IrisQuickActions({ onSelect, userRole }: IrisQuickActionsProps) {
@@ -39,7 +31,10 @@ export default function IrisQuickActions({ onSelect, userRole }: IrisQuickAction
     suggestions.push(...APPROVER_SUGGESTIONS);
   }
   if (["hr", "sef_srus", "super_admin"].includes(userRole || "")) {
-    suggestions.push(...HR_SUGGESTIONS, ...APPROVER_SUGGESTIONS);
+    suggestions.push(...HR_SUGGESTIONS);
+  }
+  if (approverRoles.includes(userRole || "")) {
+    suggestions.push(...APPROVER_SUGGESTIONS);
   }
   if (userRole === "super_admin") {
     suggestions.push(...ADMIN_SUGGESTIONS);
