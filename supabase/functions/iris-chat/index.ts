@@ -277,7 +277,12 @@ async function executeTool(
         },
       };
 
-    case "prepare_hr_request":
+    case "prepare_hr_request": {
+      // Block adeverinta requests temporarily
+      const blockedTypes = ["adeverinta_salariat", "adeverinta_vechime", "adeverinta_venit", "adeverinta"];
+      if (blockedTypes.includes(args.request_type)) {
+        return { error: "Generarea de adeverințe prin IRIS este temporar indisponibilă. Vă rugăm să contactați departamentul HR direct." };
+      }
       return {
         action_required: true,
         action_type: "create_hr_request",
@@ -286,6 +291,7 @@ async function executeTool(
           details: args.details || "",
         },
       };
+    }
 
     case "get_employee_summary":
       if (!hrRoles.includes(userRole)) return { error: "Nu aveți permisiunea de a accesa dosarele angajaților." };
