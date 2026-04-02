@@ -2,12 +2,13 @@ import { useUserRole } from '@/hooks/useUserRole';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Navigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Shield, HeartPulse, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot } from 'lucide-react';
 import AdminOverview from '@/components/admin/AdminOverview';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminRolesAccessPanel from '@/components/admin/AdminRolesAccessPanel';
 import AdminSystemHealth from '@/components/admin/AdminSystemHealth';
 import AdminAuditPanel from '@/components/admin/AdminAuditPanel';
+import IrisFeedbackPanel from '@/components/admin/IrisFeedbackPanel';
 
 const Admin = () => {
   const { role, isRealSuperAdmin } = useUserRole();
@@ -39,6 +40,10 @@ const Admin = () => {
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">Audit</span>
             </TabsTrigger>
+            <TabsTrigger value="iris-feedback" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+              <Bot className="w-4 h-4" />
+              <span className="hidden sm:inline">IRIS Feedback</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -47,6 +52,7 @@ const Admin = () => {
         <TabsContent value="roles"><AdminRolesAccessPanel /></TabsContent>
         <TabsContent value="health"><AdminSystemHealth /></TabsContent>
         <TabsContent value="audit"><AdminAuditPanel /></TabsContent>
+        <TabsContent value="iris-feedback"><IrisFeedbackPanel /></TabsContent>
       </Tabs>
     </MainLayout>
   );

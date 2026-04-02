@@ -295,7 +295,14 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
           <p className="text-[10px] opacity-80 truncate">Copilot operațional ICMPP</p>
         </div>
         <button
-          onClick={onClose}
+          onClick={() => {
+            if (messages.length > 0) {
+              setShowFeedback(true);
+              onClose();
+            } else {
+              onClose();
+            }
+          }}
           className="w-7 h-7 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors"
         >
           <X className="w-4 h-4" />
