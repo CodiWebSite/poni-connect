@@ -1032,6 +1032,46 @@ const PlatformGuide = () => {
                   </div>
                 </GuideSection>
 
+                <GuideSection icon={Package} title="Inventar IT – Registrul echipamentelor">
+                  <div className="space-y-1.5">
+                    <p>• <strong>Catalogul echipamentelor</strong> – toate echipamentele IT (calculatoare, monitoare, imprimante etc.) cu număr de inventar, serie, model.</p>
+                    <p>• <strong>Asignare</strong> – fiecare echipament poate fi asignat unui angajat cu dată de asignare.</p>
+                    <p>• <strong>Locație</strong> – clădire, etaj, cameră pentru fiecare echipament.</p>
+                    <p>• <strong>Software</strong> – evidența sistemelor de operare, licențelor și aplicațiilor instalate.</p>
+                    <p>• <strong>Cod QR</strong> – generare cod QR pentru identificare rapidă a echipamentelor.</p>
+                    <p>• <strong>Istoric</strong> – fiecare echipament are un jurnal complet al transferurilor și modificărilor.</p>
+                    <p>• <strong>Import</strong> – import în lot din fișiere Excel.</p>
+                  </div>
+                </GuideSection>
+
+                <GuideSection icon={Banknote} title="Salarizare – Date salariale">
+                  <div className="space-y-1.5">
+                    <p>• Modulul de Salarizare este accesibil rolului <strong>salarizare</strong> și <strong>super_admin</strong>.</p>
+                    <p>• Centralizează informațiile salariale ale angajaților.</p>
+                    <p>• Datele sunt protejate și vizibile doar utilizatorilor autorizați.</p>
+                  </div>
+                </GuideSection>
+
+                <GuideSection icon={Sparkles} title="IRIS Feedback – Monitorizare asistent AI">
+                  <div className="space-y-1.5">
+                    <p>• Tab-ul <strong>„IRIS Feedback"</strong> din Centrul de Control afișează toate evaluările primite de IRIS.</p>
+                    <p>• <strong>Statistici</strong> – rating mediu, distribuția pe stele (1-5) și numărul total de evaluări.</p>
+                    <p>• <strong>Lista feedback-urilor</strong> – fiecare evaluare cu rating, comentariu și data.</p>
+                    <p>• <strong>Conversații complete</strong> – puteți vizualiza conversația integrală asociată fiecărei evaluări.</p>
+                    <p>• Util pentru a identifica ce funcționalități trebuie îmbunătățite la IRIS.</p>
+                  </div>
+                </GuideSection>
+
+                <GuideSection icon={Newspaper} title="Changelog – Istoricul actualizărilor">
+                  <div className="space-y-1.5">
+                    <p>• Pagina <strong>Changelog</strong> documentează cronologic toate actualizările platformei.</p>
+                    <p>• <strong>Versiuni</strong> – organizat pe versiuni majore (1.x, 2.x, 3.x etc.).</p>
+                    <p>• <strong>Categorii</strong> – Major, Minor, Fix – cu culori distincte pentru fiecare tip.</p>
+                    <p>• <strong>Filtre</strong> – căutare în timp real, filtrare pe module.</p>
+                    <p>• <strong>Export</strong> – exportul istoricului în format Excel, colorat semantic.</p>
+                  </div>
+                </GuideSection>
+
               </Accordion>
             </CardContent>
           </Card>
