@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sparkles } from "lucide-react";
+import irisLogo from "@/assets/iris-logo.png";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "react-router-dom";
 import IrisChatPanel from "./IrisChatPanel";
