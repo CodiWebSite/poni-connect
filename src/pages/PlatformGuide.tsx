@@ -896,6 +896,21 @@ const PlatformGuide = () => {
                   </div>
                 </GuideSection>
 
+                <GuideSection icon={Activity} title="Medicină Muncii – Fișe medicale și consultații">
+                  <p className="mb-2">Modulul de Medicină a Muncii permite gestionarea dosarelor medicale ale angajaților:</p>
+                  <div className="space-y-1.5">
+                    <p>• <strong>Fișe medicale</strong> – fiecare angajat are un dosar medical cu aptitudinea, restricțiile și condițiile cronice.</p>
+                    <p>• <strong>Consultații</strong> – înregistrarea consultațiilor periodice, de angajare și de control.</p>
+                    <p>• <strong>Programări examene</strong> – planificarea și urmărirea examenelor medicale obligatorii.</p>
+                    <p>• <strong>Valabilitate fișe</strong> – alertă automată când fișele de aptitudine expiră.</p>
+                    <p>• <strong>Documente</strong> – atașare de fișe de aptitudine, analize și alte documente medicale.</p>
+                    <p>• <strong>Dosar medical complet</strong> – antecedente, condiții de lucru, traseu profesional.</p>
+                  </div>
+                  <InfoBox title="💡 Acces">
+                    <p>Modulul este accesibil rolurilor <strong>medic_medicina_muncii</strong>, <strong>hr</strong>, <strong>sef_srus</strong> și <strong>super_admin</strong>.</p>
+                  </InfoBox>
+                </GuideSection>
+
               </Accordion>
             </CardContent>
           </Card>
