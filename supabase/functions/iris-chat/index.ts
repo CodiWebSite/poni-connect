@@ -314,7 +314,17 @@ async function executeAction(
   profile: any,
   ip: string,
 ) {
-  switch (actionType) {
+  // Normalize common AI mismatches
+  const typeMap: Record<string, string> = {
+    "create_request": "create_hr_request",
+    "create_ticket": "create_helpdesk_ticket",
+    "create_correction": "create_correction_request",
+    "submit_leave": "create_leave",
+    "request_leave": "create_leave",
+  };
+  const normalizedType = typeMap[actionType] || actionType;
+
+  switch (normalizedType) {
     case "create_leave": {
       const result = await createLeaveRequest(
         supabase, supabase, userId,
@@ -507,6 +517,14 @@ Ai acces la funcții pe care le poți apela. Când AI-ul returnează un rezultat
 [IRIS_ACTION:{"type":"<action_type>","data":{...datele},"label":"<descriere scurtă>"}]
 
 Utilizatorul va vedea un card de confirmare. După confirmare, acțiunea va fi executată automat.
+
+TIPURI DE ACȚIUNI VALIDE (folosește EXACT aceste valori pentru "type"):
+- "create_leave" — Cerere de concediu. Data: { startDate, endDate, replacementName }
+- "create_helpdesk_ticket" — Tichet HelpDesk. Data: { subject, message, senderEmail? }
+- "create_correction_request" — Corecție date personale. Data: { fieldName, currentValue?, requestedValue, reason? }
+- "create_hr_request" — Cerere HR (adeverință, etc). Data: { requestType: "adeverinta_salariu"|"adeverinta_vechime"|"adeverinta_generala", details? }
+
+NU folosi alte tipuri de acțiuni precum "create_request" — acestea nu sunt suportate.
 
 FLUX CONCEDIU:
 1. Angajat depune cerere → status: pending_department_head
