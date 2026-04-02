@@ -260,7 +260,7 @@ const LeaveCalendar = () => {
       Object.entries(byYear).forEach(([yearStr, yearEntries]) => {
         const year = Number(yearStr);
         const relevantCarryover = carryovers.find(c => c.from_year === year - 1 && c.initial_days > 0);
-        let carryoverRemaining = relevantCarryover?.initial_days || 0;
+        let carryoverRemaining = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
 
         yearEntries.forEach(e => {
           const days = e.numberOfDays || 0;

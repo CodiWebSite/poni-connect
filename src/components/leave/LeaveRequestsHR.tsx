@@ -260,9 +260,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           new Date(relevantCarryover.updated_at).getTime() <= new Date(earliestRequestCreatedAt).getTime()
         );
 
-        let carryoverRemaining = useSnapshotRemaining
-          ? Math.max(relevantCarryover?.remaining_days || 0, 0)
-          : Math.max(relevantCarryover?.initial_days || 0, 0);
+        let carryoverRemaining = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
 
         yearReqs.sort((a, b) => {
           const byStartDate = (a.start_date || '').localeCompare(b.start_date || '');
