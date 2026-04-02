@@ -31,12 +31,12 @@ export default function IrisButton() {
         <TooltipTrigger asChild>
           <button
             onClick={() => setOpen((v) => !v)}
-            className="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all flex items-center justify-center group overflow-hidden"
+            className="fixed bottom-5 right-5 z-40 w-16 h-16 rounded-full shadow-[0_4px_24px_rgba(99,102,241,0.45)] hover:shadow-[0_6px_32px_rgba(99,102,241,0.6)] hover:scale-110 transition-all flex items-center justify-center group overflow-hidden ring-2 ring-violet-400/50 ring-offset-2 ring-offset-background"
             aria-label="IRIS — Asistent AI"
           >
-            <img src={irisLogo} alt="IRIS" className="w-14 h-14 object-contain group-hover:animate-pulse" />
+            <img src={irisLogo} alt="IRIS" className="w-16 h-16 object-contain group-hover:scale-110 transition-transform" />
             {!hasOpened && (
-              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 border-2 border-background animate-pulse" />
+              <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-background animate-pulse" />
             )}
           </button>
         </TooltipTrigger>
