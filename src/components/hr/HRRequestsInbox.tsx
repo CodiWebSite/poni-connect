@@ -63,37 +63,46 @@ export default function HRRequestsInbox() {
         .eq('user_id', req.user_id)
         .single();
 
-      // Try matching by profile name or direct query
-      const { data: epd } = await supabase
-        .from('employee_personal_data')
-        .select('*')
-        .eq('is_archived', false)
-        .ilike('email', `%${req.user_id}%`)
+      // Find EPD via employee_records link
+      const { data: empRecord } = await supabase
+        .from('employee_records')
+        .select('id')
+        .eq('user_id', req.user_id)
         .maybeSingle();
 
-      // Alternative: match by name
-      const nameParts = (userProfile?.full_name || '').split(' ');
-      let epdData = epd;
-      if (!epdData && nameParts.length >= 2) {
-        const { data: epdByName } = await supabase
+      let epdData: any = null;
+      if (empRecord) {
+        const { data: epd } = await supabase
           .from('employee_personal_data')
           .select('*')
+          .eq('employee_record_id', empRecord.id)
           .eq('is_archived', false)
-          .ilike('first_name', nameParts[0])
-          .ilike('last_name', nameParts.slice(1).join(' '))
           .maybeSingle();
-        if (!epdByName) {
-          // Try reversed order (last_name first_name)
-          const { data: epdReversed } = await supabase
+        epdData = epd;
+      }
+
+      // Fallback: match by name
+      if (!epdData) {
+        const nameParts = (userProfile?.full_name || '').split(' ');
+        if (nameParts.length >= 2) {
+          const { data: epdByName } = await supabase
             .from('employee_personal_data')
             .select('*')
             .eq('is_archived', false)
             .ilike('last_name', nameParts[0])
             .ilike('first_name', nameParts.slice(1).join(' '))
             .maybeSingle();
-          epdData = epdReversed;
-        } else {
           epdData = epdByName;
+          if (!epdData) {
+            const { data: epdReversed } = await supabase
+              .from('employee_personal_data')
+              .select('*')
+              .eq('is_archived', false)
+              .ilike('first_name', nameParts[0])
+              .ilike('last_name', nameParts.slice(1).join(' '))
+              .maybeSingle();
+            epdData = epdReversed;
+          }
         }
       }
 
