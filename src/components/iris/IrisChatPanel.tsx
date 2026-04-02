@@ -267,7 +267,21 @@ export default function IrisChatPanel({ open, onClose }: IrisChatPanelProps) {
     }
   };
 
-  if (!open) return null;
+  if (!open && !showFeedback) return null;
+
+  if (showFeedback) {
+    return (
+      <IrisFeedbackDialog
+        open={showFeedback}
+        onClose={() => {
+          setShowFeedback(false);
+          setMessages([]);
+          setActionResults(new Map());
+        }}
+        conversation={messages}
+      />
+    );
+  }
 
   return (
     <div className="fixed bottom-20 right-4 z-40 w-[420px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-2xl border border-border bg-background shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 sm:bottom-20 sm:right-4 max-sm:inset-0 max-sm:bottom-0 max-sm:right-0 max-sm:w-full max-sm:h-full max-sm:max-w-none max-sm:max-h-none max-sm:rounded-none">
