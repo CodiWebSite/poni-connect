@@ -164,6 +164,11 @@ const Settings = () => {
     } else {
       toast.success('Parola a fost schimbată cu succes!');
       setPasswordData({ current: '', newPass: '', confirm: '' });
+      
+      // Log security event
+      supabase.functions.invoke('log-auth-event', {
+        body: { event_type: 'password_change', details: { action: 'Parolă schimbată de utilizator' } },
+      }).catch(() => {});
     }
 
     setPasswordLoading(false);
