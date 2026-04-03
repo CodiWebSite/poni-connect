@@ -9,9 +9,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
-import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw, Lock, Eye, EyeOff, KeyRound } from 'lucide-react';
+import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw, Lock, Eye, EyeOff, KeyRound, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import OnboardingTour from '@/components/onboarding/OnboardingTour';
+import SecurityPanel from '@/components/settings/SecurityPanel';
 
 interface Profile {
   full_name: string;
@@ -163,6 +164,11 @@ const Settings = () => {
     } else {
       toast.success('Parola a fost schimbată cu succes!');
       setPasswordData({ current: '', newPass: '', confirm: '' });
+      
+      // Log security event
+      supabase.functions.invoke('log-auth-event', {
+        body: { event_type: 'password_change', details: { action: 'Parolă schimbată de utilizator' } },
+      }).catch(() => {});
     }
 
     setPasswordLoading(false);
@@ -389,6 +395,9 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+        {/* Security & Sessions */}
+        <SecurityPanel />
+
         {/* Restart Tour Card */}
         <Card>
           <CardHeader>
