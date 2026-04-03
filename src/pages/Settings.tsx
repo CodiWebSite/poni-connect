@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
-import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw, Lock, Eye, EyeOff, KeyRound } from 'lucide-react';
+import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw, Lock, Eye, EyeOff, KeyRound, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import OnboardingTour from '@/components/onboarding/OnboardingTour';
 
