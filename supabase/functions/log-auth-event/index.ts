@@ -45,17 +45,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: { user }, error: userError } = await createClient(
+    const anonClient = createClient(
       supabaseUrl,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
-    ).auth.getUser();
+    );
 
-    if (userError || !user) {
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(
+      authHeader.replace("Bearer ", "")
+    );
+
+    if (claimsError || !claimsData?.claims?.sub) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const userId = claimsData.claims.sub as string;
+
+    // Parse request body for event_type
+    let eventType = "login";
+    let eventDetails: Record<string, any> = {};
+    try {
+      const body = await req.json();
+      if (body?.event_type) eventType = body.event_type;
+      if (body?.details) eventDetails = body.details;
+    } catch {
+      // No body = standard login event
     }
 
     const ipAddress =
@@ -65,68 +82,196 @@ Deno.serve(async (req) => {
     const userAgent = req.headers.get("user-agent") || "unknown";
     const deviceSummary = parseDeviceSummary(userAgent);
 
-    // Check for suspicious login: different IP from last 3 or completely new user agent
-    const { data: recentLogs } = await supabase
-      .from("auth_login_logs")
-      .select("ip_address, user_agent")
-      .eq("user_id", user.id)
-      .eq("status", "success")
-      .order("login_at", { ascending: false })
-      .limit(5);
+    // Get user profile name
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-    let isSuspicious = false;
-    if (recentLogs && recentLogs.length > 0) {
-      const recentIPs = [...new Set(recentLogs.map((l: any) => l.ip_address))];
-      const recentUAs = [...new Set(recentLogs.map((l: any) => l.user_agent))];
+    const userName = profile?.full_name || "Utilizator necunoscut";
 
-      if (!recentIPs.includes(ipAddress) && recentIPs.length >= 2) {
-        isSuspicious = true;
+    // Handle login events
+    if (eventType === "login") {
+      // Check for suspicious login
+      const { data: recentLogs } = await supabase
+        .from("auth_login_logs")
+        .select("ip_address, user_agent")
+        .eq("user_id", userId)
+        .eq("status", "success")
+        .order("login_at", { ascending: false })
+        .limit(5);
+
+      let isSuspicious = false;
+      let isNewDevice = false;
+      let isNewIP = false;
+
+      if (recentLogs && recentLogs.length > 0) {
+        const recentIPs = [...new Set(recentLogs.map((l: any) => l.ip_address))];
+        const recentUAs = [...new Set(recentLogs.map((l: any) => l.user_agent))];
+
+        if (!recentIPs.includes(ipAddress) && recentIPs.length >= 2) {
+          isSuspicious = true;
+          isNewIP = true;
+        }
+        if (!recentUAs.includes(userAgent)) {
+          isNewDevice = true;
+          if (recentLogs.length >= 3) isSuspicious = true;
+        }
       }
-      if (!recentUAs.includes(userAgent)) {
-        isSuspicious = true;
+
+      // Insert login log
+      await supabase.from("auth_login_logs").insert({
+        user_id: userId,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        device_summary: deviceSummary,
+        status: "success",
+        is_suspicious: isSuspicious,
+      });
+
+      // Create security events
+      const securityEvents: any[] = [];
+
+      if (isNewDevice) {
+        securityEvents.push({
+          user_id: userId,
+          event_type: "new_device",
+          severity: "warning",
+          ip_address: ipAddress,
+          user_agent: userAgent,
+          details: { device: deviceSummary, message: `Autentificare de pe un dispozitiv nou: ${deviceSummary}` },
+        });
       }
-    }
 
-    // Insert the log
-    await supabase.from("auth_login_logs").insert({
-      user_id: user.id,
-      ip_address: ipAddress,
-      user_agent: userAgent,
-      device_summary: deviceSummary,
-      status: "success",
-      is_suspicious: isSuspicious,
-    });
+      if (isNewIP) {
+        securityEvents.push({
+          user_id: userId,
+          event_type: "new_ip",
+          severity: "warning",
+          ip_address: ipAddress,
+          user_agent: userAgent,
+          details: { message: `Autentificare de la o adresă IP nouă: ${ipAddress}` },
+        });
+      }
 
-    // If suspicious, notify all super_admins
-    if (isSuspicious) {
-      const { data: superAdmins } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "super_admin");
+      if (isSuspicious) {
+        securityEvents.push({
+          user_id: userId,
+          event_type: "suspicious_login",
+          severity: "critical",
+          ip_address: ipAddress,
+          user_agent: userAgent,
+          details: { device: deviceSummary, message: `Login suspect detectat de pe ${deviceSummary} (IP: ${ipAddress})` },
+        });
+      }
 
-      // Get user profile name
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // Always log a successful login event
+      securityEvents.push({
+        user_id: userId,
+        event_type: "login_success",
+        severity: "info",
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        details: { device: deviceSummary },
+      });
 
-      const userName = profile?.full_name || user.email || "Utilizator necunoscut";
+      if (securityEvents.length > 0) {
+        await supabase.from("security_events").insert(securityEvents);
+      }
 
-      if (superAdmins && superAdmins.length > 0) {
-        const notifications = superAdmins.map((admin: any) => ({
-          user_id: admin.user_id,
-          title: "⚠️ Login suspect detectat",
-          message: `${userName} s-a autentificat de pe ${deviceSummary} (IP: ${ipAddress})`,
+      // Notify user about suspicious login
+      if (isSuspicious) {
+        // Notify the user themselves
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          title: "⚠️ Login suspect pe contul tău",
+          message: `S-a detectat o autentificare neobișnuită de pe ${deviceSummary} (IP: ${ipAddress}). Dacă nu ai fost tu, schimbă-ți parola imediat.`,
           type: "warning",
-          related_type: "auth_login",
-        }));
+          related_type: "security_event",
+        });
 
-        await supabase.from("notifications").insert(notifications);
+        // Notify all super_admins
+        const { data: superAdmins } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "super_admin");
+
+        if (superAdmins && superAdmins.length > 0) {
+          const notifications = superAdmins
+            .filter((admin: any) => admin.user_id !== userId)
+            .map((admin: any) => ({
+              user_id: admin.user_id,
+              title: "⚠️ Login suspect detectat",
+              message: `${userName} s-a autentificat de pe ${deviceSummary} (IP: ${ipAddress})`,
+              type: "warning",
+              related_type: "security_event",
+            }));
+
+          if (notifications.length > 0) {
+            await supabase.from("notifications").insert(notifications);
+          }
+        }
       }
+
+      return new Response(JSON.stringify({ success: true, suspicious: isSuspicious }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(JSON.stringify({ success: true, suspicious: isSuspicious }), {
+    // Handle other security events (password_change, role_change, etc.)
+    if (["password_change", "role_change", "critical_action", "logout_all"].includes(eventType)) {
+      const severityMap: Record<string, string> = {
+        password_change: "warning",
+        role_change: "critical",
+        critical_action: "critical",
+        logout_all: "warning",
+      };
+
+      await supabase.from("security_events").insert({
+        user_id: userId,
+        event_type: eventType,
+        severity: severityMap[eventType] || "info",
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        details: { ...eventDetails, device: deviceSummary },
+      });
+
+      // For critical events, notify super_admins
+      if (severityMap[eventType] === "critical") {
+        const { data: superAdmins } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "super_admin");
+
+        const messageMap: Record<string, string> = {
+          role_change: `Rolul utilizatorului ${userName} a fost modificat`,
+          critical_action: `${userName} a efectuat o acțiune critică: ${eventDetails?.action || "necunoscut"}`,
+        };
+
+        if (superAdmins && superAdmins.length > 0) {
+          const notifications = superAdmins
+            .filter((admin: any) => admin.user_id !== userId)
+            .map((admin: any) => ({
+              user_id: admin.user_id,
+              title: "🔐 Alertă de securitate",
+              message: messageMap[eventType] || `Eveniment de securitate: ${eventType}`,
+              type: "warning",
+              related_type: "security_event",
+            }));
+
+          if (notifications.length > 0) {
+            await supabase.from("notifications").insert(notifications);
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
