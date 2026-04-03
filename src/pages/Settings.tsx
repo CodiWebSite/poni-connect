@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw, Lock, Eye, EyeOff, KeyRound, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import OnboardingTour from '@/components/onboarding/OnboardingTour';
+import SecurityPanel from '@/components/settings/SecurityPanel';
 
 interface Profile {
   full_name: string;
