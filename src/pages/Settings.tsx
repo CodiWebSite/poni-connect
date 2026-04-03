@@ -390,6 +390,9 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+        {/* Security & Sessions */}
+        <SecurityPanel />
+
         {/* Restart Tour Card */}
         <Card>
           <CardHeader>
