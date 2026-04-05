@@ -355,16 +355,6 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
       const { error } = await supabase.from('hr_requests').delete().eq('id', leave.id);
       if (error) throw error;
 
-      if (!isNonDeductible) {
-        if (numberOfDays > 0 && employeeRecordId) {
-          const { data: record } = await supabase.from('employee_records').select('id, used_leave_days').eq('id', employeeRecordId).single();
-          if (record) {
-            const newUsedDays = Math.max(0, record.used_leave_days - numberOfDays);
-            await supabase.from('employee_records').update({ used_leave_days: newUsedDays }).eq('id', record.id);
-          }
-        }
-
-        if (numberOfDays > 0 && leaveEpdId) {
       // Recalculate balance after deletion using centralized DB function
       if (!isNonDeductible) {
         const targetId = leaveEpdId || epdId;
