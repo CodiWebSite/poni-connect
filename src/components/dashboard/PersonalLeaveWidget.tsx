@@ -8,7 +8,7 @@ import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 
 const PersonalLeaveWidget = () => {
   const { user } = useAuth();
-  const [record, setRecord] = useState<{ total: number; used: number; remaining: number } | null>(null);
+  const [record, setRecord] = useState<{ total: number; used: number; remaining: number; carryover: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,14 +16,34 @@ const PersonalLeaveWidget = () => {
     const fetch = async () => {
       const { data } = await supabase
         .from('employee_records')
-        .select('total_leave_days, used_leave_days, remaining_leave_days')
+        .select('total_leave_days, used_leave_days, remaining_leave_days, id')
         .eq('user_id', user.id)
         .single();
+      
+      let carryoverDays = 0;
       if (data) {
+        // Get carryover info
+        const { data: epd } = await supabase
+          .from('employee_personal_data')
+          .select('id')
+          .eq('employee_record_id', data.id)
+          .maybeSingle();
+        if (epd) {
+          const currentYear = new Date().getFullYear();
+          const { data: co } = await supabase
+            .from('leave_carryover')
+            .select('remaining_days')
+            .eq('employee_personal_data_id', epd.id)
+            .eq('from_year', currentYear - 1)
+            .eq('to_year', currentYear)
+            .maybeSingle();
+          carryoverDays = co?.remaining_days || 0;
+        }
         setRecord({
           total: data.total_leave_days,
           used: data.used_leave_days,
           remaining: data.remaining_leave_days ?? (data.total_leave_days - data.used_leave_days),
+          carryover: carryoverDays,
         });
       }
       setLoading(false);
@@ -31,8 +51,10 @@ const PersonalLeaveWidget = () => {
     fetch();
   }, [user]);
 
-  const progress = record ? (record.used / record.total) * 100 : 0;
-  const animatedRemaining = useAnimatedCounter(record?.remaining || 0);
+  const totalAvailable = (record?.remaining || 0) + (record?.carryover || 0);
+  const totalAll = (record?.total || 0) + (record?.carryover || 0) + (record?.used || 0);
+  const progress = totalAll > 0 ? ((record?.used || 0) / totalAll) * 100 : 0;
+  const animatedRemaining = useAnimatedCounter(totalAvailable);
 
   if (loading) {
     return (
@@ -71,10 +93,16 @@ const PersonalLeaveWidget = () => {
               <p className="text-[9px] text-muted-foreground">disponibile</p>
             </div>
           </ProgressRing>
-          <div className="grid grid-cols-3 gap-2 flex-1 w-full">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1 w-full">
+            {record.carryover > 0 && (
+              <div className="text-center p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <p className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400">{record.carryover}</p>
+                <p className="text-[9px] text-muted-foreground">Report {new Date().getFullYear() - 1}</p>
+              </div>
+            )}
             <div className="text-center p-2 bg-success/10 rounded-lg border border-success/20">
               <p className="text-base sm:text-lg font-bold text-success">{record.remaining}</p>
-              <p className="text-[9px] text-muted-foreground">Libere</p>
+              <p className="text-[9px] text-muted-foreground">Curent {new Date().getFullYear()}</p>
             </div>
             <div className="text-center p-2 bg-info/10 rounded-lg border border-info/20">
               <p className="text-base sm:text-lg font-bold text-info">{record.used}</p>
@@ -82,7 +110,7 @@ const PersonalLeaveWidget = () => {
             </div>
             <div className="text-center p-2 bg-muted rounded-lg border border-border">
               <p className="text-base sm:text-lg font-bold text-foreground">{record.total}</p>
-              <p className="text-[9px] text-muted-foreground">Total</p>
+              <p className="text-[9px] text-muted-foreground">Total {new Date().getFullYear()}</p>
             </div>
           </div>
         </div>

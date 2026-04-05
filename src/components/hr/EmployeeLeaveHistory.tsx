@@ -250,31 +250,9 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
         throw error;
       }
 
-      // Update balances if deductible
-      if (isDeductible) {
-        if (daysFromCarryover > 0 && carryoverRecord) {
-          await supabase.from('leave_carryover').update({
-            used_days: carryoverRecord.used_days + daysFromCarryover,
-            remaining_days: carryoverRecord.remaining_days - daysFromCarryover,
-          }).eq('id', carryoverRecord.id);
-        }
-
-        if (employeeRecordId) {
-          const { data: rec } = await supabase.from('employee_records').select('id, used_leave_days').eq('id', employeeRecordId).single();
-          if (rec) {
-            const newUsed = rec.used_leave_days + daysFromCurrent;
-            await supabase.from('employee_records').update({ used_leave_days: newUsed }).eq('id', rec.id);
-          }
-        }
-
-        const targetEpdId = epdId;
-        if (targetEpdId) {
-          const { data: epd } = await supabase.from('employee_personal_data').select('id, used_leave_days').eq('id', targetEpdId).maybeSingle();
-          if (epd) {
-            const newUsed = (epd.used_leave_days || 0) + daysFromCurrent;
-            await supabase.from('employee_personal_data').update({ used_leave_days: newUsed, last_updated_by: user.id }).eq('id', epd.id);
-          }
-        }
+      // Recalculate balances using centralized DB function (FIFO)
+      if (isDeductible && epdId) {
+        await supabase.rpc('recalculate_leave_balance', { target_epd_id: epdId });
       }
 
       // Audit log
@@ -377,27 +355,11 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
       const { error } = await supabase.from('hr_requests').delete().eq('id', leave.id);
       if (error) throw error;
 
+      // Recalculate balance after deletion using centralized DB function
       if (!isNonDeductible) {
-        if (numberOfDays > 0 && employeeRecordId) {
-          const { data: record } = await supabase.from('employee_records').select('id, used_leave_days').eq('id', employeeRecordId).single();
-          if (record) {
-            const newUsedDays = Math.max(0, record.used_leave_days - numberOfDays);
-            await supabase.from('employee_records').update({ used_leave_days: newUsedDays }).eq('id', record.id);
-          }
-        }
-
-        if (numberOfDays > 0 && leaveEpdId) {
-          const { data: epd } = await supabase.from('employee_personal_data').select('id, used_leave_days').eq('id', leaveEpdId).maybeSingle();
-          if (epd) {
-            const newUsedDays = Math.max(0, (epd.used_leave_days || 0) - numberOfDays);
-            await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
-          }
-        } else if (numberOfDays > 0 && employeeRecordId) {
-          const { data: epd } = await supabase.from('employee_personal_data').select('id, used_leave_days').eq('employee_record_id', employeeRecordId).maybeSingle();
-          if (epd) {
-            const newUsedDays = Math.max(0, (epd.used_leave_days || 0) - numberOfDays);
-            await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
-          }
+        const targetId = leaveEpdId || epdId;
+        if (targetId) {
+          await supabase.rpc('recalculate_leave_balance', { target_epd_id: targetId });
         }
       }
 

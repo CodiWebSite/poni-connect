@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import {
   Users, UserCheck, UserX, FileWarning, Clock, AlertTriangle,
-  FileText, Activity, Archive, ShieldAlert, CalendarDays
+  FileText, Activity, Archive, ShieldAlert, CalendarDays, RefreshCcw, Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -57,9 +59,26 @@ function KPICard({ icon: Icon, value, label, color, subValue }: {
 }
 
 export default function HRDashboard() {
+  const { toast } = useToast();
   const [kpi, setKpi] = useState<KPIData | null>(null);
   const [recentActivity, setRecentActivity] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false);
+
+  const handleRecalculateAll = async () => {
+    setRecalculating(true);
+    try {
+      const { data, error } = await supabase.rpc('recalculate_leave_balance', { target_epd_id: null });
+      if (error) throw error;
+      const count = Array.isArray(data) ? data.length : 0;
+      toast({ title: 'Recalculare completă', description: `Soldurile a ${count} angajați au fost recalculate cu succes.` });
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Recalculate error:', err);
+      toast({ title: 'Eroare', description: 'Nu s-au putut recalcula soldurile.', variant: 'destructive' });
+    }
+    setRecalculating(false);
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -172,6 +191,20 @@ export default function HRDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Recalculate Button */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRecalculateAll}
+          disabled={recalculating}
+          className="gap-2"
+        >
+          {recalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+          Recalculare Solduri Concedii
+        </Button>
+      </div>
+
       {/* KPI Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <KPICard icon={Users} value={kpi.activeEmployees} label="Angajați Activi" color="from-primary to-primary/70" />
