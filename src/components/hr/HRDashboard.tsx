@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import {
   Users, UserCheck, UserX, FileWarning, Clock, AlertTriangle,
-  FileText, Activity, Archive, ShieldAlert, CalendarDays
+  FileText, Activity, Archive, ShieldAlert, CalendarDays, RefreshCcw, Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';

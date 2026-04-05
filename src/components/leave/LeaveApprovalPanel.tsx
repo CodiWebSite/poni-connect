@@ -337,45 +337,8 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const deductLeaveDays = async (request: LeaveRequest) => {
     // Skip deduction in demo mode to protect real balances
     if (isDemo) return;
-    const currentYear = new Date().getFullYear();
-    let daysToDeduct = request.working_days;
-
-    const { data: carryovers } = await supabase
-      .from('leave_carryover')
-      .select('id, remaining_days, used_days')
-      .eq('employee_personal_data_id', request.epd_id)
-      .eq('to_year', currentYear)
-      .gt('remaining_days', 0);
-
-    if (carryovers && carryovers.length > 0) {
-      for (const carry of carryovers) {
-        if (daysToDeduct <= 0) break;
-        const deductFromCarry = Math.min(daysToDeduct, carry.remaining_days);
-        await supabase
-          .from('leave_carryover')
-          .update({
-            used_days: carry.used_days + deductFromCarry,
-            remaining_days: carry.remaining_days - deductFromCarry,
-          })
-          .eq('id', carry.id);
-        daysToDeduct -= deductFromCarry;
-      }
-    }
-
-    if (daysToDeduct > 0) {
-      const { data: epd } = await supabase
-        .from('employee_personal_data')
-        .select('used_leave_days, employee_record_id')
-        .eq('id', request.epd_id)
-        .maybeSingle();
-
-      if (epd) {
-        await supabase
-          .from('employee_personal_data')
-          .update({ used_leave_days: (epd.used_leave_days || 0) + daysToDeduct })
-          .eq('id', request.epd_id);
-      }
-    }
+    // Use the centralized DB function for accurate FIFO recalculation
+    await supabase.rpc('recalculate_leave_balance', { target_epd_id: request.epd_id });
   };
 
   const sendResultEmail = async (request: LeaveRequest, result: 'approved' | 'rejected', rejectionReasonText?: string) => {
