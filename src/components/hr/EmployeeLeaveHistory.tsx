@@ -365,17 +365,11 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
         }
 
         if (numberOfDays > 0 && leaveEpdId) {
-          const { data: epd } = await supabase.from('employee_personal_data').select('id, used_leave_days').eq('id', leaveEpdId).maybeSingle();
-          if (epd) {
-            const newUsedDays = Math.max(0, (epd.used_leave_days || 0) - numberOfDays);
-            await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
-          }
-        } else if (numberOfDays > 0 && employeeRecordId) {
-          const { data: epd } = await supabase.from('employee_personal_data').select('id, used_leave_days').eq('employee_record_id', employeeRecordId).maybeSingle();
-          if (epd) {
-            const newUsedDays = Math.max(0, (epd.used_leave_days || 0) - numberOfDays);
-            await supabase.from('employee_personal_data').update({ used_leave_days: newUsedDays }).eq('id', epd.id);
-          }
+      // Recalculate balance after deletion using centralized DB function
+      if (!isNonDeductible) {
+        const targetId = leaveEpdId || epdId;
+        if (targetId) {
+          await supabase.rpc('recalculate_leave_balance', { target_epd_id: targetId });
         }
       }
 
