@@ -1,190 +1,87 @@
 
 
-# IRIS v2 — Copilot Operațional ICMPP
+# Plan: Reparare completă solduri concedii — 145 angajați afectați, 554 zile eronate
 
-## Rezumat
-Transformarea IRIS din asistent read-only într-un copilot operațional cu două moduri: **Read Mode** (existent, îmbunătățit) și **Action Mode** (nou — execută acțiuni asistate cu confirmare). Implementare bazată pe AI tool-calling: modelul AI detectează intenția și apelează funcții specifice prin mecanismul `tools` al API-ului, iar frontend-ul afișează carduri de confirmare înainte de execuție.
+## Problema identificată
 
-## Arhitectura tool-calling
+Am investigat baza de date și am găsit **145 angajați activi** cu solduri de concediu eronate, totalizând **554 zile diferență**.
 
-```text
-Utilizator → mesaj → Edge Function → AI Gateway (cu tools definite)
-                                         ↓
-                                    AI returnează tool_call
-                                         ↓
-                              Edge Function execută tool-ul
-                              (validare rol, date, duplicate)
-                                         ↓
-                              Returnează rezultat → AI formulează răspuns
-                                         ↓
-                              Stream către client
-                              (cu acțiuni ce necesită confirmare)
-```
+### Cauza principală
+Sistemul are **două surse de concediu** care nu sunt sincronizate corect:
+1. **Cereri digitale** (`leave_requests`) — depuse de angajați prin platformă
+2. **Înregistrări manuale HR** (`hr_requests` tip `concediu`) — adăugate de HR
 
-Pentru acțiuni write, fluxul este în 2 pași:
-1. AI pregătește acțiunea și returnează un bloc `[IRIS_ACTION]` cu datele
-2. Frontend afișează card de confirmare → utilizatorul confirmă → se trimite mesaj de confirmare → Edge Function execută
+Problema: când SRUS aprobă o cerere digitală, funcția `deductLeaveDays()` deduce zilele din report (carryover) prin FIFO, dar **nu actualizează `used_leave_days`** pentru porțiunea dedusă din report. De asemenea, pentru ~43 de angajați cu cereri aprobate, deducerea nu a rulat deloc (`epd.used_leave_days = 0`).
 
-## Detalii tehnice
+### Exemple concrete
+- **ADRIAN BELE**: 5 zile aprobate digital, `used_leave_days = 0` (deducerea nu a rulat)
+- **ANCA ROXANA PETROVICI**: 8 zile aprobate, `used_leave_days = 0`
+- **ANDRA-ELENA BEJAN**: 7 zile aprobate, `used_leave_days = 13` (supraestimat)
+- **BUTNARU IRINA**: 5 zile digitale + 2 manuale = 7 total, dar `used_leave_days = 3`
 
-### Fișiere noi
+---
 
-#### `supabase/functions/_shared/iris-tools/leave.ts`
-Funcții pentru concedii:
-- `check_leave_balance(userId)` — sold, report, bonus
-- `check_leave_overlaps(userId, startDate, endDate)` — suprapuneri
-- `calculate_working_days(startDate, endDate)` — zile lucrătoare (excluzând weekend + sărbători)
-- `find_approver(userId)` — aprobator desemnat (per-employee → per-department fallback)
-- `create_leave_request(userId, startDate, endDate, replacementName, ip)` — inserare cu validări complete + audit
-- `get_pending_approvals(userId, userRole)` — cereri de aprobat (pt șefi/HR)
-- `get_team_on_leave(department, dateRange)` — cine e în concediu
+## Plan de implementare
 
-#### `supabase/functions/_shared/iris-tools/requests.ts`
-- `create_correction_request(userId, fieldName, currentValue, requestedValue, reason)` — cerere corecție date
-- `create_helpdesk_ticket(name, email, subject, message)` — tichet HelpDesk
-- `create_hr_request(userId, requestType, details)` — cerere adeverință/alte
+### Pasul 1 — Script de recalculare solduri (migration SQL)
 
-#### `supabase/functions/_shared/iris-tools/hr.ts`
-Funcții HR (doar pt roluri hr/sef_srus/super_admin):
-- `get_employee_summary(employeeName, requestingUserRole)` — rezumat pe angajat (documente, sold, cereri)
-- `get_expiring_documents(days)` — documente CI ce expiră
-- `get_employees_without_accounts()` — angajați fără cont
+Voi crea un script care, pentru **fiecare angajat activ**:
 
-#### `supabase/functions/_shared/iris-tools/audit.ts`
-- `log_iris_action(userId, action, entityType, entityId, details, ip)` — logare audit cu marcaj `initiated_via: iris`
+1. Calculează total zile CO deductibile din ambele surse:
+   - `leave_requests` (status: approved/pending) → `working_days`
+   - `hr_requests` (tip concediu, leaveType = 'co', approved) → `numberOfDays`
 
-#### `supabase/functions/_shared/iris-tools/system.ts`
-Funcții super_admin:
-- `get_system_summary()` — rezumat operațional (health, cereri noi, tichete, utilizatori fără rol)
+2. Aplică FIFO:
+   - Mai întâi deduce din `leave_carryover.remaining_days` (report 2025→2026)
+   - Restul merge în `employee_personal_data.used_leave_days`
 
-#### `src/components/iris/IrisConfirmationCard.tsx`
-Card interactiv afișat în chat când IRIS pregătește o acțiune:
-- Titlu acțiune (ex: "Cerere concediu de odihnă")
-- Rezumat detalii (date, zile, aprobator)
-- Butoane: "Confirmă" / "Anulează"
-- Badge "v2 — Action Mode"
-- La confirmare, trimite mesaj automat cu payload-ul acțiunii
+3. Actualizează sincronizat:
+   - `leave_carryover.used_days` și `remaining_days`
+   - `employee_personal_data.used_leave_days`
+   - `employee_records.used_leave_days` (via trigger existent)
 
-#### `src/components/iris/IrisActionPreview.tsx`
-Componentă simplă ce afișează rezultatul unei acțiuni executate:
-- Status: succes/eroare
-- Detalii (număr cerere, link către pagina relevantă)
-- Timestamp + marcaj "Acțiune executată prin IRIS"
+### Pasul 2 — Fix logica de deducere la aprobare SRUS
 
-### Fișiere modificate
+În `LeaveApprovalPanel.tsx`, funcția `deductLeaveDays()`:
+- Problema actuală: actualizează `epd.used_leave_days` doar cu zilele rămase DUPĂ carryover
+- Fix: trebuie să recalculeze soldul complet sau cel puțin să garanteze că totalul dedus (carryover + curent) este consistent
 
-#### `supabase/functions/iris-chat/index.ts` — rescris major
-Schimbări principale:
-1. **Tool-calling**: Definirea tools-urilor AI (check_leave_balance, create_leave_request, create_helpdesk_ticket, etc.) ca funcții în payload-ul către AI Gateway
-2. **Flux confirmare**: Când AI decide o acțiune write, returnează un bloc JSON special `[IRIS_ACTION:{...}]` în răspuns
-3. **Endpoint de execuție**: Acceptă un nou câmp `executeAction` în request body — când clientul trimite confirmarea, edge function-ul execută acțiunea reală
-4. **Extragere IP**: Din header-ele `x-forwarded-for` / `CF-Connecting-IP` pentru audit
-5. **Context îmbunătățit**: Include informații despre carryover, bonus days, employee_personal_data ID
-6. **System prompt v2**: Include instrucțiuni pentru modul Action (când să propună acțiuni, cum să ceară confirmare)
-7. **Validare rol pentru tools**: Fiecare tool verifică dacă rolul utilizatorului permite acțiunea
+### Pasul 3 — Fix logica la înregistrare manuală HR
 
-Structura non-streaming pentru execuție acțiuni:
-```text
-POST /iris-chat
-Body: { executeAction: { type: "create_leave", data: {...} } }
-Response: { success: true, result: { requestNumber: "CO-2026-0042" } }
-```
+În `EmployeeLeaveHistory.tsx`:
+- Verificare că deducerea din carryover + curent funcționează corect
+- Adăugare recalculare totală la salvare (nu increment, ci recalculare)
 
-Structura streaming pentru chat normal rămâne neschimbată.
+### Pasul 4 — Adăugare funcție de recalculare automată
 
-#### `src/components/iris/IrisChatPanel.tsx`
-- Parsare blocuri `[IRIS_ACTION:{...}]` din stream-ul AI
-- Afișare `IrisConfirmationCard` în loc de text simplu pentru acțiuni
-- Handler de confirmare: trimite `executeAction` către edge function
-- Handler de anulare: adaugă mesaj "Acțiunea a fost anulată"
-- Afișare `IrisActionPreview` după execuție reușită
+Creez o funcție DB `recalculate_leave_balance(epd_id)` care:
+- Poate fi apelată oricând pentru a corecta soldul unui angajat
+- Ia în calcul ambele surse de concediu
+- Aplică FIFO corect
+- Poate fi apelată din UI de HR pentru „Recalculare sold"
 
-#### `src/components/iris/IrisQuickActions.tsx`
-Sugestii noi adaptate v2:
-- **Toți**: + "Depune o cerere de concediu", "Raportează o problemă"
-- **Șefi**: + "Arată aprobările mele în așteptare", "Cine e în concediu azi?"
-- **HR**: + "Rezumat pe angajatul X", "Documente ce expiră luna aceasta"
-- **super_admin**: + "Rezumat operațional zilnic"
+### Pasul 5 — Buton „Recalculare solduri" în HR Dashboard
 
-#### `src/components/iris/IrisContextHints.tsx`
-Hint-uri actualizate pentru Action Mode:
-- Pe `/leave-request`: "Pot crea cererea de concediu direct — spuneți-mi perioada!"
-- Pe `/hr-management`: "Pot verifica dosarul oricărui angajat — întrebați-mă!"
+Adaug un buton în modulul HR care permite recalcularea în masă a soldurilor, pentru situații similare în viitor.
 
-#### `src/components/iris/IrisMessageBubble.tsx`
-- Detectare blocuri `[IRIS_ACTION:{...}]` și `[IRIS_RESULT:{...}]` în content
-- Rendering prin componentele IrisConfirmationCard / IrisActionPreview
+---
 
-## Tools AI definite în edge function
+## Fișiere modificate
 
-```typescript
-const IRIS_TOOLS = [
-  {
-    type: "function",
-    function: {
-      name: "check_leave_balance",
-      description: "Verifică soldul de concediu al utilizatorului curent",
-      parameters: { type: "object", properties: {}, required: [] }
-    }
-  },
-  {
-    type: "function", 
-    function: {
-      name: "prepare_leave_request",
-      description: "Pregătește o cerere de concediu. Returnează rezumatul pentru confirmare.",
-      parameters: {
-        type: "object",
-        properties: {
-          start_date: { type: "string", description: "Data început (YYYY-MM-DD)" },
-          end_date: { type: "string", description: "Data sfârșit (YYYY-MM-DD)" },
-          replacement_name: { type: "string", description: "Nume înlocuitor (opțional)" }
-        },
-        required: ["start_date", "end_date"]
-      }
-    }
-  },
-  // ... similar pentru create_helpdesk_ticket, create_correction_request,
-  //     get_employee_summary (HR only), get_pending_approvals, get_team_schedule
-];
-```
+| Fișier | Modificare |
+|--------|-----------|
+| Migration SQL nouă | Script recalculare toate soldurile |
+| `src/components/leave/LeaveApprovalPanel.tsx` | Fix `deductLeaveDays()` — recalculare completă |
+| `src/components/hr/EmployeeLeaveHistory.tsx` | Fix deducere la înregistrare manuală |
+| `src/components/hr/HRDashboard.tsx` | Buton recalculare solduri |
+| `src/components/dashboard/PersonalLeaveWidget.tsx` | Include carryover în afișare |
 
-AI-ul va apela tool-urile, edge function-ul le execută (read sau prepare), iar pentru acțiuni write returnează un bloc de confirmare pe care frontend-ul îl afișează.
+---
 
-## Flux detaliat — Cerere concediu prin IRIS
+## Prioritate și ordine
 
-1. User: "Vreau concediu 6-10 aprilie 2026"
-2. AI apelează `prepare_leave_request(start_date, end_date)`
-3. Edge function:
-   - Calculează zile lucrătoare (excluzând weekend/sărbători)
-   - Verifică sold suficient
-   - Verifică duplicate/suprapuneri
-   - Găsește aprobatorul
-   - Returnează rezumat
-4. AI formulează răspunsul cu bloc `[IRIS_ACTION:{"type":"create_leave","data":{...},"summary":"..."}]`
-5. Frontend afișează IrisConfirmationCard
-6. User apasă "Confirmă"
-7. Frontend trimite `executeAction` către edge function
-8. Edge function inserează în `leave_requests` + `notifications` + `audit_logs` (cu `initiated_via: iris`)
-9. Returnează `[IRIS_RESULT:{"success":true,"requestNumber":"CO-2026-0042"}]`
-10. Frontend afișează IrisActionPreview cu link către cerere
-
-## Securitate
-
-- Toate tool-urile write verifică rolul din JWT
-- Tool-urile HR verifică `can_manage_hr(userId)` prin query pe `user_roles`
-- Tool-urile super_admin verifică `role === 'super_admin'`
-- IP-ul se extrage din headers pentru audit
-- Fiecare acțiune logată cu: user_id, action, entity_type, entity_id, `{initiated_via: "iris", ip: "..."}`
-- Nu se expun CNP, CI, adresă, telefon — niciodată
-- Rolul `admin` nu este recunoscut
-
-## Pași de implementare
-
-1. Creare module `_shared/iris-tools/*.ts` (leave, requests, hr, audit, system)
-2. Rescriere `iris-chat/index.ts` cu tool-calling + endpoint execuție
-3. Creare `IrisConfirmationCard.tsx` și `IrisActionPreview.tsx`
-4. Actualizare `IrisChatPanel.tsx` cu parsing acțiuni + flux confirmare
-5. Actualizare `IrisMessageBubble.tsx` cu rendering blocuri acțiune
-6. Actualizare `IrisQuickActions.tsx` și `IrisContextHints.tsx`
-7. Deploy + test
+1. **Critic** — Migration recalculare (corectează imediat cele 145 cazuri)
+2. **Critic** — Fix `deductLeaveDays()` (previne probleme viitoare)
+3. **Important** — Funcție `recalculate_leave_balance` + buton HR
+4. **Nice-to-have** — Widget personal actualizat cu carryover
 
