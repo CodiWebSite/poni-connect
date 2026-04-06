@@ -81,20 +81,43 @@ const AppSettingsPanel = () => {
     setSettings(prev => ({ ...prev, [key]: checked }));
     await updateSetting(key, checked);
 
-    if (key === 'maintenance_mode' && wasMaintenance && !checked) {
+    if (key === 'maintenance_mode') {
+      // Send Telegram notification for maintenance toggle
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
-          const res = await supabase.functions.invoke('notify-maintenance-end', {
+          await supabase.functions.invoke('notify-telegram', {
             headers: { Authorization: `Bearer ${session.access_token}` },
+            body: {
+              type: checked ? 'maintenance_on' : 'maintenance_off',
+              title: checked ? 'Mentenanță ACTIVATĂ' : 'Mentenanță DEZACTIVATĂ',
+              message: checked
+                ? 'Platforma a fost pusă în modul mentenanță. Utilizatorii obișnuiți nu mai au acces.'
+                : 'Platforma a ieșit din mentenanță. Toți utilizatorii au acces din nou.',
+              severity: checked ? 'warning' : 'info',
+            },
           });
-          const sent = res.data?.sent || 0;
-          if (sent > 0) {
-            toast({ title: 'Notificări trimise', description: `${sent} abonat(ți) au fost notificați pe email.` });
-          }
         }
       } catch (e) {
-        console.error('Failed to notify maintenance subscribers:', e);
+        console.error('Telegram notification failed:', e);
+      }
+
+      // Send email to maintenance subscribers when maintenance ends
+      if (wasMaintenance && !checked) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            const res = await supabase.functions.invoke('notify-maintenance-end', {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+            const sent = res.data?.sent || 0;
+            if (sent > 0) {
+              toast({ title: 'Notificări trimise', description: `${sent} abonat(ți) au fost notificați pe email.` });
+            }
+          }
+        } catch (e) {
+          console.error('Failed to notify maintenance subscribers:', e);
+        }
       }
     }
   };
