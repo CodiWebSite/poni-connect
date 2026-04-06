@@ -92,6 +92,17 @@ Deno.serve(async (req) => {
       ? authHeader.replace("Bearer ", "") 
       : "";
 
+    console.log("Auth debug:", { 
+      hasToken: !!token, 
+      tokenPrefix: token?.slice(0, 20),
+      anonKeyPrefix: anonKey?.slice(0, 20),
+      pubKeyPrefix: publishableKey?.slice(0, 20),
+      hasApikey: !!apikeyHeader,
+      matchAnon: token === anonKey,
+      matchPub: token === publishableKey,
+      matchService: token === serviceRoleKey,
+    });
+
     if (token && (token === serviceRoleKey || token === anonKey || token === publishableKey)) {
       isAuthorized = true;
     } else if (apikeyHeader && token === apikeyHeader) {
