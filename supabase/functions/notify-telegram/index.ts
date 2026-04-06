@@ -84,6 +84,8 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+    console.log("Auth check - has authHeader:", !!authHeader, "anonKey length:", anonKey?.length, "serviceKey length:", serviceRoleKey?.length);
+
     let isAuthorized = false;
 
     if (authHeader?.includes(serviceRoleKey)) {
@@ -91,6 +93,7 @@ Deno.serve(async (req) => {
       isAuthorized = true;
     } else if (authHeader?.startsWith("Bearer ")) {
       const token = authHeader.replace("Bearer ", "");
+      console.log("Token length:", token.length, "anonKey length:", anonKey?.length, "match:", token === anonKey);
       // Check if it's the anon key (DB trigger via pg_net)
       if (token === anonKey) {
         isAuthorized = true;
