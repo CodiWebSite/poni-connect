@@ -12,7 +12,7 @@ import { DemoModeProvider } from "@/contexts/DemoModeContext";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
-import IPAccessGuard from "@/components/auth/IPAccessGuard";
+
 import IrisButton from "@/components/iris/IrisButton";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -106,7 +106,6 @@ function GlobalChatNotifier() {
 }
 
 const App = () => (
-  <IPAccessGuard>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" storageKey="icmpp-theme">
       <AuthProvider>
@@ -164,7 +163,6 @@ const App = () => (
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
-  </IPAccessGuard>
 );
 
 export default App;
