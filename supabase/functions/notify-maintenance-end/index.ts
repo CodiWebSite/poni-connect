@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
             Puteți accesa din nou toate funcționalitățile platformei.
           </p>
           <div style="text-align: center; margin: 24px 0;">
-            <a href="https://poni-connect-hub.lovable.app" 
+            <a href="https://intranet.icmpp.ro" 
                style="display: inline-block; background: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
               Accesează Platforma →
             </a>
