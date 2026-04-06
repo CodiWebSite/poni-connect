@@ -208,7 +208,8 @@ Deno.serve(async (req) => {
       },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("[INTERNAL] Backup data error:", error);
+    return new Response(JSON.stringify({ error: "Eroare internă. Te rugăm să încerci din nou." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

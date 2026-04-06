@@ -319,9 +319,9 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error:", error);
+    console.error("[INTERNAL] Error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "Eroare internă. Te rugăm să încerci din nou." }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

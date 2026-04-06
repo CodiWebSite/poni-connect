@@ -315,11 +315,10 @@ Deno.serve(async (req) => {
     );
     
   } catch (error: unknown) {
-    console.error("Import error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("[INTERNAL] Import error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      JSON.stringify({ success: false, error: "Eroare la import. Te rugăm să încerci din nou." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });
