@@ -106,6 +106,77 @@ export default function SecurityPanel() {
     }
   }, [user]);
 
+  const checkMFAStatus = async () => {
+    try {
+      const { data } = await supabase.auth.mfa.listFactors();
+      const totpFactors = data?.totp || [];
+      const verified = totpFactors.find((f: any) => f.status === 'verified');
+      setMfaEnabled(!!verified);
+      if (verified) setMfaFactorId(verified.id);
+    } catch {
+      // MFA not available
+    }
+  };
+
+  const startMFAEnrollment = async () => {
+    setMfaEnrolling(true);
+    try {
+      const { data, error } = await supabase.auth.mfa.enroll({
+        factorType: 'totp',
+        friendlyName: 'ICMPP Intranet',
+      });
+      if (error) throw error;
+      setMfaQR(data.totp.qr_code);
+      setMfaSecret(data.totp.secret);
+      setMfaFactorId(data.id);
+    } catch (err: any) {
+      toast.error(err.message || 'Eroare la inițializarea 2FA');
+    }
+    setMfaEnrolling(false);
+  };
+
+  const verifyMFAEnrollment = async () => {
+    if (!mfaFactorId || mfaVerifyCode.length !== 6) return;
+    setMfaVerifying(true);
+    try {
+      const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({
+        factorId: mfaFactorId,
+      });
+      if (challengeErr) throw challengeErr;
+
+      const { error: verifyErr } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challenge.id,
+        code: mfaVerifyCode,
+      });
+      if (verifyErr) throw verifyErr;
+
+      setMfaEnabled(true);
+      setMfaQR(null);
+      setMfaSecret(null);
+      setMfaVerifyCode('');
+      toast.success('Autentificare 2FA activată cu succes!');
+    } catch (err: any) {
+      toast.error(err.message || 'Cod invalid. Încercați din nou.');
+    }
+    setMfaVerifying(false);
+  };
+
+  const unenrollMFA = async () => {
+    if (!mfaFactorId) return;
+    setMfaUnenrolling(true);
+    try {
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+      if (error) throw error;
+      setMfaEnabled(false);
+      setMfaFactorId(null);
+      toast.success('2FA dezactivat.');
+    } catch (err: any) {
+      toast.error(err.message || 'Eroare la dezactivarea 2FA');
+    }
+    setMfaUnenrolling(false);
+  };
+
   const fetchData = async () => {
     const [eventsRes, loginsRes, prefsRes] = await Promise.all([
       supabase
