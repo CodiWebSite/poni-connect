@@ -89,33 +89,34 @@ const PublicProfile = () => {
       }
 
       const { data: settingsData } = await supabase
-        .from('public_profile_settings')
+        .from('public_profiles_safe' as any)
         .select('*')
         .eq('epd_id', id)
         .maybeSingle();
 
+      const s = settingsData as any;
       setProfile({
         ...empData,
-        settings: settingsData ? {
-          phone: settingsData.phone,
-          bio: settingsData.bio,
-          bio_en: (settingsData as any).bio_en,
-          tagline: settingsData.tagline,
-          tagline_en: (settingsData as any).tagline_en,
-          position_en: (settingsData as any).position_en,
-          department_en: (settingsData as any).department_en,
-          researchgate_url: settingsData.researchgate_url,
-          google_scholar_url: settingsData.google_scholar_url,
-          orcid_url: settingsData.orcid_url,
-          website_url: settingsData.website_url,
-          instagram_url: (settingsData as any).instagram_url,
-          facebook_url: (settingsData as any).facebook_url,
-          linkedin_url: (settingsData as any).linkedin_url,
-          x_url: (settingsData as any).x_url,
-          show_phone: settingsData.show_phone,
-          show_email: settingsData.show_email,
-          show_department: settingsData.show_department,
-          show_position: settingsData.show_position,
+        settings: s ? {
+          phone: s.phone,
+          bio: s.bio,
+          bio_en: s.bio_en,
+          tagline: s.tagline,
+          tagline_en: s.tagline_en,
+          position_en: s.position_en,
+          department_en: s.department_en,
+          researchgate_url: s.researchgate_url,
+          google_scholar_url: s.google_scholar_url,
+          orcid_url: s.orcid_url,
+          website_url: s.website_url,
+          instagram_url: s.instagram_url,
+          facebook_url: s.facebook_url,
+          linkedin_url: s.linkedin_url,
+          x_url: s.x_url,
+          show_phone: s.show_phone,
+          show_email: s.show_email,
+          show_department: s.show_department,
+          show_position: s.show_position,
         } : null,
       });
       setLoading(false);

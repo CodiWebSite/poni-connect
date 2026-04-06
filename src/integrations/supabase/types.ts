@@ -2914,6 +2914,132 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles_chat_safe: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          department: string | null
+          full_name: string | null
+          id: string | null
+          position: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          department?: string | null
+          full_name?: string | null
+          id?: string | null
+          position?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          department?: string | null
+          full_name?: string | null
+          id?: string | null
+          position?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      public_profiles_safe: {
+        Row: {
+          bio: string | null
+          bio_en: string | null
+          created_at: string | null
+          department_en: string | null
+          epd_id: string | null
+          facebook_url: string | null
+          google_scholar_url: string | null
+          id: string | null
+          instagram_url: string | null
+          linkedin_url: string | null
+          orcid_url: string | null
+          phone: string | null
+          position_en: string | null
+          researchgate_url: string | null
+          show_department: boolean | null
+          show_email: boolean | null
+          show_phone: boolean | null
+          show_position: boolean | null
+          tagline: string | null
+          tagline_en: string | null
+          updated_at: string | null
+          website_url: string | null
+          x_url: string | null
+        }
+        Insert: {
+          bio?: string | null
+          bio_en?: string | null
+          created_at?: string | null
+          department_en?: never
+          epd_id?: string | null
+          facebook_url?: string | null
+          google_scholar_url?: string | null
+          id?: string | null
+          instagram_url?: string | null
+          linkedin_url?: string | null
+          orcid_url?: string | null
+          phone?: never
+          position_en?: never
+          researchgate_url?: string | null
+          show_department?: boolean | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
+          show_position?: boolean | null
+          tagline?: string | null
+          tagline_en?: string | null
+          updated_at?: string | null
+          website_url?: string | null
+          x_url?: string | null
+        }
+        Update: {
+          bio?: string | null
+          bio_en?: string | null
+          created_at?: string | null
+          department_en?: never
+          epd_id?: string | null
+          facebook_url?: string | null
+          google_scholar_url?: string | null
+          id?: string | null
+          instagram_url?: string | null
+          linkedin_url?: string | null
+          orcid_url?: string | null
+          phone?: never
+          position_en?: never
+          researchgate_url?: string | null
+          show_department?: boolean | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
+          show_position?: boolean | null
+          tagline?: string | null
+          tagline_en?: string | null
+          updated_at?: string | null
+          website_url?: string | null
+          x_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_profile_settings_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: true
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_profile_settings_epd_id_fkey"
+            columns: ["epd_id"]
+            isOneToOne: true
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       archive_same_department: {
@@ -2986,6 +3112,10 @@ export type Database = {
           epd_id: string
           total_co_days: number
         }[]
+      }
+      storage_archive_department_match: {
+        Args: { _name: string }
+        Returns: boolean
       }
       sync_existing_employees: {
         Args: never

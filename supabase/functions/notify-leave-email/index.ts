@@ -227,9 +227,9 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error in notify-leave-email:", error);
+    console.error("[INTERNAL] Error in notify-leave-email:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error", details: String(error) }),
+      JSON.stringify({ error: "Eroare internă. Te rugăm să încerci din nou." }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

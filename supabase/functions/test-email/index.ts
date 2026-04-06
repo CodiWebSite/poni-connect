@@ -143,9 +143,9 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error sending test email:", error);
+    console.error("[INTERNAL] Error sending test email:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to send email", details: String(error) }),
+      JSON.stringify({ error: "Eroare internă. Te rugăm să încerci din nou." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
