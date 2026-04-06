@@ -5,13 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { 
   Shield, LogOut, Monitor, MapPin, AlertTriangle, Clock, 
   CheckCircle2, Smartphone, Globe, Loader2, ShieldAlert, ShieldCheck,
-  Bell, BellOff, Mail, Vibrate
+  Bell, BellOff, Mail, Vibrate, KeyRound, QrCode
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -72,8 +74,12 @@ const severityConfig: Record<string, { color: string; icon: typeof Shield }> = {
   critical: { color: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
 };
 
+// Roles that should be prompted to enable MFA
+const MFA_RECOMMENDED_ROLES = ['super_admin', 'hr', 'sef_srus', 'director_institut', 'director_adjunct', 'salarizare'];
+
 export default function SecurityPanel() {
   const { user, signOut } = useAuth();
+  const { role } = useUserRole();
   const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [recentLogins, setRecentLogins] = useState<LoginLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,9 +87,95 @@ export default function SecurityPanel() {
   const [prefs, setPrefs] = useState<AlertPreferences>(defaultPrefs);
   const [savingPrefs, setSavingPrefs] = useState(false);
 
+  // MFA state
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaEnrolling, setMfaEnrolling] = useState(false);
+  const [mfaQR, setMfaQR] = useState<string | null>(null);
+  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaVerifyCode, setMfaVerifyCode] = useState('');
+  const [mfaVerifying, setMfaVerifying] = useState(false);
+  const [mfaUnenrolling, setMfaUnenrolling] = useState(false);
+
+  const shouldRecommendMFA = role ? MFA_RECOMMENDED_ROLES.includes(role) : false;
+
   useEffect(() => {
-    if (user) fetchData();
+    if (user) {
+      fetchData();
+      checkMFAStatus();
+    }
   }, [user]);
+
+  const checkMFAStatus = async () => {
+    try {
+      const { data } = await supabase.auth.mfa.listFactors();
+      const totpFactors = data?.totp || [];
+      const verified = totpFactors.find((f: any) => f.status === 'verified');
+      setMfaEnabled(!!verified);
+      if (verified) setMfaFactorId(verified.id);
+    } catch {
+      // MFA not available
+    }
+  };
+
+  const startMFAEnrollment = async () => {
+    setMfaEnrolling(true);
+    try {
+      const { data, error } = await supabase.auth.mfa.enroll({
+        factorType: 'totp',
+        friendlyName: 'ICMPP Intranet',
+      });
+      if (error) throw error;
+      setMfaQR(data.totp.qr_code);
+      setMfaSecret(data.totp.secret);
+      setMfaFactorId(data.id);
+    } catch (err: any) {
+      toast.error(err.message || 'Eroare la inițializarea 2FA');
+    }
+    setMfaEnrolling(false);
+  };
+
+  const verifyMFAEnrollment = async () => {
+    if (!mfaFactorId || mfaVerifyCode.length !== 6) return;
+    setMfaVerifying(true);
+    try {
+      const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({
+        factorId: mfaFactorId,
+      });
+      if (challengeErr) throw challengeErr;
+
+      const { error: verifyErr } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challenge.id,
+        code: mfaVerifyCode,
+      });
+      if (verifyErr) throw verifyErr;
+
+      setMfaEnabled(true);
+      setMfaQR(null);
+      setMfaSecret(null);
+      setMfaVerifyCode('');
+      toast.success('Autentificare 2FA activată cu succes!');
+    } catch (err: any) {
+      toast.error(err.message || 'Cod invalid. Încercați din nou.');
+    }
+    setMfaVerifying(false);
+  };
+
+  const unenrollMFA = async () => {
+    if (!mfaFactorId) return;
+    setMfaUnenrolling(true);
+    try {
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+      if (error) throw error;
+      setMfaEnabled(false);
+      setMfaFactorId(null);
+      toast.success('2FA dezactivat.');
+    } catch (err: any) {
+      toast.error(err.message || 'Eroare la dezactivarea 2FA');
+    }
+    setMfaUnenrolling(false);
+  };
 
   const fetchData = async () => {
     const [eventsRes, loginsRes, prefsRes] = await Promise.all([
@@ -170,6 +262,78 @@ export default function SecurityPanel() {
 
   return (
     <div className="space-y-6">
+      {/* 2FA / MFA */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <KeyRound className="w-5 h-5" />
+            Autentificare în doi pași (2FA)
+            {mfaEnabled ? (
+              <Badge className="bg-green-600/10 text-green-700 border-green-200">Activ</Badge>
+            ) : shouldRecommendMFA ? (
+              <Badge variant="destructive" className="text-xs">Recomandat</Badge>
+            ) : null}
+          </CardTitle>
+          <CardDescription>
+            {shouldRecommendMFA && !mfaEnabled
+              ? 'Rolul tău necesită activarea autentificării în doi pași pentru securitate sporită.'
+              : 'Adaugă un nivel suplimentar de securitate la contul tău.'
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {mfaEnabled ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/5 border border-green-200 dark:border-green-800">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <span className="text-sm font-medium">Autentificarea 2FA este activă pe contul tău.</span>
+              </div>
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={unenrollMFA}
+                disabled={mfaUnenrolling}
+              >
+                {mfaUnenrolling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Dezactivează 2FA
+              </Button>
+            </div>
+          ) : mfaQR ? (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border">
+                <p className="text-sm text-muted-foreground text-center">
+                  Scanează codul QR cu aplicația ta de autentificare (Google Authenticator, Authy, etc.)
+                </p>
+                <img src={mfaQR} alt="QR Code 2FA" className="w-48 h-48 rounded-lg" />
+                {mfaSecret && (
+                  <p className="text-xs font-mono bg-background p-2 rounded border select-all">
+                    {mfaSecret}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Cod din 6 cifre"
+                  value={mfaVerifyCode}
+                  onChange={(e) => setMfaVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  maxLength={6}
+                  className="w-40 font-mono text-center tracking-widest"
+                />
+                <Button onClick={verifyMFAEnrollment} disabled={mfaVerifyCode.length !== 6 || mfaVerifying}>
+                  {mfaVerifying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Verifică și activează
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button onClick={startMFAEnrollment} disabled={mfaEnrolling} className="gap-2">
+              {mfaEnrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+              Configurează 2FA
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Active Sessions */}
       <Card>
         <CardHeader>

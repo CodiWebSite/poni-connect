@@ -2,13 +2,14 @@ import { useUserRole } from '@/hooks/useUserRole';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Navigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot } from 'lucide-react';
+import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert } from 'lucide-react';
 import AdminOverview from '@/components/admin/AdminOverview';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminRolesAccessPanel from '@/components/admin/AdminRolesAccessPanel';
 import AdminSystemHealth from '@/components/admin/AdminSystemHealth';
 import AdminAuditPanel from '@/components/admin/AdminAuditPanel';
 import IrisFeedbackPanel from '@/components/admin/IrisFeedbackPanel';
+import SecurityDashboard from '@/components/admin/SecurityDashboard';
 
 const Admin = () => {
   const { role, isRealSuperAdmin } = useUserRole();
@@ -32,6 +33,10 @@ const Admin = () => {
               <Shield className="w-4 h-4" />
               <span className="hidden sm:inline">Roluri & Acces</span>
             </TabsTrigger>
+            <TabsTrigger value="security" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+              <ShieldAlert className="w-4 h-4" />
+              <span className="hidden sm:inline">Securitate</span>
+            </TabsTrigger>
             <TabsTrigger value="health" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
               <HeartPulse className="w-4 h-4" />
               <span className="hidden sm:inline">System Health</span>
@@ -50,6 +55,7 @@ const Admin = () => {
         <TabsContent value="overview"><AdminOverview /></TabsContent>
         <TabsContent value="users"><AdminUsersPanel /></TabsContent>
         <TabsContent value="roles"><AdminRolesAccessPanel /></TabsContent>
+        <TabsContent value="security"><SecurityDashboard /></TabsContent>
         <TabsContent value="health"><AdminSystemHealth /></TabsContent>
         <TabsContent value="audit"><AdminAuditPanel /></TabsContent>
         <TabsContent value="iris-feedback"><IrisFeedbackPanel /></TabsContent>
