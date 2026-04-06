@@ -78,28 +78,29 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Auth check — allow service role, DB triggers (anon key), or authenticated admins
+    // Auth check — allow service role, DB triggers (anon key via apikey header), or authenticated admins
     const authHeader = req.headers.get("Authorization");
+    const apikeyHeader = req.headers.get("apikey");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    console.log("Auth check - has authHeader:", !!authHeader, "anonKey length:", anonKey?.length, "serviceKey length:", serviceRoleKey?.length);
 
     let isAuthorized = false;
 
     if (authHeader?.includes(serviceRoleKey)) {
-      // Service role — always allowed
       isAuthorized = true;
-    } else if (authHeader?.startsWith("Bearer ")) {
+    } else if (apikeyHeader && authHeader?.startsWith("Bearer ")) {
       const token = authHeader.replace("Bearer ", "");
-      console.log("Token length:", token.length, "anonKey length:", anonKey?.length, "match:", token === anonKey);
-      // Check if it's the anon key (DB trigger via pg_net)
-      if (token === anonKey) {
+      // DB trigger via pg_net sends anon key as both apikey header and bearer token
+      if (token === apikeyHeader) {
         isAuthorized = true;
-      } else {
-        // Check if authenticated user is super_admin
-        const supabaseAuth = createClient(supabaseUrl, anonKey, {
+      }
+    }
+    
+    if (!isAuthorized && authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      // Check if authenticated user is super_admin
+      const anonKey = apikeyHeader || Deno.env.get("SUPABASE_ANON_KEY")!;
+      const supabaseAuth = createClient(supabaseUrl, anonKey, {
           global: { headers: { Authorization: authHeader } },
         });
         const { data: { user } } = await supabaseAuth.auth.getUser();
