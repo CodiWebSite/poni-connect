@@ -98,10 +98,10 @@ Deno.serve(async (req) => {
     }
     
     if (!isAuthorized && authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.replace("Bearer ", "");
       // Check if authenticated user is super_admin
-      const anonKey = apikeyHeader || Deno.env.get("SUPABASE_ANON_KEY")!;
-      const supabaseAuth = createClient(supabaseUrl, anonKey, {
+      const supabaseAuth = createClient(supabaseUrl, anonKey || apikeyHeader || "", {
+          global: { headers: { Authorization: authHeader } },
+        });
           global: { headers: { Authorization: authHeader } },
         });
         const { data: { user } } = await supabaseAuth.auth.getUser();
