@@ -90,6 +90,7 @@ const AdminUsersPanel = () => {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [reauthTitle, setReauthTitle] = useState('');
   const [reauthDesc, setReauthDesc] = useState('');
+  const [resettingMFA, setResettingMFA] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
