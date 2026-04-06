@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { logIrisAction, getClientIP } from "../_shared/iris-tools/audit.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   checkLeaveBalance,
   checkLeaveOverlaps,
@@ -22,11 +24,22 @@ import {
 } from "../_shared/iris-tools/hr.ts";
 import { getSystemSummary } from "../_shared/iris-tools/system.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+// Tool classification for guardrails
+const READ_ONLY_TOOLS = new Set([
+  "check_leave_balance",
+  "get_pending_approvals",
+  "get_team_on_leave",
+  "get_employee_summary",
+  "get_expiring_documents",
+  "get_system_summary",
+]);
+
+const WRITE_TOOLS = new Set([
+  "prepare_leave_request",
+  "prepare_helpdesk_ticket",
+  "prepare_correction_request",
+  "prepare_hr_request",
+]);
 
 const PLATFORM_ROUTES = `
 Harta rutelor platformei ICMPP:
@@ -559,6 +572,8 @@ Răspunde concis. Oferă linkuri markdown către pagini relevante. Folosește to
 
 // ---- MAIN HANDLER ----
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -590,6 +605,14 @@ serve(async (req) => {
       });
     }
     const userId = user.id;
+
+    // Rate limiting: max 20 requests/min per user
+    if (!checkRateLimit(`iris_${userId}`, 20, 60_000)) {
+      return new Response(
+        JSON.stringify({ error: "Prea multe cereri IRIS. Vă rugăm așteptați un minut." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const { data: roleData } = await supabase
       .from("user_roles")
@@ -676,7 +699,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("iris-chat error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Eroare necunoscută" }),
+      JSON.stringify({ error: "Eroare internă IRIS. Vă rugăm încercați din nou." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -737,7 +760,18 @@ async function callAIWithTools(
       args = {};
     }
 
-    console.log(`IRIS tool call: ${fn.name}`, args);
+    // Guardrail: only allow known tools
+    if (!READ_ONLY_TOOLS.has(fn.name) && !WRITE_TOOLS.has(fn.name)) {
+      console.warn(`IRIS blocked unknown tool: ${fn.name}`);
+      messages.push({
+        role: "tool",
+        tool_call_id: tc.id,
+        content: JSON.stringify({ error: "Tool necunoscut sau neautorizat." }),
+      });
+      continue;
+    }
+
+    console.log(`IRIS tool call: ${fn.name} [${WRITE_TOOLS.has(fn.name) ? 'WRITE' : 'READ'}]`, args);
     const result = await executeTool(fn.name, args, supabase, userId, userRole, profile);
 
     messages.push({
