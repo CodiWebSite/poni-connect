@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardAlertsBanner from './DashboardAlertsBanner';
+import MFARecommendationBanner from './MFARecommendationBanner';
 import DashboardGreeting from './DashboardGreeting';
 import QuickActionsGrid, { QuickAction } from './QuickActionsGrid';
 import DashboardAnnouncements from './DashboardAnnouncements';
@@ -95,6 +96,7 @@ const EmployeeDashboard = () => {
     <MainLayout title="Dashboard" description="Panoul tău personal">
       <InstallAppBanner />
       <DashboardAlertsBanner />
+      <MFARecommendationBanner />
       <DashboardGreeting subtitle="Iată un rezumat al situației tale." />
 
       {/* Announcements */}

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardAlertsBanner from './DashboardAlertsBanner';
+import MFARecommendationBanner from './MFARecommendationBanner';
 import DashboardGreeting from './DashboardGreeting';
 import QuickActionsGrid, { QuickAction } from './QuickActionsGrid';
 import PendingActionsWidget, { PendingAction } from './PendingActionsWidget';
@@ -96,6 +97,7 @@ const SefDepartmentDashboard = () => {
   return (
     <MainLayout title="Dashboard" description="Panou șef departament">
       <DashboardAlertsBanner />
+      <MFARecommendationBanner />
       <DashboardGreeting subtitle="Panou de lucru conducere" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">

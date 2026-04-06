@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardAlertsBanner from './DashboardAlertsBanner';
+import MFARecommendationBanner from './MFARecommendationBanner';
 import DashboardGreeting from './DashboardGreeting';
 import QuickActionsGrid, { QuickAction } from './QuickActionsGrid';
 import PendingActionsWidget, { PendingAction } from './PendingActionsWidget';
@@ -86,6 +87,7 @@ const SuperAdminDashboard = () => {
   return (
     <MainLayout title="Control Center" description="Panou de comandă Super Admin">
       <DashboardAlertsBanner />
+      <MFARecommendationBanner />
       <DashboardGreeting subtitle="Centru de control administrativ" />
 
       {/* Alerts & Pending */}

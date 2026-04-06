@@ -97,7 +97,7 @@ Contul dumneavoastră pe platforma Intranet ICMPP a fost creat cu succes.
 📧 Email: ${req.email}
 🔑 Parolă temporară: ${password}
 
-🔗 Link acces: https://poni-connect-hub.lovable.app/auth
+🔗 Link acces: https://intranet.icmpp.ro/auth
 
 ⚠️ IMPORTANT: Vă rugăm să vă schimbați parola imediat după prima autentificare:
    - Din pagina de login → "Ai uitat parola?" → introduceți emailul → veți primi un link de resetare

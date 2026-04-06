@@ -66,7 +66,7 @@ async function sendBackupEmail(supabase: any, userId: string, status: string, to
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
       <div style="background:#1e3a5f;color:white;padding:20px;border-radius:8px 8px 0 0;text-align:center;">
         <h2 style="margin:0;">🗄️ Raport Backup Săptămânal</h2>
-        <p style="margin:5px 0 0;opacity:0.9;">PONI Connect Hub</p>
+        <p style="margin:5px 0 0;opacity:0.9;">Intranet ICMPP</p>
       </div>
       <div style="border:1px solid #e5e7eb;border-top:none;padding:20px;border-radius:0 0 8px 8px;">
         <p><strong>Status:</strong> ${statusLabel}</p>

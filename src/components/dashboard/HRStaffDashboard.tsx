@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardAlertsBanner from './DashboardAlertsBanner';
+import MFARecommendationBanner from './MFARecommendationBanner';
 import DashboardGreeting from './DashboardGreeting';
 import QuickActionsGrid, { QuickAction } from './QuickActionsGrid';
 import PendingActionsWidget, { PendingAction } from './PendingActionsWidget';
@@ -65,6 +66,7 @@ const HRStaffDashboard = () => {
   return (
     <MainLayout title="Dashboard HR" description="Centru operațional Resurse Umane">
       <DashboardAlertsBanner />
+      <MFARecommendationBanner />
       <DashboardGreeting subtitle="Centru operațional HR" />
 
       {/* Pending + Stats */}

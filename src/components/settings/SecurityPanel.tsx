@@ -74,8 +74,8 @@ const severityConfig: Record<string, { color: string; icon: typeof Shield }> = {
   critical: { color: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
 };
 
-// Roles that should be prompted to enable MFA
-const MFA_RECOMMENDED_ROLES = ['super_admin', 'hr', 'sef_srus', 'director_institut', 'director_adjunct', 'salarizare'];
+// 2FA is recommended for ALL users
+const MFA_RECOMMENDED_FOR_ALL = true;
 
 export default function SecurityPanel() {
   const { user, signOut } = useAuth();
@@ -97,7 +97,7 @@ export default function SecurityPanel() {
   const [mfaVerifying, setMfaVerifying] = useState(false);
   const [mfaUnenrolling, setMfaUnenrolling] = useState(false);
 
-  const shouldRecommendMFA = role ? MFA_RECOMMENDED_ROLES.includes(role) : false;
+  const shouldRecommendMFA = MFA_RECOMMENDED_FOR_ALL;
 
   useEffect(() => {
     if (user) {

@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
 
     const sqlParts: string[] = [];
     sqlParts.push("-- ============================================");
-    sqlParts.push("-- PONI Connect Hub — Database Export");
+    sqlParts.push("-- Intranet ICMPP — Database Export");
     sqlParts.push(`-- Generated: ${new Date().toISOString()}`);
     sqlParts.push(`-- Format: ${schemaOnly ? "Schema only" : "Schema + Data"}`);
     sqlParts.push("-- ============================================\n");
