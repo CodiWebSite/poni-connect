@@ -114,7 +114,6 @@ Deno.serve(async (req) => {
             .limit(1);
           isAuthorized = (roles && roles.length > 0);
         }
-      }
     }
 
     if (!isAuthorized) {
