@@ -72,6 +72,7 @@ const OperationalRoleDashboard = ({ role }: OperationalRoleDashboardProps) => {
   return (
     <MainLayout title={config.title} description={config.subtitle}>
       <DashboardAlertsBanner />
+      <MFARecommendationBanner />
       <DashboardGreeting subtitle={config.subtitle} />
 
       {/* Announcements + Leave */}

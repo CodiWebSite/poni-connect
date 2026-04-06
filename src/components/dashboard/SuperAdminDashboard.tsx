@@ -87,6 +87,7 @@ const SuperAdminDashboard = () => {
   return (
     <MainLayout title="Control Center" description="Panou de comandă Super Admin">
       <DashboardAlertsBanner />
+      <MFARecommendationBanner />
       <DashboardGreeting subtitle="Centru de control administrativ" />
 
       {/* Alerts & Pending */}

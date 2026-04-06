@@ -97,6 +97,7 @@ const SefDepartmentDashboard = () => {
   return (
     <MainLayout title="Dashboard" description="Panou șef departament">
       <DashboardAlertsBanner />
+      <MFARecommendationBanner />
       <DashboardGreeting subtitle="Panou de lucru conducere" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">

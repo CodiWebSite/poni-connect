@@ -66,6 +66,7 @@ const HRStaffDashboard = () => {
   return (
     <MainLayout title="Dashboard HR" description="Centru operațional Resurse Umane">
       <DashboardAlertsBanner />
+      <MFARecommendationBanner />
       <DashboardGreeting subtitle="Centru operațional HR" />
 
       {/* Pending + Stats */}

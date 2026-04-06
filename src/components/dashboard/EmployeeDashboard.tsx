@@ -96,6 +96,7 @@ const EmployeeDashboard = () => {
     <MainLayout title="Dashboard" description="Panoul tău personal">
       <InstallAppBanner />
       <DashboardAlertsBanner />
+      <MFARecommendationBanner />
       <DashboardGreeting subtitle="Iată un rezumat al situației tale." />
 
       {/* Announcements */}
