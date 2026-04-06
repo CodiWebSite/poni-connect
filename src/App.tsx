@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ import { DemoModeProvider } from "@/contexts/DemoModeContext";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
+import { supabase } from "@/integrations/supabase/client";
 
 import IrisButton from "@/components/iris/IrisButton";
 import Index from "./pages/Index";
