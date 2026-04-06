@@ -70,8 +70,8 @@ export async function createHelpdeskTicket(
     .single();
 
   if (error) {
-    console.error("Helpdesk ticket error:", error);
-    return { error: "Eroare la crearea tichetului: " + error.message };
+    console.error("[INTERNAL] Helpdesk ticket error:", error);
+    return { error: "Eroare la crearea tichetului." };
   }
 
   return { success: true, ticketId: data.id };
@@ -95,8 +95,8 @@ export async function createHRRequest(
     .single();
 
   if (error) {
-    console.error("HR request error:", error);
-    return { error: "Eroare la crearea cererii HR: " + error.message };
+    console.error("[INTERNAL] HR request error:", error);
+    return { error: "Eroare la crearea cererii HR." };
   }
 
   // Notify HR
