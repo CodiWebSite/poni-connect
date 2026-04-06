@@ -78,32 +78,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Auth check — only allow service role or authenticated admins
+    // Auth check — allow service role, DB triggers (anon key), or authenticated admins
     const authHeader = req.headers.get("Authorization");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Check if called internally (service role) or by authenticated user
     let isAuthorized = false;
 
     if (authHeader?.includes(serviceRoleKey)) {
+      // Service role — always allowed
       isAuthorized = true;
     } else if (authHeader?.startsWith("Bearer ")) {
-      const supabaseAuth = createClient(supabaseUrl, anonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: { user } } = await supabaseAuth.auth.getUser();
-      if (user) {
-        // Check if user is super_admin
-        const supabase = createClient(supabaseUrl, serviceRoleKey);
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .eq("role", "super_admin")
-          .limit(1);
-        isAuthorized = (roles && roles.length > 0);
+      const token = authHeader.replace("Bearer ", "");
+      // Check if it's the anon key (DB trigger via pg_net)
+      if (token === anonKey) {
+        isAuthorized = true;
+      } else {
+        // Check if authenticated user is super_admin
+        const supabaseAuth = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: { user } } = await supabaseAuth.auth.getUser();
+        if (user) {
+          const supabase = createClient(supabaseUrl, serviceRoleKey);
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .eq("role", "super_admin")
+            .limit(1);
+          isAuthorized = (roles && roles.length > 0);
+        }
       }
     }
 
