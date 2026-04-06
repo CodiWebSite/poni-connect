@@ -3066,27 +3066,6 @@ export type Database = {
       epd_same_department: { Args: { _epd_id: string }; Returns: boolean }
       generate_leave_request_number: { Args: never; Returns: string }
       generate_procurement_request_number: { Args: never; Returns: string }
-      get_profiles_for_chat: {
-        Args: never
-        Returns: {
-          avatar_url: string | null
-          birth_date: string | null
-          created_at: string
-          department: string | null
-          full_name: string
-          id: string
-          phone: string | null
-          position: string | null
-          updated_at: string
-          user_id: string
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "profiles"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
       get_user_department: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
