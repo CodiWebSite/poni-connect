@@ -20,8 +20,8 @@ export async function createCorrectionRequest(
     .single();
 
   if (error) {
-    console.error("Correction request error:", error);
-    return { error: "Eroare la crearea cererii de corecție: " + error.message };
+    console.error("[INTERNAL] Correction request error:", error);
+    return { error: "Eroare la crearea cererii de corecție." };
   }
 
   // Notify HR
