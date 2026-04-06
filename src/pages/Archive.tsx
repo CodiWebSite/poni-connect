@@ -121,8 +121,6 @@ export default function ArchivePage() {
       const { error: storageError } = await supabase.storage.from('archive-documents').upload(filePath, uploadFile);
       if (storageError) throw storageError;
 
-      const { data: urlData } = supabase.storage.from('archive-documents').getPublicUrl(filePath);
-
       const { error: insertError } = await supabase.from('archive_documents').insert({
         department: userDept,
         nomenclator_category: uploadCategory,
