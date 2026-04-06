@@ -146,25 +146,18 @@ export const PersonalDataEditor = ({
         address_county: data.address_county || ''
       });
 
-      // Fetch 2025 carryover only for employees hired before the current year
+      // Fetch 2025 carryover
       const currentYear = new Date().getFullYear();
-      const employmentYear = data.employment_date ? new Date(data.employment_date).getFullYear() : null;
-      const canHaveCarryover = employmentYear !== null && employmentYear < currentYear;
+      const { data: carryData } = await supabase
+        .from('leave_carryover')
+        .select('id, initial_days, used_days, remaining_days')
+        .eq('employee_personal_data_id', data.id)
+        .eq('from_year', currentYear - 1)
+        .eq('to_year', currentYear)
+        .maybeSingle();
 
-      if (canHaveCarryover) {
-        const { data: carryData } = await supabase
-          .from('leave_carryover')
-          .select('id, initial_days, used_days, remaining_days')
-          .eq('employee_personal_data_id', data.id)
-          .eq('from_year', currentYear - 1)
-          .eq('to_year', currentYear)
-          .maybeSingle();
-
-        if (carryData) {
-          setCarryover2025({ id: carryData.id, initial_days: carryData.initial_days, used_days: carryData.used_days });
-        } else {
-          setCarryover2025({ id: '', initial_days: 0, used_days: 0 });
-        }
+      if (carryData) {
+        setCarryover2025({ id: carryData.id, initial_days: carryData.initial_days, used_days: carryData.used_days });
       } else {
         setCarryover2025({ id: '', initial_days: 0, used_days: 0 });
       }
@@ -347,43 +340,32 @@ export const PersonalDataEditor = ({
     if (error) {
       toast({ title: 'Eroare', description: `Nu s-au putut salva datele: ${error.message}`, variant: 'destructive' });
     } else {
-      // Save/create 2025 carryover only for employees hired before the current year
+      // Save/create 2025 carryover
       const currentYear = new Date().getFullYear();
-      const employmentYear = form.employment_date ? new Date(form.employment_date).getFullYear() : null;
-      const canHaveCarryover = employmentYear !== null && employmentYear < currentYear;
-
-      if (canHaveCarryover) {
-        if (carryover2025.id) {
-          await supabase
-            .from('leave_carryover')
-            .update({
-              initial_days: carryover2025.initial_days,
-              used_days: carryover2025.used_days,
-              remaining_days: carryover2025.initial_days - carryover2025.used_days,
-            })
-            .eq('id', carryover2025.id);
-        } else if (carryover2025.initial_days > 0) {
-          const { data: newCarry } = await supabase
-            .from('leave_carryover')
-            .insert({
-              employee_personal_data_id: personalData.id,
-              from_year: currentYear - 1,
-              to_year: currentYear,
-              initial_days: carryover2025.initial_days,
-              used_days: carryover2025.used_days,
-              remaining_days: carryover2025.initial_days - carryover2025.used_days,
-              created_by: user?.id,
-            })
-            .select('id')
-            .single();
-          if (newCarry) setCarryover2025(prev => ({ ...prev, id: newCarry.id }));
-        }
-      } else if (carryover2025.id) {
+      if (carryover2025.id) {
         await supabase
           .from('leave_carryover')
-          .delete()
+          .update({
+            initial_days: carryover2025.initial_days,
+            used_days: carryover2025.used_days,
+            remaining_days: carryover2025.initial_days - carryover2025.used_days,
+          })
           .eq('id', carryover2025.id);
-        setCarryover2025({ id: '', initial_days: 0, used_days: 0 });
+      } else if (carryover2025.initial_days > 0) {
+        const { data: newCarry } = await supabase
+          .from('leave_carryover')
+          .insert({
+            employee_personal_data_id: personalData.id,
+            from_year: currentYear - 1,
+            to_year: currentYear,
+            initial_days: carryover2025.initial_days,
+            used_days: carryover2025.used_days,
+            remaining_days: carryover2025.initial_days - carryover2025.used_days,
+            created_by: user?.id,
+          })
+          .select('id')
+          .single();
+        if (newCarry) setCarryover2025(prev => ({ ...prev, id: newCarry.id }));
       }
 
       // Log audit event
