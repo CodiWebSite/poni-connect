@@ -5,13 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { 
   Shield, LogOut, Monitor, MapPin, AlertTriangle, Clock, 
   CheckCircle2, Smartphone, Globe, Loader2, ShieldAlert, ShieldCheck,
-  Bell, BellOff, Mail, Vibrate
+  Bell, BellOff, Mail, Vibrate, KeyRound, QrCode
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -72,8 +74,12 @@ const severityConfig: Record<string, { color: string; icon: typeof Shield }> = {
   critical: { color: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
 };
 
+// Roles that should be prompted to enable MFA
+const MFA_RECOMMENDED_ROLES = ['super_admin', 'hr', 'sef_srus', 'director_institut', 'director_adjunct', 'salarizare'];
+
 export default function SecurityPanel() {
   const { user, signOut } = useAuth();
+  const { role } = useUserRole();
   const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [recentLogins, setRecentLogins] = useState<LoginLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,8 +87,23 @@ export default function SecurityPanel() {
   const [prefs, setPrefs] = useState<AlertPreferences>(defaultPrefs);
   const [savingPrefs, setSavingPrefs] = useState(false);
 
+  // MFA state
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaEnrolling, setMfaEnrolling] = useState(false);
+  const [mfaQR, setMfaQR] = useState<string | null>(null);
+  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaVerifyCode, setMfaVerifyCode] = useState('');
+  const [mfaVerifying, setMfaVerifying] = useState(false);
+  const [mfaUnenrolling, setMfaUnenrolling] = useState(false);
+
+  const shouldRecommendMFA = role ? MFA_RECOMMENDED_ROLES.includes(role) : false;
+
   useEffect(() => {
-    if (user) fetchData();
+    if (user) {
+      fetchData();
+      checkMFAStatus();
+    }
   }, [user]);
 
   const fetchData = async () => {
