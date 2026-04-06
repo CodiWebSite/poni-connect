@@ -89,7 +89,7 @@ const PublicProfile = () => {
       }
 
       const { data: settingsData } = await supabase
-        .from('public_profile_settings')
+        .from('public_profiles_safe' as any)
         .select('*')
         .eq('epd_id', id)
         .maybeSingle();
