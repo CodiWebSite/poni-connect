@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
   Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus,
-  Globe, RefreshCw, Mail, Headset, Bell, ClipboardList, Lock, Filter
+  Globe, RefreshCw, Mail, Headset, Bell, ClipboardList, Lock, Filter, ShieldOff
 } from 'lucide-react';
 import ManualAccountCreate from './ManualAccountCreate';
 import AccountRequestsPanel from './AccountRequestsPanel';
