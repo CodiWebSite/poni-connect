@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
     }
 
     const allOk = Object.values(checks).every((c) => c.status === "ok");
+    const hasErrors = Object.values(checks).some((c) => c.status === "error");
 
     const result = {
       overall: allOk ? "healthy" : "degraded",
@@ -120,6 +121,30 @@ Deno.serve(async (req) => {
       overall: result.overall,
       checks: checks,
     });
+
+    // Send Telegram alert if system is degraded or has errors
+    if (!allOk) {
+      const failedChecks = Object.entries(checks)
+        .filter(([, c]) => c.status !== "ok")
+        .map(([name, c]) => `${name}: ${c.status} — ${c.details || ""}`)
+        .join("\n");
+
+      try {
+        const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+        const chatId = Deno.env.get("TELEGRAM_CHAT_ID");
+        if (botToken && chatId) {
+          const severity = hasErrors ? "🔴 CRITIC" : "⚠️ ATENȚIE";
+          const text = `⚙️ <b>Alertă Sistem — ${severity}</b>\n\nSistemul este <b>${result.overall}</b>.\n\n<b>Verificări eșuate:</b>\n<pre>${failedChecks}</pre>\n\n🕐 ${new Date().toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" })}`;
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true }),
+          });
+        }
+      } catch (e) {
+        console.error("Telegram system alert failed:", e);
+      }
+    }
 
     // Cleanup logs older than 7 days
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
