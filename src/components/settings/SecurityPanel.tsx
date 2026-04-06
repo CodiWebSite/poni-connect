@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { 
   Shield, LogOut, Monitor, MapPin, AlertTriangle, Clock, 
-  CheckCircle2, Smartphone, Globe, Loader2, ShieldAlert, ShieldCheck
+  CheckCircle2, Smartphone, Globe, Loader2, ShieldAlert, ShieldCheck,
+  Bell, BellOff, Mail, Vibrate
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -30,6 +34,26 @@ interface LoginLog {
   login_at: string;
   is_suspicious: boolean;
 }
+
+interface AlertPreferences {
+  push_enabled: boolean;
+  email_enabled: boolean;
+  alert_on_new_device: boolean;
+  alert_on_new_ip: boolean;
+  alert_on_suspicious_login: boolean;
+  alert_on_role_change: boolean;
+  alert_on_critical_action: boolean;
+}
+
+const defaultPrefs: AlertPreferences = {
+  push_enabled: true,
+  email_enabled: true,
+  alert_on_new_device: true,
+  alert_on_new_ip: true,
+  alert_on_suspicious_login: true,
+  alert_on_role_change: true,
+  alert_on_critical_action: true,
+};
 
 const eventTypeLabels: Record<string, string> = {
   login_success: 'Autentificare reușită',
@@ -54,13 +78,15 @@ export default function SecurityPanel() {
   const [recentLogins, setRecentLogins] = useState<LoginLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [prefs, setPrefs] = useState<AlertPreferences>(defaultPrefs);
+  const [savingPrefs, setSavingPrefs] = useState(false);
 
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
 
   const fetchData = async () => {
-    const [eventsRes, loginsRes] = await Promise.all([
+    const [eventsRes, loginsRes, prefsRes] = await Promise.all([
       supabase
         .from('security_events')
         .select('*')
@@ -74,27 +100,60 @@ export default function SecurityPanel() {
         .eq('status', 'success')
         .order('login_at', { ascending: false })
         .limit(5),
+      supabase
+        .from('security_alert_preferences' as any)
+        .select('*')
+        .eq('user_id', user!.id)
+        .maybeSingle(),
     ]);
 
     if (eventsRes.data) setEvents(eventsRes.data as SecurityEvent[]);
     if (loginsRes.data) setRecentLogins(loginsRes.data as LoginLog[]);
+    if (prefsRes.data) {
+      const p = prefsRes.data as any;
+      setPrefs({
+        push_enabled: p.push_enabled ?? true,
+        email_enabled: p.email_enabled ?? true,
+        alert_on_new_device: p.alert_on_new_device ?? true,
+        alert_on_new_ip: p.alert_on_new_ip ?? true,
+        alert_on_suspicious_login: p.alert_on_suspicious_login ?? true,
+        alert_on_role_change: p.alert_on_role_change ?? true,
+        alert_on_critical_action: p.alert_on_critical_action ?? true,
+      });
+    }
     setLoading(false);
   };
 
   const handleLogoutAll = async () => {
     setLogoutLoading(true);
     try {
-      // Log the event
       await supabase.functions.invoke('log-auth-event', {
         body: { event_type: 'logout_all', details: { action: 'Deconectare din toate sesiunile' } },
       });
-      
       await supabase.auth.signOut({ scope: 'global' });
       toast.success('Te-ai deconectat din toate sesiunile');
     } catch {
       toast.error('Eroare la deconectare');
     }
     setLogoutLoading(false);
+  };
+
+  const updatePrefs = async (key: keyof AlertPreferences, value: boolean) => {
+    const newPrefs = { ...prefs, [key]: value };
+    setPrefs(newPrefs);
+    setSavingPrefs(true);
+    try {
+      const { error } = await supabase.from('security_alert_preferences' as any).upsert({
+        user_id: user!.id,
+        ...newPrefs,
+        updated_at: new Date().toISOString(),
+      } as any, { onConflict: 'user_id' });
+      if (error) throw error;
+    } catch {
+      toast.error('Eroare la salvarea preferințelor');
+      setPrefs(prefs); // revert
+    }
+    setSavingPrefs(false);
   };
 
   const unacknowledgedCount = events.filter(e => !e.acknowledged && e.severity !== 'info').length;
@@ -173,6 +232,59 @@ export default function SecurityPanel() {
           <p className="text-xs text-muted-foreground text-center">
             Vei fi deconectat de pe toate dispozitivele, inclusiv cel curent.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Alert Preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            Preferințe alerte de securitate
+          </CardTitle>
+          <CardDescription>Configurează cum primești alertele de securitate</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Channels */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-foreground">Canale de notificare</p>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+              <div className="flex items-center gap-2">
+                <Vibrate className="w-4 h-4 text-muted-foreground" />
+                <Label className="text-sm">Notificări push (în aplicație)</Label>
+              </div>
+              <Switch checked={prefs.push_enabled} onCheckedChange={(v) => updatePrefs('push_enabled', v)} disabled={savingPrefs} />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-muted-foreground" />
+                <Label className="text-sm">Alerte pe email (pentru evenimente critice)</Label>
+              </div>
+              <Switch checked={prefs.email_enabled} onCheckedChange={(v) => updatePrefs('email_enabled', v)} disabled={savingPrefs} />
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Event types */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-foreground">Tipuri de alerte</p>
+            {([
+              { key: 'alert_on_new_device' as const, label: 'Dispozitiv nou detectat', icon: Smartphone },
+              { key: 'alert_on_new_ip' as const, label: 'Adresă IP nouă', icon: Globe },
+              { key: 'alert_on_suspicious_login' as const, label: 'Login suspect', icon: ShieldAlert },
+              { key: 'alert_on_role_change' as const, label: 'Modificare rol', icon: Shield },
+              { key: 'alert_on_critical_action' as const, label: 'Acțiune critică', icon: AlertTriangle },
+            ]).map(({ key, label, icon: Icon }) => (
+              <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                <div className="flex items-center gap-2">
+                  <Icon className="w-4 h-4 text-muted-foreground" />
+                  <Label className="text-sm">{label}</Label>
+                </div>
+                <Switch checked={prefs[key]} onCheckedChange={(v) => updatePrefs(key, v)} disabled={savingPrefs} />
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
