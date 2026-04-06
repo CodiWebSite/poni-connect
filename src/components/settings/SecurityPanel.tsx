@@ -96,6 +96,8 @@ export default function SecurityPanel() {
   const [mfaVerifyCode, setMfaVerifyCode] = useState('');
   const [mfaVerifying, setMfaVerifying] = useState(false);
   const [mfaUnenrolling, setMfaUnenrolling] = useState(false);
+  const [mfaUnenrollCode, setMfaUnenrollCode] = useState('');
+  const [showUnenrollConfirm, setShowUnenrollConfirm] = useState(false);
 
   const shouldRecommendMFA = MFA_RECOMMENDED_FOR_ALL;
 
@@ -164,16 +166,33 @@ export default function SecurityPanel() {
   };
 
   const unenrollMFA = async () => {
-    if (!mfaFactorId) return;
+    if (!mfaFactorId || mfaUnenrollCode.length !== 6) return;
     setMfaUnenrolling(true);
     try {
+      // First, elevate to AAL2 by verifying a TOTP code
+      const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({
+        factorId: mfaFactorId,
+      });
+      if (challengeErr) throw challengeErr;
+
+      const { error: verifyErr } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challenge.id,
+        code: mfaUnenrollCode,
+      });
+      if (verifyErr) throw verifyErr;
+
+      // Now AAL2 — can unenroll
       const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
       if (error) throw error;
       setMfaEnabled(false);
       setMfaFactorId(null);
+      setShowUnenrollConfirm(false);
+      setMfaUnenrollCode('');
       toast.success('2FA dezactivat.');
     } catch (err: any) {
-      toast.error(err.message || 'Eroare la dezactivarea 2FA');
+      toast.error(err.message || 'Cod invalid sau eroare la dezactivarea 2FA');
+      setMfaUnenrollCode('');
     }
     setMfaUnenrolling(false);
   };
@@ -289,15 +308,45 @@ export default function SecurityPanel() {
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                 <span className="text-sm font-medium">Autentificarea 2FA este activă pe contul tău.</span>
               </div>
-              <Button
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                onClick={unenrollMFA}
-                disabled={mfaUnenrolling}
-              >
-                {mfaUnenrolling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Dezactivează 2FA
-              </Button>
+              {showUnenrollConfirm ? (
+                <div className="space-y-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+                  <p className="text-sm text-muted-foreground">
+                    Pentru a dezactiva 2FA, introdu codul din 6 cifre din aplicația ta de autentificare:
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="000000"
+                      value={mfaUnenrollCode}
+                      onChange={(e) => setMfaUnenrollCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      maxLength={6}
+                      className="w-40 font-mono text-center tracking-widest"
+                    />
+                    <Button
+                      variant="destructive"
+                      onClick={unenrollMFA}
+                      disabled={mfaUnenrollCode.length !== 6 || mfaUnenrolling}
+                    >
+                      {mfaUnenrolling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Confirmă dezactivarea
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => { setShowUnenrollConfirm(false); setMfaUnenrollCode(''); }}
+                    >
+                      Anulează
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setShowUnenrollConfirm(true)}
+                  disabled={mfaUnenrolling}
+                >
+                  Dezactivează 2FA
+                </Button>
+              )}
             </div>
           ) : mfaQR ? (
             <div className="space-y-4">
