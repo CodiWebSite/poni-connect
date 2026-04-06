@@ -1,8 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
+import { requireRole, getClientIP, getServiceClient } from "../_shared/auth-helpers.ts";
+import { safeErrorResponse, logAndRespond } from "../_shared/error-handler.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -11,76 +15,40 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Verify the requesting user is super_admin
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Nu ești autentificat" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const ip = getClientIP(req.headers);
+    if (!checkRateLimit(`delete-user:${ip}`, 5, 60_000)) {
+      return safeErrorResponse(429, corsHeaders);
     }
 
-    const supabaseAuth = createClient(supabaseUrl, serviceRoleKey);
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+    // Require super_admin role
+    const auth = await requireRole(req, "super_admin");
+    if (auth.error) return auth.error;
 
-    // Get the requesting user
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user: requestingUser }, error: authError } = await anonClient.auth.getUser(token);
-
-    if (authError || !requestingUser) {
-      return new Response(JSON.stringify({ error: "Nu ești autentificat" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Input validation
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return safeErrorResponse(400, corsHeaders, "Cerere invalidă.");
     }
 
-    // Check if requesting user is super_admin
-    const { data: roleData } = await supabaseAuth
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", requestingUser.id)
-      .single();
-
-    if (!roleData || roleData.role !== "super_admin") {
-      return new Response(JSON.stringify({ error: "Nu ai permisiuni de administrator" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { userId } = await req.json();
-
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "ID utilizator lipsă" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const userId = typeof body.userId === "string" ? body.userId.trim() : null;
+    if (!userId || !/^[0-9a-f-]{36}$/.test(userId)) {
+      return safeErrorResponse(400, corsHeaders, "ID utilizator invalid.");
     }
 
     // Prevent self-deletion
-    if (userId === requestingUser.id) {
-      return new Response(JSON.stringify({ error: "Nu îți poți șterge propriul cont" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (userId === auth.userId) {
+      return safeErrorResponse(400, corsHeaders, "Nu îți poți șterge propriul cont.");
     }
 
+    const supabaseAuth = getServiceClient();
+
     // Clean up related data before deleting auth user
-    // Order matters due to foreign key constraints
-
-    // 1. Delete notifications
     await supabaseAuth.from("notifications").delete().eq("user_id", userId);
-
-    // 2. Delete HR requests
     await supabaseAuth.from("hr_requests").delete().eq("user_id", userId);
-
-    // 3. Delete employee documents
     await supabaseAuth.from("employee_documents").delete().eq("user_id", userId);
 
-    // 4. Unlink employee_personal_data from employee_records
     const { data: empRecord } = await supabaseAuth
       .from("employee_records")
       .select("id")
@@ -94,53 +62,34 @@ Deno.serve(async (req) => {
         .eq("employee_record_id", empRecord.id);
     }
 
-    // 5. Delete employee records
     await supabaseAuth.from("employee_records").delete().eq("user_id", userId);
-
-    // 6. Delete procurement requests
     await supabaseAuth.from("procurement_requests").delete().eq("user_id", userId);
-
-    // 7. Delete suggestions
     await supabaseAuth.from("suggestions").delete().eq("user_id", userId);
-
-    // 8. Delete department_heads entries where this user is head
     await supabaseAuth.from("department_heads").delete().eq("head_user_id", userId);
-
-    // 9. Delete user_roles
     await supabaseAuth.from("user_roles").delete().eq("user_id", userId);
-
-    // 10. Delete profile
     await supabaseAuth.from("profiles").delete().eq("user_id", userId);
 
-    // 11. Finally delete the auth user
     const { error: deleteError } = await supabaseAuth.auth.admin.deleteUser(userId);
 
     if (deleteError) {
-      console.error("Error deleting auth user:", deleteError);
-      return new Response(
-        JSON.stringify({ error: `Eroare la ștergerea contului: ${deleteError.message}` }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      console.error("[delete-user] Admin API error:", deleteError.message);
+      return safeErrorResponse(500, corsHeaders, "Eroare la ștergerea contului.");
     }
+
+    // Log audit event
+    await supabaseAuth.rpc("log_audit_event", {
+      _user_id: auth.userId,
+      _action: "user_deleted",
+      _entity_type: "user",
+      _entity_id: userId,
+      _details: { deleted_by_ip: ip },
+    });
 
     return new Response(
       JSON.stringify({ success: true, message: "Contul a fost șters cu succes" }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Unexpected error:", error);
-    return new Response(
-      JSON.stringify({ error: "Eroare internă a serverului" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return logAndRespond(error, corsHeaders, "delete-user");
   }
 });
