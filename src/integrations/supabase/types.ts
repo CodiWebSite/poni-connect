@@ -2898,6 +2898,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      recalculate_leave_balance: {
+        Args: { target_epd_id?: string }
+        Returns: {
+          carryover_remaining: number
+          carryover_used: number
+          current_used: number
+          employee_name: string
+          epd_id: string
+          total_co_days: number
+        }[]
+      }
       sync_existing_employees: {
         Args: never
         Returns: {
