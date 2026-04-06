@@ -157,6 +157,7 @@ const App = () => (
           <ImpersonationBanner />
           <BrowserRouter>
             <IrisButton />
+            <MFAGuard>
             <MaintenanceGuard>
               <Routes>
                 <Route path="/kiosk" element={<Kiosk />} />
