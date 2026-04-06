@@ -85,16 +85,17 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const publishableKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
     let isAuthorized = false;
 
-    if (authHeader?.includes(serviceRoleKey)) {
+    const token = authHeader?.startsWith("Bearer ") 
+      ? authHeader.replace("Bearer ", "") 
+      : "";
+
+    if (token && (token === serviceRoleKey || token === anonKey || token === publishableKey)) {
       isAuthorized = true;
-    } else if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.replace("Bearer ", "");
-      // DB trigger via pg_net sends anon key as Bearer token (no apikey header)
-      if (token === anonKey || (apikeyHeader && token === apikeyHeader)) {
-        isAuthorized = true;
-      }
+    } else if (apikeyHeader && token === apikeyHeader) {
+      isAuthorized = true;
     }
     
     if (!isAuthorized && authHeader?.startsWith("Bearer ")) {
