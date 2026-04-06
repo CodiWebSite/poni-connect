@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Auth check — allow service role, DB triggers (anon key via apikey header), or authenticated admins
+    // Auth check — allow service role, DB triggers (anon JWT), or authenticated super_admins
     const authHeader = req.headers.get("Authorization");
     const apikeyHeader = req.headers.get("apikey");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -86,22 +86,31 @@ Deno.serve(async (req) => {
 
     let isAuthorized = false;
 
-    if (authHeader?.includes(serviceRoleKey)) {
+    const token = authHeader?.startsWith("Bearer ") 
+      ? authHeader.replace("Bearer ", "") 
+      : "";
+
+    // Check service role key
+    if (token === serviceRoleKey) {
       isAuthorized = true;
-    } else if (apikeyHeader && authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.replace("Bearer ", "");
-      // DB trigger via pg_net sends anon key as both apikey header and bearer token
-      if (token === apikeyHeader) {
-        isAuthorized = true;
-      }
     }
-    
-    if (!isAuthorized && authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.replace("Bearer ", "");
-      // Check if authenticated user is super_admin
-      const anonKey = apikeyHeader || Deno.env.get("SUPABASE_ANON_KEY")!;
-      const supabaseAuth = createClient(supabaseUrl, anonKey, {
-          global: { headers: { Authorization: authHeader } },
+
+    // Check if token is an anon JWT (sent by DB triggers via pg_net)
+    if (!isAuthorized && token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload?.role === "anon" && payload?.iss === "supabase") {
+          isAuthorized = true;
+        }
+      } catch { /* not a valid JWT, continue */ }
+    }
+
+    // Check if authenticated user is super_admin
+    if (!isAuthorized && token) {
+      try {
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || apikeyHeader || "";
+        const supabaseAuth = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader! } },
         });
         const { data: { user } } = await supabaseAuth.auth.getUser();
         if (user) {
@@ -114,6 +123,7 @@ Deno.serve(async (req) => {
             .limit(1);
           isAuthorized = (roles && roles.length > 0);
         }
+      } catch { /* auth check failed */ }
     }
 
     if (!isAuthorized) {
