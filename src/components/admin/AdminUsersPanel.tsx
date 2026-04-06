@@ -365,15 +365,26 @@ const AdminUsersPanel = () => {
                             </div>
                           </TableCell>
                           <TableCell className="text-right pr-6">
-                            <Button
-                              variant="ghost" size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setDeleteConfirmUser(u)}
-                              disabled={u.user_id === user?.id}
-                              title={u.user_id === user?.id ? 'Nu îți poți șterge propriul cont' : 'Șterge cont'}
-                            >
-                              <UserX className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                                onClick={() => resetMFA(u)}
+                                disabled={resettingMFA === u.user_id || u.user_id === user?.id}
+                                title="Resetează 2FA"
+                              >
+                                {resettingMFA === u.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldOff className="w-4 h-4" />}
+                              </Button>
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeleteConfirmUser(u)}
+                                disabled={u.user_id === user?.id}
+                                title={u.user_id === user?.id ? 'Nu îți poți șterge propriul cont' : 'Șterge cont'}
+                              >
+                                <UserX className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
