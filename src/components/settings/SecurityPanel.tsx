@@ -308,15 +308,45 @@ export default function SecurityPanel() {
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                 <span className="text-sm font-medium">Autentificarea 2FA este activă pe contul tău.</span>
               </div>
-              <Button
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                onClick={unenrollMFA}
-                disabled={mfaUnenrolling}
-              >
-                {mfaUnenrolling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Dezactivează 2FA
-              </Button>
+              {showUnenrollConfirm ? (
+                <div className="space-y-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+                  <p className="text-sm text-muted-foreground">
+                    Pentru a dezactiva 2FA, introdu codul din 6 cifre din aplicația ta de autentificare:
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="000000"
+                      value={mfaUnenrollCode}
+                      onChange={(e) => setMfaUnenrollCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      maxLength={6}
+                      className="w-40 font-mono text-center tracking-widest"
+                    />
+                    <Button
+                      variant="destructive"
+                      onClick={unenrollMFA}
+                      disabled={mfaUnenrollCode.length !== 6 || mfaUnenrolling}
+                    >
+                      {mfaUnenrolling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Confirmă dezactivarea
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => { setShowUnenrollConfirm(false); setMfaUnenrollCode(''); }}
+                    >
+                      Anulează
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setShowUnenrollConfirm(true)}
+                  disabled={mfaUnenrolling}
+                >
+                  Dezactivează 2FA
+                </Button>
+              )}
             </div>
           ) : mfaQR ? (
             <div className="space-y-4">
