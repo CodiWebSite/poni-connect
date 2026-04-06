@@ -214,6 +214,29 @@ const AdminUsersPanel = () => {
     setTogglingBypass(null);
   };
 
+  const resetMFA = async (targetUser: UserWithRole) => {
+    setResettingMFA(targetUser.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-mfa', {
+        body: { userId: targetUser.user_id },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast({
+          title: 'Succes',
+          description: data.factors_removed
+            ? `2FA resetat pentru ${targetUser.full_name} (${data.factors_removed} factor${data.factors_removed > 1 ? 'i' : ''} eliminat${data.factors_removed > 1 ? 'ți' : ''}).`
+            : `${targetUser.full_name} nu avea 2FA activ.`,
+        });
+      } else {
+        toast({ title: 'Eroare', description: data?.error || 'Nu s-a putut reseta 2FA.', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Eroare', description: err.message || 'Eroare la resetarea 2FA.', variant: 'destructive' });
+    }
+    setResettingMFA(null);
+  };
+
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const filteredUsers = users.filter(u => {
