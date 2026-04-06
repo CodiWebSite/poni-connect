@@ -55,21 +55,27 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const { isSuperAdmin, role, loading: roleLoading } = useUserRole();
   const location = useLocation();
 
-  // Allow auth and kiosk routes always
-  if (location.pathname.startsWith('/auth') || location.pathname === '/kiosk' || location.pathname.startsWith('/profil/') || location.pathname.startsWith('/echipament/')) return <>{children}</>;
+  // Always allow kiosk, public profile, and equipment routes
+  if (location.pathname === '/kiosk' || location.pathname.startsWith('/profil/') || location.pathname.startsWith('/echipament/')) return <>{children}</>;
+
+  // Always allow the maintenance page itself
+  if (location.pathname === '/maintenance') return <>{children}</>;
 
   // Wait for settings to load before making any maintenance decision
   if (settingsLoading) return <>{children}</>;
 
   // If maintenance is off, redirect away from maintenance page and proceed normally
   if (!settings.maintenance_mode) {
-    if (location.pathname === '/maintenance') {
-      return <Navigate to="/" replace />;
-    }
     return <>{children}</>;
   }
 
   // Maintenance IS on from here
+
+  // If user is NOT logged in → redirect to maintenance (including /auth)
+  if (!authLoading && !user) {
+    return <Navigate to="/maintenance" replace />;
+  }
+
   // Wait for auth AND role to fully load before deciding — prevents
   // incorrectly redirecting super_admin to /maintenance
   if (authLoading || roleLoading) {
@@ -91,11 +97,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Non-privileged user during maintenance → force maintenance page
-  if (location.pathname !== '/maintenance') {
-    return <Navigate to="/maintenance" replace />;
-  }
-
-  return <>{children}</>;
+  return <Navigate to="/maintenance" replace />;
 }
 
 function GlobalChatNotifier() {
