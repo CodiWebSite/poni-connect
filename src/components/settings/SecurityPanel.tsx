@@ -96,6 +96,8 @@ export default function SecurityPanel() {
   const [mfaVerifyCode, setMfaVerifyCode] = useState('');
   const [mfaVerifying, setMfaVerifying] = useState(false);
   const [mfaUnenrolling, setMfaUnenrolling] = useState(false);
+  const [mfaUnenrollCode, setMfaUnenrollCode] = useState('');
+  const [showUnenrollConfirm, setShowUnenrollConfirm] = useState(false);
 
   const shouldRecommendMFA = MFA_RECOMMENDED_FOR_ALL;
 
