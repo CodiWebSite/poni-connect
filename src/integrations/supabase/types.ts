@@ -373,6 +373,8 @@ export type Database = {
           entity_id: string | null
           entity_type: string | null
           id: string
+          role_at_time: string | null
+          user_agent: string | null
           user_id: string
         }
         Insert: {
@@ -382,6 +384,8 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           id?: string
+          role_at_time?: string | null
+          user_agent?: string | null
           user_id: string
         }
         Update: {
@@ -391,6 +395,8 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           id?: string
+          role_at_time?: string | null
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
