@@ -1,4 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
+import { validateJWT, getClientIP, getServiceClient } from "../_shared/auth-helpers.ts";
+import { safeErrorResponse, logAndRespond } from "../_shared/error-handler.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,55 +35,34 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-    // Get auth token to identify user
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No auth" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const ip = getClientIP(req.headers);
+    if (!checkRateLimit(`log-auth:${ip}`, 20, 60_000)) {
+      return safeErrorResponse(429, corsHeaders);
     }
 
-    const anonClient = createClient(
-      supabaseUrl,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    // Validate JWT
+    const auth = await validateJWT(req);
+    if (auth.error) return auth.error;
 
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(
-      authHeader.replace("Bearer ", "")
-    );
+    const userId = auth.userId;
+    const supabase = getServiceClient();
+    const userAgent = req.headers.get("user-agent") || "unknown";
+    const deviceSummary = parseDeviceSummary(userAgent);
 
-    if (claimsError || !claimsData?.claims?.sub) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const userId = claimsData.claims.sub as string;
-
-    // Parse request body for event_type
+    // Parse request body
     let eventType = "login";
-    let eventDetails: Record<string, any> = {};
+    let eventDetails: Record<string, unknown> = {};
     try {
       const body = await req.json();
-      if (body?.event_type) eventType = body.event_type;
-      if (body?.details) eventDetails = body.details;
+      if (body?.event_type && typeof body.event_type === "string") {
+        eventType = body.event_type.slice(0, 50); // limit length
+      }
+      if (body?.details && typeof body.details === "object") {
+        eventDetails = body.details;
+      }
     } catch {
       // No body = standard login event
     }
-
-    const ipAddress =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("cf-connecting-ip") ||
-      "unknown";
-    const userAgent = req.headers.get("user-agent") || "unknown";
-    const deviceSummary = parseDeviceSummary(userAgent);
 
     // Get user profile name
     const { data: profile } = await supabase
@@ -110,7 +92,7 @@ Deno.serve(async (req) => {
         const recentIPs = [...new Set(recentLogs.map((l: any) => l.ip_address))];
         const recentUAs = [...new Set(recentLogs.map((l: any) => l.user_agent))];
 
-        if (!recentIPs.includes(ipAddress) && recentIPs.length >= 2) {
+        if (!recentIPs.includes(ip) && recentIPs.length >= 2) {
           isSuspicious = true;
           isNewIP = true;
         }
@@ -123,7 +105,7 @@ Deno.serve(async (req) => {
       // Insert login log
       await supabase.from("auth_login_logs").insert({
         user_id: userId,
-        ip_address: ipAddress,
+        ip_address: ip,
         user_agent: userAgent,
         device_summary: deviceSummary,
         status: "success",
@@ -138,7 +120,7 @@ Deno.serve(async (req) => {
           user_id: userId,
           event_type: "new_device",
           severity: "warning",
-          ip_address: ipAddress,
+          ip_address: ip,
           user_agent: userAgent,
           details: { device: deviceSummary, message: `Autentificare de pe un dispozitiv nou: ${deviceSummary}` },
         });
@@ -149,9 +131,9 @@ Deno.serve(async (req) => {
           user_id: userId,
           event_type: "new_ip",
           severity: "warning",
-          ip_address: ipAddress,
+          ip_address: ip,
           user_agent: userAgent,
-          details: { message: `Autentificare de la o adresă IP nouă: ${ipAddress}` },
+          details: { message: `Autentificare de la o adresă IP nouă: ${ip}` },
         });
       }
 
@@ -160,18 +142,17 @@ Deno.serve(async (req) => {
           user_id: userId,
           event_type: "suspicious_login",
           severity: "critical",
-          ip_address: ipAddress,
+          ip_address: ip,
           user_agent: userAgent,
-          details: { device: deviceSummary, message: `Login suspect detectat de pe ${deviceSummary} (IP: ${ipAddress})` },
+          details: { device: deviceSummary, message: `Login suspect detectat de pe ${deviceSummary} (IP: ${ip})` },
         });
       }
 
-      // Always log a successful login event
       securityEvents.push({
         user_id: userId,
         event_type: "login_success",
         severity: "info",
-        ip_address: ipAddress,
+        ip_address: ip,
         user_agent: userAgent,
         details: { device: deviceSummary },
       });
@@ -182,16 +163,14 @@ Deno.serve(async (req) => {
 
       // Notify user about suspicious login
       if (isSuspicious) {
-        // Notify the user themselves
         await supabase.from("notifications").insert({
           user_id: userId,
           title: "⚠️ Login suspect pe contul tău",
-          message: `S-a detectat o autentificare neobișnuită de pe ${deviceSummary} (IP: ${ipAddress}). Dacă nu ai fost tu, schimbă-ți parola imediat.`,
+          message: `S-a detectat o autentificare neobișnuită de pe ${deviceSummary} (IP: ${ip}). Dacă nu ai fost tu, schimbă-ți parola imediat.`,
           type: "warning",
           related_type: "security_event",
         });
 
-        // Notify all super_admins
         const { data: superAdmins } = await supabase
           .from("user_roles")
           .select("user_id")
@@ -203,7 +182,7 @@ Deno.serve(async (req) => {
             .map((admin: any) => ({
               user_id: admin.user_id,
               title: "⚠️ Login suspect detectat",
-              message: `${userName} s-a autentificat de pe ${deviceSummary} (IP: ${ipAddress})`,
+              message: `${userName} s-a autentificat de pe ${deviceSummary} (IP: ${ip})`,
               type: "warning",
               related_type: "security_event",
             }));
@@ -219,8 +198,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Handle other security events (password_change, role_change, etc.)
-    if (["password_change", "role_change", "critical_action", "logout_all"].includes(eventType)) {
+    // Handle other security events
+    const allowedEvents = ["password_change", "role_change", "critical_action", "logout_all"];
+    if (allowedEvents.includes(eventType)) {
       const severityMap: Record<string, string> = {
         password_change: "warning",
         role_change: "critical",
@@ -232,7 +212,7 @@ Deno.serve(async (req) => {
         user_id: userId,
         event_type: eventType,
         severity: severityMap[eventType] || "info",
-        ip_address: ipAddress,
+        ip_address: ip,
         user_agent: userAgent,
         details: { ...eventDetails, device: deviceSummary },
       });
@@ -246,7 +226,7 @@ Deno.serve(async (req) => {
 
         const messageMap: Record<string, string> = {
           role_change: `Rolul utilizatorului ${userName} a fost modificat`,
-          critical_action: `${userName} a efectuat o acțiune critică: ${eventDetails?.action || "necunoscut"}`,
+          critical_action: `${userName} a efectuat o acțiune critică: ${String(eventDetails?.action || "necunoscut").slice(0, 100)}`,
         };
 
         if (superAdmins && superAdmins.length > 0) {
@@ -275,9 +255,6 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return logAndRespond(error, corsHeaders, "log-auth-event");
   }
 });

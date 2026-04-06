@@ -1,9 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
+import { requireRole, getClientIP, getServiceClient } from "../_shared/auth-helpers.ts";
+import { safeErrorResponse, logAndRespond } from "../_shared/error-handler.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -12,54 +15,45 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify the caller is a super_admin
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Neautorizat" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Rate limiting
+    const ip = getClientIP(req.headers);
+    if (!checkRateLimit(`create-user:${ip}`, 5, 60_000)) {
+      return safeErrorResponse(429, corsHeaders);
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Require super_admin role
+    const auth = await requireRole(req, "super_admin");
+    if (auth.error) return auth.error;
 
-    // Verify caller role
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: { user: caller }, error: authError } = await anonClient.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-
-    if (authError || !caller) {
-      return new Response(JSON.stringify({ error: "Neautorizat" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Input validation
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return safeErrorResponse(400, corsHeaders, "Cerere invalidă.");
     }
 
-    // Check super_admin role
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: roleData } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id)
-      .maybeSingle();
-
-    if (!roleData || roleData.role !== "super_admin") {
-      return new Response(JSON.stringify({ error: "Acces interzis. Doar Super Admin." }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { email, password, full_name } = await req.json();
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : null;
+    const password = typeof body.password === "string" ? body.password : null;
+    const full_name = typeof body.full_name === "string" ? body.full_name.trim() : null;
 
     if (!email || !password || !full_name) {
-      return new Response(
-        JSON.stringify({ error: "Email, parolă și nume complet sunt obligatorii." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return safeErrorResponse(400, corsHeaders, "Email, parolă și nume complet sunt obligatorii.");
     }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return safeErrorResponse(400, corsHeaders, "Adresa de email nu este validă.");
+    }
+
+    if (password.length < 8) {
+      return safeErrorResponse(400, corsHeaders, "Parola trebuie să aibă cel puțin 8 caractere.");
+    }
+
+    if (full_name.length < 2 || full_name.length > 200) {
+      return safeErrorResponse(400, corsHeaders, "Numele trebuie să aibă între 2 și 200 de caractere.");
+    }
+
+    const adminClient = getServiceClient();
 
     // Create user with email confirmed
     const { data, error } = await adminClient.auth.admin.createUser({
@@ -70,19 +64,17 @@ Deno.serve(async (req) => {
     });
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("[create-user] Admin API error:", error.message);
+      return safeErrorResponse(400, corsHeaders, "Nu s-a putut crea contul. Verifică dacă email-ul nu este deja folosit.");
     }
 
     // Log audit event
     await adminClient.rpc("log_audit_event", {
-      _user_id: caller.id,
+      _user_id: auth.userId,
       _action: "manual_account_create",
       _entity_type: "user",
       _entity_id: data.user.id,
-      _details: { email, full_name, created_by: caller.email },
+      _details: { email, full_name, created_by_ip: ip },
     });
 
     return new Response(
@@ -90,9 +82,6 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return logAndRespond(err, corsHeaders, "create-user");
   }
 });

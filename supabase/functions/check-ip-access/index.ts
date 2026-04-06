@@ -1,4 +1,7 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
+import { getClientIP } from "../_shared/auth-helpers.ts";
+import { safeErrorResponse, logAndRespond } from "../_shared/error-handler.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +11,7 @@ const corsHeaders = {
 
 // Whitelisted IP ranges and addresses
 const ALLOWED_IPS = ["5.2.255.60"];
+const ALLOWED_CIDRS = ["193.138.98.0/24"];
 
 function isInCIDR(ip: string, cidr: string): boolean {
   const [range, bits] = cidr.split("/");
@@ -26,8 +30,6 @@ function ipToNum(ip: string): number | null {
   return ((nums[0] << 24) | (nums[1] << 16) | (nums[2] << 8) | nums[3]) >>> 0;
 }
 
-const ALLOWED_CIDRS = ["193.138.98.0/24"];
-
 function isAllowedIP(ip: string): boolean {
   if (!ip || ip === "unknown") return false;
   if (ALLOWED_IPS.includes(ip)) return true;
@@ -43,30 +45,29 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const ip = getClientIP(req.headers);
+
+    // Rate limiting
+    if (!checkRateLimit(`ip-check:${ip}`, 30, 60_000)) {
+      return safeErrorResponse(429, corsHeaders);
+    }
+
     // Allow Lovable preview/dev origins to bypass IP check
     const origin = req.headers.get("origin") || "";
-    const isLovablePreview = origin.includes(".lovableproject.com") || origin.includes(".lovable.app");
+    const isLovablePreview =
+      origin.includes(".lovableproject.com") || origin.includes(".lovable.app");
     if (isLovablePreview) {
-      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "preview";
       return new Response(
         JSON.stringify({ allowed: true, ip, message: "Acces permis (preview)" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("cf-connecting-ip") ||
-      req.headers.get("x-real-ip") ||
-      "unknown";
 
     // If IP is allowed, return immediately
     if (isAllowedIP(ip)) {
       return new Response(
         JSON.stringify({ allowed: true, ip, message: "Acces permis" }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -80,9 +81,7 @@ Deno.serve(async (req) => {
           global: { headers: { Authorization: authHeader } },
         });
 
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
           const { data: bypass } = await supabase
@@ -93,23 +92,13 @@ Deno.serve(async (req) => {
 
           if (bypass) {
             return new Response(
-              JSON.stringify({
-                allowed: true,
-                ip,
-                message: "Acces permis (bypass IP)",
-              }),
-              {
-                status: 200,
-                headers: {
-                  ...corsHeaders,
-                  "Content-Type": "application/json",
-                },
-              }
+              JSON.stringify({ allowed: true, ip, message: "Acces permis (bypass IP)" }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           }
         }
       } catch (e) {
-        console.warn("Bypass check error:", e);
+        console.warn("[check-ip-access] Bypass check error");
       }
     }
 
@@ -117,21 +106,11 @@ Deno.serve(async (req) => {
       JSON.stringify({
         allowed: false,
         ip,
-        message:
-          "Accesul este restricționat. Această platformă poate fi accesată doar din rețeaua institutului.",
+        message: "Accesul este restricționat. Această platformă poate fi accesată doar din rețeaua institutului.",
       }),
-      {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    return new Response(
-      JSON.stringify({ allowed: false, error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return logAndRespond(error, corsHeaders, "check-ip-access");
   }
 });
