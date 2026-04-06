@@ -262,6 +262,78 @@ export default function SecurityPanel() {
 
   return (
     <div className="space-y-6">
+      {/* 2FA / MFA */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <KeyRound className="w-5 h-5" />
+            Autentificare în doi pași (2FA)
+            {mfaEnabled ? (
+              <Badge className="bg-green-600/10 text-green-700 border-green-200">Activ</Badge>
+            ) : shouldRecommendMFA ? (
+              <Badge variant="destructive" className="text-xs">Recomandat</Badge>
+            ) : null}
+          </CardTitle>
+          <CardDescription>
+            {shouldRecommendMFA && !mfaEnabled
+              ? 'Rolul tău necesită activarea autentificării în doi pași pentru securitate sporită.'
+              : 'Adaugă un nivel suplimentar de securitate la contul tău.'
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {mfaEnabled ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/5 border border-green-200 dark:border-green-800">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <span className="text-sm font-medium">Autentificarea 2FA este activă pe contul tău.</span>
+              </div>
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={unenrollMFA}
+                disabled={mfaUnenrolling}
+              >
+                {mfaUnenrolling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Dezactivează 2FA
+              </Button>
+            </div>
+          ) : mfaQR ? (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border">
+                <p className="text-sm text-muted-foreground text-center">
+                  Scanează codul QR cu aplicația ta de autentificare (Google Authenticator, Authy, etc.)
+                </p>
+                <img src={mfaQR} alt="QR Code 2FA" className="w-48 h-48 rounded-lg" />
+                {mfaSecret && (
+                  <p className="text-xs font-mono bg-background p-2 rounded border select-all">
+                    {mfaSecret}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Cod din 6 cifre"
+                  value={mfaVerifyCode}
+                  onChange={(e) => setMfaVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  maxLength={6}
+                  className="w-40 font-mono text-center tracking-widest"
+                />
+                <Button onClick={verifyMFAEnrollment} disabled={mfaVerifyCode.length !== 6 || mfaVerifying}>
+                  {mfaVerifying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Verifică și activează
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button onClick={startMFAEnrollment} disabled={mfaEnrolling} className="gap-2">
+              {mfaEnrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+              Configurează 2FA
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Active Sessions */}
       <Card>
         <CardHeader>
