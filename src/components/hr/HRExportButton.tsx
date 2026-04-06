@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { FileSpreadsheet, Download, Calendar, Users, FileText, Loader2, Banknote } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { logExportAction } from '@/utils/exportAudit';
 import ExcelJS from 'exceljs';
 import { format, parseISO, eachDayOfInterval, isWeekend } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -144,6 +146,7 @@ const totalAvailable = (e: Employee) => {
 
 const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [exporting, setExporting] = useState<string | null>(null);
 
   const exportSingleSheet = async (data: Record<string, any>[], filename: string, sheetName: string) => {
@@ -177,6 +180,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         };
       });
       await exportSingleSheet(data, 'cereri_concediu', 'Cereri Concediu');
+      if (user) logExportAction(user.id, 'cereri_concediu', data.length);
       toast({ title: 'Export realizat', description: `${data.length} cereri de concediu exportate.` });
     } finally {
       setExporting(null);
@@ -204,6 +208,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         };
       });
       await exportSingleSheet(data, 'toate_cererile_hr', 'Cereri HR');
+      if (user) logExportAction(user.id, 'toate_cererile_hr', data.length);
       toast({ title: 'Export realizat', description: `${data.length} cereri HR exportate.` });
     } finally {
       setExporting(null);
@@ -228,6 +233,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         'Zile Rămase': totalAvailable(e),
       }));
       await exportSingleSheet(data, 'sold_concedii', 'Sold Concedii');
+      if (user) logExportAction(user.id, 'sold_concedii', data.length);
       toast({ title: 'Export realizat', description: `${data.length} angajați exportați.` });
     } finally {
       setExporting(null);
@@ -248,6 +254,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         'Cont Activ': e.hasAccount ? 'Da' : 'Nu'
       }));
       await exportSingleSheet(data, 'lista_angajati', 'Angajați');
+      if (user) logExportAction(user.id, 'lista_angajati', data.length);
       toast({ title: 'Export realizat', description: `${data.length} angajați exportați.` });
     } finally {
       setExporting(null);
@@ -265,6 +272,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
         'Funcție': e.position || '-',
       }));
       await exportSingleSheet(data, 'angajati_fara_cont', 'Fără Cont');
+      if (user) logExportAction(user.id, 'angajati_fara_cont', data.length);
       toast({ title: 'Export realizat', description: `${data.length} angajați fără cont exportați.` });
     } finally {
       setExporting(null);
@@ -408,6 +416,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
       });
 
       await saveWorkbook(wb, `raport_salarizare_${currentYear}`);
+      if (user) logExportAction(user.id, 'raport_salarizare', mainData.length, { departments: departments.length });
       toast({ title: 'Export realizat', description: `Raport salarizare cu ${mainData.length} angajați și ${departments.length} departamente exportat.` });
     } finally {
       setExporting(null);
