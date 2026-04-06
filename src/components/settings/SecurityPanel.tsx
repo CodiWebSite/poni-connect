@@ -123,7 +123,8 @@ export default function SecurityPanel() {
     try {
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
-        friendlyName: 'ICMPP Intranet',
+        issuer: 'ICMPP Intranet',
+        friendlyName: user?.email || 'ICMPP Intranet',
       });
       if (error) throw error;
       setMfaQR(data.totp.qr_code);
