@@ -2431,6 +2431,36 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string | null
+          device_name: string | null
+          endpoint: string
+          id: string
+          p256dh_key: string
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string | null
+          device_name?: string | null
+          endpoint: string
+          id?: string
+          p256dh_key: string
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string | null
+          device_name?: string | null
+          endpoint?: string
+          id?: string
+          p256dh_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recreational_activities: {
         Row: {
           category: Database["public"]["Enums"]["activity_category"]
@@ -2575,6 +2605,48 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      security_alert_preferences: {
+        Row: {
+          alert_on_critical_action: boolean | null
+          alert_on_new_device: boolean | null
+          alert_on_new_ip: boolean | null
+          alert_on_role_change: boolean | null
+          alert_on_suspicious_login: boolean | null
+          created_at: string | null
+          email_enabled: boolean | null
+          id: string
+          push_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          alert_on_critical_action?: boolean | null
+          alert_on_new_device?: boolean | null
+          alert_on_new_ip?: boolean | null
+          alert_on_role_change?: boolean | null
+          alert_on_suspicious_login?: boolean | null
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          push_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          alert_on_critical_action?: boolean | null
+          alert_on_new_device?: boolean | null
+          alert_on_new_ip?: boolean | null
+          alert_on_role_change?: boolean | null
+          alert_on_suspicious_login?: boolean | null
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          push_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

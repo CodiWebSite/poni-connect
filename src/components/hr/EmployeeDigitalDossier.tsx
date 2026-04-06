@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Search, FolderOpen, AlertTriangle, FileText, Download, User, Clock, Shield, CreditCard, FileCheck, Briefcase, ChevronRight, Calendar, Upload, Plus, Loader2 } from 'lucide-react';
+import { maskSensitiveField } from '@/utils/dataMasking';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -576,7 +577,7 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-muted-foreground text-xs">CNP</p>
-                    <p className="font-mono">{selectedEmployee.cnp}</p>
+                    <p className="font-mono">{maskSensitiveField(selectedEmployee.cnp, 'cnp')}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
