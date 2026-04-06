@@ -166,16 +166,33 @@ export default function SecurityPanel() {
   };
 
   const unenrollMFA = async () => {
-    if (!mfaFactorId) return;
+    if (!mfaFactorId || mfaUnenrollCode.length !== 6) return;
     setMfaUnenrolling(true);
     try {
+      // First, elevate to AAL2 by verifying a TOTP code
+      const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({
+        factorId: mfaFactorId,
+      });
+      if (challengeErr) throw challengeErr;
+
+      const { error: verifyErr } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challenge.id,
+        code: mfaUnenrollCode,
+      });
+      if (verifyErr) throw verifyErr;
+
+      // Now AAL2 — can unenroll
       const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
       if (error) throw error;
       setMfaEnabled(false);
       setMfaFactorId(null);
+      setShowUnenrollConfirm(false);
+      setMfaUnenrollCode('');
       toast.success('2FA dezactivat.');
     } catch (err: any) {
-      toast.error(err.message || 'Eroare la dezactivarea 2FA');
+      toast.error(err.message || 'Cod invalid sau eroare la dezactivarea 2FA');
+      setMfaUnenrollCode('');
     }
     setMfaUnenrolling(false);
   };
