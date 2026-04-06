@@ -24,6 +24,7 @@ import InvitePlatformPanel from './InvitePlatformPanel';
 import AccountReminderPanel from './AccountReminderPanel';
 import PreAssignRoles from './PreAssignRoles';
 import HelpdeskPanel from './HelpdeskPanel';
+import ReauthDialog from '@/components/shared/ReauthDialog';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -85,6 +86,10 @@ const AdminUsersPanel = () => {
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserWithRole | null>(null);
   const [bypassUsers, setBypassUsers] = useState<Set<string>>(new Set());
   const [togglingBypass, setTogglingBypass] = useState<string | null>(null);
+  const [reauthOpen, setReauthOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [reauthTitle, setReauthTitle] = useState('');
+  const [reauthDesc, setReauthDesc] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -123,6 +128,20 @@ const AdminUsersPanel = () => {
   };
 
   const updateUserRole = async (userId: string, roleId: string, newRole: string) => {
+    const oldUser = users.find(u => u.user_id === userId);
+    // Require reauth for sensitive role changes
+    const sensitiveRoles = ['super_admin', 'hr', 'sef_srus', 'director_institut'];
+    if (sensitiveRoles.includes(newRole) || sensitiveRoles.includes(oldUser?.role || '')) {
+      setReauthTitle('Confirmare schimbare rol');
+      setReauthDesc(`Schimbarea rolului lui ${oldUser?.full_name} necesită re-autentificare.`);
+      setPendingAction(() => () => executeRoleUpdate(userId, roleId, newRole));
+      setReauthOpen(true);
+      return;
+    }
+    await executeRoleUpdate(userId, roleId, newRole);
+  };
+
+  const executeRoleUpdate = async (userId: string, roleId: string, newRole: string) => {
     setUpdating(userId);
     const oldUser = users.find(u => u.user_id === userId);
     const { error } = await supabase.from('user_roles').update({ role: newRole as any }).eq('id', roleId);
@@ -132,6 +151,9 @@ const AdminUsersPanel = () => {
       toast({ title: 'Succes', description: 'Rolul a fost actualizat.' });
       setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, role: newRole } : u));
       if (user?.id) {
+        await supabase.functions.invoke('log-auth-event', {
+          body: { event_type: 'role_change', details: { action: `Rol schimbat: ${oldUser?.role} → ${newRole}`, target_user: oldUser?.full_name } },
+        });
         await supabase.rpc('log_audit_event', {
           _user_id: user.id, _action: 'role_change', _entity_type: 'user_role', _entity_id: userId,
           _details: { user_name: oldUser?.full_name, old_role: oldUser?.role, new_role: newRole }
@@ -142,6 +164,14 @@ const AdminUsersPanel = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
+    // Always require reauth for user deletion
+    setReauthTitle('Confirmare ștergere cont');
+    setReauthDesc('Ștergerea unui cont este ireversibilă. Re-autentifică-te pentru a continua.');
+    setPendingAction(() => () => executeDeleteUser(userId));
+    setReauthOpen(true);
+  };
+
+  const executeDeleteUser = async (userId: string) => {
     setDeleting(userId);
     const deletedUser = users.find(u => u.user_id === userId);
     try {
@@ -151,6 +181,9 @@ const AdminUsersPanel = () => {
         toast({ title: 'Succes', description: 'Contul a fost șters din sistem.' });
         setUsers(prev => prev.filter(u => u.user_id !== userId));
         if (user?.id) {
+          await supabase.functions.invoke('log-auth-event', {
+            body: { event_type: 'critical_action', details: { action: 'user_delete', target_user: deletedUser?.full_name } },
+          });
           await supabase.rpc('log_audit_event', {
             _user_id: user.id, _action: 'user_delete', _entity_type: 'user', _entity_id: userId,
             _details: { deleted_user_name: deletedUser?.full_name, deleted_user_id: userId }
