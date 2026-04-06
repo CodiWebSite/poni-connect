@@ -45,3 +45,7 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = false
   [functions.iris-chat]
     verify_jwt = false
+  [functions.notify-telegram]
+    verify_jwt = false
+  [functions.check-medical-expirations]
+    verify_jwt = false
