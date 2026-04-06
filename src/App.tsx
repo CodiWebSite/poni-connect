@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,11 +8,13 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import MFAChallengeScreen from "@/components/auth/MFAChallengeScreen";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { DemoModeProvider } from "@/contexts/DemoModeContext";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
+import { supabase } from "@/integrations/supabase/client";
 
 import IrisButton from "@/components/iris/IrisButton";
 import Index from "./pages/Index";
@@ -100,6 +103,41 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   return <Navigate to="/maintenance" replace />;
 }
 
+function MFAGuard({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const [needsMFA, setNeedsMFA] = useState<boolean | null>(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!user) {
+      setNeedsMFA(false);
+      return;
+    }
+
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
+      if (data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2') {
+        setNeedsMFA(true);
+      } else {
+        setNeedsMFA(false);
+      }
+    });
+  }, [user]);
+
+  // Don't block public routes
+  const publicPaths = ['/auth', '/auth/reset-password', '/kiosk', '/maintenance'];
+  if (publicPaths.some(p => location.pathname.startsWith(p)) || location.pathname.startsWith('/profil/') || location.pathname.startsWith('/echipament/')) {
+    return <>{children}</>;
+  }
+
+  if (loading || needsMFA === null) return null;
+
+  if (needsMFA) {
+    return <MFAChallengeScreen onVerified={() => setNeedsMFA(false)} />;
+  }
+
+  return <>{children}</>;
+}
+
 function GlobalChatNotifier() {
   useChatNotifications();
   return null;
@@ -119,6 +157,7 @@ const App = () => (
           <ImpersonationBanner />
           <BrowserRouter>
             <IrisButton />
+            <MFAGuard>
             <MaintenanceGuard>
               <Routes>
                 <Route path="/kiosk" element={<Kiosk />} />
@@ -155,6 +194,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
+            </MFAGuard>
           </BrowserRouter>
         </TooltipProvider>
         </SidebarProvider>
