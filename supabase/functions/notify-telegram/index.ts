@@ -78,43 +78,41 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Auth check — allow service role, DB triggers (anon key via apikey header), or authenticated admins
+    // Auth check — allow service role, DB triggers (anon JWT), or authenticated super_admins
     const authHeader = req.headers.get("Authorization");
     const apikeyHeader = req.headers.get("apikey");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-    const publishableKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
     let isAuthorized = false;
 
     const token = authHeader?.startsWith("Bearer ") 
       ? authHeader.replace("Bearer ", "") 
       : "";
 
-    console.log("Auth debug:", { 
-      hasToken: !!token, 
-      tokenPrefix: token?.slice(0, 20),
-      anonKeyPrefix: anonKey?.slice(0, 20),
-      pubKeyPrefix: publishableKey?.slice(0, 20),
-      hasApikey: !!apikeyHeader,
-      matchAnon: token === anonKey,
-      matchPub: token === publishableKey,
-      matchService: token === serviceRoleKey,
-    });
-
-    if (token && (token === serviceRoleKey || token === anonKey || token === publishableKey)) {
-      isAuthorized = true;
-    } else if (apikeyHeader && token === apikeyHeader) {
+    // Check service role key
+    if (token === serviceRoleKey) {
       isAuthorized = true;
     }
-    
-    if (!isAuthorized && authHeader?.startsWith("Bearer ")) {
-      // Check if authenticated user is super_admin
-      const supabaseAuth = createClient(supabaseUrl, anonKey || apikeyHeader || "", {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: { user } } = await supabaseAuth.auth.getUser();
+
+    // Check if token is an anon JWT (sent by DB triggers via pg_net)
+    if (!isAuthorized && token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload?.role === "anon" && payload?.iss === "supabase") {
+          isAuthorized = true;
+        }
+      } catch { /* not a valid JWT, continue */ }
+    }
+
+    // Check if authenticated user is super_admin
+    if (!isAuthorized && token) {
+      try {
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || apikeyHeader || "";
+        const supabaseAuth = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader! } },
+        });
+        const { data: { user } } = await supabaseAuth.auth.getUser();
         if (user) {
           const supabase = createClient(supabaseUrl, serviceRoleKey);
           const { data: roles } = await supabase
@@ -125,6 +123,7 @@ Deno.serve(async (req) => {
             .limit(1);
           isAuthorized = (roles && roles.length > 0);
         }
+      } catch { /* auth check failed */ }
     }
 
     if (!isAuthorized) {
