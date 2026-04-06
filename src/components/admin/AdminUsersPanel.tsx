@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
   Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus,
-  Globe, RefreshCw, Mail, Headset, Bell, ClipboardList, Lock, Filter
+  Globe, RefreshCw, Mail, Headset, Bell, ClipboardList, Lock, Filter, ShieldOff
 } from 'lucide-react';
 import ManualAccountCreate from './ManualAccountCreate';
 import AccountRequestsPanel from './AccountRequestsPanel';
@@ -90,6 +90,7 @@ const AdminUsersPanel = () => {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [reauthTitle, setReauthTitle] = useState('');
   const [reauthDesc, setReauthDesc] = useState('');
+  const [resettingMFA, setResettingMFA] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -211,6 +212,29 @@ const AdminUsersPanel = () => {
       else toast({ title: 'Eroare', description: 'Nu s-a putut dezactiva bypass-ul.', variant: 'destructive' });
     }
     setTogglingBypass(null);
+  };
+
+  const resetMFA = async (targetUser: UserWithRole) => {
+    setResettingMFA(targetUser.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-mfa', {
+        body: { userId: targetUser.user_id },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast({
+          title: 'Succes',
+          description: data.factors_removed
+            ? `2FA resetat pentru ${targetUser.full_name} (${data.factors_removed} factor${data.factors_removed > 1 ? 'i' : ''} eliminat${data.factors_removed > 1 ? 'ți' : ''}).`
+            : `${targetUser.full_name} nu avea 2FA activ.`,
+        });
+      } else {
+        toast({ title: 'Eroare', description: data?.error || 'Nu s-a putut reseta 2FA.', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Eroare', description: err.message || 'Eroare la resetarea 2FA.', variant: 'destructive' });
+    }
+    setResettingMFA(null);
   };
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -341,15 +365,26 @@ const AdminUsersPanel = () => {
                             </div>
                           </TableCell>
                           <TableCell className="text-right pr-6">
-                            <Button
-                              variant="ghost" size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setDeleteConfirmUser(u)}
-                              disabled={u.user_id === user?.id}
-                              title={u.user_id === user?.id ? 'Nu îți poți șterge propriul cont' : 'Șterge cont'}
-                            >
-                              <UserX className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                                onClick={() => resetMFA(u)}
+                                disabled={resettingMFA === u.user_id || u.user_id === user?.id}
+                                title="Resetează 2FA"
+                              >
+                                {resettingMFA === u.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldOff className="w-4 h-4" />}
+                              </Button>
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeleteConfirmUser(u)}
+                                disabled={u.user_id === user?.id}
+                                title={u.user_id === user?.id ? 'Nu îți poți șterge propriul cont' : 'Șterge cont'}
+                              >
+                                <UserX className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
