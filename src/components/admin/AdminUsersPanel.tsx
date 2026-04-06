@@ -397,6 +397,15 @@ const AdminUsersPanel = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reauth Dialog */}
+      <ReauthDialog
+        open={reauthOpen}
+        onOpenChange={(open) => { setReauthOpen(open); if (!open) setPendingAction(null); }}
+        onSuccess={() => { if (pendingAction) pendingAction(); setPendingAction(null); }}
+        title={reauthTitle}
+        description={reauthDesc}
+      />
     </div>
   );
 };
