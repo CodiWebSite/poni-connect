@@ -23,6 +23,7 @@ const MainLayout = ({ children, title, description }: MainLayoutProps) => {
   const { settings } = useAppSettings();
   usePresence();
   usePageTracking();
+  useIdleLogout();
 
   return (
     <div className="min-h-screen bg-background">
