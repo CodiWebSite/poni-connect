@@ -2770,45 +2770,127 @@ export type Database = {
         }
         Relationships: []
       }
-      suggestions: {
+      suggestion_comments: {
         Row: {
-          admin_response: string | null
-          category: string
+          content: string
           created_at: string
-          description: string
           id: string
-          responded_at: string | null
-          responded_by: string | null
-          status: string
-          title: string
-          updated_at: string
+          is_admin_reply: boolean
+          suggestion_id: string
           user_id: string
         }
         Insert: {
-          admin_response?: string | null
-          category?: string
+          content: string
           created_at?: string
-          description: string
           id?: string
-          responded_at?: string | null
-          responded_by?: string | null
-          status?: string
-          title: string
-          updated_at?: string
+          is_admin_reply?: boolean
+          suggestion_id: string
           user_id: string
         }
         Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_admin_reply?: boolean
+          suggestion_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_comments_suggestion_id_fkey"
+            columns: ["suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "suggestions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suggestion_votes: {
+        Row: {
+          created_at: string
+          id: string
+          suggestion_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          suggestion_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          suggestion_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_votes_suggestion_id_fkey"
+            columns: ["suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "suggestions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suggestions: {
+        Row: {
+          admin_responded_at: string | null
+          admin_responded_by: string | null
+          admin_response: string | null
+          category: string
+          comment_count: number
+          created_at: string
+          description: string
+          id: string
+          is_anonymous: boolean
+          priority: Database["public"]["Enums"]["suggestion_priority"]
+          status: Database["public"]["Enums"]["suggestion_status"]
+          target_module: string | null
+          title: string
+          type: Database["public"]["Enums"]["suggestion_type"]
+          updated_at: string
+          user_id: string | null
+          vote_count: number
+        }
+        Insert: {
+          admin_responded_at?: string | null
+          admin_responded_by?: string | null
           admin_response?: string | null
           category?: string
+          comment_count?: number
+          created_at?: string
+          description: string
+          id?: string
+          is_anonymous?: boolean
+          priority?: Database["public"]["Enums"]["suggestion_priority"]
+          status?: Database["public"]["Enums"]["suggestion_status"]
+          target_module?: string | null
+          title: string
+          type?: Database["public"]["Enums"]["suggestion_type"]
+          updated_at?: string
+          user_id?: string | null
+          vote_count?: number
+        }
+        Update: {
+          admin_responded_at?: string | null
+          admin_responded_by?: string | null
+          admin_response?: string | null
+          category?: string
+          comment_count?: number
           created_at?: string
           description?: string
           id?: string
-          responded_at?: string | null
-          responded_by?: string | null
-          status?: string
+          is_anonymous?: boolean
+          priority?: Database["public"]["Enums"]["suggestion_priority"]
+          status?: Database["public"]["Enums"]["suggestion_status"]
+          target_module?: string | null
           title?: string
+          type?: Database["public"]["Enums"]["suggestion_type"]
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
+          vote_count?: number
         }
         Relationships: []
       }
@@ -3279,6 +3361,15 @@ export type Database = {
         | "approved"
         | "rejected"
       procurement_urgency: "normal" | "urgent" | "foarte_urgent"
+      suggestion_priority: "low" | "medium" | "high"
+      suggestion_status:
+        | "new"
+        | "in_review"
+        | "approved"
+        | "in_progress"
+        | "implemented"
+        | "rejected"
+      suggestion_type: "idea" | "feedback" | "problem" | "improvement"
       visitor_status: "expected" | "checked_in" | "checked_out" | "cancelled"
     }
     CompositeTypes: {
@@ -3478,6 +3569,16 @@ export const Constants = {
         "rejected",
       ],
       procurement_urgency: ["normal", "urgent", "foarte_urgent"],
+      suggestion_priority: ["low", "medium", "high"],
+      suggestion_status: [
+        "new",
+        "in_review",
+        "approved",
+        "in_progress",
+        "implemented",
+        "rejected",
+      ],
+      suggestion_type: ["idea", "feedback", "problem", "improvement"],
       visitor_status: ["expected", "checked_in", "checked_out", "cancelled"],
     },
   },
