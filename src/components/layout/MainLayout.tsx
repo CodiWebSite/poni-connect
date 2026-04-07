@@ -8,6 +8,7 @@ import { useSidebarContext } from '@/contexts/SidebarContext';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { usePresence } from '@/hooks/usePresence';
 import { usePageTracking } from '@/hooks/useAnalytics';
+import { useIdleLogout } from '@/hooks/useIdleLogout';
 import { cn } from '@/lib/utils';
 import { AlertTriangle } from 'lucide-react';
 
@@ -22,6 +23,7 @@ const MainLayout = ({ children, title, description }: MainLayoutProps) => {
   const { settings } = useAppSettings();
   usePresence();
   usePageTracking();
+  useIdleLogout();
 
   return (
     <div className="min-h-screen bg-background">
