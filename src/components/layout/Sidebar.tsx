@@ -41,6 +41,7 @@ import {
   Newspaper,
   Package,
   ShieldCheck,
+  Lightbulb,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
