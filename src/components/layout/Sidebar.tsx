@@ -40,6 +40,7 @@ import {
   CreditCard,
   Newspaper,
   Package,
+  ShieldCheck,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -277,6 +278,7 @@ const Sidebar = () => {
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat', badge: unreadChat || undefined },
     { icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' },
     { icon: Archive, label: 'Arhivă Online', path: '/arhiva' },
+    { icon: ShieldCheck, label: 'Securitate Digitală', path: '/securitate-digitala' },
     { icon: ExternalLink, label: 'Adeverințe SCTP', path: 'https://adeverinte.icmpp.ro/', external: true },
     { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
