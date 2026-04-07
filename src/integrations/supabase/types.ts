@@ -2686,6 +2686,90 @@ export type Database = {
         }
         Relationships: []
       }
+      security_quiz_attempts: {
+        Row: {
+          answers: Json
+          completed_at: string
+          created_at: string
+          id: string
+          risk_level: string
+          score: number
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string
+          created_at?: string
+          id?: string
+          risk_level?: string
+          score?: number
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string
+          created_at?: string
+          id?: string
+          risk_level?: string
+          score?: number
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      security_quiz_questions: {
+        Row: {
+          category: string
+          correct_answers: Json
+          created_at: string
+          created_by: string | null
+          difficulty: string
+          explanation: string | null
+          id: string
+          is_active: boolean
+          options: Json
+          order_index: number
+          question_text: string
+          question_type: string
+          scenario_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          correct_answers?: Json
+          created_at?: string
+          created_by?: string | null
+          difficulty?: string
+          explanation?: string | null
+          id?: string
+          is_active?: boolean
+          options?: Json
+          order_index?: number
+          question_text: string
+          question_type?: string
+          scenario_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          correct_answers?: Json
+          created_at?: string
+          created_by?: string | null
+          difficulty?: string
+          explanation?: string | null
+          id?: string
+          is_active?: boolean
+          options?: Json
+          order_index?: number
+          question_text?: string
+          question_type?: string
+          scenario_text?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suggestions: {
         Row: {
           admin_response: string | null
