@@ -49,6 +49,7 @@ import Changelog from "./pages/Changelog";
 import Inventory from "./pages/Inventory";
 import InventoryProfile from "./pages/InventoryProfile";
 import InventoryPublicView from "./pages/InventoryPublicView";
+import SecurityQuiz from "./pages/SecurityQuiz";
 
 const queryClient = new QueryClient();
 
@@ -191,6 +192,7 @@ const App = () => (
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/inventory/:id" element={<InventoryProfile />} />
                 <Route path="/echipament/:id" element={<InventoryPublicView />} />
+                <Route path="/securitate-digitala" element={<SecurityQuiz />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
