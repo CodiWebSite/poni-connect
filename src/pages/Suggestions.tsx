@@ -526,7 +526,7 @@ export default function Suggestions() {
                   <span className="hidden sm:inline">Administrare</span>
                 </TabsTrigger>
               )}
-            </Tabs>
+            </TabsList>
           </div>
 
           {/* Feed tab */}
