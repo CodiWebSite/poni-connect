@@ -50,6 +50,7 @@ import Inventory from "./pages/Inventory";
 import InventoryProfile from "./pages/InventoryProfile";
 import InventoryPublicView from "./pages/InventoryPublicView";
 import SecurityQuiz from "./pages/SecurityQuiz";
+import Suggestions from "./pages/Suggestions";
 
 const queryClient = new QueryClient();
 
@@ -193,6 +194,7 @@ const App = () => (
                 <Route path="/inventory/:id" element={<InventoryProfile />} />
                 <Route path="/echipament/:id" element={<InventoryPublicView />} />
                 <Route path="/securitate-digitala" element={<SecurityQuiz />} />
+                <Route path="/sugestii" element={<Suggestions />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
