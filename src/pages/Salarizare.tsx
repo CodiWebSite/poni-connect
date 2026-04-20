@@ -145,21 +145,21 @@ function addMonthSheet(
     if (!showSource || !carryovers || !year) return { fromCarryover: 0, fromCurrent: 0 };
     
     const carryover = carryovers.find(c => c.employee_personal_data_id === empId && c.to_year === year);
-    const carryoverTotal = carryover?.initial_days ?? 0;
-    const carryoverRemainingNow = carryover?.remaining_days ?? 0;
+    // Plafon real disponibil pentru anul curent = remaining_days (cât a rămas neconsumat din reportul anului anterior)
+    // Aceasta este valoarea pe care platforma (HRManagement) o afișează ca „Report" la angajat.
+    const carryoverAvailable = carryover?.remaining_days ?? 0;
 
-    // If report is already exhausted in current balances, all monthly CO is from current year
-    if (carryoverRemainingNow <= 0) {
+    if (carryoverAvailable <= 0) {
       return { fromCarryover: 0, fromCurrent: coDaysThisMonth };
     }
-    
-    // Carryover used before this month = min(allCoBeforeMonth, carryoverTotal)
-    const carryoverUsedBefore = Math.min(allCoBeforeMonth, carryoverTotal);
-    const carryoverRemaining = Math.max(0, carryoverTotal - carryoverUsedBefore);
-    
+
+    // Cât din reportul disponibil a fost deja consumat în lunile anterioare ale anului curent
+    const carryoverUsedBefore = Math.min(allCoBeforeMonth, carryoverAvailable);
+    const carryoverRemaining = Math.max(0, carryoverAvailable - carryoverUsedBefore);
+
     const fromCarryover = Math.min(coDaysThisMonth, carryoverRemaining);
     const fromCurrent = coDaysThisMonth - fromCarryover;
-    
+
     return { fromCarryover, fromCurrent };
   };
 
@@ -285,9 +285,9 @@ function addBalanceSummarySheet(
 
   const headers = [
     'Nr', 'Nume', 'Departament', 'Funcție',
-    `Report ${year - 1} (Zile inițiale)`, `Report ${year - 1} (Folosite)`, `Report ${year - 1} (Rămase)`,
+    `Report ${year - 1} Rămas`,
     `Sold+ (Bonus ${year})`,
-    `Sold ${year} (Total)`, `Sold ${year} (Folosite)`, `Sold ${year} (Rămase)`,
+    `Sold ${year} (Total)`, `Sold ${year} (Folosite)`, `Sold ${year} (Rămas)`,
     'Total Disponibil'
   ];
   const headerRow = ws.addRow(headers);
@@ -306,25 +306,24 @@ function addBalanceSummarySheet(
   });
 
   sorted.forEach((emp, idx) => {
-    // Carryover from previous year to this year
+    // Report rămas pentru anul curent = remaining_days (oglindit din HRManagement)
     const carryover = carryovers.find(
       c => c.employee_personal_data_id === emp.id && c.to_year === year
     );
-    const coInitial = carryover?.initial_days ?? 0;
-    const coUsed = carryover?.used_days ?? 0;
     const coRemaining = carryover?.remaining_days ?? 0;
 
-    // Bonus days for this year
+    // Bonus days for this year (oglindit din HRManagement)
     const empBonuses = bonuses.filter(
       b => b.employee_personal_data_id === emp.id && b.year === year
     );
     const totalBonus = empBonuses.reduce((sum, b) => sum + b.bonus_days, 0);
 
-    // Current year balance from EPD
+    // Sold anul curent — exact valorile din employee_personal_data (la fel ca pe platformă)
     const totalYearDays = emp.total_leave_days ?? 21;
     const usedYearDays = emp.used_leave_days ?? 0;
     const remainingYear = totalYearDays - usedYearDays;
 
+    // Total disponibil = report rămas + bonus + sold rămas (formula identică cu HRManagement)
     const totalAvailable = coRemaining + totalBonus + remainingYear;
 
     const row = ws.addRow([
@@ -332,8 +331,6 @@ function addBalanceSummarySheet(
       `${emp.last_name} ${emp.first_name}`,
       emp.department || '',
       emp.position || '',
-      coInitial,
-      coUsed,
       coRemaining,
       totalBonus,
       totalYearDays,
@@ -354,7 +351,7 @@ function addBalanceSummarySheet(
     }
 
     // Highlight low availability in red
-    const availCell = row.getCell(12);
+    const availCell = row.getCell(10);
     if (totalAvailable <= 0) {
       availCell.font = { bold: true, color: { argb: 'FFFF0000' } };
     }
@@ -366,13 +363,11 @@ function addBalanceSummarySheet(
   ws.getColumn(3).width = 22;
   ws.getColumn(4).width = 22;
   ws.getColumn(5).width = 18;
-  ws.getColumn(6).width = 18;
-  ws.getColumn(7).width = 18;
+  ws.getColumn(6).width = 16;
+  ws.getColumn(7).width = 16;
   ws.getColumn(8).width = 16;
   ws.getColumn(9).width = 16;
-  ws.getColumn(10).width = 16;
-  ws.getColumn(11).width = 16;
-  ws.getColumn(12).width = 16;
+  ws.getColumn(10).width = 18;
 }
 
 const Salarizare = () => {
