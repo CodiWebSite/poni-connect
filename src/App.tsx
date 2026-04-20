@@ -158,8 +158,8 @@ const App = () => (
           <GlobalChatNotifier />
           <ImpersonationBanner />
           <BrowserRouter>
-            <IrisButton />
             <MFAGuard>
+            <IrisButton />
             <MaintenanceGuard>
               <Routes>
                 <Route path="/kiosk" element={<Kiosk />} />

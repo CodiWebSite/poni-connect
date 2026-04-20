@@ -4,16 +4,43 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "react-router-dom";
 import IrisChatPanel from "./IrisChatPanel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
 
-const HIDDEN_ROUTES = ["/kiosk", "/auth", "/profil/", "/echipament/"];
+const HIDDEN_ROUTES = ["/kiosk", "/auth", "/profil/", "/echipament/", "/maintenance"];
 
 export default function IrisButton() {
   const [open, setOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(() => localStorage.getItem("iris-opened") === "1");
+  const [aalReady, setAalReady] = useState(false);
   const { user } = useAuth();
   const location = useLocation();
 
-  const isHidden = HIDDEN_ROUTES.some((r) => location.pathname.startsWith(r)) || !user;
+  useEffect(() => {
+    if (!user) {
+      setAalReady(false);
+      return;
+    }
+    let cancelled = false;
+    const check = () => {
+      supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
+        if (cancelled) return;
+        // Hide IRIS if MFA challenge is pending (user has factor but session is AAL1)
+        if (data && data.nextLevel === "aal2" && data.currentLevel !== "aal2") {
+          setAalReady(false);
+        } else {
+          setAalReady(true);
+        }
+      });
+    };
+    check();
+    const { data: sub } = supabase.auth.onAuthStateChange(() => check());
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, [user]);
+
+  const isHidden = HIDDEN_ROUTES.some((r) => location.pathname.startsWith(r)) || !user || !aalReady;
 
   useEffect(() => {
     if (open && !hasOpened) {
