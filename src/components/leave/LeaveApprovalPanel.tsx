@@ -363,27 +363,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         .eq('user_id', user!.id)
         .maybeSingle();
 
-      // Resolve employee name with fallback if missing or "N/A"
-      let employeeName = request.employee_name;
-      if (!employeeName || employeeName === 'N/A') {
-        if (request.epd_id) {
-          const { data: epd } = await supabase
-            .from('employee_personal_data')
-            .select('first_name, last_name')
-            .eq('id', request.epd_id)
-            .maybeSingle();
-          if (epd) employeeName = `${epd.last_name} ${epd.first_name}`;
-        }
-        if ((!employeeName || employeeName === 'N/A') && request.user_id) {
-          const { data: prof } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('user_id', request.user_id)
-            .maybeSingle();
-          if (prof?.full_name) employeeName = prof.full_name;
-        }
-        if (!employeeName) employeeName = 'Angajat';
-      }
+      const employeeName = await resolveLeaveEmployeeName(request, user?.id ?? null, 'notify_hr');
 
       // Send in-app notifications to HR/SRUS staff
       const { data: hrRoles } = await supabase
