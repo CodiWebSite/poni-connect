@@ -338,6 +338,8 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
       toast({ title: 'Eroare la ștergere', description: err.message, variant: 'destructive' });
     }
   };
+
+  const handleUploadDocument = async (file: File) => {
     if (!selectedEmployee || !file) return;
     setUploading(true);
     try {
