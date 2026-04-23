@@ -145,9 +145,46 @@ const AdminUsersPanel = () => {
   const executeRoleUpdate = async (userId: string, roleId: string, newRole: string) => {
     setUpdating(userId);
     const oldUser = users.find(u => u.user_id === userId);
+
+    // Anti-conflict guard: dacă userul are deja rolul țintă, nu mai facem update
+    if (oldUser?.role === newRole) {
+      toast({
+        title: 'Fără modificare',
+        description: `${oldUser.full_name} are deja rolul „${roleLabels[newRole] || newRole}".`,
+      });
+      setUpdating(null);
+      return;
+    }
+
+    // Verificare suplimentară în DB (poate exista alt rând cu același rol pentru același user)
+    const { data: existingDup } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('role', newRole as any)
+      .maybeSingle();
+
+    if (existingDup && existingDup.id !== roleId) {
+      toast({
+        title: 'Conflict de roluri',
+        description: `Utilizatorul are deja înregistrat rolul „${roleLabels[newRole] || newRole}". Nu este nevoie să-l reasignezi.`,
+        variant: 'destructive',
+      });
+      setUpdating(null);
+      return;
+    }
+
     const { error } = await supabase.from('user_roles').update({ role: newRole as any }).eq('id', roleId);
     if (error) {
-      toast({ title: 'Eroare', description: 'Nu s-a putut actualiza rolul.', variant: 'destructive' });
+      // Mesaj clar pentru UNIQUE constraint (cod Postgres 23505)
+      const isUnique = (error as any).code === '23505' || /duplicate key|unique/i.test(error.message || '');
+      toast({
+        title: isUnique ? 'Conflict de roluri' : 'Eroare',
+        description: isUnique
+          ? `Utilizatorul are deja rolul „${roleLabels[newRole] || newRole}". Nu poate fi acordat de două ori.`
+          : 'Nu s-a putut actualiza rolul.',
+        variant: 'destructive',
+      });
     } else {
       toast({ title: 'Succes', description: 'Rolul a fost actualizat.' });
       setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, role: newRole } : u));

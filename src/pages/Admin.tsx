@@ -2,12 +2,13 @@ import { useUserRole } from '@/hooks/useUserRole';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Navigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert, ShieldCheck, History } from 'lucide-react';
 import AdminOverview from '@/components/admin/AdminOverview';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminRolesAccessPanel from '@/components/admin/AdminRolesAccessPanel';
 import AdminSystemHealth from '@/components/admin/AdminSystemHealth';
 import AdminAuditPanel from '@/components/admin/AdminAuditPanel';
+import RoleAuditPanel from '@/components/admin/RoleAuditPanel';
 import IrisFeedbackPanel from '@/components/admin/IrisFeedbackPanel';
 import SecurityDashboard from '@/components/admin/SecurityDashboard';
 import SecurityQuizAdminPanel from '@/components/admin/SecurityQuizAdminPanel';
@@ -46,6 +47,10 @@ const Admin = () => {
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">Audit</span>
             </TabsTrigger>
+            <TabsTrigger value="role-audit" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+              <History className="w-4 h-4" />
+              <span className="hidden sm:inline">Audit Roluri</span>
+            </TabsTrigger>
             <TabsTrigger value="iris-feedback" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
               <Bot className="w-4 h-4" />
               <span className="hidden sm:inline">IRIS Feedback</span>
@@ -63,6 +68,7 @@ const Admin = () => {
         <TabsContent value="security"><SecurityDashboard /></TabsContent>
         <TabsContent value="health"><AdminSystemHealth /></TabsContent>
         <TabsContent value="audit"><AdminAuditPanel /></TabsContent>
+        <TabsContent value="role-audit"><RoleAuditPanel /></TabsContent>
         <TabsContent value="iris-feedback"><IrisFeedbackPanel /></TabsContent>
         <TabsContent value="quiz-admin"><SecurityQuizAdminPanel /></TabsContent>
       </Tabs>
