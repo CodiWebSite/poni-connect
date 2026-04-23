@@ -3254,6 +3254,10 @@ export type Database = {
         Returns: boolean
       }
       is_ip_bypass_user: { Args: { _user_id: string }; Returns: boolean }
+      is_leave_approver_for_epd: {
+        Args: { _epd_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_leave_approver_for_request: {
         Args: { _request_id: string; _user_id: string }
         Returns: boolean
