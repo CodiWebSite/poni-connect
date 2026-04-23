@@ -9,6 +9,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Loader2, History } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { toZonedTime } from 'date-fns-tz';
+
+const TZ = 'Europe/Bucharest';
+
+// Parse plain DATE (YYYY-MM-DD) without timezone shift
+function parseDateOnly(s: string): Date {
+  const m = s?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  return parseISO(s);
+}
+
+// Format timestamptz in Romania timezone
+function formatRoTime(s: string, fmt: string): string {
+  return format(toZonedTime(parseISO(s), TZ), fmt, { locale: ro });
+}
 
 interface ApprovedRequest {
   id: string;
@@ -148,7 +163,7 @@ export function LeaveApprovalHistory({ refreshTrigger }: LeaveApprovalHistoryPro
                     <TableCell className="font-medium">{r.employee_name}</TableCell>
                     <TableCell className="text-sm">{r.employee_department}</TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
-                      {format(parseISO(r.start_date), 'dd.MM.yy')} – {format(parseISO(r.end_date), 'dd.MM.yy')}
+                      {format(parseDateOnly(r.start_date), 'dd.MM.yy')} – {format(parseDateOnly(r.end_date), 'dd.MM.yy')}
                     </TableCell>
                     <TableCell className="text-center font-medium">{r.working_days}</TableCell>
                     <TableCell>
@@ -158,9 +173,9 @@ export function LeaveApprovalHistory({ refreshTrigger }: LeaveApprovalHistoryPro
                     </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
                       {r.status === 'approved' && r.dept_head_approved_at
-                        ? format(parseISO(r.dept_head_approved_at), 'dd.MM.yyyy HH:mm', { locale: ro })
+                        ? formatRoTime(r.dept_head_approved_at, 'dd.MM.yyyy HH:mm')
                         : r.status === 'rejected' && r.rejected_at
-                          ? format(parseISO(r.rejected_at), 'dd.MM.yyyy HH:mm', { locale: ro })
+                          ? formatRoTime(r.rejected_at, 'dd.MM.yyyy HH:mm')
                           : '-'}
                     </TableCell>
                   </TableRow>
