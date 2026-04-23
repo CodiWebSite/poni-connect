@@ -295,6 +295,28 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         .eq('user_id', user!.id)
         .maybeSingle();
 
+      // Resolve employee name with fallback if missing or "N/A"
+      let employeeName = request.employee_name;
+      if (!employeeName || employeeName === 'N/A') {
+        if (request.epd_id) {
+          const { data: epd } = await supabase
+            .from('employee_personal_data')
+            .select('first_name, last_name')
+            .eq('id', request.epd_id)
+            .maybeSingle();
+          if (epd) employeeName = `${epd.last_name} ${epd.first_name}`;
+        }
+        if ((!employeeName || employeeName === 'N/A') && request.user_id) {
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', request.user_id)
+            .maybeSingle();
+          if (prof?.full_name) employeeName = prof.full_name;
+        }
+        if (!employeeName) employeeName = 'Angajat';
+      }
+
       // Send in-app notifications to HR/SRUS staff
       const { data: hrRoles } = await supabase
         .from('user_roles')
@@ -307,7 +329,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
           await supabase.from('notifications').insert({
             user_id: hr.user_id,
             title: 'Cerere concediu — necesită validare SRUS',
-            message: `${request.employee_name} — cererea ${request.request_number} a fost aprobată de ${myProfile?.full_name || 'Șef compartiment'} și necesită validarea SRUS.`,
+            message: `${employeeName} — cererea ${request.request_number} a fost aprobată de ${myProfile?.full_name || 'Șef compartiment'} și necesită validarea SRUS.`,
             type: 'warning',
             related_type: 'leave_request',
             related_id: request.id,
