@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { Search, FolderOpen, AlertTriangle, FileText, Download, User, Clock, Shield, CreditCard, FileCheck, Briefcase, ChevronRight, Calendar, Upload, Plus, Loader2 } from 'lucide-react';
+import { Search, FolderOpen, AlertTriangle, FileText, Download, User, Clock, Shield, CreditCard, FileCheck, Briefcase, ChevronRight, Calendar, Upload, Plus, Loader2, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { maskSensitiveField } from '@/utils/dataMasking';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -302,7 +303,41 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
     URL.revokeObjectURL(url);
   };
 
-  const handleUploadDocument = async (file: File) => {
+  const handleDeleteDocument = async (doc: DossierDocument) => {
+    if (!selectedEmployee) return;
+    try {
+      // Delete from storage if file exists
+      if (doc.fileUrl && doc.bucket) {
+        await supabase.storage.from(doc.bucket).remove([doc.fileUrl]);
+      }
+
+      // Delete DB record based on source
+      if (doc.source === 'employee_documents') {
+        const { error } = await supabase.from('employee_documents').delete().eq('id', doc.id);
+        if (error) throw error;
+      } else if (doc.source === 'medical') {
+        const { error } = await supabase.from('medical_documents').delete().eq('id', doc.id);
+        if (error) throw error;
+      } else if (doc.source === 'ci_scan') {
+        const { error } = await supabase
+          .from('employee_personal_data')
+          .update({ ci_scan_url: null, ci_scan_uploaded_at: null })
+          .eq('id', selectedEmployee.id);
+        if (error) throw error;
+      } else if (doc.source === 'archive') {
+        const { error } = await supabase.from('archive_documents').delete().eq('id', doc.id);
+        if (error) throw error;
+      } else {
+        toast({ title: 'Acest tip de document nu poate fi șters de aici', variant: 'destructive' });
+        return;
+      }
+
+      toast({ title: 'Document șters cu succes' });
+      openDossier(selectedEmployee);
+    } catch (err: any) {
+      toast({ title: 'Eroare la ștergere', description: err.message, variant: 'destructive' });
+    }
+  };
     if (!selectedEmployee || !file) return;
     setUploading(true);
     try {
@@ -732,11 +767,37 @@ export default function EmployeeDigitalDossier({ employees }: { employees: Emplo
                                   )}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  {doc.fileUrl && (
-                                    <Button size="icon" variant="ghost" onClick={() => handleDownload(doc)} title="Descarcă">
-                                      <Download className="h-4 w-4" />
-                                    </Button>
-                                  )}
+                                  <div className="flex items-center justify-end gap-1">
+                                    {doc.fileUrl && (
+                                      <Button size="icon" variant="ghost" onClick={() => handleDownload(doc)} title="Descarcă">
+                                        <Download className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button size="icon" variant="ghost" title="Șterge document" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Șterge documentul?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            „{doc.name}" va fi șters definitiv din dosarul angajatului și din stocare. Această acțiune nu poate fi anulată.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Anulează</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => handleDeleteDocument(doc)}
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                          >
+                                            Șterge
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             ))}
