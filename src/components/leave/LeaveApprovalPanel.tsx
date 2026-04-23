@@ -16,8 +16,76 @@ import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { getClientIP } from '@/utils/getClientIP';
+import { resolveEmployeeName } from '@/utils/roleHelpers';
 
 // Digital IP signature is used by sef_srus role instead of manual SignaturePad
+
+/**
+ * Resolves employee display name under RLS with multi-source fallback.
+ * Logs to audit_logs when the provided name was missing/N/A so we can trace why
+ * — typically RLS hiding employee_personal_data or profiles from the approver.
+ */
+async function resolveLeaveEmployeeName(
+  request: { id: string; epd_id?: string | null; user_id?: string | null; employee_name?: string | null; request_number?: string },
+  actorUserId: string | null,
+  context: 'notify_hr' | 'result_email'
+): Promise<string> {
+  const provided = request.employee_name;
+  if (provided && provided !== 'N/A' && provided.trim() !== '') return provided;
+
+  let epdData: { first_name?: string; last_name?: string } | null = null;
+  let epdError: string | null = null;
+  if (request.epd_id) {
+    const { data, error } = await supabase
+      .from('employee_personal_data')
+      .select('first_name, last_name')
+      .eq('id', request.epd_id)
+      .maybeSingle();
+    epdData = data;
+    if (error) epdError = error.message;
+  }
+
+  let profileData: { full_name?: string } | null = null;
+  let profileError: string | null = null;
+  if ((!epdData?.first_name || !epdData?.last_name) && request.user_id) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('user_id', request.user_id)
+      .maybeSingle();
+    profileData = data;
+    if (error) profileError = error.message;
+  }
+
+  const resolved = resolveEmployeeName(provided, epdData, profileData);
+
+  // If we still ended up with the generic fallback, log why so admins can debug RLS
+  if (resolved === 'Angajat' && actorUserId) {
+    try {
+      await supabase.from('audit_logs').insert({
+        user_id: actorUserId,
+        action: 'leave_employee_name_fallback',
+        entity_type: 'leave_request',
+        entity_id: request.id,
+        details: {
+          context,
+          request_number: request.request_number,
+          provided,
+          epd_id: request.epd_id,
+          epd_lookup: epdData ? 'found' : 'empty',
+          epd_error: epdError,
+          profile_lookup: profileData ? 'found' : 'empty',
+          profile_error: profileError,
+          reason: 'All name sources returned empty under current RLS context',
+        },
+      });
+    } catch (e) {
+      console.warn('[resolveLeaveEmployeeName] audit log failed', e);
+    }
+  }
+
+  return resolved;
+}
 
 interface LeaveRequest {
   id: string;
@@ -295,27 +363,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         .eq('user_id', user!.id)
         .maybeSingle();
 
-      // Resolve employee name with fallback if missing or "N/A"
-      let employeeName = request.employee_name;
-      if (!employeeName || employeeName === 'N/A') {
-        if (request.epd_id) {
-          const { data: epd } = await supabase
-            .from('employee_personal_data')
-            .select('first_name, last_name')
-            .eq('id', request.epd_id)
-            .maybeSingle();
-          if (epd) employeeName = `${epd.last_name} ${epd.first_name}`;
-        }
-        if ((!employeeName || employeeName === 'N/A') && request.user_id) {
-          const { data: prof } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('user_id', request.user_id)
-            .maybeSingle();
-          if (prof?.full_name) employeeName = prof.full_name;
-        }
-        if (!employeeName) employeeName = 'Angajat';
-      }
+      const employeeName = await resolveLeaveEmployeeName(request, user?.id ?? null, 'notify_hr');
 
       // Send in-app notifications to HR/SRUS staff
       const { data: hrRoles } = await supabase
@@ -408,27 +456,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
         .eq('user_id', user!.id)
         .maybeSingle();
 
-      // Resolve employee name with fallback
-      let employeeName = request.employee_name;
-      if (!employeeName || employeeName === 'N/A') {
-        if (request.epd_id) {
-          const { data: epd } = await supabase
-            .from('employee_personal_data')
-            .select('first_name, last_name')
-            .eq('id', request.epd_id)
-            .maybeSingle();
-          if (epd) employeeName = `${epd.last_name} ${epd.first_name}`;
-        }
-        if ((!employeeName || employeeName === 'N/A') && request.user_id) {
-          const { data: prof } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('user_id', request.user_id)
-            .maybeSingle();
-          if (prof?.full_name) employeeName = prof.full_name;
-        }
-        if (!employeeName) employeeName = 'Angajat';
-      }
+      const employeeName = await resolveLeaveEmployeeName(request, user?.id ?? null, 'result_email');
 
       await supabase.functions.invoke('notify-leave-result', {
         body: {
