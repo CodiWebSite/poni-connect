@@ -122,6 +122,7 @@ export default function MedicalSettingsPanel({ onConfigLoaded }: MedicalSettings
     }
 
     toast.success('Setările cabinetului medical au fost salvate');
+    window.dispatchEvent(new CustomEvent(MEDICAL_CONFIG_EVENT));
     onConfigLoaded?.(form);
     setSaving(false);
   };
