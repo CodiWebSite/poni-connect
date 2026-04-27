@@ -23,34 +23,47 @@ const SETTING_KEYS: { key: keyof MedicalCabinetConfig; dbKey: string; label: str
   { key: 'companyPhone', dbKey: 'medical_company_phone', label: 'Telefon societate' },
 ];
 
+export async function fetchMedicalConfig(): Promise<MedicalCabinetConfig> {
+  const { data } = await supabase
+    .from('app_settings')
+    .select('key, value')
+    .in('key', SETTING_KEYS.map(s => s.dbKey));
+
+  if (!data || data.length === 0) return DEFAULT_MEDICAL_CONFIG;
+
+  const map: Record<string, string> = {};
+  data.forEach(row => { map[row.key as string] = typeof row.value === 'string' ? row.value : String(row.value); });
+
+  return {
+    medicalUnitName: map.medical_unit_name || DEFAULT_MEDICAL_CONFIG.medicalUnitName,
+    cabinetAddress: map.medical_cabinet_address || DEFAULT_MEDICAL_CONFIG.cabinetAddress,
+    cabinetPhone: map.medical_cabinet_phone || DEFAULT_MEDICAL_CONFIG.cabinetPhone,
+    doctorName: map.medical_doctor_name || DEFAULT_MEDICAL_CONFIG.doctorName,
+    companyName: map.medical_company_name || DEFAULT_MEDICAL_CONFIG.companyName,
+    companyAddress: map.medical_company_address || DEFAULT_MEDICAL_CONFIG.companyAddress,
+    companyPhone: map.medical_company_phone || DEFAULT_MEDICAL_CONFIG.companyPhone,
+  };
+}
+
+const MEDICAL_CONFIG_EVENT = 'medical-config-updated';
+
 export function useMedicalConfig() {
   const [config, setConfig] = useState<MedicalCabinetConfig>(DEFAULT_MEDICAL_CONFIG);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
-        .from('app_settings')
-        .select('key, value')
-        .in('key', SETTING_KEYS.map(s => s.dbKey));
-      
-      if (data && data.length > 0) {
-        const map: Record<string, string> = {};
-        data.forEach(row => { map[row.key as string] = typeof row.value === 'string' ? row.value : String(row.value); });
-        
-        setConfig({
-          medicalUnitName: map.medical_unit_name || DEFAULT_MEDICAL_CONFIG.medicalUnitName,
-          cabinetAddress: map.medical_cabinet_address || DEFAULT_MEDICAL_CONFIG.cabinetAddress,
-          cabinetPhone: map.medical_cabinet_phone || DEFAULT_MEDICAL_CONFIG.cabinetPhone,
-          doctorName: map.medical_doctor_name || DEFAULT_MEDICAL_CONFIG.doctorName,
-          companyName: map.medical_company_name || DEFAULT_MEDICAL_CONFIG.companyName,
-          companyAddress: map.medical_company_address || DEFAULT_MEDICAL_CONFIG.companyAddress,
-          companyPhone: map.medical_company_phone || DEFAULT_MEDICAL_CONFIG.companyPhone,
-        });
+    let active = true;
+    const load = async () => {
+      const cfg = await fetchMedicalConfig();
+      if (active) {
+        setConfig(cfg);
+        setLoading(false);
       }
-      setLoading(false);
     };
-    fetch();
+    load();
+    const handler = () => load();
+    window.addEventListener(MEDICAL_CONFIG_EVENT, handler);
+    return () => { active = false; window.removeEventListener(MEDICAL_CONFIG_EVENT, handler); };
   }, []);
 
   return { config, loading };
@@ -109,6 +122,7 @@ export default function MedicalSettingsPanel({ onConfigLoaded }: MedicalSettings
     }
 
     toast.success('Setările cabinetului medical au fost salvate');
+    window.dispatchEvent(new CustomEvent(MEDICAL_CONFIG_EVENT));
     onConfigLoaded?.(form);
     setSaving(false);
   };

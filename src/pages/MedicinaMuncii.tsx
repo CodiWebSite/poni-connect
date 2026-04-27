@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import { generateFisaAptitudine, type FisaAptitudineParams, type MedicalCabinetConfig } from '@/utils/generateFisaAptitudine';
 import { generateDosarMedical, type DosarMedicalParams } from '@/utils/generateDosarMedical';
-import MedicalSettingsPanel, { useMedicalConfig } from '@/components/medical/MedicalSettingsPanel';
+import MedicalSettingsPanel, { useMedicalConfig, fetchMedicalConfig } from '@/components/medical/MedicalSettingsPanel';
 import DossierDataForm from '@/components/medical/DossierDataForm';
 import DossierViewer from '@/components/medical/DossierViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -604,6 +604,7 @@ const MedicinaMuncii = () => {
                               const [y, m, day] = d.split('-');
                               return `${day}.${m}.${y}`;
                             };
+                            const freshConfig = await fetchMedicalConfig();
                             await generateFisaAptitudine({
                               lastName: selectedEmployee.last_name,
                               firstName: selectedEmployee.first_name,
@@ -615,7 +616,7 @@ const MedicinaMuncii = () => {
                               recommendations: rec.restrictions || lastConsult?.recommendations || '',
                               consultationDate: lastConsult ? formatDMY(lastConsult.consultation_date) : format(today, 'dd.MM.yyyy'),
                               nextExamDate: rec.fitness_valid_until ? formatDMY(rec.fitness_valid_until) : '',
-                              config: medicalConfig,
+                              config: freshConfig,
                             });
                             toast.success('Fișa de aptitudine a fost descărcată');
                           }}>
@@ -637,6 +638,7 @@ const MedicinaMuncii = () => {
                             selectedEmployee.address_city,
                             selectedEmployee.address_county ? `jud. ${selectedEmployee.address_county}` : '',
                           ].filter(Boolean).join(', ');
+                          const freshConfig2 = await fetchMedicalConfig();
                           await generateDosarMedical({
                             lastName: selectedEmployee.last_name,
                             firstName: selectedEmployee.first_name,
@@ -645,7 +647,7 @@ const MedicinaMuncii = () => {
                             department: selectedEmployee.department || '',
                             address: addr,
                             employmentDate: selectedEmployee.employment_date || '',
-                            config: medicalConfig,
+                            config: freshConfig2,
                             professionalTraining: d?.professional_training || undefined,
                             professionalRoute: d?.professional_route || undefined,
                             workHistory: d?.work_history || undefined,
