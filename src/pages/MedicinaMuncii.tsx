@@ -638,6 +638,7 @@ const MedicinaMuncii = () => {
                             selectedEmployee.address_city,
                             selectedEmployee.address_county ? `jud. ${selectedEmployee.address_county}` : '',
                           ].filter(Boolean).join(', ');
+                          const freshConfig2 = await fetchMedicalConfig();
                           await generateDosarMedical({
                             lastName: selectedEmployee.last_name,
                             firstName: selectedEmployee.first_name,
@@ -646,7 +647,7 @@ const MedicinaMuncii = () => {
                             department: selectedEmployee.department || '',
                             address: addr,
                             employmentDate: selectedEmployee.employment_date || '',
-                            config: medicalConfig,
+                            config: freshConfig2,
                             professionalTraining: d?.professional_training || undefined,
                             professionalRoute: d?.professional_route || undefined,
                             workHistory: d?.work_history || undefined,
