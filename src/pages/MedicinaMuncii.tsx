@@ -604,6 +604,7 @@ const MedicinaMuncii = () => {
                               const [y, m, day] = d.split('-');
                               return `${day}.${m}.${y}`;
                             };
+                            const freshConfig = await fetchMedicalConfig();
                             await generateFisaAptitudine({
                               lastName: selectedEmployee.last_name,
                               firstName: selectedEmployee.first_name,
@@ -615,7 +616,7 @@ const MedicinaMuncii = () => {
                               recommendations: rec.restrictions || lastConsult?.recommendations || '',
                               consultationDate: lastConsult ? formatDMY(lastConsult.consultation_date) : format(today, 'dd.MM.yyyy'),
                               nextExamDate: rec.fitness_valid_until ? formatDMY(rec.fitness_valid_until) : '',
-                              config: medicalConfig,
+                              config: freshConfig,
                             });
                             toast.success('Fișa de aptitudine a fost descărcată');
                           }}>
