@@ -232,5 +232,10 @@ export async function generateFisaAptitudine(params: FisaAptitudineParams) {
   }
 
   const fileName = `Fisa_Aptitudine_${params.lastName}_${params.firstName}.pdf`;
+  if ((params as any).preview) {
+    const blobUrl = doc.output('bloburl');
+    window.open(blobUrl as unknown as string, '_blank');
+    return;
+  }
   doc.save(fileName);
 }
