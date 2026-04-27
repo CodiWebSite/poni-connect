@@ -35,6 +35,7 @@ export interface FisaAptitudineParams {
   doctorName?: string;
   fisaNumber?: string;
   config?: MedicalCabinetConfig;
+  preview?: boolean;
 }
 
 const FONT = 'Roboto';
