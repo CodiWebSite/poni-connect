@@ -587,8 +587,8 @@ const MedicinaMuncii = () => {
                           <FileText className="w-4 h-4 mr-1" />
                           {records[selectedEmployee.id] ? 'Editează fișa' : 'Creează fișă'}
                         </Button>
-                        {records[selectedEmployee.id] && records[selectedEmployee.id].medical_fitness !== 'pending' && (
-                          <Button size="sm" variant="outline" onClick={async () => {
+                        {records[selectedEmployee.id] && records[selectedEmployee.id].medical_fitness !== 'pending' && (() => {
+                          const buildFisaParams = async (preview: boolean): Promise<FisaAptitudineParams> => {
                             const rec = records[selectedEmployee.id];
                             const lastConsult = consultations[0];
                             const fitnessMap: Record<string, FisaAptitudineParams['medicalFitness']> = {
@@ -605,7 +605,7 @@ const MedicinaMuncii = () => {
                               return `${day}.${m}.${y}`;
                             };
                             const freshConfig = await fetchMedicalConfig();
-                            await generateFisaAptitudine({
+                            return {
                               lastName: selectedEmployee.last_name,
                               firstName: selectedEmployee.first_name,
                               cnp: selectedEmployee.cnp || '',
@@ -617,13 +617,29 @@ const MedicinaMuncii = () => {
                               consultationDate: lastConsult ? formatDMY(lastConsult.consultation_date) : format(today, 'dd.MM.yyyy'),
                               nextExamDate: rec.fitness_valid_until ? formatDMY(rec.fitness_valid_until) : '',
                               config: freshConfig,
-                            });
-                            toast.success('Fișa de aptitudine a fost descărcată');
-                          }}>
-                            <Download className="w-4 h-4 mr-1" />
-                            Fișă Aptitudine
-                          </Button>
-                        )}
+                              preview,
+                            };
+                          };
+                          return (
+                            <>
+                              <Button size="sm" variant="outline" onClick={async () => {
+                                const params = await buildFisaParams(true);
+                                await generateFisaAptitudine(params);
+                              }}>
+                                <Eye className="w-4 h-4 mr-1" />
+                                Previzualizare
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={async () => {
+                                const params = await buildFisaParams(false);
+                                await generateFisaAptitudine(params);
+                                toast.success('Fișa de aptitudine a fost descărcată');
+                              }}>
+                                <Download className="w-4 h-4 mr-1" />
+                                Fișă Aptitudine
+                              </Button>
+                            </>
+                          );
+                        })()}
                         <Button size="sm" variant="outline" onClick={async () => {
                           // Fetch dossier supplementary data
                           const { data: dossierData } = await supabase
