@@ -95,6 +95,22 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     fetchAllRequests();
   }, [refreshTrigger]);
 
+  const handleRecalculateSource = async () => {
+    setRecalculating(true);
+    try {
+      await fetchAllRequests();
+      setRecalcDoneAt(new Date());
+      toast({
+        title: 'Sursă recalculată',
+        description: 'Etichetele FIFO au fost reconstruite din remaining_days + zilele consumate.',
+      });
+    } catch (e: any) {
+      toast({ title: 'Eroare la recalculare', description: e?.message || 'Necunoscut', variant: 'destructive' });
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   const fetchAllRequests = async () => {
     setLoading(true);
 
