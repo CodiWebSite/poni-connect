@@ -265,16 +265,20 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         const carryovers = carryoverMap[epdId] || [];
         const relevantCarryover = carryovers.find(c => c.to_year === year && c.from_year === year - 1);
 
-        // remaining_days reflectă starea curentă DUPĂ ce cererile aprobate din anul
-        // curent au fost deja scăzute (vezi deductLeaveDays). Pentru o simulare FIFO
-        // corectă, refacem soldul de report disponibil la începutul anului prin
-        // adăugarea înapoi a zilelor consumate prin cererile vizibile.
+        // remaining_days reflectă raportul DISPONIBIL în acest moment (după ce
+        // deductLeaveDays a scăzut deja cererile aprobate din anul curent).
+        // Pentru a eticheta corect cererile vizibile, simulăm FIFO pornind de la
+        // (remaining_days + zilele cererilor neaprobate încă) — astfel cererile
+        // pending/aprobate care AU consumat report rămân etichetate "Report".
         const remainingNow = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
-        const consumedFromSystemThisYear = yearReqs.reduce((s, r) => s + (Number(r.working_days) || 0), 0);
-        const initialDays = Math.max(relevantCarryover?.initial_days ?? 0, 0);
-        // Soldul de report disponibil la începutul anului (înainte de cererile din sistem)
-        // Plafonăm la initial_days pentru a nu depăși reportul real.
-        let carryoverRemaining = Math.min(remainingNow + consumedFromSystemThisYear, initialDays || (remainingNow + consumedFromSystemThisYear));
+
+        // Adăugăm înapoi DOAR cererile aprobate (au consumat deja remaining_days)
+        // ca să refacem soldul de la începutul anului în mod consistent.
+        const consumedByApproved = yearReqs
+          .filter(r => r.status === 'approved')
+          .reduce((s, r) => s + (Number(r.working_days) || 0), 0);
+
+        let carryoverRemaining = remainingNow + consumedByApproved;
 
         yearReqs.sort((a, b) => {
           const byStartDate = (a.start_date || '').localeCompare(b.start_date || '');
