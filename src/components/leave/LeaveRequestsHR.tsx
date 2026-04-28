@@ -265,20 +265,10 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         const carryovers = carryoverMap[epdId] || [];
         const relevantCarryover = carryovers.find(c => c.to_year === year && c.from_year === year - 1);
 
-        // remaining_days reflectă raportul DISPONIBIL în acest moment (după ce
-        // deductLeaveDays a scăzut deja cererile aprobate din anul curent).
-        // Pentru a eticheta corect cererile vizibile, simulăm FIFO pornind de la
-        // (remaining_days + zilele cererilor neaprobate încă) — astfel cererile
-        // pending/aprobate care AU consumat report rămân etichetate "Report".
-        const remainingNow = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
-
-        // Adăugăm înapoi DOAR cererile aprobate (au consumat deja remaining_days)
-        // ca să refacem soldul de la începutul anului în mod consistent.
-        const consumedByApproved = yearReqs
-          .filter(r => r.status === 'approved')
-          .reduce((s, r) => s + (Number(r.working_days) || 0), 0);
-
-        let carryoverRemaining = remainingNow + consumedByApproved;
+        // remaining_days = soldul de report disponibil în acest moment.
+        // Simulăm FIFO direct pe acesta: cererile cronologice consumă reportul
+        // până se epuizează, restul = Sold an curent.
+        let carryoverRemaining = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
 
         yearReqs.sort((a, b) => {
           const byStartDate = (a.start_date || '').localeCompare(b.start_date || '');
