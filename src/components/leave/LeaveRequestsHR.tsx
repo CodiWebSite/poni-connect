@@ -680,7 +680,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                                </Badge>
                              </TooltipTrigger>
                              <TooltipContent>
-                               <p className="text-xs">Reconstrucție FIFO din <code>remaining_days</code> + zile consumate.</p>
+                                <p className="text-xs">Reconstrucție FIFO din <code>remaining_days</code> curent.</p>
                                <p className="text-[10px] text-muted-foreground mt-1">
                                  Ultima recalculare: {format(recalcDoneAt, 'dd.MM.yyyy HH:mm:ss', { locale: ro })}
                                </p>
