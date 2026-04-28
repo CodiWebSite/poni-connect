@@ -102,7 +102,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       setRecalcDoneAt(new Date());
       toast({
         title: 'Sursă recalculată',
-        description: 'Etichetele FIFO au fost reconstruite din remaining_days + zilele consumate.',
+        description: 'Etichetele FIFO au fost reconstruite din remaining_days curent.',
       });
     } catch (e: any) {
       toast({ title: 'Eroare la recalculare', description: e?.message || 'Necunoscut', variant: 'destructive' });
@@ -235,9 +235,9 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     }
 
     // FIFO simulation per employee:
-    // - dacă reportul a fost deja actualizat înainte de prima cerere din anul respectiv,
-    //   pornim din remaining_days (snapshot real, include consumuri istorice/import)
-    // - altfel, pornim din initial_days și simulăm FIFO pe cererile existente
+    // - cererile aprobate sunt reconstruite invers, pornind din remaining_days curent
+    //   ca să includă corect consumurile istorice/importate deja în sold
+    // - cererile în așteptare sunt proiectate înainte din reportul rămas acum
     const approvedData = (data || []).filter((r: any) => r.status === 'approved' || r.status === 'pending_srus' || r.status === 'pending_department_head');
     const sourceLabels: Record<string, string> = {};
 
@@ -265,9 +265,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         const carryovers = carryoverMap[epdId] || [];
         const relevantCarryover = carryovers.find(c => c.to_year === year && c.from_year === year - 1);
 
-        // remaining_days = soldul de report disponibil în acest moment.
-        // Simulăm FIFO direct pe acesta: cererile cronologice consumă reportul
-        // până se epuizează, restul = Sold an curent.
+        const initialCarryover = Math.max(relevantCarryover?.initial_days ?? 0, 0);
         let carryoverRemaining = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
 
         yearReqs.sort((a, b) => {
@@ -276,7 +274,25 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           return (a.created_at || '').localeCompare(b.created_at || '');
         });
 
-        yearReqs.forEach(r => {
+        const approvedReqs = yearReqs.filter(r => r.status === 'approved');
+        const pendingReqs = yearReqs.filter(r => r.status !== 'approved');
+
+        [...approvedReqs].reverse().forEach(r => {
+          const days = Number(r.working_days) || 0;
+          const restoredCapacity = Math.max(initialCarryover - carryoverRemaining, 0);
+          const fromCarryover = Math.min(days, restoredCapacity);
+          if (fromCarryover <= 0 || days <= 0) {
+            sourceLabels[r.id] = `Sold ${year}`;
+          } else if (fromCarryover >= days) {
+            sourceLabels[r.id] = `Report ${year - 1}`;
+          } else {
+            sourceLabels[r.id] = `Report ${year - 1} + Sold ${year}`;
+          }
+          carryoverRemaining = Math.min(initialCarryover, carryoverRemaining + fromCarryover);
+        });
+
+        carryoverRemaining = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
+        pendingReqs.forEach(r => {
           const days = Number(r.working_days) || 0;
           if (carryoverRemaining <= 0 || days <= 0) {
             sourceLabels[r.id] = `Sold ${year}`;
