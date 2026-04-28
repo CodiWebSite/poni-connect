@@ -657,7 +657,29 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                   <TableHead>Funcție / Grad</TableHead>
                   <TableHead>Perioada</TableHead>
                    <TableHead>Zile</TableHead>
-                   <TableHead className="text-center">Sursă</TableHead>
+                   <TableHead className="text-center">
+                     <div className="inline-flex items-center gap-1.5 justify-center">
+                       <span>Sursă</span>
+                       {recalcDoneAt && (
+                         <TooltipProvider>
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-300 text-emerald-700 dark:border-emerald-600 dark:text-emerald-400 gap-1">
+                                 <Sparkles className="w-2.5 h-2.5" />
+                                 FIFO recalculat
+                               </Badge>
+                             </TooltipTrigger>
+                             <TooltipContent>
+                               <p className="text-xs">Reconstrucție FIFO din <code>remaining_days</code> + zile consumate.</p>
+                               <p className="text-[10px] text-muted-foreground mt-1">
+                                 Ultima recalculare: {format(recalcDoneAt, 'dd.MM.yyyy HH:mm:ss', { locale: ro })}
+                               </p>
+                             </TooltipContent>
+                           </Tooltip>
+                         </TooltipProvider>
+                       )}
+                     </div>
+                   </TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aprobat de</TableHead>
                   <TableHead>Acțiuni</TableHead>
