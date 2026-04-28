@@ -604,6 +604,10 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           Centralizare Cereri Concediu ({filtered.length})
         </CardTitle>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleRecalculateSource} disabled={recalculating || loading}>
+            {recalculating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+            Recalculează Sursă
+          </Button>
           <Button variant="outline" size="sm" onClick={handleSendReminder} disabled={sendingReminder}>
             {sendingReminder ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bell className="w-4 h-4 mr-2" />}
             Reminder Aprobatori
