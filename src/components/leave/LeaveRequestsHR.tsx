@@ -88,6 +88,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const [processing, setProcessing] = useState<string | null>(null);
   const [fetchingIP, setFetchingIP] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+  const [recalcDoneAt, setRecalcDoneAt] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchAllRequests();
