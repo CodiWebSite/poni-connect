@@ -235,9 +235,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     }
 
     // FIFO simulation per employee:
-    // - cererile aprobate sunt reconstruite invers, pornind din remaining_days curent
-    //   ca să includă corect consumurile istorice/importate deja în sold
-    // - cererile în așteptare sunt proiectate înainte din reportul rămas acum
+    // - pornim din remaining_days curent, fiindcă acesta include consumurile istorice/importate
+    // - dacă aprobarea curentă tocmai a actualizat același report, o marcăm ca Report fără dublă scădere
     const approvedData = (data || []).filter((r: any) => r.status === 'approved' || r.status === 'pending_srus' || r.status === 'pending_department_head');
     const sourceLabels: Record<string, string> = {};
 
@@ -265,7 +264,6 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         const carryovers = carryoverMap[epdId] || [];
         const relevantCarryover = carryovers.find(c => c.to_year === year && c.from_year === year - 1);
 
-        const initialCarryover = Math.max(relevantCarryover?.initial_days ?? 0, 0);
         let carryoverRemaining = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
 
         yearReqs.sort((a, b) => {
@@ -274,27 +272,20 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           return (a.created_at || '').localeCompare(b.created_at || '');
         });
 
-        const approvedReqs = yearReqs.filter(r => r.status === 'approved');
-        const pendingReqs = yearReqs.filter(r => r.status !== 'approved');
-
-        [...approvedReqs].reverse().forEach(r => {
+        yearReqs.forEach(r => {
           const days = Number(r.working_days) || 0;
-          const restoredCapacity = Math.max(initialCarryover - carryoverRemaining, 0);
-          const fromCarryover = Math.min(days, restoredCapacity);
-          if (fromCarryover <= 0 || days <= 0) {
-            sourceLabels[r.id] = `Sold ${year}`;
-          } else if (fromCarryover >= days) {
+          const requestUpdatedAt = r.updated_at ? new Date(r.updated_at).getTime() : 0;
+          const carryoverUpdatedAt = relevantCarryover?.updated_at ? new Date(relevantCarryover.updated_at).getTime() : 0;
+          const requestJustUpdatedCarryover = r.status === 'approved'
+            && carryoverRemaining <= 0
+            && (relevantCarryover?.remaining_days ?? 0) > 0
+            && requestUpdatedAt > 0
+            && carryoverUpdatedAt > 0
+            && Math.abs(carryoverUpdatedAt - requestUpdatedAt) <= 10000;
+
+          if (requestJustUpdatedCarryover && days > 0) {
             sourceLabels[r.id] = `Report ${year - 1}`;
-          } else {
-            sourceLabels[r.id] = `Report ${year - 1} + Sold ${year}`;
-          }
-          carryoverRemaining = Math.min(initialCarryover, carryoverRemaining + fromCarryover);
-        });
-
-        carryoverRemaining = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
-        pendingReqs.forEach(r => {
-          const days = Number(r.working_days) || 0;
-          if (carryoverRemaining <= 0 || days <= 0) {
+          } else if (carryoverRemaining <= 0 || days <= 0) {
             sourceLabels[r.id] = `Sold ${year}`;
           } else if (carryoverRemaining >= days) {
             sourceLabels[r.id] = `Report ${year - 1}`;
