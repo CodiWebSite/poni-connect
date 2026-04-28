@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck, FileSpreadsheet, CheckCircle, Bell } from 'lucide-react';
+import { Download, Search, Loader2, FileText, Filter, Trash2, UserCheck, FileSpreadsheet, CheckCircle, Bell, RefreshCw, Sparkles } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -88,10 +88,28 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const [processing, setProcessing] = useState<string | null>(null);
   const [fetchingIP, setFetchingIP] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+  const [recalcDoneAt, setRecalcDoneAt] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchAllRequests();
   }, [refreshTrigger]);
+
+  const handleRecalculateSource = async () => {
+    setRecalculating(true);
+    try {
+      await fetchAllRequests();
+      setRecalcDoneAt(new Date());
+      toast({
+        title: 'Sursă recalculată',
+        description: 'Etichetele FIFO au fost reconstruite din remaining_days + zilele consumate.',
+      });
+    } catch (e: any) {
+      toast({ title: 'Eroare la recalculare', description: e?.message || 'Necunoscut', variant: 'destructive' });
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   const fetchAllRequests = async () => {
     setLoading(true);
@@ -586,6 +604,10 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           Centralizare Cereri Concediu ({filtered.length})
         </CardTitle>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleRecalculateSource} disabled={recalculating || loading}>
+            {recalculating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+            Recalculează Sursă
+          </Button>
           <Button variant="outline" size="sm" onClick={handleSendReminder} disabled={sendingReminder}>
             {sendingReminder ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bell className="w-4 h-4 mr-2" />}
             Reminder Aprobatori
@@ -635,7 +657,29 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                   <TableHead>Funcție / Grad</TableHead>
                   <TableHead>Perioada</TableHead>
                    <TableHead>Zile</TableHead>
-                   <TableHead className="text-center">Sursă</TableHead>
+                   <TableHead className="text-center">
+                     <div className="inline-flex items-center gap-1.5 justify-center">
+                       <span>Sursă</span>
+                       {recalcDoneAt && (
+                         <TooltipProvider>
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-300 text-emerald-700 dark:border-emerald-600 dark:text-emerald-400 gap-1">
+                                 <Sparkles className="w-2.5 h-2.5" />
+                                 FIFO recalculat
+                               </Badge>
+                             </TooltipTrigger>
+                             <TooltipContent>
+                               <p className="text-xs">Reconstrucție FIFO din <code>remaining_days</code> + zile consumate.</p>
+                               <p className="text-[10px] text-muted-foreground mt-1">
+                                 Ultima recalculare: {format(recalcDoneAt, 'dd.MM.yyyy HH:mm:ss', { locale: ro })}
+                               </p>
+                             </TooltipContent>
+                           </Tooltip>
+                         </TooltipProvider>
+                       )}
+                     </div>
+                   </TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aprobat de</TableHead>
                   <TableHead>Acțiuni</TableHead>
