@@ -158,7 +158,7 @@ export function LeaveApprovalHistory({ refreshTrigger }: LeaveApprovalHistoryPro
               </TableHeader>
               <TableBody>
                 {requests.map(r => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} data-request-id={r.id}>
                     <TableCell className="font-mono text-xs">{r.request_number}</TableCell>
                     <TableCell className="font-medium">{r.employee_name}</TableCell>
                     <TableCell className="text-sm">{r.employee_department}</TableCell>

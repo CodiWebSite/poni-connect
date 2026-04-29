@@ -538,7 +538,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
     <>
       <div className="space-y-4">
         {requests.map(request => (
-          <Card key={request.id} className="border-l-4 border-l-warning">
+          <Card key={request.id} data-request-id={request.id} className="border-l-4 border-l-warning">
             <CardContent className="pt-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-start gap-3">
