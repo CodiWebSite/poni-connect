@@ -5,13 +5,14 @@ export const VAPID_PUBLIC_KEY =
 
 const SW_URL = "/push-sw.js";
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): BufferSource {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);
-  const output = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) output[i] = rawData.charCodeAt(i);
-  return output;
+  const buffer = new ArrayBuffer(rawData.length);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < rawData.length; ++i) view[i] = rawData.charCodeAt(i);
+  return buffer;
 }
 
 export function isPushSupported(): boolean {
@@ -57,21 +58,20 @@ export async function subscribeToPush(): Promise<{ ok: boolean; error?: string }
 
     const json = sub.toJSON();
     const endpoint = json.endpoint!;
-    const p256dh = json.keys?.p256dh!;
+    const p256dh_key = json.keys?.p256dh!;
     const auth_key = json.keys?.auth!;
 
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return { ok: false, error: "Trebuie să fii autentificat." };
 
     const { error } = await supabase.from("push_subscriptions").upsert(
-      {
+      [{
         user_id: userData.user.id,
         endpoint,
-        p256dh,
+        p256dh_key,
         auth_key,
-        user_agent: navigator.userAgent,
-        last_used_at: new Date().toISOString(),
-      },
+        device_name: navigator.userAgent.slice(0, 200),
+      }],
       { onConflict: "user_id,endpoint" }
     );
 

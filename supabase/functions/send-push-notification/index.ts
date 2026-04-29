@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     // Fetch all push subscriptions for this user
     const { data: subs, error } = await supabase
       .from("push_subscriptions")
-      .select("id, endpoint, p256dh, auth_key")
+      .select("id, endpoint, p256dh_key, auth_key")
       .eq("user_id", payload.user_id);
 
     if (error) throw error;
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
           await webpush.sendNotification(
             {
               endpoint: s.endpoint,
-              keys: { p256dh: s.p256dh, auth: s.auth_key },
+              keys: { p256dh: s.p256dh_key, auth: s.auth_key },
             },
             notificationPayload
           );
@@ -97,14 +97,6 @@ Deno.serve(async (req) => {
 
     if (expiredIds.length > 0) {
       await supabase.from("push_subscriptions").delete().in("id", expiredIds);
-    }
-
-    // Update last_used_at for successful subs
-    if (sent > 0) {
-      await supabase
-        .from("push_subscriptions")
-        .update({ last_used_at: new Date().toISOString() })
-        .eq("user_id", payload.user_id);
     }
 
     return new Response(JSON.stringify({ sent, expired: expiredIds.length }), {
