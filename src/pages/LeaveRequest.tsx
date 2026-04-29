@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAppSettings } from '@/hooks/useAppSettings';
@@ -108,7 +108,44 @@ const LeaveRequest = () => {
   }
 
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
-  const defaultTab = canApprove ? 'approve' : 'new';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const highlightRequestId = searchParams.get('request');
+  const validTabs = ['new', 'my-requests', 'approve', 'history', 'delegate', 'hr'];
+  const defaultTab =
+    urlTab && validTabs.includes(urlTab) ? urlTab : canApprove ? 'approve' : 'new';
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  // React to URL changes (push deep-link)
+  useEffect(() => {
+    if (urlTab && validTabs.includes(urlTab) && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlTab]);
+
+  // Scroll & highlight a specific request row when ?request=<id> is present
+  useEffect(() => {
+    if (!highlightRequestId) return;
+    const t = setTimeout(() => {
+      const el = document.querySelector(
+        `[data-request-id="${highlightRequestId}"]`
+      ) as HTMLElement | null;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-md');
+        setTimeout(() => {
+          el.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-md');
+          // Remove the param so it doesn't re-trigger
+          const sp = new URLSearchParams(searchParams);
+          sp.delete('request');
+          setSearchParams(sp, { replace: true });
+        }, 3500);
+      }
+    }, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightRequestId, activeTab]);
 
   return (
     <MainLayout title="Cereri Concediu de Odihnă" description={<span className="inline-flex items-center gap-1">Depune și gestionează cererile de concediu <ContextualHelp title="Cerere de Concediu" content="Completați formularul, semnați electronic și trimiteți cererea." steps={['Completați perioada și înlocuitorul', 'Semnați cererea electronic', 'Așteptați aprobarea: Șef → SRUS → Aprobat']} /></span>}>
@@ -159,7 +196,12 @@ const LeaveRequest = () => {
           </Badge>
         </div>
       )}
-      <Tabs defaultValue={defaultTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => {
+        setActiveTab(v);
+        const sp = new URLSearchParams(searchParams);
+        sp.set('tab', v);
+        setSearchParams(sp, { replace: true });
+      }} className="w-full">
         <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0 scrollbar-hide">
         <TabsList className="inline-flex md:flex md:flex-wrap h-auto gap-1 p-1 min-w-max md:min-w-0">
           <TabsTrigger value="new" className="gap-2">
