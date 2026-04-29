@@ -106,18 +106,6 @@ const LeaveRequest = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightRequestId, activeTab]);
 
-  if (authLoading || roleLoading) {
-    return (
-      <MainLayout title="Cereri Concediu">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (!user) return <Navigate to="/auth" replace />;
-
   const isDeptHead = isSef || isSefSRUS || isSuperAdmin;
   const realCanApprove = isDeptHead || isDesignatedApprover || isActiveDelegate;
   const realIsHR = canManageHR;
@@ -147,8 +135,6 @@ const LeaveRequest = () => {
     }
   }
 
-  const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
-
   // If no explicit tab in URL and the user can approve, default to "approve" once
   useEffect(() => {
     if (!urlTab && canApprove && activeTab === 'new') {
@@ -156,6 +142,20 @@ const LeaveRequest = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canApprove]);
+
+  if (authLoading || roleLoading) {
+    return (
+      <MainLayout title="Cereri Concediu">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!user) return <Navigate to="/auth" replace />;
+
+  const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
   return (
     <MainLayout title="Cereri Concediu de Odihnă" description={<span className="inline-flex items-center gap-1">Depune și gestionează cererile de concediu <ContextualHelp title="Cerere de Concediu" content="Completați formularul, semnați electronic și trimiteți cererea." steps={['Completați perioada și înlocuitorul', 'Semnați cererea electronic', 'Așteptați aprobarea: Șef → SRUS → Aprobat']} /></span>}>
