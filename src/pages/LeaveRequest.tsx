@@ -66,6 +66,46 @@ const LeaveRequest = () => {
     }
   }, [user]);
 
+  // URL params & tab state — must be declared BEFORE any early returns
+  // to keep hook order stable across renders
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const highlightRequestId = searchParams.get('request');
+  const validTabs = ['new', 'my-requests', 'approve', 'history', 'delegate', 'hr'];
+  const [activeTab, setActiveTab] = useState<string>(
+    urlTab && validTabs.includes(urlTab) ? urlTab : 'new'
+  );
+
+  // React to URL changes (push deep-link)
+  useEffect(() => {
+    if (urlTab && validTabs.includes(urlTab) && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlTab]);
+
+  // Scroll & highlight a specific request row when ?request=<id> is present
+  useEffect(() => {
+    if (!highlightRequestId) return;
+    const t = setTimeout(() => {
+      const el = document.querySelector(
+        `[data-request-id="${highlightRequestId}"]`
+      ) as HTMLElement | null;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-md');
+        setTimeout(() => {
+          el.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-md');
+          const sp = new URLSearchParams(searchParams);
+          sp.delete('request');
+          setSearchParams(sp, { replace: true });
+        }, 3500);
+      }
+    }, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightRequestId, activeTab]);
+
   if (authLoading || roleLoading) {
     return (
       <MainLayout title="Cereri Concediu">
