@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import ChatBetaBanner from '@/components/chat/ChatBetaBanner';
 import ConversationList from '@/components/chat/ConversationList';
@@ -7,11 +8,35 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { setActiveChatConversation } from '@/hooks/useChatNotifications';
 
 const Chat = () => {
-  const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedConvId, setSelectedConvId] = useState<string | null>(
+    searchParams.get('conversation')
+  );
   const [listKey, setListKey] = useState(0);
   const isMobile = useIsMobile();
   const showList = !isMobile || !selectedConvId;
   const showChat = !isMobile || !!selectedConvId;
+
+  // React to URL param changes (e.g. from push notification deep-link)
+  useEffect(() => {
+    const fromUrl = searchParams.get('conversation');
+    if (fromUrl && fromUrl !== selectedConvId) {
+      setSelectedConvId(fromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Keep URL in sync when user changes conversation manually
+  useEffect(() => {
+    const current = searchParams.get('conversation');
+    if (selectedConvId && selectedConvId !== current) {
+      setSearchParams({ conversation: selectedConvId }, { replace: true });
+    } else if (!selectedConvId && current) {
+      searchParams.delete('conversation');
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedConvId]);
 
   const handleMessagesRead = useCallback(() => {
     setListKey(k => k + 1);

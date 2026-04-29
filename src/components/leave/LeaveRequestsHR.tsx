@@ -688,7 +688,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
               </TableHeader>
               <TableBody>
                 {filtered.map(r => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} data-request-id={r.id}>
                     <TableCell className="font-mono text-xs">{r.request_number}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

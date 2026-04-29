@@ -186,7 +186,7 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
   return (
     <div className="space-y-3">
       {requests.map(r => (
-        <Card key={r.id}>
+        <Card key={r.id} data-request-id={r.id}>
           <CardContent className="pt-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="space-y-1">

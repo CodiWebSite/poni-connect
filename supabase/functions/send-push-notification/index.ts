@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       badge: "/pwa-192x192.png",
       tag: payload.notification_id || `notif-${Date.now()}`,
       data: {
-        url: getUrlForNotification(payload.related_type, payload.related_id),
+        url: getUrlForNotification(payload.related_type, payload.related_id, payload.type),
         type: payload.type,
         related_id: payload.related_id,
         related_type: payload.related_type,
@@ -111,21 +111,33 @@ Deno.serve(async (req) => {
   }
 });
 
-function getUrlForNotification(relatedType?: string | null, relatedId?: string | null): string {
+function getUrlForNotification(
+  relatedType?: string | null,
+  relatedId?: string | null,
+  type?: string
+): string {
   if (!relatedType) return "/";
   switch (relatedType) {
-    case "leave_request":
-      return "/leave";
+    case "leave_request": {
+      // Approval-related notifications go to the approval tab; result/own go to "my requests"
+      const tab =
+        type === "warning" || type === "info_pending" ? "approve" : "my-requests";
+      return relatedId ? `/leave?tab=${tab}&request=${relatedId}` : "/leave";
+    }
+    case "leave_approval":
+      return relatedId ? `/leave?tab=approve&request=${relatedId}` : "/leave?tab=approve";
     case "chat_message":
     case "chat":
-      return "/chat";
+    case "chat_conversation":
+      return relatedId ? `/chat?conversation=${relatedId}` : "/chat";
     case "announcement":
-      return "/announcements";
+      return relatedId ? `/announcements?id=${relatedId}` : "/announcements";
     case "hr_request":
-      return "/hr";
+      return relatedId ? `/hr?request=${relatedId}` : "/hr";
     case "helpdesk_ticket":
+      return relatedId ? `/admin?panel=helpdesk&ticket=${relatedId}` : "/admin";
     case "account_request":
-      return "/admin";
+      return relatedId ? `/admin?panel=accounts&request=${relatedId}` : "/admin";
     default:
       return "/";
   }
