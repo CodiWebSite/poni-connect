@@ -148,44 +148,14 @@ const LeaveRequest = () => {
   }
 
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const urlTab = searchParams.get('tab');
-  const highlightRequestId = searchParams.get('request');
-  const validTabs = ['new', 'my-requests', 'approve', 'history', 'delegate', 'hr'];
-  const defaultTab =
-    urlTab && validTabs.includes(urlTab) ? urlTab : canApprove ? 'approve' : 'new';
-  const [activeTab, setActiveTab] = useState(defaultTab);
 
-  // React to URL changes (push deep-link)
+  // If no explicit tab in URL and the user can approve, default to "approve" once
   useEffect(() => {
-    if (urlTab && validTabs.includes(urlTab) && urlTab !== activeTab) {
-      setActiveTab(urlTab);
+    if (!urlTab && canApprove && activeTab === 'new') {
+      setActiveTab('approve');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlTab]);
-
-  // Scroll & highlight a specific request row when ?request=<id> is present
-  useEffect(() => {
-    if (!highlightRequestId) return;
-    const t = setTimeout(() => {
-      const el = document.querySelector(
-        `[data-request-id="${highlightRequestId}"]`
-      ) as HTMLElement | null;
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-md');
-        setTimeout(() => {
-          el.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-md');
-          // Remove the param so it doesn't re-trigger
-          const sp = new URLSearchParams(searchParams);
-          sp.delete('request');
-          setSearchParams(sp, { replace: true });
-        }, 3500);
-      }
-    }, 600);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlightRequestId, activeTab]);
+  }, [canApprove]);
 
   return (
     <MainLayout title="Cereri Concediu de Odihnă" description={<span className="inline-flex items-center gap-1">Depune și gestionează cererile de concediu <ContextualHelp title="Cerere de Concediu" content="Completați formularul, semnați electronic și trimiteți cererea." steps={['Completați perioada și înlocuitorul', 'Semnați cererea electronic', 'Așteptați aprobarea: Șef → SRUS → Aprobat']} /></span>}>
