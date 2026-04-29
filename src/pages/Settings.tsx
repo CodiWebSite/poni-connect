@@ -13,6 +13,7 @@ import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw, Loc
 import { cn } from '@/lib/utils';
 import OnboardingTour from '@/components/onboarding/OnboardingTour';
 import SecurityPanel from '@/components/settings/SecurityPanel';
+import PushNotificationsPanel from '@/components/settings/PushNotificationsPanel';
 
 interface Profile {
   full_name: string;
@@ -395,6 +396,9 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+        {/* Push Notifications (PWA) */}
+        <PushNotificationsPanel />
+
         {/* Security & Sessions */}
         <SecurityPanel />
 
