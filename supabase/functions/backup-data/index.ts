@@ -137,8 +137,9 @@ async function sendBackupEmail(supabase: any, userId: string, status: string, to
         <p><strong>Tabele:</strong> ${TABLES_TO_BACKUP.length}</p>
         <p><strong>Data:</strong> ${new Date().toLocaleDateString("ro-RO", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
         ${errorSection}
+        ${driveLink ? `<p><strong>📁 Google Drive:</strong> <a href="${driveLink}" style="color:#1e3a5f;">Deschide backup-ul</a></p>` : ""}
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;"/>
-        <p style="color:#6b7280;font-size:13px;">Backup-ul automat a fost executat cu succes. Fișierul JSON este disponibil pentru descărcare din pagina Stare Sistem.</p>
+        <p style="color:#6b7280;font-size:13px;">Backup-ul automat a fost executat${driveLink ? " și încărcat în Google Drive (folder: ICMPP Backups)" : ""}.</p>
       </div>
     </div>
   `;
