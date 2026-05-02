@@ -49,3 +49,5 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = false
   [functions.check-medical-expirations]
     verify_jwt = false
+  [functions.restore-from-drive]
+    verify_jwt = true
