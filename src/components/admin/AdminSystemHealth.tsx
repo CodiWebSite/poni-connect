@@ -8,11 +8,12 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
   Database, Shield, HardDrive, Zap, Mail, RefreshCw, CheckCircle2,
-  AlertTriangle, XCircle, Loader2, Play, Settings, MonitorCheck, Package
+  AlertTriangle, XCircle, Loader2, Play, Settings, MonitorCheck, Package, Cloud
 } from 'lucide-react';
 import UptimeMonitorPanel from './UptimeMonitorPanel';
 import AppSettingsPanel from './AppSettingsPanel';
 import EquipmentRegistry from './EquipmentRegistry';
+import DriveBackupRestorePanel from './DriveBackupRestorePanel';
 
 type CheckStatus = 'idle' | 'running' | 'ok' | 'warning' | 'error';
 
@@ -162,6 +163,7 @@ const AdminSystemHealth = () => {
           <TabsTrigger value="diagnostics" className="text-xs gap-1.5"><Zap className="w-3.5 h-3.5" />Diagnostice</TabsTrigger>
           <TabsTrigger value="monitoring" className="text-xs gap-1.5"><MonitorCheck className="w-3.5 h-3.5" />Monitoring</TabsTrigger>
           <TabsTrigger value="inventory" className="text-xs gap-1.5"><Package className="w-3.5 h-3.5" />Inventar IT</TabsTrigger>
+          <TabsTrigger value="backups" className="text-xs gap-1.5"><Cloud className="w-3.5 h-3.5" />Backup-uri Drive</TabsTrigger>
           <TabsTrigger value="settings" className="text-xs gap-1.5"><Settings className="w-3.5 h-3.5" />Setări Sistem</TabsTrigger>
         </TabsList>
 
@@ -223,6 +225,7 @@ const AdminSystemHealth = () => {
 
         <TabsContent value="monitoring"><UptimeMonitorPanel /></TabsContent>
         <TabsContent value="inventory"><EquipmentRegistry /></TabsContent>
+        <TabsContent value="backups"><DriveBackupRestorePanel /></TabsContent>
         <TabsContent value="settings"><AppSettingsPanel /></TabsContent>
       </Tabs>
     </div>
