@@ -44,7 +44,69 @@ const TABLES_TO_BACKUP = [
   "health_check_logs",
 ];
 
-async function sendBackupEmail(supabase: any, userId: string, status: string, totalRows: number, sizeMB: string, errors: string[]) {
+const DRIVE_GATEWAY = "https://connector-gateway.lovable.dev/google_drive/drive/v3";
+const DRIVE_UPLOAD_GATEWAY = "https://connector-gateway.lovable.dev/google_drive/upload/drive/v3";
+const BACKUP_FOLDER_NAME = "ICMPP Backups";
+
+async function uploadToGoogleDrive(filename: string, jsonStr: string): Promise<{ fileId?: string; webViewLink?: string; error?: string }> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const GOOGLE_DRIVE_API_KEY = Deno.env.get("GOOGLE_DRIVE_API_KEY");
+  if (!LOVABLE_API_KEY || !GOOGLE_DRIVE_API_KEY) {
+    return { error: "Google Drive nu este conectat" };
+  }
+  const headers = {
+    "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+    "X-Connection-Api-Key": GOOGLE_DRIVE_API_KEY,
+  };
+
+  try {
+    // 1. Find or create folder
+    const searchUrl = `${DRIVE_GATEWAY}/files?q=${encodeURIComponent(`name='${BACKUP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id,name)`;
+    const searchRes = await fetch(searchUrl, { headers });
+    const searchData = await searchRes.json();
+    let folderId: string | undefined = searchData?.files?.[0]?.id;
+
+    if (!folderId) {
+      const createFolderRes = await fetch(`${DRIVE_GATEWAY}/files`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: BACKUP_FOLDER_NAME, mimeType: "application/vnd.google-apps.folder" }),
+      });
+      const folderData = await createFolderRes.json();
+      if (!createFolderRes.ok) {
+        return { error: `Eroare creare folder: ${JSON.stringify(folderData)}` };
+      }
+      folderId = folderData.id;
+    }
+
+    // 2. Multipart upload
+    const boundary = "----LovableBackup" + Math.random().toString(36).slice(2);
+    const metadata = { name: filename, parents: [folderId], mimeType: "application/json" };
+    const body =
+      `--${boundary}\r\n` +
+      `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
+      `${JSON.stringify(metadata)}\r\n` +
+      `--${boundary}\r\n` +
+      `Content-Type: application/json\r\n\r\n` +
+      `${jsonStr}\r\n` +
+      `--${boundary}--`;
+
+    const uploadRes = await fetch(`${DRIVE_UPLOAD_GATEWAY}/files?uploadType=multipart&fields=id,webViewLink`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": `multipart/related; boundary=${boundary}` },
+      body,
+    });
+    const uploadData = await uploadRes.json();
+    if (!uploadRes.ok) {
+      return { error: `Eroare upload: ${JSON.stringify(uploadData)}` };
+    }
+    return { fileId: uploadData.id, webViewLink: uploadData.webViewLink };
+  } catch (e: any) {
+    return { error: e.message || String(e) };
+  }
+}
+
+async function sendBackupEmail(supabase: any, userId: string, status: string, totalRows: number, sizeMB: string, errors: string[], driveLink?: string) {
   // Get super_admin email
   const { data: { user } } = await supabase.auth.admin.getUserById(userId);
   if (!user?.email) return;
@@ -75,8 +137,9 @@ async function sendBackupEmail(supabase: any, userId: string, status: string, to
         <p><strong>Tabele:</strong> ${TABLES_TO_BACKUP.length}</p>
         <p><strong>Data:</strong> ${new Date().toLocaleDateString("ro-RO", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
         ${errorSection}
+        ${driveLink ? `<p><strong>📁 Google Drive:</strong> <a href="${driveLink}" style="color:#1e3a5f;">Deschide backup-ul</a></p>` : ""}
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;"/>
-        <p style="color:#6b7280;font-size:13px;">Backup-ul automat a fost executat cu succes. Fișierul JSON este disponibil pentru descărcare din pagina Stare Sistem.</p>
+        <p style="color:#6b7280;font-size:13px;">Backup-ul automat a fost executat${driveLink ? " și încărcat în Google Drive (folder: ICMPP Backups)" : ""}.</p>
       </div>
     </div>
   `;
@@ -179,13 +242,23 @@ Deno.serve(async (req) => {
     const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
 
     const backupStatus = errors.length > 0 ? "partial" : "success";
+    const filename = `backup_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
+
+    // Upload to Google Drive
+    const driveResult = await uploadToGoogleDrive(filename, jsonStr);
+    if (driveResult.error) {
+      console.error("[Drive Upload] Failed:", driveResult.error);
+      errors.push(`Google Drive: ${driveResult.error}`);
+    } else {
+      console.log("[Drive Upload] Success:", driveResult.fileId);
+    }
 
     // Log this backup
     await supabase.from("backup_logs").insert({
       type: "backup",
       status: backupStatus,
       size_info: `${sizeMB} MB, ${totalRows} rânduri`,
-      notes: `Backup — ${TABLES_TO_BACKUP.length} tabele exportate${errors.length > 0 ? `. Erori: ${errors.join("; ")}` : ""}`,
+      notes: `Backup — ${TABLES_TO_BACKUP.length} tabele${driveResult.webViewLink ? ` · Drive: ${driveResult.webViewLink}` : ""}${errors.length > 0 ? `. Erori: ${errors.join("; ")}` : ""}`,
       performed_by: userId,
     });
 
@@ -194,11 +267,11 @@ Deno.serve(async (req) => {
       _user_id: userId,
       _action: "data_backup",
       _entity_type: "system",
-      _details: { tables: TABLES_TO_BACKUP.length, rows: totalRows, size_mb: sizeMB },
+      _details: { tables: TABLES_TO_BACKUP.length, rows: totalRows, size_mb: sizeMB, drive_file_id: driveResult.fileId },
     });
 
     // Send email to super_admin
-    await sendBackupEmail(supabase, userId, backupStatus, totalRows, sizeMB, errors);
+    await sendBackupEmail(supabase, userId, backupStatus, totalRows, sizeMB, errors, driveResult.webViewLink);
 
     return new Response(jsonStr, {
       headers: {
