@@ -47,66 +47,112 @@ const TABLES_TO_BACKUP = [
 const DRIVE_GATEWAY = "https://connector-gateway.lovable.dev/google_drive/drive/v3";
 const DRIVE_UPLOAD_GATEWAY = "https://connector-gateway.lovable.dev/google_drive/upload/drive/v3";
 const BACKUP_FOLDER_NAME = "ICMPP Backups";
+const KEEP_LAST_N_BACKUPS = 12; // istoric păstrat
 
-async function uploadToGoogleDrive(filename: string, jsonStr: string): Promise<{ fileId?: string; webViewLink?: string; error?: string }> {
+async function driveFetch(url: string, init: RequestInit = {}) {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+  const GOOGLE_DRIVE_API_KEY = Deno.env.get("GOOGLE_DRIVE_API_KEY")!;
+  return fetch(url, {
+    ...init,
+    headers: {
+      ...(init.headers || {}),
+      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      "X-Connection-Api-Key": GOOGLE_DRIVE_API_KEY,
+    },
+  });
+}
+
+async function getOrCreateBackupFolder(): Promise<string | null> {
+  const q = encodeURIComponent(`name='${BACKUP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const searchRes = await driveFetch(`${DRIVE_GATEWAY}/files?q=${q}&fields=files(id,name)`);
+  const searchData = await searchRes.json();
+  if (searchData?.files?.[0]?.id) return searchData.files[0].id;
+
+  const createRes = await driveFetch(`${DRIVE_GATEWAY}/files`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: BACKUP_FOLDER_NAME, mimeType: "application/vnd.google-apps.folder" }),
+  });
+  if (!createRes.ok) return null;
+  const data = await createRes.json();
+  return data.id || null;
+}
+
+async function uploadFileToDrive(folderId: string, filename: string, jsonStr: string): Promise<{ fileId?: string; webViewLink?: string; error?: string }> {
+  const boundary = "----LovableBackup" + Math.random().toString(36).slice(2);
+  const metadata = { name: filename, parents: [folderId], mimeType: "application/json" };
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+    `--${boundary}\r\nContent-Type: application/json\r\n\r\n${jsonStr}\r\n--${boundary}--`;
+
+  const res = await driveFetch(`${DRIVE_UPLOAD_GATEWAY}/files?uploadType=multipart&fields=id,webViewLink`, {
+    method: "POST",
+    headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
+    body,
+  });
+  const data = await res.json();
+  if (!res.ok) return { error: `Eroare upload (${filename}): ${JSON.stringify(data)}` };
+  return { fileId: data.id, webViewLink: data.webViewLink };
+}
+
+async function updateLatestFile(folderId: string, jsonStr: string): Promise<void> {
+  // Find existing latest.json
+  const q = encodeURIComponent(`name='latest.json' and '${folderId}' in parents and trashed=false`);
+  const searchRes = await driveFetch(`${DRIVE_GATEWAY}/files?q=${q}&fields=files(id)`);
+  const searchData = await searchRes.json();
+  const existingId = searchData?.files?.[0]?.id;
+
+  if (existingId) {
+    // Update content (uploadType=media for in-place update)
+    await driveFetch(`${DRIVE_UPLOAD_GATEWAY}/files/${existingId}?uploadType=media`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: jsonStr,
+    });
+  } else {
+    await uploadFileToDrive(folderId, "latest.json", jsonStr);
+  }
+}
+
+async function pruneOldBackups(folderId: string, keepLastN: number): Promise<number> {
+  // List all backup_*.json sorted desc by createdTime
+  const q = encodeURIComponent(`'${folderId}' in parents and name contains 'backup_' and trashed=false`);
+  const res = await driveFetch(`${DRIVE_GATEWAY}/files?q=${q}&fields=files(id,name,createdTime)&orderBy=createdTime desc&pageSize=200`);
+  const data = await res.json();
+  const files: Array<{ id: string; name: string }> = data?.files || [];
+  const toDelete = files.slice(keepLastN);
+  let deleted = 0;
+  for (const f of toDelete) {
+    const del = await driveFetch(`${DRIVE_GATEWAY}/files/${f.id}`, { method: "DELETE" });
+    if (del.ok) deleted++;
+  }
+  return deleted;
+}
+
+async function uploadToGoogleDrive(filename: string, jsonStr: string): Promise<{ fileId?: string; webViewLink?: string; error?: string; pruned?: number }> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const GOOGLE_DRIVE_API_KEY = Deno.env.get("GOOGLE_DRIVE_API_KEY");
-  if (!LOVABLE_API_KEY || !GOOGLE_DRIVE_API_KEY) {
-    return { error: "Google Drive nu este conectat" };
-  }
-  const headers = {
-    "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-    "X-Connection-Api-Key": GOOGLE_DRIVE_API_KEY,
-  };
+  if (!LOVABLE_API_KEY || !GOOGLE_DRIVE_API_KEY) return { error: "Google Drive nu este conectat" };
 
   try {
-    // 1. Find or create folder
-    const searchUrl = `${DRIVE_GATEWAY}/files?q=${encodeURIComponent(`name='${BACKUP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id,name)`;
-    const searchRes = await fetch(searchUrl, { headers });
-    const searchData = await searchRes.json();
-    let folderId: string | undefined = searchData?.files?.[0]?.id;
+    const folderId = await getOrCreateBackupFolder();
+    if (!folderId) return { error: "Nu am putut crea/găsi folderul ICMPP Backups" };
 
-    if (!folderId) {
-      const createFolderRes = await fetch(`${DRIVE_GATEWAY}/files`, {
-        method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ name: BACKUP_FOLDER_NAME, mimeType: "application/vnd.google-apps.folder" }),
-      });
-      const folderData = await createFolderRes.json();
-      if (!createFolderRes.ok) {
-        return { error: `Eroare creare folder: ${JSON.stringify(folderData)}` };
-      }
-      folderId = folderData.id;
-    }
+    const upload = await uploadFileToDrive(folderId, filename, jsonStr);
+    if (upload.error) return upload;
 
-    // 2. Multipart upload
-    const boundary = "----LovableBackup" + Math.random().toString(36).slice(2);
-    const metadata = { name: filename, parents: [folderId], mimeType: "application/json" };
-    const body =
-      `--${boundary}\r\n` +
-      `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
-      `${JSON.stringify(metadata)}\r\n` +
-      `--${boundary}\r\n` +
-      `Content-Type: application/json\r\n\r\n` +
-      `${jsonStr}\r\n` +
-      `--${boundary}--`;
+    // Update latest.json pointer (always current snapshot)
+    try { await updateLatestFile(folderId, jsonStr); } catch (e) { console.warn("latest.json update failed", e); }
 
-    const uploadRes = await fetch(`${DRIVE_UPLOAD_GATEWAY}/files?uploadType=multipart&fields=id,webViewLink`, {
-      method: "POST",
-      headers: { ...headers, "Content-Type": `multipart/related; boundary=${boundary}` },
-      body,
-    });
-    const uploadData = await uploadRes.json();
-    if (!uploadRes.ok) {
-      return { error: `Eroare upload: ${JSON.stringify(uploadData)}` };
-    }
-    return { fileId: uploadData.id, webViewLink: uploadData.webViewLink };
+    // Prune old backups (keep N versions)
+    let pruned = 0;
+    try { pruned = await pruneOldBackups(folderId, KEEP_LAST_N_BACKUPS); } catch (e) { console.warn("prune failed", e); }
+
+    return { fileId: upload.fileId, webViewLink: upload.webViewLink, pruned };
   } catch (e: any) {
     return { error: e.message || String(e) };
   }
 }
-
-async function sendBackupEmail(supabase: any, userId: string, status: string, totalRows: number, sizeMB: string, errors: string[], driveLink?: string) {
   // Get super_admin email
   const { data: { user } } = await supabase.auth.admin.getUserById(userId);
   if (!user?.email) return;
