@@ -44,7 +44,69 @@ const TABLES_TO_BACKUP = [
   "health_check_logs",
 ];
 
-async function sendBackupEmail(supabase: any, userId: string, status: string, totalRows: number, sizeMB: string, errors: string[]) {
+const DRIVE_GATEWAY = "https://connector-gateway.lovable.dev/google_drive/drive/v3";
+const DRIVE_UPLOAD_GATEWAY = "https://connector-gateway.lovable.dev/google_drive/upload/drive/v3";
+const BACKUP_FOLDER_NAME = "ICMPP Backups";
+
+async function uploadToGoogleDrive(filename: string, jsonStr: string): Promise<{ fileId?: string; webViewLink?: string; error?: string }> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const GOOGLE_DRIVE_API_KEY = Deno.env.get("GOOGLE_DRIVE_API_KEY");
+  if (!LOVABLE_API_KEY || !GOOGLE_DRIVE_API_KEY) {
+    return { error: "Google Drive nu este conectat" };
+  }
+  const headers = {
+    "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+    "X-Connection-Api-Key": GOOGLE_DRIVE_API_KEY,
+  };
+
+  try {
+    // 1. Find or create folder
+    const searchUrl = `${DRIVE_GATEWAY}/files?q=${encodeURIComponent(`name='${BACKUP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id,name)`;
+    const searchRes = await fetch(searchUrl, { headers });
+    const searchData = await searchRes.json();
+    let folderId: string | undefined = searchData?.files?.[0]?.id;
+
+    if (!folderId) {
+      const createFolderRes = await fetch(`${DRIVE_GATEWAY}/files`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: BACKUP_FOLDER_NAME, mimeType: "application/vnd.google-apps.folder" }),
+      });
+      const folderData = await createFolderRes.json();
+      if (!createFolderRes.ok) {
+        return { error: `Eroare creare folder: ${JSON.stringify(folderData)}` };
+      }
+      folderId = folderData.id;
+    }
+
+    // 2. Multipart upload
+    const boundary = "----LovableBackup" + Math.random().toString(36).slice(2);
+    const metadata = { name: filename, parents: [folderId], mimeType: "application/json" };
+    const body =
+      `--${boundary}\r\n` +
+      `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
+      `${JSON.stringify(metadata)}\r\n` +
+      `--${boundary}\r\n` +
+      `Content-Type: application/json\r\n\r\n` +
+      `${jsonStr}\r\n` +
+      `--${boundary}--`;
+
+    const uploadRes = await fetch(`${DRIVE_UPLOAD_GATEWAY}/files?uploadType=multipart&fields=id,webViewLink`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": `multipart/related; boundary=${boundary}` },
+      body,
+    });
+    const uploadData = await uploadRes.json();
+    if (!uploadRes.ok) {
+      return { error: `Eroare upload: ${JSON.stringify(uploadData)}` };
+    }
+    return { fileId: uploadData.id, webViewLink: uploadData.webViewLink };
+  } catch (e: any) {
+    return { error: e.message || String(e) };
+  }
+}
+
+async function sendBackupEmail(supabase: any, userId: string, status: string, totalRows: number, sizeMB: string, errors: string[], driveLink?: string) {
   // Get super_admin email
   const { data: { user } } = await supabase.auth.admin.getUserById(userId);
   if (!user?.email) return;
