@@ -153,6 +153,8 @@ async function uploadToGoogleDrive(filename: string, jsonStr: string): Promise<{
     return { error: e.message || String(e) };
   }
 }
+
+async function sendBackupEmail(supabase: any, userId: string, status: string, totalRows: number, sizeMB: string, errors: string[], driveLink?: string) {
   // Get super_admin email
   const { data: { user } } = await supabase.auth.admin.getUserById(userId);
   if (!user?.email) return;
