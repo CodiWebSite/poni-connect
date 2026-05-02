@@ -242,13 +242,23 @@ Deno.serve(async (req) => {
     const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
 
     const backupStatus = errors.length > 0 ? "partial" : "success";
+    const filename = `backup_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
+
+    // Upload to Google Drive
+    const driveResult = await uploadToGoogleDrive(filename, jsonStr);
+    if (driveResult.error) {
+      console.error("[Drive Upload] Failed:", driveResult.error);
+      errors.push(`Google Drive: ${driveResult.error}`);
+    } else {
+      console.log("[Drive Upload] Success:", driveResult.fileId);
+    }
 
     // Log this backup
     await supabase.from("backup_logs").insert({
       type: "backup",
       status: backupStatus,
       size_info: `${sizeMB} MB, ${totalRows} rânduri`,
-      notes: `Backup — ${TABLES_TO_BACKUP.length} tabele exportate${errors.length > 0 ? `. Erori: ${errors.join("; ")}` : ""}`,
+      notes: `Backup — ${TABLES_TO_BACKUP.length} tabele${driveResult.webViewLink ? ` · Drive: ${driveResult.webViewLink}` : ""}${errors.length > 0 ? `. Erori: ${errors.join("; ")}` : ""}`,
       performed_by: userId,
     });
 
@@ -257,11 +267,11 @@ Deno.serve(async (req) => {
       _user_id: userId,
       _action: "data_backup",
       _entity_type: "system",
-      _details: { tables: TABLES_TO_BACKUP.length, rows: totalRows, size_mb: sizeMB },
+      _details: { tables: TABLES_TO_BACKUP.length, rows: totalRows, size_mb: sizeMB, drive_file_id: driveResult.fileId },
     });
 
     // Send email to super_admin
-    await sendBackupEmail(supabase, userId, backupStatus, totalRows, sizeMB, errors);
+    await sendBackupEmail(supabase, userId, backupStatus, totalRows, sizeMB, errors, driveResult.webViewLink);
 
     return new Response(jsonStr, {
       headers: {
