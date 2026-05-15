@@ -20,7 +20,7 @@ project_id = "erghywhqrxmwqptusbxd"
   [functions.sync-employees]
     verify_jwt = true
   [functions.test-email]
-    verify_jwt = false
+    verify_jwt = true
   [functions.verify-turnstile]
     verify_jwt = false
   [functions.cleanup-audit-logs]
@@ -50,4 +50,6 @@ project_id = "erghywhqrxmwqptusbxd"
   [functions.check-medical-expirations]
     verify_jwt = false
   [functions.restore-from-drive]
+    verify_jwt = true
+  [functions.send-reminder-email]
     verify_jwt = true
