@@ -51,3 +51,5 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = false
   [functions.restore-from-drive]
     verify_jwt = true
+  [functions.send-reminder-email]
+    verify_jwt = true
