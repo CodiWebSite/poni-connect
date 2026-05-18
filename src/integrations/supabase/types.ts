@@ -1215,6 +1215,90 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_flags: {
+        Row: {
+          description: string | null
+          enabled: boolean
+          key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          enabled?: boolean
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          enabled?: boolean
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      gdpr_officers: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gdpr_requests: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          description: string | null
+          handled_by: string | null
+          id: string
+          request_type: string
+          response: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          description?: string | null
+          handled_by?: string | null
+          id?: string
+          request_type: string
+          response?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          description?: string | null
+          handled_by?: string | null
+          id?: string
+          request_type?: string
+          response?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       health_check_logs: {
         Row: {
           checked_at: string
@@ -2686,6 +2770,54 @@ export type Database = {
         }
         Relationships: []
       }
+      security_incidents: {
+        Row: {
+          assigned_to: string | null
+          attachment_path: string | null
+          created_at: string
+          description: string
+          hr_relevant: boolean
+          id: string
+          incident_type: string
+          occurred_at: string
+          reporter_user_id: string
+          resolution_notes: string | null
+          severity: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          attachment_path?: string | null
+          created_at?: string
+          description: string
+          hr_relevant?: boolean
+          id?: string
+          incident_type: string
+          occurred_at?: string
+          reporter_user_id: string
+          resolution_notes?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          attachment_path?: string | null
+          created_at?: string
+          description?: string
+          hr_relevant?: boolean
+          id?: string
+          incident_type?: string
+          occurred_at?: string
+          reporter_user_id?: string
+          resolution_notes?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       security_quiz_attempts: {
         Row: {
           answers: Json
@@ -3253,6 +3385,7 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      is_gdpr_officer: { Args: { _user_id: string }; Returns: boolean }
       is_ip_bypass_user: { Args: { _user_id: string }; Returns: boolean }
       is_leave_approver_for_epd: {
         Args: { _epd_id: string; _user_id: string }

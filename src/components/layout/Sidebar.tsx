@@ -42,6 +42,8 @@ import {
   Package,
   ShieldCheck,
   Lightbulb,
+  ShieldAlert,
+  FileLock2,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -256,7 +258,7 @@ const Sidebar = () => {
       '/leave-calendar': 'leave-calendar', '/formulare': 'formulare', '/leave-request': 'leave-request',
       '/my-team': 'my-team', '/library': 'library', '/room-bookings': 'room-bookings',
       '/activitati': 'activitati', '/chat': 'chat', '/medicina-muncii': 'medicina-muncii',
-      '/arhiva': 'arhiva', '/securitate-digitala': 'securitate-digitala', '/sugestii': 'sugestii', '/ghid': 'ghid', '/install': 'install',
+      '/arhiva': 'arhiva', '/securitate-digitala': 'securitate-digitala', '/securitatea-mea': 'dashboard', '/raporteaza-incident': 'dashboard', '/confidentialitate': 'dashboard', '/sugestii': 'sugestii', '/ghid': 'ghid', '/install': 'install',
       '/hr-management': 'hr-management', '/salarizare': 'salarizare', '/settings': 'settings',
       '/system-status': 'system-status', '/carti-vizita': 'carti-vizita', '/admin': 'admin',
       '/changelog': 'changelog',
@@ -280,6 +282,9 @@ const Sidebar = () => {
     { icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' },
     { icon: Archive, label: 'Arhivă Online', path: '/arhiva' },
     { icon: ShieldCheck, label: 'Securitate Digitală', path: '/securitate-digitala' },
+    { icon: ShieldCheck, label: 'Securitatea contului meu', path: '/securitatea-mea' },
+    { icon: ShieldAlert, label: 'Raportează incident', path: '/raporteaza-incident' },
+    { icon: FileLock2, label: 'Confidențialitate & GDPR', path: '/confidentialitate' },
     { icon: Lightbulb, label: 'Idei & Feedback', path: '/sugestii' },
     { icon: ExternalLink, label: 'Adeverințe SCTP', path: 'https://adeverinte.icmpp.ro/', external: true },
     { icon: Mail, label: 'Mail ICMPP', path: 'https://mail.icmpp.ro/', external: true },

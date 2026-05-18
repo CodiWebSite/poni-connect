@@ -39,7 +39,6 @@ const PAGE_META: Record<string, { label: string; category: string }> = {
 
 const ROLE_META: Record<string, { label: string; color: string }> = {
   super_admin: { label: 'Super Admin', color: 'bg-destructive text-destructive-foreground' },
-  admin: { label: 'Admin', color: 'bg-red-500 text-white' },
   director_institut: { label: 'Director', color: 'bg-indigo-700 text-white' },
   director_adjunct: { label: 'Dir. Adjunct', color: 'bg-indigo-500 text-white' },
   secretar_stiintific: { label: 'Secretar Șt.', color: 'bg-teal-600 text-white' },

@@ -82,24 +82,25 @@ const AppSettingsPanel = () => {
     await updateSetting(key, checked);
 
     if (key === 'maintenance_mode') {
-      // Send Telegram notification for maintenance toggle
+      // Internal alert (replaces deprecated Telegram notification)
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
-          await supabase.functions.invoke('notify-telegram', {
+          await supabase.functions.invoke('notify-internal-alert', {
             headers: { Authorization: `Bearer ${session.access_token}` },
             body: {
-              type: checked ? 'maintenance_on' : 'maintenance_off',
+              target: 'super_admin_and_hr',
               title: checked ? 'Mentenanță ACTIVATĂ' : 'Mentenanță DEZACTIVATĂ',
               message: checked
                 ? 'Platforma a fost pusă în modul mentenanță. Utilizatorii obișnuiți nu mai au acces.'
                 : 'Platforma a ieșit din mentenanță. Toți utilizatorii au acces din nou.',
               severity: checked ? 'warning' : 'info',
+              related_type: 'system_alert',
             },
           });
         }
       } catch (e) {
-        console.error('Telegram notification failed:', e);
+        console.error('Internal alert failed:', e);
       }
 
       // Send email to maintenance subscribers when maintenance ends
