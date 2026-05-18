@@ -114,18 +114,15 @@ Deno.serve(async (req) => {
 function getUrlForNotification(
   relatedType?: string | null,
   relatedId?: string | null,
-  type?: string
+  _type?: string
 ): string {
   if (!relatedType) return "/";
   switch (relatedType) {
-    case "leave_request": {
-      // Approval-related notifications go to the approval tab; result/own go to "my requests"
-      const tab =
-        type === "warning" || type === "info_pending" ? "approve" : "my-requests";
-      return relatedId ? `/leave?tab=${tab}&request=${relatedId}` : "/leave";
-    }
+    case "leave_request":
     case "leave_approval":
-      return relatedId ? `/leave?tab=approve&request=${relatedId}` : "/leave?tab=approve";
+      return relatedId
+        ? `/leave-request?request=${relatedId}`
+        : "/leave-request";
     case "chat_message":
     case "chat":
     case "chat_conversation":
@@ -133,11 +130,21 @@ function getUrlForNotification(
     case "announcement":
       return relatedId ? `/announcements?id=${relatedId}` : "/announcements";
     case "hr_request":
-      return relatedId ? `/hr?request=${relatedId}` : "/hr";
+      return "/hr-management";
+    case "suggestion":
+      return relatedId ? `/sugestii?id=${relatedId}` : "/sugestii";
     case "helpdesk_ticket":
       return relatedId ? `/admin?panel=helpdesk&ticket=${relatedId}` : "/admin";
     case "account_request":
       return relatedId ? `/admin?panel=accounts&request=${relatedId}` : "/admin";
+    case "incident_report":
+      return relatedId
+        ? `/admin?panel=incidents&id=${relatedId}`
+        : "/admin?panel=incidents";
+    case "gdpr_request":
+      return relatedId
+        ? `/admin?panel=gdpr&id=${relatedId}`
+        : "/admin?panel=gdpr";
     default:
       return "/";
   }

@@ -1,182 +1,20 @@
-import { createClient } from "@supabase/supabase-js";
-
+// DEPRECATED — Telegram notifications removed in v2 (May 2026).
+// Kept as a 200 no-op so existing DB triggers / external callers do not break.
+// Replacement: notify-internal-alert (in-app + email).
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-type NotificationType =
-  | "security_alert"
-  | "maintenance_on"
-  | "maintenance_off"
-  | "account_request"
-  | "system_alert";
-
-interface NotificationPayload {
-  type: NotificationType;
-  title: string;
-  message: string;
-  severity?: "info" | "warning" | "critical";
-  details?: Record<string, string>;
-}
-
-function buildTelegramMessage(payload: NotificationPayload): string {
-  const icons: Record<NotificationType, string> = {
-    security_alert: "🔐",
-    maintenance_on: "🔧",
-    maintenance_off: "✅",
-    account_request: "👤",
-    system_alert: "⚙️",
-  };
-
-  const severityIcons: Record<string, string> = {
-    info: "ℹ️",
-    warning: "⚠️",
-    critical: "🔴",
-  };
-
-  const icon = icons[payload.type] || "📢";
-  const sevIcon = payload.severity ? severityIcons[payload.severity] || "" : "";
-
-  let text = `${icon} <b>${escapeHtml(payload.title)}</b>\n\n`;
-  text += `${sevIcon} ${escapeHtml(payload.message)}\n`;
-
-  if (payload.details && Object.keys(payload.details).length > 0) {
-    text += "\n<b>Detalii:</b>\n";
-    for (const [key, value] of Object.entries(payload.details)) {
-      text += `• <b>${escapeHtml(key)}</b>: ${escapeHtml(value)}\n`;
-    }
-  }
-
-  text += `\n🕐 ${new Date().toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" })}`;
-
-  return text;
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-
-  try {
-    const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
-    const chatId = Deno.env.get("TELEGRAM_CHAT_ID");
-
-    if (!botToken || !chatId) {
-      console.error("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured");
-      return new Response(
-        JSON.stringify({ error: "Telegram not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Auth check — allow service role, DB triggers (anon JWT), or authenticated super_admins
-    const authHeader = req.headers.get("Authorization");
-    const apikeyHeader = req.headers.get("apikey");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    let isAuthorized = false;
-
-    const token = authHeader?.startsWith("Bearer ") 
-      ? authHeader.replace("Bearer ", "") 
-      : "";
-
-    // Check service role key
-    if (token === serviceRoleKey) {
-      isAuthorized = true;
-    }
-
-    // Check if token is an anon JWT (sent by DB triggers via pg_net)
-    if (!isAuthorized && token) {
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        if (payload?.role === "anon" && payload?.iss === "supabase") {
-          isAuthorized = true;
-        }
-      } catch { /* not a valid JWT, continue */ }
-    }
-
-    // Check if authenticated user is super_admin
-    if (!isAuthorized && token) {
-      try {
-        const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || apikeyHeader || "";
-        const supabaseAuth = createClient(supabaseUrl, anonKey, {
-          global: { headers: { Authorization: authHeader! } },
-        });
-        const { data: { user } } = await supabaseAuth.auth.getUser();
-        if (user) {
-          const supabase = createClient(supabaseUrl, serviceRoleKey);
-          const { data: roles } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", user.id)
-            .eq("role", "super_admin")
-            .limit(1);
-          isAuthorized = (roles && roles.length > 0);
-        }
-      } catch { /* auth check failed */ }
-    }
-
-    if (!isAuthorized) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const payload: NotificationPayload = await req.json();
-
-    if (!payload.type || !payload.title || !payload.message) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields: type, title, message" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const text = buildTelegramMessage(payload);
-
-    const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${botToken}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text,
-          parse_mode: "HTML",
-          disable_web_page_preview: true,
-        }),
-      }
-    );
-
-    const telegramResult = await telegramResponse.json();
-
-    if (!telegramResponse.ok) {
-      console.error("Telegram API error:", telegramResult);
-      return new Response(
-        JSON.stringify({ error: "Failed to send Telegram message" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({ success: true, message_id: telegramResult.result?.message_id }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
+  // Intentionally do NOT read TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID
+  // and do NOT perform any external fetch.
+  console.log("[notify-telegram] deprecated call ignored");
+  return new Response(
+    JSON.stringify({ ok: true, deprecated: true, replacement: "notify-internal-alert" }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
 });
