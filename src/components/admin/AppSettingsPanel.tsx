@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload } from 'lucide-react';
+import { RequireReasonDialog } from '@/components/shared/RequireReasonDialog';
 
 interface SettingsState {
   leave_module_beta: boolean;
