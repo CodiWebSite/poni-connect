@@ -51,6 +51,9 @@ import InventoryProfile from "./pages/InventoryProfile";
 import InventoryPublicView from "./pages/InventoryPublicView";
 import SecurityQuiz from "./pages/SecurityQuiz";
 import Suggestions from "./pages/Suggestions";
+import AccountSecurity from "./pages/AccountSecurity";
+import ReportIncident from "./pages/ReportIncident";
+import Privacy from "./pages/Privacy";
 
 const queryClient = new QueryClient();
 
@@ -195,6 +198,9 @@ const App = () => (
                 <Route path="/echipament/:id" element={<InventoryPublicView />} />
                 <Route path="/securitate-digitala" element={<SecurityQuiz />} />
                 <Route path="/sugestii" element={<Suggestions />} />
+                <Route path="/securitatea-mea" element={<AccountSecurity />} />
+                <Route path="/raporteaza-incident" element={<ReportIncident />} />
+                <Route path="/confidentialitate" element={<Privacy />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
