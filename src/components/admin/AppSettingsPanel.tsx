@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload } from 'lucide-react';
+import { RequireReasonDialog } from '@/components/shared/RequireReasonDialog';
 
 interface SettingsState {
   leave_module_beta: boolean;
@@ -38,6 +39,8 @@ const AppSettingsPanel = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [maintenanceReasonOpen, setMaintenanceReasonOpen] = useState(false);
+  const [pendingMaintenance, setPendingMaintenance] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -234,8 +237,20 @@ const AppSettingsPanel = () => {
             <Label htmlFor="maintenance" className="text-base font-medium">Mod Mentenanță</Label>
             <p className="text-sm text-muted-foreground">Afișează un banner de mentenanță pe toate paginile. Utilizatorii pot naviga în continuare.</p>
           </div>
-          <Switch id="maintenance" checked={settings.maintenance_mode} onCheckedChange={(c) => toggleSetting('maintenance_mode', c)} disabled={saving === 'maintenance_mode'} />
+          <Switch id="maintenance" checked={settings.maintenance_mode} onCheckedChange={(c) => { setPendingMaintenance(c); setMaintenanceReasonOpen(true); }} disabled={saving === 'maintenance_mode'} />
         </div>
+
+        <RequireReasonDialog
+          open={maintenanceReasonOpen}
+          onOpenChange={(o) => { setMaintenanceReasonOpen(o); if (!o) setPendingMaintenance(null); }}
+          title={pendingMaintenance ? 'Activare mod mentenanță' : 'Dezactivare mod mentenanță'}
+          description="Această schimbare afectează accesul tuturor utilizatorilor. Confirmă parola și oferă un motiv."
+          action="maintenance_mode_toggle"
+          entityType="app_settings"
+          entityId="maintenance_mode"
+          extraDetails={{ new_value: pendingMaintenance }}
+          onConfirm={async () => { if (pendingMaintenance !== null) await toggleSetting('maintenance_mode', pendingMaintenance); }}
+        />
 
         {/* Maintenance ETA */}
         {settings.maintenance_mode && (
