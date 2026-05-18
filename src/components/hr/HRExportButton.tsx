@@ -12,6 +12,7 @@ import { FileSpreadsheet, Download, Calendar, Users, FileText, Loader2, Banknote
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { logExportAction } from '@/utils/exportAudit';
+import { RequireReasonDialog } from '@/components/shared/RequireReasonDialog';
 import ExcelJS from 'exceljs';
 import { format, parseISO, eachDayOfInterval, isWeekend } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -148,6 +149,13 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [exporting, setExporting] = useState<string | null>(null);
+  const [reasonOpen, setReasonOpen] = useState(false);
+  const [pendingExport, setPendingExport] = useState<{ run: () => Promise<void>; label: string } | null>(null);
+
+  const requireReason = (label: string, run: () => Promise<void>) => {
+    setPendingExport({ run, label });
+    setReasonOpen(true);
+  };
 
   const exportSingleSheet = async (data: Record<string, any>[], filename: string, sheetName: string) => {
     const wb = new ExcelJS.Workbook();
@@ -424,6 +432,7 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
   };
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" disabled={!!exporting}>
@@ -447,20 +456,32 @@ const HRExportButton = ({ requests, employees }: HRExportButtonProps) => {
           Toate cererile HR
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={exportLeaveBalances}>
+        <DropdownMenuItem onClick={() => requireReason('Sold concedii angajați', exportLeaveBalances)}>
           <Download className="w-4 h-4 mr-2" />
           Sold concedii angajați
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportEmployeeList}>
+        <DropdownMenuItem onClick={() => requireReason('Lista angajați (cu PII)', exportEmployeeList)}>
           <Users className="w-4 h-4 mr-2" />
           Lista angajați
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportWithoutAccount}>
+        <DropdownMenuItem onClick={() => requireReason('Angajați fără cont', exportWithoutAccount)}>
           <FileText className="w-4 h-4 mr-2" />
           Angajați fără cont
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <RequireReasonDialog
+      open={reasonOpen}
+      onOpenChange={setReasonOpen}
+      title="Confirmare export date personale"
+      description={`Vei exporta „${pendingExport?.label ?? ''}". Acțiunea este auditată GDPR.`}
+      action="pii_export"
+      entityType="hr_export"
+      extraDetails={{ report: pendingExport?.label }}
+      onConfirm={async () => { if (pendingExport) await pendingExport.run(); }}
+    />
+    </>
   );
 };
 
