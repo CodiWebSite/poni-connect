@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Cloud, RefreshCw, Loader2, AlertTriangle, FileJson, History, Download, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { RequireReasonDialog } from '@/components/shared/RequireReasonDialog';
 
 interface DriveFile {
   id: string;
@@ -31,6 +32,7 @@ const DriveBackupRestorePanel = () => {
   const [restoring, setRestoring] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [report, setReport] = useState<any[] | null>(null);
+  const [reasonOpen, setReasonOpen] = useState(false);
 
   const loadFiles = async () => {
     setLoading(true);
@@ -215,7 +217,7 @@ const DriveBackupRestorePanel = () => {
             {!report ? (
               <>
                 <Button variant="outline" onClick={() => setSelectedFile(null)}>Anulează</Button>
-                <Button onClick={runRestore} disabled={restoring || confirmText !== 'RESTAUREAZĂ' || !preview} variant="destructive">
+                <Button onClick={() => setReasonOpen(true)} disabled={restoring || confirmText !== 'RESTAUREAZĂ' || !preview} variant="destructive">
                   {restoring ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RotateCcw className="w-4 h-4 mr-2" />}
                   Restaurează acum
                 </Button>
@@ -226,6 +228,18 @@ const DriveBackupRestorePanel = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RequireReasonDialog
+        open={reasonOpen}
+        onOpenChange={setReasonOpen}
+        title="Confirmare restaurare backup"
+        description="Această operațiune va modifica date operaționale. Confirmă parola și descrie motivul."
+        action="backup_restore"
+        entityType="drive_backup"
+        entityId={selectedFile?.id ?? null}
+        extraDetails={{ file: selectedFile?.name, mode: restoreMode }}
+        onConfirm={runRestore}
+      />
     </Card>
   );
 };
