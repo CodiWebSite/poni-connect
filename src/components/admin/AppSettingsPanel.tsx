@@ -39,6 +39,8 @@ const AppSettingsPanel = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [maintenanceReasonOpen, setMaintenanceReasonOpen] = useState(false);
+  const [pendingMaintenance, setPendingMaintenance] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
