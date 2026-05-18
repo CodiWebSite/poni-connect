@@ -2,7 +2,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Navigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert, ShieldCheck, History } from 'lucide-react';
+import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert, ShieldCheck, History, Siren, ScrollText } from 'lucide-react';
 import AdminOverview from '@/components/admin/AdminOverview';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminRolesAccessPanel from '@/components/admin/AdminRolesAccessPanel';
@@ -12,6 +12,8 @@ import RoleAuditPanel from '@/components/admin/RoleAuditPanel';
 import IrisFeedbackPanel from '@/components/admin/IrisFeedbackPanel';
 import SecurityDashboard from '@/components/admin/SecurityDashboard';
 import SecurityQuizAdminPanel from '@/components/admin/SecurityQuizAdminPanel';
+import IncidentsPanel from '@/components/admin/IncidentsPanel';
+import GdprPanel from '@/components/admin/GdprPanel';
 
 const Admin = () => {
   const { role, isRealSuperAdmin } = useUserRole();
@@ -59,6 +61,14 @@ const Admin = () => {
               <ShieldCheck className="w-4 h-4" />
               <span className="hidden sm:inline">Securitate Digitală</span>
             </TabsTrigger>
+            <TabsTrigger value="incidents" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+              <Siren className="w-4 h-4" />
+              <span className="hidden sm:inline">Incidente</span>
+            </TabsTrigger>
+            <TabsTrigger value="gdpr" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+              <ScrollText className="w-4 h-4" />
+              <span className="hidden sm:inline">GDPR</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -71,6 +81,8 @@ const Admin = () => {
         <TabsContent value="role-audit"><RoleAuditPanel /></TabsContent>
         <TabsContent value="iris-feedback"><IrisFeedbackPanel /></TabsContent>
         <TabsContent value="quiz-admin"><SecurityQuizAdminPanel /></TabsContent>
+        <TabsContent value="incidents"><IncidentsPanel /></TabsContent>
+        <TabsContent value="gdpr"><GdprPanel /></TabsContent>
       </Tabs>
     </MainLayout>
   );

@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
       checks: checks,
     });
 
-    // Send Telegram alert if system is degraded or has errors
+    // Send internal alert if system is degraded or has errors (Telegram deprecated)
     if (!allOk) {
       const failedChecks = Object.entries(checks)
         .filter(([, c]) => c.status !== "ok")
@@ -130,19 +130,17 @@ Deno.serve(async (req) => {
         .join("\n");
 
       try {
-        const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
-        const chatId = Deno.env.get("TELEGRAM_CHAT_ID");
-        if (botToken && chatId) {
-          const severity = hasErrors ? "🔴 CRITIC" : "⚠️ ATENȚIE";
-          const text = `⚙️ <b>Alertă Sistem — ${severity}</b>\n\nSistemul este <b>${result.overall}</b>.\n\n<b>Verificări eșuate:</b>\n<pre>${failedChecks}</pre>\n\n🕐 ${new Date().toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" })}`;
-          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true }),
-          });
-        }
+        await supabase.functions.invoke("notify-internal-alert", {
+          body: {
+            type: "system_health",
+            title: `Alertă Sistem — ${hasErrors ? "CRITIC" : "ATENȚIE"}`,
+            message: `Sistemul este ${result.overall}.\n\nVerificări eșuate:\n${failedChecks}`,
+            severity: hasErrors ? "critical" : "warning",
+            target_roles: ["super_admin"],
+          },
+        });
       } catch (e) {
-        console.error("Telegram system alert failed:", e);
+        console.error("Internal system alert failed:", e);
       }
     }
 
