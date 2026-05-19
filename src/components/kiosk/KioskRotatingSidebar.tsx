@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, useCallback } from 'react';
 import KioskSidebarAnnouncements from './KioskSidebarAnnouncements';
 import KioskSidebarRoomBookings from './KioskSidebarRoomBookings';
 
@@ -6,29 +6,65 @@ interface Section {
   key: string;
   label: string;
   component: ReactNode;
+  /** Fallback timeout dacă secțiunea nu emite singură evenimentul de avansare. */
+  fallbackMs: number;
 }
 
-const ROTATE_INTERVAL = 10_000; // 10 seconds
+const KIOSK_ADVANCE_EVENT = 'kiosk-sidebar-advance';
 
 const sections: Section[] = [
-  { key: 'announcements', label: 'Anunțuri', component: <KioskSidebarAnnouncements /> },
-  { key: 'rooms', label: 'Săli', component: <KioskSidebarRoomBookings /> },
+  // Anunțurile semnalează singure când au terminat scroll-ul; fallback de 90s.
+  { key: 'announcements', label: 'Anunțuri', component: <KioskSidebarAnnouncements />, fallbackMs: 90_000 },
+  { key: 'rooms', label: 'Săli', component: <KioskSidebarRoomBookings />, fallbackMs: 10_000 },
 ];
 
 const KioskRotatingSidebar = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setActiveIndex(prev => (prev + 1) % sections.length);
-        setIsTransitioning(false);
-      }, 400);
-    }, ROTATE_INTERVAL);
-    return () => clearInterval(timer);
+  const goToIndex = useCallback((nextIndex: number) => {
+    setIsTransitioning(true);
+    window.setTimeout(() => {
+      setActiveIndex(nextIndex);
+      setIsTransitioning(false);
+    }, 400);
   }, []);
+
+  const advance = useCallback(() => {
+    setActiveIndex(prev => {
+      const next = (prev + 1) % sections.length;
+      setIsTransitioning(true);
+      window.setTimeout(() => setIsTransitioning(false), 400);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const current = sections[activeIndex];
+    let triggered = false;
+
+    const onAdvance = (e: Event) => {
+      const detail = (e as CustomEvent<{ from?: string }>).detail;
+      // Acceptă orice eveniment care vine din secțiunea curentă (sau fără origin).
+      if (detail?.from && detail.from !== current.key) return;
+      if (triggered) return;
+      triggered = true;
+      advance();
+    };
+
+    window.addEventListener(KIOSK_ADVANCE_EVENT, onAdvance as EventListener);
+
+    const fallback = window.setTimeout(() => {
+      if (triggered) return;
+      triggered = true;
+      advance();
+    }, current.fallbackMs);
+
+    return () => {
+      window.removeEventListener(KIOSK_ADVANCE_EVENT, onAdvance as EventListener);
+      clearTimeout(fallback);
+    };
+  }, [activeIndex, advance]);
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -48,13 +84,7 @@ const KioskRotatingSidebar = () => {
         {sections.map((section, i) => (
           <button
             key={section.key}
-            onClick={() => {
-              setIsTransitioning(true);
-              setTimeout(() => {
-                setActiveIndex(i);
-                setIsTransitioning(false);
-              }, 400);
-            }}
+            onClick={() => goToIndex(i)}
             className="group flex items-center gap-1.5"
           >
             <div
