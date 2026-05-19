@@ -22,6 +22,10 @@ interface SettingsState {
   kiosk_message: string;
   kiosk_ticker_messages: string[];
   kiosk_slideshow_images: string[];
+  kiosk_music_enabled: boolean;
+  kiosk_music_source: 'youtube' | 'file';
+  kiosk_music_url: string;
+  kiosk_music_volume: number;
 }
 
 const AppSettingsPanel = () => {
