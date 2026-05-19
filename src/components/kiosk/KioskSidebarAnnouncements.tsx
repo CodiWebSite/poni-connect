@@ -160,6 +160,24 @@ const KioskSidebarAnnouncements = () => {
           </div>
         </div>
       </div>
+
+      {/* Indicator timp rămas până la „Săli" */}
+      {totalMs > 0 && (
+        <div className="px-5 pb-3 shrink-0">
+          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1 tabular-nums">
+            <span className="uppercase tracking-widest">Urmează: Săli</span>
+          </div>
+          <div className="h-1 w-full rounded-full bg-slate-200 overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full"
+              style={{
+                width: progressArmed ? '0%' : '100%',
+                transition: progressArmed ? `width ${totalMs}ms linear` : 'none',
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
