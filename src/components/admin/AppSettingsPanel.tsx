@@ -67,6 +67,10 @@ const AppSettingsPanel = () => {
           kiosk_message: typeof map.kiosk_message === 'string' ? map.kiosk_message : '',
           kiosk_ticker_messages: Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [],
           kiosk_slideshow_images: Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [],
+          kiosk_music_enabled: map.kiosk_music_enabled !== false,
+          kiosk_music_source: map.kiosk_music_source === 'file' ? 'file' : 'youtube',
+          kiosk_music_url: typeof map.kiosk_music_url === 'string' ? map.kiosk_music_url : '',
+          kiosk_music_volume: typeof map.kiosk_music_volume === 'number' ? map.kiosk_music_volume : 30,
         });
       }
       setLoading(false);
