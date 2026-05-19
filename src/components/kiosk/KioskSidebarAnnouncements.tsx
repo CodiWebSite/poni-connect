@@ -48,6 +48,7 @@ const KioskSidebarAnnouncements = () => {
     if (announcements.length === 0) return;
 
     let timers: number[] = [];
+    setProgressArmed(false);
     const advance = () => {
       window.dispatchEvent(
         new CustomEvent(KIOSK_ADVANCE_EVENT, { detail: { from: 'announcements' } })
@@ -62,28 +63,27 @@ const KioskSidebarAnnouncements = () => {
       const distance = Math.max(0, inner.scrollHeight - container.clientHeight);
 
       if (distance < 8) {
-        // Tot conținutul încape — stă afișat fix, apoi avansează
         setScrollDistance(0);
         setScrollDuration(0);
         setPhase('idle');
+        setTotalMs(NO_SCROLL_DISPLAY_MS);
+        // arm progress bar pe următorul frame ca să prindă tranziția
+        requestAnimationFrame(() => setProgressArmed(true));
         timers.push(window.setTimeout(advance, NO_SCROLL_DISPLAY_MS));
         return;
       }
 
       const duration = Math.max(distance / SCROLL_SPEED_PX_S, 6);
+      const total = HOLD_TOP_MS + duration * 1000 + HOLD_BOTTOM_MS;
       setScrollDistance(distance);
       setScrollDuration(duration);
+      setTotalMs(total);
       setPhase('holdTop');
+      requestAnimationFrame(() => setProgressArmed(true));
 
-      timers.push(
-        window.setTimeout(() => setPhase('scrolling'), HOLD_TOP_MS)
-      );
-      timers.push(
-        window.setTimeout(() => setPhase('holdBottom'), HOLD_TOP_MS + duration * 1000)
-      );
-      timers.push(
-        window.setTimeout(advance, HOLD_TOP_MS + duration * 1000 + HOLD_BOTTOM_MS)
-      );
+      timers.push(window.setTimeout(() => setPhase('scrolling'), HOLD_TOP_MS));
+      timers.push(window.setTimeout(() => setPhase('holdBottom'), HOLD_TOP_MS + duration * 1000));
+      timers.push(window.setTimeout(advance, total));
     }, 350);
 
     return () => {
