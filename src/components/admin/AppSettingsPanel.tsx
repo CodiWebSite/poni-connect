@@ -344,6 +344,43 @@ const AppSettingsPanel = () => {
     e.target.value = '';
   };
 
+  const handleMusicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('audio/') && !file.name.toLowerCase().endsWith('.mp3')) {
+      toast({ title: 'Format invalid', description: 'Acceptăm doar fișiere audio (MP3 recomandat).', variant: 'destructive' });
+      e.target.value = '';
+      return;
+    }
+    const maxBytes = 50 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast({ title: 'Fișier prea mare', description: 'Mărime maximă: 50 MB.', variant: 'destructive' });
+      e.target.value = '';
+      return;
+    }
+    setUploadingMusic(true);
+    const ext = file.name.split('.').pop() || 'mp3';
+    const fileName = `kiosk-bg-${Date.now()}.${ext}`;
+    const { data, error } = await supabase.storage
+      .from('kiosk-music')
+      .upload(fileName, file, { cacheControl: '3600', upsert: false, contentType: file.type || 'audio/mpeg' });
+
+    if (error) {
+      toast({ title: 'Eroare upload', description: error.message, variant: 'destructive' });
+      setUploadingMusic(false);
+      e.target.value = '';
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from('kiosk-music').getPublicUrl(data.path);
+    setSettings(prev => ({ ...prev, kiosk_music_source: 'file', kiosk_music_url: urlData.publicUrl }));
+    await updateSetting('kiosk_music_source', 'file');
+    await updateSetting('kiosk_music_url', urlData.publicUrl);
+    toast({ title: 'Muzică încărcată', description: 'Fișierul a fost salvat ca sursă pentru kiosk.' });
+    setUploadingMusic(false);
+    e.target.value = '';
+  };
+
   const removeSlideshowImage = async (index: number) => {
     const url = settings.kiosk_slideshow_images[index];
     // Try to delete from storage
