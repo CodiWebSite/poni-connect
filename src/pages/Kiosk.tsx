@@ -203,10 +203,7 @@ const Kiosk = () => {
     return cleanup;
   }, [musicEnabled, musicSource, musicUrl, musicVolume]);
 
-      events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
-      try { player?.destroy?.(); } catch {}
-    };
-  }, []);
+
 
 
 
