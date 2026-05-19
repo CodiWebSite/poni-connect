@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload, Music } from 'lucide-react';
+import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload, Music, Play, Square, Volume2, VolumeX, AlertTriangle } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { RequireReasonDialog } from '@/components/shared/RequireReasonDialog';
@@ -51,6 +51,140 @@ const AppSettingsPanel = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [maintenanceReasonOpen, setMaintenanceReasonOpen] = useState(false);
   const [pendingMaintenance, setPendingMaintenance] = useState<boolean | null>(null);
+  const [musicTestStatus, setMusicTestStatus] = useState<'idle' | 'starting' | 'sound' | 'muted' | 'error'>('idle');
+  const [musicTestMsg, setMusicTestMsg] = useState<string>('');
+  const ytTestRef = useRef<any>(null);
+  const audioTestRef = useRef<HTMLAudioElement | null>(null);
+  const ytTestContainerId = 'admin-music-test-yt';
+
+  const extractYouTubeId = (input: string): string => {
+    if (!input) return '';
+    const s = input.trim();
+    if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+    const m = s.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : '';
+  };
+
+  const stopMusicTest = () => {
+    try { ytTestRef.current?.stopVideo?.(); } catch {}
+    try { ytTestRef.current?.destroy?.(); } catch {}
+    ytTestRef.current = null;
+    if (audioTestRef.current) {
+      try { audioTestRef.current.pause(); } catch {}
+      audioTestRef.current.src = '';
+      audioTestRef.current = null;
+    }
+    setMusicTestStatus('idle');
+    setMusicTestMsg('');
+  };
+
+  useEffect(() => () => stopMusicTest(), []);
+
+  const loadYTApi = (): Promise<void> =>
+    new Promise((resolve) => {
+      const w = window as any;
+      if (w.YT && w.YT.Player) return resolve();
+      const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+      const prev = w.onYouTubeIframeAPIReady;
+      w.onYouTubeIframeAPIReady = () => { try { prev?.(); } catch {} resolve(); };
+      if (!existing) {
+        const s = document.createElement('script');
+        s.src = 'https://www.youtube.com/iframe_api';
+        document.body.appendChild(s);
+      }
+    });
+
+  const startMusicTest = async () => {
+    stopMusicTest();
+    setMusicTestStatus('starting');
+    setMusicTestMsg('');
+    const vol = settings.kiosk_music_volume;
+
+    if (settings.kiosk_music_source === 'youtube') {
+      const id = extractYouTubeId(settings.kiosk_music_url);
+      if (!id) {
+        setMusicTestStatus('error');
+        setMusicTestMsg('Link YouTube invalid.');
+        return;
+      }
+      try {
+        await loadYTApi();
+      } catch {
+        setMusicTestStatus('error');
+        setMusicTestMsg('Nu s-a putut încărca YouTube API.');
+        return;
+      }
+      const w = window as any;
+      try {
+        ytTestRef.current = new w.YT.Player(ytTestContainerId, {
+          videoId: id,
+          playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0, playsinline: 1 },
+          events: {
+            onReady: (e: any) => {
+              try {
+                e.target.setVolume(vol);
+                e.target.unMute();
+                e.target.playVideo();
+              } catch {}
+              setTimeout(() => {
+                try {
+                  const p = ytTestRef.current;
+                  if (!p) return;
+                  const state = p.getPlayerState?.();
+                  const muted = p.isMuted?.();
+                  if (state === 1 && !muted) {
+                    setMusicTestStatus('sound');
+                    setMusicTestMsg(`Redă cu sunet la ${vol}%.`);
+                  } else if (state === 1 && muted) {
+                    setMusicTestStatus('muted');
+                    setMusicTestMsg('Browserul a blocat autoplay cu sunet. Pe kiosk, dă click oriunde pe ecran ca să pornească sunetul, sau folosește Chrome cu --autoplay-policy=no-user-gesture-required.');
+                  } else {
+                    try { p.mute(); p.playVideo(); } catch {}
+                    setMusicTestStatus('muted');
+                    setMusicTestMsg('Autoplay cu sunet eșuat. Redare mută.');
+                  }
+                } catch {}
+              }, 1800);
+            },
+            onError: () => {
+              setMusicTestStatus('error');
+              setMusicTestMsg('Eroare la redarea video-ului YouTube.');
+            },
+          },
+        });
+      } catch {
+        setMusicTestStatus('error');
+        setMusicTestMsg('Nu s-a putut crea player-ul YouTube.');
+      }
+    } else {
+      const url = settings.kiosk_music_url.trim();
+      if (!url) {
+        setMusicTestStatus('error');
+        setMusicTestMsg('URL fișier audio lipsește.');
+        return;
+      }
+      const a = new Audio(url);
+      a.loop = true;
+      a.volume = Math.max(0, Math.min(1, vol / 100));
+      audioTestRef.current = a;
+      try {
+        await a.play();
+        setMusicTestStatus('sound');
+        setMusicTestMsg(`Redă cu sunet la ${vol}%.`);
+      } catch {
+        try {
+          a.muted = true;
+          await a.play();
+          setMusicTestStatus('muted');
+          setMusicTestMsg('Browserul a blocat autoplay cu sunet. Pe kiosk, dă click oriunde pe ecran ca să pornească sunetul.');
+        } catch {
+          setMusicTestStatus('error');
+          setMusicTestMsg('Nu s-a putut reda fișierul audio. Verifică URL-ul și CORS-ul.');
+        }
+      }
+    }
+  };
+
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -524,6 +658,47 @@ const AppSettingsPanel = () => {
                       {saving?.startsWith('kiosk_music') ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                       Salvează muzică
                     </Button>
+
+                    {/* Test playback */}
+                    <div className="mt-2 p-3 rounded-md border bg-muted/30 space-y-2">
+                      <div className="flex items-center gap-2">
+                        {musicTestStatus === 'idle' || musicTestStatus === 'error' ? (
+                          <Button size="sm" variant="secondary" onClick={startMusicTest}>
+                            <Play className="w-4 h-4 mr-2" />
+                            Testează muzică acum
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={stopMusicTest}>
+                            <Square className="w-4 h-4 mr-2" />
+                            Oprește test
+                          </Button>
+                        )}
+                        {musicTestStatus === 'starting' && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Pornește redarea...
+                          </span>
+                        )}
+                        {musicTestStatus === 'sound' && (
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
+                            <Volume2 className="w-3 h-3" /> Redă cu SUNET
+                          </span>
+                        )}
+                        {musicTestStatus === 'muted' && (
+                          <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
+                            <VolumeX className="w-3 h-3" /> Redă fără sunet (autoplay blocat)
+                          </span>
+                        )}
+                        {musicTestStatus === 'error' && (
+                          <span className="text-xs text-destructive flex items-center gap-1 font-medium">
+                            <AlertTriangle className="w-3 h-3" /> Eroare
+                          </span>
+                        )}
+                      </div>
+                      {musicTestMsg && (
+                        <p className="text-xs text-muted-foreground leading-relaxed">{musicTestMsg}</p>
+                      )}
+                      <div id={ytTestContainerId} className="w-px h-px overflow-hidden opacity-0 pointer-events-none" />
+                    </div>
                   </>
                 )}
               </div>
