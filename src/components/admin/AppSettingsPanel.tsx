@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload, Music } from 'lucide-react';
+import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload, Music, Play, Square, Volume2, VolumeX, AlertTriangle } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { RequireReasonDialog } from '@/components/shared/RequireReasonDialog';
