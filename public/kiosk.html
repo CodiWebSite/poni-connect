@@ -492,24 +492,46 @@ function sbFetch(table, params, cb) {
 }
 
 // ── Weather (header) ──
+var __weatherRetry = null;
 function fetchWeather() {
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'https://api.open-meteo.com/v1/forecast?latitude=47.1585&longitude=27.6014&current=temperature_2m,weather_code&timezone=Europe%2FBucharest');
-  xhr.onload = function() {
-    if (xhr.status !== 200) return;
-    var d = JSON.parse(xhr.responseText).current;
+  if (__weatherRetry) { clearTimeout(__weatherRetry); __weatherRetry = null; }
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=47.1585&longitude=27.6014&current=temperature_2m,weather_code&timezone=Europe%2FBucharest';
+  var retry = function(delayMs){
+    if (__weatherRetry) return;
+    __weatherRetry = setTimeout(function(){ __weatherRetry = null; fetchWeather(); }, delayMs);
+  };
+  var ok = function(d){
     var code = d.weather_code;
     var cond = code === 0 ? 'Cer senin' : code <= 3 ? 'Parțial noros' : (code >= 61 && code <= 67) ? 'Ploaie' : (code >= 71 && code <= 77) ? 'Ninsoare' : code >= 95 ? 'Furtună' : 'Variabil';
     var icon = code === 0 ? '☀️' : code <= 3 ? '⛅' : (code >= 61 && code <= 67) ? '🌧️' : (code >= 71 && code <= 77) ? '❄️' : code >= 95 ? '⛈️' : '🌤️';
-
-    document.getElementById('weatherHeaderIcon').textContent = icon;
-    document.getElementById('weatherHeaderTemp').textContent = Math.round(d.temperature_2m) + '°C';
-    document.getElementById('weatherHeaderCond').textContent = cond;
+    var iconEl = document.getElementById('weatherHeaderIcon');
+    var tempEl = document.getElementById('weatherHeaderTemp');
+    var condEl = document.getElementById('weatherHeaderCond');
+    if (iconEl) iconEl.textContent = icon;
+    if (tempEl) tempEl.textContent = Math.round(d.temperature_2m) + '°C';
+    if (condEl) condEl.textContent = cond;
   };
-  xhr.send();
+  if (typeof fetch === 'function') {
+    fetch(url, { cache: 'no-store' })
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(j){ if (j && j.current) ok(j.current); else retry(30000); })
+      .catch(function(err){ console.warn('[kiosk weather]', err); retry(30000); });
+  } else {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url);
+    xhr.onload = function() {
+      if (xhr.status !== 200) { retry(30000); return; }
+      try { ok(JSON.parse(xhr.responseText).current); } catch(_) { retry(30000); }
+    };
+    xhr.onerror = function(){ retry(30000); };
+    xhr.ontimeout = function(){ retry(30000); };
+    xhr.timeout = 8000;
+    xhr.send();
+  }
 }
 fetchWeather();
 setInterval(fetchWeather, 600000);
+
 
 // ── Announcements ──
 function fetchAnnouncements() {
