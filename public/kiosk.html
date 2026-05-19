@@ -490,16 +490,26 @@ setInterval(fetchWeather, 600000);
 // ── Announcements ──
 function fetchAnnouncements() {
   sbFetch('announcements', 'select=id,title,content,priority,is_pinned,created_at&or=(is_pinned.eq.true,priority.eq.urgent,priority.eq.high)&order=created_at.desc&limit=6', function(data) {
+    var target = document.getElementById('annContent');
+    var prev = target.innerHTML;
+    var html;
     if (!data || !data.length) {
-      document.getElementById('annContent').innerHTML = '<div style="color:#64748b;font-size:22px">Niciun anunț important</div>';
-      return;
+      html = '<div style="color:#64748b;font-size:22px">Niciun anunț important</div>';
+    } else {
+      html = '';
+      data.forEach(function(a) {
+        var cls = a.priority === 'urgent' ? ' card-urgent' : a.priority === 'high' ? ' card-high' : '';
+        html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#94a3b8;margin-top:8px;white-space:pre-line">' + a.content + '</div></div>';
+      });
     }
-    var html = '';
-    data.forEach(function(a) {
-      var cls = a.priority === 'urgent' ? ' card-urgent' : a.priority === 'high' ? ' card-high' : '';
-      html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#94a3b8;margin-top:8px;white-space:pre-line">' + a.content + '</div></div>';
-    });
-    document.getElementById('annContent').innerHTML = html;
+    if (html === prev) return;
+    target.innerHTML = html;
+    // Dacă suntem pe secțiunea anunțuri, relansează coregrafia de scroll.
+    if (activeSection === 0 && typeof playAnnouncementsScroll === 'function') {
+      clearSectionTimers();
+      scheduleNext(0);
+      playAnnouncementsScroll();
+    }
   });
 }
 fetchAnnouncements();
