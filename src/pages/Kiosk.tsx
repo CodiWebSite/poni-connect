@@ -65,7 +65,12 @@ const Kiosk = () => {
   const [kioskMessage, setKioskMessage] = useState('');
   const [tickerMessages, setTickerMessages] = useState<string[]>([]);
   const [videoProgress, setVideoProgress] = useState(0);
+  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [musicSource, setMusicSource] = useState<'youtube' | 'file'>('youtube');
+  const [musicUrl, setMusicUrl] = useState('');
+  const [musicVolume, setMusicVolume] = useState(30);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const i = t[lang];
 
