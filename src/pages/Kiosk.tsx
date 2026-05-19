@@ -253,6 +253,14 @@ const Kiosk = () => {
 
   return (
     <div className="h-screen w-screen bg-slate-50 text-foreground flex flex-col overflow-hidden select-none">
+      {/* Hidden YouTube background music mount */}
+      <div
+        id="kiosk-bg-music"
+        aria-hidden="true"
+        style={{ position: 'fixed', left: '-9999px', top: '-9999px', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+      >
+        <div id="kiosk-bg-music-mount" />
+      </div>
       {/* ── Language indicator ─────────────────── */}
       <div className="absolute top-3 right-6 z-10">
         <span className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full backdrop-blur-sm">
