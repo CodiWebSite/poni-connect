@@ -767,6 +767,19 @@ const AppSettingsPanel = () => {
                           <p className="text-[11px] text-muted-foreground mt-1">
                             Max 400 MB. Fișierul devine automat sursa muzicii pentru kiosk.
                           </p>
+                          {(uploadingMusic || musicUploadProgress > 0) && (
+                            <div className="mt-2 space-y-1">
+                              <Progress value={musicUploadProgress} className="h-2" />
+                              <div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
+                                <span>{musicUploadProgress}%</span>
+                                <span>
+                                  {uploadingMusic
+                                    ? `Estimat: ${formatEta(musicUploadEtaSec)}${musicUploadSpeedBps ? ' · ' + formatSpeed(musicUploadSpeedBps) : ''}`
+                                    : musicUploadProgress === 100 ? 'Gata' : ''}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
