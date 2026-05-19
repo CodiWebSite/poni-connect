@@ -47,8 +47,15 @@ const t = {
 const formatTime = (d: Date) => d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
 
 const KIOSK_VIDEO_URL = 'https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4';
-const KIOSK_BG_MUSIC_VIDEO_ID = 'iTC49Hi4hb8';
-const KIOSK_BG_MUSIC_VOLUME = 30;
+
+/** Extracts a YouTube video ID from a full URL, short URL, or already-clean ID. */
+const extractYouTubeId = (raw: string): string => {
+  if (!raw) return '';
+  const s = raw.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+  const m = s.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : s;
+};
 
 const Kiosk = () => {
   const [now, setNow] = useState(new Date());
@@ -58,7 +65,12 @@ const Kiosk = () => {
   const [kioskMessage, setKioskMessage] = useState('');
   const [tickerMessages, setTickerMessages] = useState<string[]>([]);
   const [videoProgress, setVideoProgress] = useState(0);
+  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [musicSource, setMusicSource] = useState<'youtube' | 'file'>('youtube');
+  const [musicUrl, setMusicUrl] = useState('');
+  const [musicVolume, setMusicVolume] = useState(30);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const i = t[lang];
 
@@ -104,67 +116,94 @@ const Kiosk = () => {
       .catch(err => console.warn('[Kiosk SW] register failed', err));
   }, []);
 
-  // Background music via hidden YouTube IFrame player.
+  // Background music — supports YouTube (hidden IFrame) or direct audio file.
   // Starts muted (autoplay-safe), then unmutes on first user interaction.
   useEffect(() => {
+    if (!musicEnabled) return;
     const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
     const host = window.location.hostname;
     const isPreviewHost =
       host.includes('id-preview--') || host.includes('lovableproject.com') || host.includes('lovable.app');
-    if (isInIframe || isPreviewHost) return; // skip in editor preview
+    if (isInIframe || isPreviewHost) return;
 
-    let player: any = null;
-    let unmuted = false;
     const events = ['click', 'touchstart', 'keydown', 'mousemove'] as const;
+    let cleanup = () => {};
 
-    const tryUnmute = () => {
-      if (unmuted || !player?.unMute) return;
-      try {
-        player.unMute();
-        player.setVolume(KIOSK_BG_MUSIC_VOLUME);
-        player.playVideo();
-        unmuted = true;
-      } catch {}
-      events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
-    };
+    if (musicSource === 'youtube') {
+      const videoId = extractYouTubeId(musicUrl);
+      if (!videoId) return;
+      let player: any = null;
+      let unmuted = false;
 
-    const createPlayer = () => {
-      const YT = (window as any).YT;
-      if (!YT?.Player) return;
-      player = new YT.Player('kiosk-bg-music-mount', {
-        height: '1', width: '1', videoId: KIOSK_BG_MUSIC_VIDEO_ID,
-        playerVars: {
-          autoplay: 1, controls: 0, disablekb: 1, fs: 0, modestbranding: 1,
-          playsinline: 1, loop: 1, playlist: KIOSK_BG_MUSIC_VIDEO_ID,
-          iv_load_policy: 3, rel: 0,
-        },
-        events: {
-          onReady: (e: any) => { try { e.target.mute(); e.target.playVideo(); } catch {} },
-          onStateChange: (e: any) => {
-            if (e.data === YT.PlayerState.ENDED) { try { e.target.playVideo(); } catch {} }
+      const tryUnmute = () => {
+        if (unmuted || !player?.unMute) return;
+        try { player.unMute(); player.setVolume(musicVolume); player.playVideo(); unmuted = true; } catch {}
+        events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
+      };
+
+      const createPlayer = () => {
+        const YT = (window as any).YT;
+        if (!YT?.Player) return;
+        player = new YT.Player('kiosk-bg-music-mount', {
+          height: '1', width: '1', videoId,
+          playerVars: {
+            autoplay: 1, controls: 0, disablekb: 1, fs: 0, modestbranding: 1,
+            playsinline: 1, loop: 1, playlist: videoId, iv_load_policy: 3, rel: 0,
           },
-        },
-      });
-    };
+          events: {
+            onReady: (e: any) => { try { e.target.mute(); e.target.playVideo(); } catch {} },
+            onStateChange: (e: any) => {
+              if (e.data === YT.PlayerState.ENDED) { try { e.target.playVideo(); } catch {} }
+            },
+          },
+        });
+      };
 
-    if ((window as any).YT?.Player) {
-      createPlayer();
-    } else {
-      (window as any).onYouTubeIframeAPIReady = createPlayer;
-      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-        const tag = document.createElement('script');
-        tag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(tag);
+      if ((window as any).YT?.Player) createPlayer();
+      else {
+        (window as any).onYouTubeIframeAPIReady = createPlayer;
+        if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+          const tag = document.createElement('script');
+          tag.src = 'https://www.youtube.com/iframe_api';
+          document.head.appendChild(tag);
+        }
       }
+
+      events.forEach(ev => window.addEventListener(ev, tryUnmute, true));
+      cleanup = () => {
+        events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
+        try { player?.destroy?.(); } catch {}
+      };
+    } else {
+      // Direct audio file (MP3)
+      const audio = audioRef.current;
+      if (!audio || !musicUrl) return;
+      audio.src = musicUrl;
+      audio.loop = true;
+      audio.volume = Math.max(0, Math.min(1, musicVolume / 100));
+      audio.muted = true;
+      audio.play().catch(() => {});
+
+      let unmuted = false;
+      const tryUnmute = () => {
+        if (unmuted) return;
+        audio.muted = false;
+        audio.volume = Math.max(0, Math.min(1, musicVolume / 100));
+        audio.play().catch(() => {});
+        unmuted = true;
+        events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
+      };
+      events.forEach(ev => window.addEventListener(ev, tryUnmute, true));
+      cleanup = () => {
+        events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
+        try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch {}
+      };
     }
 
-    events.forEach(ev => window.addEventListener(ev, tryUnmute, true));
+    return cleanup;
+  }, [musicEnabled, musicSource, musicUrl, musicVolume]);
 
-    return () => {
-      events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
-      try { player?.destroy?.(); } catch {}
-    };
-  }, []);
+
 
 
 
@@ -230,6 +269,11 @@ const Kiosk = () => {
           ? prev
           : nextTickerMessages
       );
+
+      setMusicEnabled(map.kiosk_music_enabled !== false);
+      setMusicSource(map.kiosk_music_source === 'file' ? 'file' : 'youtube');
+      setMusicUrl(typeof map.kiosk_music_url === 'string' ? map.kiosk_music_url : '');
+      setMusicVolume(typeof map.kiosk_music_volume === 'number' ? map.kiosk_music_volume : 30);
     }
   }, []);
 
@@ -253,13 +297,14 @@ const Kiosk = () => {
 
   return (
     <div className="h-screen w-screen bg-slate-50 text-foreground flex flex-col overflow-hidden select-none">
-      {/* Hidden YouTube background music mount */}
+      {/* Hidden background music mount (YouTube IFrame or <audio> element) */}
       <div
         id="kiosk-bg-music"
         aria-hidden="true"
         style={{ position: 'fixed', left: '-9999px', top: '-9999px', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
       >
         <div id="kiosk-bg-music-mount" />
+        <audio ref={audioRef} preload="auto" />
       </div>
       {/* ── Language indicator ─────────────────── */}
       <div className="absolute top-3 right-6 z-10">

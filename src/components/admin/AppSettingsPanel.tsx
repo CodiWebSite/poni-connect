@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload } from 'lucide-react';
+import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload, Music } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { RequireReasonDialog } from '@/components/shared/RequireReasonDialog';
 
 interface SettingsState {
@@ -20,6 +22,10 @@ interface SettingsState {
   kiosk_message: string;
   kiosk_ticker_messages: string[];
   kiosk_slideshow_images: string[];
+  kiosk_music_enabled: boolean;
+  kiosk_music_source: 'youtube' | 'file';
+  kiosk_music_url: string;
+  kiosk_music_volume: number;
 }
 
 const AppSettingsPanel = () => {
@@ -34,6 +40,10 @@ const AppSettingsPanel = () => {
     kiosk_message: '',
     kiosk_ticker_messages: [],
     kiosk_slideshow_images: [],
+    kiosk_music_enabled: true,
+    kiosk_music_source: 'youtube',
+    kiosk_music_url: 'iTC49Hi4hb8',
+    kiosk_music_volume: 30,
   });
   const [newTickerMsg, setNewTickerMsg] = useState('');
   const [loading, setLoading] = useState(true);
@@ -57,6 +67,10 @@ const AppSettingsPanel = () => {
           kiosk_message: typeof map.kiosk_message === 'string' ? map.kiosk_message : '',
           kiosk_ticker_messages: Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [],
           kiosk_slideshow_images: Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [],
+          kiosk_music_enabled: map.kiosk_music_enabled !== false,
+          kiosk_music_source: map.kiosk_music_source === 'file' ? 'file' : 'youtube',
+          kiosk_music_url: typeof map.kiosk_music_url === 'string' ? map.kiosk_music_url : '',
+          kiosk_music_volume: typeof map.kiosk_music_volume === 'number' ? map.kiosk_music_volume : 30,
         });
       }
       setLoading(false);
@@ -427,6 +441,90 @@ const AppSettingsPanel = () => {
                   <p className="text-xs text-muted-foreground italic">
                     📸 {settings.kiosk_slideshow_images.length} imagine(i) · Fiecare se afișează 90 secunde pe ecranul TV
                   </p>
+                )}
+              </div>
+
+              {/* Background music */}
+              <div className="pt-3 border-t border-border space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Music className="w-4 h-4 text-primary" />
+                    Muzică de fundal
+                  </Label>
+                  <Switch
+                    checked={settings.kiosk_music_enabled}
+                    onCheckedChange={(c) => toggleSetting('kiosk_music_enabled', c)}
+                    disabled={saving === 'kiosk_music_enabled'}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Rulează în fundal pe ecranul Kiosk. Pornește mută (autoplay) și se activează la prima atingere a telecomenzii/mouse-ului.
+                </p>
+
+                {settings.kiosk_music_enabled && (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground">Sursă</Label>
+                      <RadioGroup
+                        value={settings.kiosk_music_source}
+                        onValueChange={(v) => setSettings(prev => ({ ...prev, kiosk_music_source: v as 'youtube' | 'file' }))}
+                        className="flex gap-4"
+                      >
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="youtube" id="music-yt" />
+                          <Label htmlFor="music-yt" className="text-sm font-normal cursor-pointer">YouTube</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="file" id="music-file" />
+                          <Label htmlFor="music-file" className="text-sm font-normal cursor-pointer">Fișier audio (MP3)</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="music-url" className="text-xs font-medium text-muted-foreground">
+                        {settings.kiosk_music_source === 'youtube' ? 'Link YouTube sau Video ID' : 'URL fișier MP3 (hostat public)'}
+                      </Label>
+                      <Input
+                        id="music-url"
+                        placeholder={settings.kiosk_music_source === 'youtube' ? 'https://www.youtube.com/watch?v=... sau iTC49Hi4hb8' : 'https://icmpp.ro/files/.../track.mp3'}
+                        value={settings.kiosk_music_url}
+                        onChange={(e) => setSettings(prev => ({ ...prev, kiosk_music_url: e.target.value }))}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        {settings.kiosk_music_source === 'youtube'
+                          ? 'Poți lipi link complet — extragem automat ID-ul. Atenție: YouTube poate insera reclame.'
+                          : 'Recomandat: fișier .mp3 lung sau loopabil, hostat pe icmpp.ro.'}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium text-muted-foreground">Volum</Label>
+                        <span className="text-xs tabular-nums text-muted-foreground">{settings.kiosk_music_volume}%</span>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={[settings.kiosk_music_volume]}
+                        onValueChange={([v]) => setSettings(prev => ({ ...prev, kiosk_music_volume: v }))}
+                      />
+                    </div>
+
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        await updateSetting('kiosk_music_source', settings.kiosk_music_source);
+                        await updateSetting('kiosk_music_url', settings.kiosk_music_url.trim());
+                        await updateSetting('kiosk_music_volume', settings.kiosk_music_volume);
+                      }}
+                      disabled={saving?.startsWith('kiosk_music')}
+                    >
+                      {saving?.startsWith('kiosk_music') ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                      Salvează muzică
+                    </Button>
+                  </>
                 )}
               </div>
             </div>

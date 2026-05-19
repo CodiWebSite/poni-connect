@@ -641,54 +641,114 @@ function fetchSettings() {
     if (map.kiosk_enabled === false) {
       document.querySelector('.kiosk').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;background:#0c1222"><div><div style="font-size:56px;color:#334155;margin-bottom:20px">📺</div><h1 style="font-size:28px;font-weight:700;color:#64748b;font-family:Playfair Display,serif">Mod Kiosk dezactivat</h1><p style="color:#475569;margin-top:10px;font-size:20px">Ecranul TV este momentan oprit de administrator.</p></div></div>';
     }
+
+    // Reconfigure background music based on latest settings
+    setupBgMusic({
+      enabled: map.kiosk_music_enabled !== false,
+      source: map.kiosk_music_source === 'file' ? 'file' : 'youtube',
+      url: typeof map.kiosk_music_url === 'string' ? map.kiosk_music_url : '',
+      volume: typeof map.kiosk_music_volume === 'number' ? map.kiosk_music_volume : 30,
+    });
   });
 }
 fetchSettings();
 setInterval(fetchSettings, 60000);
 
-/* ── Background music (YouTube, hidden) ─────────────────────────── */
-(function(){
-  var VIDEO_ID = 'iTC49Hi4hb8';
-  var VOLUME = 30;
-  var host = document.createElement('div');
-  host.id = 'kiosk-bg-music';
-  host.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
-  var mount = document.createElement('div');
-  mount.id = 'kiosk-bg-music-mount';
-  host.appendChild(mount);
-  document.body.appendChild(host);
+/* ── Background music (YouTube or MP3, hidden, configurable) ─────── */
+function extractYouTubeId(raw){
+  if (!raw) return '';
+  var s = String(raw).trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+  var m = s.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : s;
+}
 
-  var player = null;
-  window.onYouTubeIframeAPIReady = function(){
-    player = new YT.Player('kiosk-bg-music-mount', {
-      height: '1', width: '1', videoId: VIDEO_ID,
-      playerVars: { autoplay:1, controls:0, disablekb:1, fs:0, modestbranding:1, playsinline:1, loop:1, playlist: VIDEO_ID, iv_load_policy:3, rel:0 },
-      events: {
-        onReady: function(e){
-          try { e.target.mute(); e.target.playVideo(); } catch(_){}
-        },
-        onStateChange: function(e){
-          if (e.data === YT.PlayerState.ENDED) { try { e.target.playVideo(); } catch(_){} }
-        }
-      }
-    });
-  };
-  var tag = document.createElement('script');
-  tag.src = 'https://www.youtube.com/iframe_api';
-  document.head.appendChild(tag);
-
-  var unmuted = false;
-  function tryUnmute(){
-    if (unmuted || !player || !player.unMute) return;
-    try { player.unMute(); player.setVolume(VOLUME); player.playVideo(); unmuted = true; } catch(_){}
+var __bgMusicHost = null;
+var __bgMusicMount = null;
+var __bgMusicAudio = null;
+var __bgYtPlayer = null;
+var __bgConfigKey = '';
+var __bgUnmuteHandler = null;
+function ensureBgMusicHost(){
+  if (__bgMusicHost) return;
+  __bgMusicHost = document.createElement('div');
+  __bgMusicHost.id = 'kiosk-bg-music';
+  __bgMusicHost.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+  __bgMusicMount = document.createElement('div');
+  __bgMusicMount.id = 'kiosk-bg-music-mount';
+  __bgMusicAudio = document.createElement('audio');
+  __bgMusicAudio.preload = 'auto';
+  __bgMusicHost.appendChild(__bgMusicMount);
+  __bgMusicHost.appendChild(__bgMusicAudio);
+  document.body.appendChild(__bgMusicHost);
+}
+function teardownBgMusic(){
+  if (__bgUnmuteHandler){
     ['click','touchstart','keydown','mousemove'].forEach(function(ev){
-      window.removeEventListener(ev, tryUnmute, true);
+      window.removeEventListener(ev, __bgUnmuteHandler, true);
     });
+    __bgUnmuteHandler = null;
+  }
+  if (__bgYtPlayer && __bgYtPlayer.destroy){ try { __bgYtPlayer.destroy(); } catch(_){} }
+  __bgYtPlayer = null;
+  if (__bgMusicAudio){ try { __bgMusicAudio.pause(); __bgMusicAudio.removeAttribute('src'); __bgMusicAudio.load(); } catch(_){} }
+  if (__bgMusicMount){ __bgMusicMount.innerHTML = ''; }
+}
+function setupBgMusic(cfg){
+  var key = JSON.stringify(cfg);
+  if (key === __bgConfigKey) return;
+  __bgConfigKey = key;
+  teardownBgMusic();
+  if (!cfg.enabled || !cfg.url) return;
+  ensureBgMusicHost();
+
+  if (cfg.source === 'youtube'){
+    var videoId = extractYouTubeId(cfg.url);
+    if (!videoId) return;
+    var startYt = function(){
+      __bgYtPlayer = new YT.Player('kiosk-bg-music-mount', {
+        height: '1', width: '1', videoId: videoId,
+        playerVars: { autoplay:1, controls:0, disablekb:1, fs:0, modestbranding:1, playsinline:1, loop:1, playlist: videoId, iv_load_policy:3, rel:0 },
+        events: {
+          onReady: function(e){ try { e.target.mute(); e.target.playVideo(); } catch(_){} },
+          onStateChange: function(e){ if (e.data === YT.PlayerState.ENDED){ try { e.target.playVideo(); } catch(_){} } }
+        }
+      });
+    };
+    if (window.YT && window.YT.Player) startYt();
+    else {
+      window.onYouTubeIframeAPIReady = startYt;
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')){
+        var tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+    }
+    var ytUnmuted = false;
+    __bgUnmuteHandler = function(){
+      if (ytUnmuted || !__bgYtPlayer || !__bgYtPlayer.unMute) return;
+      try { __bgYtPlayer.unMute(); __bgYtPlayer.setVolume(cfg.volume); __bgYtPlayer.playVideo(); ytUnmuted = true; } catch(_){}
+    };
+  } else {
+    __bgMusicAudio.src = cfg.url;
+    __bgMusicAudio.loop = true;
+    __bgMusicAudio.volume = Math.max(0, Math.min(1, cfg.volume / 100));
+    __bgMusicAudio.muted = true;
+    __bgMusicAudio.play().catch(function(){});
+    var audUnmuted = false;
+    __bgUnmuteHandler = function(){
+      if (audUnmuted) return;
+      __bgMusicAudio.muted = false;
+      __bgMusicAudio.volume = Math.max(0, Math.min(1, cfg.volume / 100));
+      __bgMusicAudio.play().catch(function(){});
+      audUnmuted = true;
+    };
   }
   ['click','touchstart','keydown','mousemove'].forEach(function(ev){
-    window.addEventListener(ev, tryUnmute, true);
+    window.addEventListener(ev, __bgUnmuteHandler, true);
   });
-})();
+}
+
 </script>
 </body>
 </html>
