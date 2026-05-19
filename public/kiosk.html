@@ -325,6 +325,20 @@ setTimeout(playAnnouncementsScroll, 600);
 
 // ── Coregrafie scroll lin anunțuri ──
 var HOLD_TOP_MS = 2500, HOLD_BOTTOM_MS = 3000, SCROLL_SPEED = 28, NO_SCROLL_MS = 9000;
+function armProgressBar(totalMs) {
+  var wrap = document.getElementById('annProgressWrap');
+  var bar = document.getElementById('annProgressBar');
+  if (!wrap || !bar) return;
+  wrap.style.display = 'block';
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  // forțează reflow ca tranziția să se aplice
+  void bar.offsetWidth;
+  requestAnimationFrame(function() {
+    bar.style.transition = 'width ' + totalMs + 'ms linear';
+    bar.style.width = '0%';
+  });
+}
 function playAnnouncementsScroll() {
   var viewport = document.getElementById('annViewport');
   var inner = document.getElementById('annContent');
@@ -334,13 +348,15 @@ function playAnnouncementsScroll() {
   inner.style.transform = 'translateY(0)';
   var distance = Math.max(0, inner.scrollHeight - viewport.clientHeight);
   if (distance < 8) {
-    // încape tot — așteaptă apoi avansează
+    armProgressBar(NO_SCROLL_MS);
     sectionTimers.push(setTimeout(function() {
       if (activeSection === 0) advanceSection();
     }, NO_SCROLL_MS));
     return;
   }
   var duration = Math.max(distance / SCROLL_SPEED, 6);
+  var total = HOLD_TOP_MS + duration * 1000 + HOLD_BOTTOM_MS;
+  armProgressBar(total);
   // hold top
   sectionTimers.push(setTimeout(function() {
     inner.style.transition = 'transform ' + duration + 's linear';
@@ -349,7 +365,7 @@ function playAnnouncementsScroll() {
   // hold bottom apoi avansează
   sectionTimers.push(setTimeout(function() {
     if (activeSection === 0) advanceSection();
-  }, HOLD_TOP_MS + duration * 1000 + HOLD_BOTTOM_MS));
+  }, total));
 }
 
 // ── Service Worker pentru cache video ──
