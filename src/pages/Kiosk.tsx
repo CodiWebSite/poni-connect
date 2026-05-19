@@ -47,6 +47,8 @@ const t = {
 const formatTime = (d: Date) => d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
 
 const KIOSK_VIDEO_URL = 'https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4';
+const KIOSK_BG_MUSIC_VIDEO_ID = 'iTC49Hi4hb8';
+const KIOSK_BG_MUSIC_VOLUME = 30;
 
 const Kiosk = () => {
   const [now, setNow] = useState(new Date());
