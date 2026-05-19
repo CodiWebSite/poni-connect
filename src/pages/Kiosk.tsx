@@ -104,6 +104,70 @@ const Kiosk = () => {
       .catch(err => console.warn('[Kiosk SW] register failed', err));
   }, []);
 
+  // Background music via hidden YouTube IFrame player.
+  // Starts muted (autoplay-safe), then unmutes on first user interaction.
+  useEffect(() => {
+    const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+    const host = window.location.hostname;
+    const isPreviewHost =
+      host.includes('id-preview--') || host.includes('lovableproject.com') || host.includes('lovable.app');
+    if (isInIframe || isPreviewHost) return; // skip in editor preview
+
+    let player: any = null;
+    let unmuted = false;
+    const events = ['click', 'touchstart', 'keydown', 'mousemove'] as const;
+
+    const tryUnmute = () => {
+      if (unmuted || !player?.unMute) return;
+      try {
+        player.unMute();
+        player.setVolume(KIOSK_BG_MUSIC_VOLUME);
+        player.playVideo();
+        unmuted = true;
+      } catch {}
+      events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
+    };
+
+    const createPlayer = () => {
+      const YT = (window as any).YT;
+      if (!YT?.Player) return;
+      player = new YT.Player('kiosk-bg-music-mount', {
+        height: '1', width: '1', videoId: KIOSK_BG_MUSIC_VIDEO_ID,
+        playerVars: {
+          autoplay: 1, controls: 0, disablekb: 1, fs: 0, modestbranding: 1,
+          playsinline: 1, loop: 1, playlist: KIOSK_BG_MUSIC_VIDEO_ID,
+          iv_load_policy: 3, rel: 0,
+        },
+        events: {
+          onReady: (e: any) => { try { e.target.mute(); e.target.playVideo(); } catch {} },
+          onStateChange: (e: any) => {
+            if (e.data === YT.PlayerState.ENDED) { try { e.target.playVideo(); } catch {} }
+          },
+        },
+      });
+    };
+
+    if ((window as any).YT?.Player) {
+      createPlayer();
+    } else {
+      (window as any).onYouTubeIframeAPIReady = createPlayer;
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+    }
+
+    events.forEach(ev => window.addEventListener(ev, tryUnmute, true));
+
+    return () => {
+      events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
+      try { player?.destroy?.(); } catch {}
+    };
+  }, []);
+
+
+
   // Toggle language every time the video ends (loops) + track progress
   useEffect(() => {
     const video = videoRef.current;
