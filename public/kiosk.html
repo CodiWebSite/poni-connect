@@ -278,8 +278,15 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// ── Sidebar rotation ──
+// ── Sidebar rotation (event-driven cu fallback) ──
+var SECTION_FALLBACK = [90000, 12000]; // ann: 90s, rooms: 12s
+var sectionTimers = [];
+function clearSectionTimers() {
+  sectionTimers.forEach(function(t) { clearTimeout(t); });
+  sectionTimers = [];
+}
 function goTo(idx) {
+  clearSectionTimers();
   activeSection = idx;
   for (var i = 0; i < totalSections; i++) {
     var el = document.getElementById('sec' + i);
@@ -292,10 +299,67 @@ function goTo(idx) {
       dot.className = 'dot';
     }
   }
+  scheduleNext(idx);
+  if (idx === 0) playAnnouncementsScroll();
 }
-setInterval(function() {
+function scheduleNext(idx) {
+  var fb = SECTION_FALLBACK[idx] || 12000;
+  sectionTimers.push(setTimeout(function() {
+    goTo((idx + 1) % totalSections);
+  }, fb));
+}
+function advanceSection() {
   goTo((activeSection + 1) % totalSections);
-}, 15000);
+}
+// pornire inițială
+scheduleNext(0);
+setTimeout(playAnnouncementsScroll, 600);
+
+// ── Coregrafie scroll lin anunțuri ──
+var HOLD_TOP_MS = 2500, HOLD_BOTTOM_MS = 3000, SCROLL_SPEED = 28, NO_SCROLL_MS = 9000;
+function playAnnouncementsScroll() {
+  var viewport = document.getElementById('annViewport');
+  var inner = document.getElementById('annContent');
+  if (!viewport || !inner) return;
+  // reset
+  inner.style.transition = 'none';
+  inner.style.transform = 'translateY(0)';
+  var distance = Math.max(0, inner.scrollHeight - viewport.clientHeight);
+  if (distance < 8) {
+    // încape tot — așteaptă apoi avansează
+    sectionTimers.push(setTimeout(function() {
+      if (activeSection === 0) advanceSection();
+    }, NO_SCROLL_MS));
+    return;
+  }
+  var duration = Math.max(distance / SCROLL_SPEED, 6);
+  // hold top
+  sectionTimers.push(setTimeout(function() {
+    inner.style.transition = 'transform ' + duration + 's linear';
+    inner.style.transform = 'translateY(-' + distance + 'px)';
+  }, HOLD_TOP_MS));
+  // hold bottom apoi avansează
+  sectionTimers.push(setTimeout(function() {
+    if (activeSection === 0) advanceSection();
+  }, HOLD_TOP_MS + duration * 1000 + HOLD_BOTTOM_MS));
+}
+
+// ── Service Worker pentru cache video ──
+if ('serviceWorker' in navigator) {
+  var inIframe = false;
+  try { inIframe = window.self !== window.top; } catch (e) { inIframe = true; }
+  var host = location.hostname;
+  var isPreview = host.indexOf('id-preview--') !== -1 || host.indexOf('lovableproject.com') !== -1 || host.indexOf('lovable.app') !== -1;
+  if (!inIframe && !isPreview) {
+    navigator.serviceWorker.register('/kiosk-sw.js', { scope: '/' }).catch(function(err) {
+      console.warn('[Kiosk SW] register failed', err);
+    });
+  } else {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(r) { r.unregister(); });
+    });
+  }
+}
 
 // ── Slideshow logic ──
 function startSlideshow() {
