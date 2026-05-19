@@ -669,6 +669,35 @@ const AppSettingsPanel = () => {
                           ? 'Poți lipi link complet — extragem automat ID-ul. Atenție: YouTube poate insera reclame.'
                           : 'Recomandat: fișier .mp3 lung sau loopabil, hostat pe icmpp.ro.'}
                       </p>
+
+                      {settings.kiosk_music_source === 'file' && (
+                        <div className="pt-1">
+                          <input
+                            ref={musicFileInputRef}
+                            type="file"
+                            accept="audio/*,.mp3"
+                            className="hidden"
+                            onChange={handleMusicUpload}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            type="button"
+                            onClick={() => musicFileInputRef.current?.click()}
+                            disabled={uploadingMusic}
+                          >
+                            {uploadingMusic ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Upload className="w-4 h-4 mr-2" />
+                            )}
+                            {uploadingMusic ? 'Se încarcă...' : 'Încarcă fișier MP3'}
+                          </Button>
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            Max 50 MB. Fișierul devine automat sursa muzicii pentru kiosk.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">
