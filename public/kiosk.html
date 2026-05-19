@@ -645,6 +645,50 @@ function fetchSettings() {
 }
 fetchSettings();
 setInterval(fetchSettings, 60000);
+
+/* ── Background music (YouTube, hidden) ─────────────────────────── */
+(function(){
+  var VIDEO_ID = 'iTC49Hi4hb8';
+  var VOLUME = 30;
+  var host = document.createElement('div');
+  host.id = 'kiosk-bg-music';
+  host.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+  var mount = document.createElement('div');
+  mount.id = 'kiosk-bg-music-mount';
+  host.appendChild(mount);
+  document.body.appendChild(host);
+
+  var player = null;
+  window.onYouTubeIframeAPIReady = function(){
+    player = new YT.Player('kiosk-bg-music-mount', {
+      height: '1', width: '1', videoId: VIDEO_ID,
+      playerVars: { autoplay:1, controls:0, disablekb:1, fs:0, modestbranding:1, playsinline:1, loop:1, playlist: VIDEO_ID, iv_load_policy:3, rel:0 },
+      events: {
+        onReady: function(e){
+          try { e.target.mute(); e.target.playVideo(); } catch(_){}
+        },
+        onStateChange: function(e){
+          if (e.data === YT.PlayerState.ENDED) { try { e.target.playVideo(); } catch(_){} }
+        }
+      }
+    });
+  };
+  var tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+
+  var unmuted = false;
+  function tryUnmute(){
+    if (unmuted || !player || !player.unMute) return;
+    try { player.unMute(); player.setVolume(VOLUME); player.playVideo(); unmuted = true; } catch(_){}
+    ['click','touchstart','keydown','mousemove'].forEach(function(ev){
+      window.removeEventListener(ev, tryUnmute, true);
+    });
+  }
+  ['click','touchstart','keydown','mousemove'].forEach(function(ev){
+    window.addEventListener(ev, tryUnmute, true);
+  });
+})();
 </script>
 </body>
 </html>
