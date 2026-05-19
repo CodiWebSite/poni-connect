@@ -11,12 +11,19 @@ interface Announcement {
   created_at: string;
 }
 
+const KIOSK_ADVANCE_EVENT = 'kiosk-sidebar-advance';
+const HOLD_TOP_MS = 2500;     // pauză la început înainte de scroll
+const HOLD_BOTTOM_MS = 3000;  // pauză la final după ce s-a ajuns jos
+const SCROLL_SPEED_PX_S = 28; // viteza scroll-ului (px / secundă)
+const NO_SCROLL_DISPLAY_MS = 9000; // dacă încape tot, cât stă vizibil
+
 const KioskSidebarAnnouncements = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
-  const [needsScroll, setNeedsScroll] = useState(false);
-  const [scrollDuration, setScrollDuration] = useState(30);
+  const [scrollDistance, setScrollDistance] = useState(0);
+  const [scrollDuration, setScrollDuration] = useState(0);
+  const [phase, setPhase] = useState<'idle' | 'holdTop' | 'scrolling' | 'holdBottom'>('idle');
 
   const fetchAnnouncements = useCallback(async () => {
     const { data } = await supabase
@@ -34,36 +41,65 @@ const KioskSidebarAnnouncements = () => {
     return () => clearInterval(t);
   }, [fetchAnnouncements]);
 
-  // Measure content to decide if scrolling is needed
+  // Choreography: measure → hold top → scroll → hold bottom → advance
   useEffect(() => {
-    const measure = () => {
+    if (announcements.length === 0) return;
+
+    let timers: number[] = [];
+    const advance = () => {
+      window.dispatchEvent(
+        new CustomEvent(KIOSK_ADVANCE_EVENT, { detail: { from: 'announcements' } })
+      );
+    };
+
+    const measureTimer = window.setTimeout(() => {
       const container = containerRef.current;
       const inner = innerRef.current;
       if (!container || !inner) return;
 
-      const containerH = container.clientHeight;
-      const contentH = inner.scrollHeight;
+      const distance = Math.max(0, inner.scrollHeight - container.clientHeight);
 
-      if (contentH > containerH + 10) {
-        setNeedsScroll(true);
-        // ~30px per second scroll speed
-        const duration = Math.max(contentH / 30, 15);
-        setScrollDuration(duration);
-      } else {
-        setNeedsScroll(false);
+      if (distance < 8) {
+        // Tot conținutul încape — stă afișat fix, apoi avansează
+        setScrollDistance(0);
+        setScrollDuration(0);
+        setPhase('idle');
+        timers.push(window.setTimeout(advance, NO_SCROLL_DISPLAY_MS));
+        return;
       }
-    };
 
-    // Small delay to let content render
-    const timer = setTimeout(measure, 300);
-    return () => clearTimeout(timer);
+      const duration = Math.max(distance / SCROLL_SPEED_PX_S, 6);
+      setScrollDistance(distance);
+      setScrollDuration(duration);
+      setPhase('holdTop');
+
+      timers.push(
+        window.setTimeout(() => setPhase('scrolling'), HOLD_TOP_MS)
+      );
+      timers.push(
+        window.setTimeout(() => setPhase('holdBottom'), HOLD_TOP_MS + duration * 1000)
+      );
+      timers.push(
+        window.setTimeout(advance, HOLD_TOP_MS + duration * 1000 + HOLD_BOTTOM_MS)
+      );
+    }, 350);
+
+    return () => {
+      clearTimeout(measureTimer);
+      timers.forEach(clearTimeout);
+    };
   }, [announcements]);
 
   if (announcements.length === 0) return null;
 
-  const renderCard = (ann: Announcement, key: string) => (
+  const translateY =
+    phase === 'scrolling' || phase === 'holdBottom' ? -scrollDistance : 0;
+  const transition =
+    phase === 'scrolling' ? `transform ${scrollDuration}s linear` : 'none';
+
+  const renderCard = (ann: Announcement) => (
     <div
-      key={key}
+      key={ann.id}
       className={`rounded-lg p-3 shadow-sm border ${
         ann.priority === 'urgent'
           ? 'bg-red-50 border-red-200'
@@ -88,6 +124,8 @@ const KioskSidebarAnnouncements = () => {
     </div>
   );
 
+  const isScrollable = scrollDistance > 0;
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-5 pt-5 pb-2 shrink-0">
@@ -100,8 +138,7 @@ const KioskSidebarAnnouncements = () => {
       </div>
 
       <div ref={containerRef} className="flex-1 min-h-0 overflow-hidden relative px-5 pb-3">
-        {/* Fade edges when scrolling */}
-        {needsScroll && (
+        {isScrollable && (
           <>
             <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-slate-50 to-transparent z-10 pointer-events-none" />
             <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-slate-50 to-transparent z-10 pointer-events-none" />
@@ -110,32 +147,17 @@ const KioskSidebarAnnouncements = () => {
 
         <div
           ref={innerRef}
-          className={needsScroll ? 'kiosk-vertical-scroll' : ''}
-          style={needsScroll ? { animationDuration: `${scrollDuration}s` } : undefined}
+          style={{
+            transform: `translateY(${translateY}px)`,
+            transition,
+            willChange: 'transform',
+          }}
         >
           <div className="space-y-2">
-            {announcements.map((ann) => renderCard(ann, ann.id))}
+            {announcements.map(renderCard)}
           </div>
-
-          {/* Duplicate for seamless loop */}
-          {needsScroll && (
-            <div className="space-y-2 mt-6 pt-6 border-t border-dashed border-slate-200">
-              {announcements.map((ann) => renderCard(ann, `dup-${ann.id}`))}
-            </div>
-          )}
         </div>
       </div>
-
-      <style>{`
-        @keyframes kiosk-vertical-scroll {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(-50%); }
-        }
-        .kiosk-vertical-scroll {
-          animation: kiosk-vertical-scroll 30s linear infinite;
-          will-change: transform;
-        }
-      `}</style>
     </div>
   );
 };
