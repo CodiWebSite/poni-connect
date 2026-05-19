@@ -46,9 +46,14 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
 .sidebar{flex:1;min-height:0;background:rgba(15,23,42,0.6);overflow:hidden;position:relative;display:flex;flex-direction:column;backdrop-filter:blur(8px)}
 .sidebar-glow{position:absolute;top:0;left:0;right:0;height:80px;background:linear-gradient(180deg,rgba(201,162,39,0.04),transparent);pointer-events:none}
 .sidebar-content{flex:1;position:relative;overflow:visible}
-.sidebar-section{position:absolute;inset:0;padding:32px;overflow-y:auto;transition:opacity 0.5s ease,transform 0.5s ease}
+.sidebar-section{position:absolute;inset:0;padding:32px;overflow:hidden;transition:opacity 0.5s ease,transform 0.5s ease;display:flex;flex-direction:column}
 .sidebar-section.active{opacity:1;transform:translateY(0)}
 .sidebar-section.hidden{opacity:0;transform:translateY(16px);pointer-events:none}
+.sidebar-scroll-viewport{flex:1;min-height:0;overflow:hidden;position:relative}
+.sidebar-scroll-viewport::before,.sidebar-scroll-viewport::after{content:'';position:absolute;left:0;right:0;height:18px;z-index:2;pointer-events:none}
+.sidebar-scroll-viewport::before{top:0;background:linear-gradient(180deg,rgba(15,23,42,0.95),transparent)}
+.sidebar-scroll-viewport::after{bottom:0;background:linear-gradient(0deg,rgba(15,23,42,0.95),transparent)}
+.sidebar-scroll-inner{will-change:transform}
 
 /* Sidebar cards */
 .section-title{font-size:18px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:20px;display:flex;align-items:center;gap:12px}
@@ -171,7 +176,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
             Anunțuri
           </div>
-          <div id="annContent"><div style="color:#64748b;font-size:18px">Niciun anunț</div></div>
+          <div class="sidebar-scroll-viewport" id="annViewport">
+            <div class="sidebar-scroll-inner" id="annContent"><div style="color:#64748b;font-size:18px">Niciun anunț</div></div>
+          </div>
         </div>
         <!-- Section 1: Rooms -->
         <div class="sidebar-section hidden" id="sec1">
@@ -271,8 +278,15 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// ── Sidebar rotation ──
+// ── Sidebar rotation (event-driven cu fallback) ──
+var SECTION_FALLBACK = [90000, 12000]; // ann: 90s, rooms: 12s
+var sectionTimers = [];
+function clearSectionTimers() {
+  sectionTimers.forEach(function(t) { clearTimeout(t); });
+  sectionTimers = [];
+}
 function goTo(idx) {
+  clearSectionTimers();
   activeSection = idx;
   for (var i = 0; i < totalSections; i++) {
     var el = document.getElementById('sec' + i);
@@ -285,10 +299,67 @@ function goTo(idx) {
       dot.className = 'dot';
     }
   }
+  scheduleNext(idx);
+  if (idx === 0) playAnnouncementsScroll();
 }
-setInterval(function() {
+function scheduleNext(idx) {
+  var fb = SECTION_FALLBACK[idx] || 12000;
+  sectionTimers.push(setTimeout(function() {
+    goTo((idx + 1) % totalSections);
+  }, fb));
+}
+function advanceSection() {
   goTo((activeSection + 1) % totalSections);
-}, 15000);
+}
+// pornire inițială
+scheduleNext(0);
+setTimeout(playAnnouncementsScroll, 600);
+
+// ── Coregrafie scroll lin anunțuri ──
+var HOLD_TOP_MS = 2500, HOLD_BOTTOM_MS = 3000, SCROLL_SPEED = 28, NO_SCROLL_MS = 9000;
+function playAnnouncementsScroll() {
+  var viewport = document.getElementById('annViewport');
+  var inner = document.getElementById('annContent');
+  if (!viewport || !inner) return;
+  // reset
+  inner.style.transition = 'none';
+  inner.style.transform = 'translateY(0)';
+  var distance = Math.max(0, inner.scrollHeight - viewport.clientHeight);
+  if (distance < 8) {
+    // încape tot — așteaptă apoi avansează
+    sectionTimers.push(setTimeout(function() {
+      if (activeSection === 0) advanceSection();
+    }, NO_SCROLL_MS));
+    return;
+  }
+  var duration = Math.max(distance / SCROLL_SPEED, 6);
+  // hold top
+  sectionTimers.push(setTimeout(function() {
+    inner.style.transition = 'transform ' + duration + 's linear';
+    inner.style.transform = 'translateY(-' + distance + 'px)';
+  }, HOLD_TOP_MS));
+  // hold bottom apoi avansează
+  sectionTimers.push(setTimeout(function() {
+    if (activeSection === 0) advanceSection();
+  }, HOLD_TOP_MS + duration * 1000 + HOLD_BOTTOM_MS));
+}
+
+// ── Service Worker pentru cache video ──
+if ('serviceWorker' in navigator) {
+  var inIframe = false;
+  try { inIframe = window.self !== window.top; } catch (e) { inIframe = true; }
+  var host = location.hostname;
+  var isPreview = host.indexOf('id-preview--') !== -1 || host.indexOf('lovableproject.com') !== -1 || host.indexOf('lovable.app') !== -1;
+  if (!inIframe && !isPreview) {
+    navigator.serviceWorker.register('/kiosk-sw.js', { scope: '/' }).catch(function(err) {
+      console.warn('[Kiosk SW] register failed', err);
+    });
+  } else {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(r) { r.unregister(); });
+    });
+  }
+}
 
 // ── Slideshow logic ──
 function startSlideshow() {
@@ -419,16 +490,26 @@ setInterval(fetchWeather, 600000);
 // ── Announcements ──
 function fetchAnnouncements() {
   sbFetch('announcements', 'select=id,title,content,priority,is_pinned,created_at&or=(is_pinned.eq.true,priority.eq.urgent,priority.eq.high)&order=created_at.desc&limit=6', function(data) {
+    var target = document.getElementById('annContent');
+    var prev = target.innerHTML;
+    var html;
     if (!data || !data.length) {
-      document.getElementById('annContent').innerHTML = '<div style="color:#64748b;font-size:22px">Niciun anunț important</div>';
-      return;
+      html = '<div style="color:#64748b;font-size:22px">Niciun anunț important</div>';
+    } else {
+      html = '';
+      data.forEach(function(a) {
+        var cls = a.priority === 'urgent' ? ' card-urgent' : a.priority === 'high' ? ' card-high' : '';
+        html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#94a3b8;margin-top:8px;white-space:pre-line">' + a.content + '</div></div>';
+      });
     }
-    var html = '';
-    data.forEach(function(a) {
-      var cls = a.priority === 'urgent' ? ' card-urgent' : a.priority === 'high' ? ' card-high' : '';
-      html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#94a3b8;margin-top:8px;white-space:pre-line">' + a.content + '</div></div>';
-    });
-    document.getElementById('annContent').innerHTML = html;
+    if (html === prev) return;
+    target.innerHTML = html;
+    // Dacă suntem pe secțiunea anunțuri, relansează coregrafia de scroll.
+    if (activeSection === 0 && typeof playAnnouncementsScroll === 'function') {
+      clearSectionTimers();
+      scheduleNext(0);
+      playAnnouncementsScroll();
+    }
   });
 }
 fetchAnnouncements();
