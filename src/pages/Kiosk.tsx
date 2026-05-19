@@ -126,7 +126,7 @@ const Kiosk = () => {
       host.includes('id-preview--') || host.includes('lovableproject.com') || host.includes('lovable.app');
     if (isInIframe || isPreviewHost) return;
 
-    const events = ['click', 'touchstart', 'keydown', 'mousemove'] as const;
+    const events = ['click', 'touchstart', 'keydown', 'mousemove', 'pointerdown', 'wheel'] as const;
     let cleanup = () => {};
 
     if (musicSource === 'youtube') {
@@ -134,11 +134,11 @@ const Kiosk = () => {
       if (!videoId) return;
       let player: any = null;
       let unmuted = false;
+      let startedWithSound = false;
 
       const tryUnmute = () => {
-        if (unmuted || !player?.unMute) return;
+        if (unmuted || startedWithSound || !player?.unMute) return;
         try { player.unMute(); player.setVolume(musicVolume); player.playVideo(); unmuted = true; } catch {}
-        events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
       };
 
       const createPlayer = () => {
@@ -151,7 +151,22 @@ const Kiosk = () => {
             playsinline: 1, loop: 1, playlist: videoId, iv_load_policy: 3, rel: 0,
           },
           events: {
-            onReady: (e: any) => { try { e.target.mute(); e.target.playVideo(); } catch {} },
+            onReady: (e: any) => {
+              // Optimistic: try unmuted first.
+              try { e.target.setVolume(musicVolume); e.target.unMute(); e.target.playVideo(); } catch {}
+              // Fallback to muted autoplay if blocked.
+              window.setTimeout(() => {
+                try {
+                  const s = e.target.getPlayerState();
+                  if (s !== YT.PlayerState.PLAYING) {
+                    e.target.mute();
+                    e.target.playVideo();
+                  } else {
+                    startedWithSound = true;
+                  }
+                } catch {}
+              }, 1800);
+            },
             onStateChange: (e: any) => {
               if (e.data === YT.PlayerState.ENDED) { try { e.target.playVideo(); } catch {} }
             },
@@ -181,8 +196,15 @@ const Kiosk = () => {
       audio.src = musicUrl;
       audio.loop = true;
       audio.volume = Math.max(0, Math.min(1, musicVolume / 100));
-      audio.muted = true;
-      audio.play().catch(() => {});
+      // Optimistic: try unmuted first.
+      audio.muted = false;
+      const p = audio.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => {
+          audio.muted = true;
+          audio.play().catch(() => {});
+        });
+      }
 
       let unmuted = false;
       const tryUnmute = () => {
@@ -191,7 +213,6 @@ const Kiosk = () => {
         audio.volume = Math.max(0, Math.min(1, musicVolume / 100));
         audio.play().catch(() => {});
         unmuted = true;
-        events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
       };
       events.forEach(ev => window.addEventListener(ev, tryUnmute, true));
       cleanup = () => {
@@ -199,6 +220,7 @@ const Kiosk = () => {
         try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch {}
       };
     }
+
 
     return cleanup;
   }, [musicEnabled, musicSource, musicUrl, musicVolume]);
