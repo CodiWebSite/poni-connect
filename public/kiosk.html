@@ -705,13 +705,35 @@ function setupBgMusic(cfg){
   if (cfg.source === 'youtube'){
     var videoId = extractYouTubeId(cfg.url);
     if (!videoId) return;
+    var startedWithSound = false;
     var startYt = function(){
       __bgYtPlayer = new YT.Player('kiosk-bg-music-mount', {
         height: '1', width: '1', videoId: videoId,
         playerVars: { autoplay:1, controls:0, disablekb:1, fs:0, modestbranding:1, playsinline:1, loop:1, playlist: videoId, iv_load_policy:3, rel:0 },
         events: {
-          onReady: function(e){ try { e.target.mute(); e.target.playVideo(); } catch(_){} },
-          onStateChange: function(e){ if (e.data === YT.PlayerState.ENDED){ try { e.target.playVideo(); } catch(_){} } }
+          onReady: function(e){
+            // Optimistic: try unmuted first (works on dedicated kiosk Chrome with relaxed autoplay).
+            try {
+              e.target.setVolume(cfg.volume);
+              e.target.unMute();
+              e.target.playVideo();
+            } catch(_){}
+            // After 1.8s, if still not playing, fall back to muted autoplay.
+            setTimeout(function(){
+              try {
+                var state = e.target.getPlayerState();
+                if (state !== YT.PlayerState.PLAYING){
+                  e.target.mute();
+                  e.target.playVideo();
+                } else {
+                  startedWithSound = true;
+                }
+              } catch(_){}
+            }, 1800);
+          },
+          onStateChange: function(e){
+            if (e.data === YT.PlayerState.ENDED){ try { e.target.playVideo(); } catch(_){} }
+          }
         }
       });
     };
@@ -726,16 +748,24 @@ function setupBgMusic(cfg){
     }
     var ytUnmuted = false;
     __bgUnmuteHandler = function(){
-      if (ytUnmuted || !__bgYtPlayer || !__bgYtPlayer.unMute) return;
+      if (ytUnmuted || startedWithSound || !__bgYtPlayer || !__bgYtPlayer.unMute) return;
       try { __bgYtPlayer.unMute(); __bgYtPlayer.setVolume(cfg.volume); __bgYtPlayer.playVideo(); ytUnmuted = true; } catch(_){}
     };
   } else {
     __bgMusicAudio.src = cfg.url;
     __bgMusicAudio.loop = true;
     __bgMusicAudio.volume = Math.max(0, Math.min(1, cfg.volume / 100));
-    __bgMusicAudio.muted = true;
-    __bgMusicAudio.play().catch(function(){});
+    // Optimistic: try unmuted first.
+    __bgMusicAudio.muted = false;
+    var optimisticPlay = __bgMusicAudio.play();
     var audUnmuted = false;
+    if (optimisticPlay && optimisticPlay.catch){
+      optimisticPlay.catch(function(){
+        // Fallback to muted autoplay, will unmute on first gesture.
+        __bgMusicAudio.muted = true;
+        __bgMusicAudio.play().catch(function(){});
+      });
+    }
     __bgUnmuteHandler = function(){
       if (audUnmuted) return;
       __bgMusicAudio.muted = false;
@@ -744,10 +774,11 @@ function setupBgMusic(cfg){
       audUnmuted = true;
     };
   }
-  ['click','touchstart','keydown','mousemove'].forEach(function(ev){
+  ['click','touchstart','keydown','mousemove','pointerdown','wheel'].forEach(function(ev){
     window.addEventListener(ev, __bgUnmuteHandler, true);
   });
 }
+
 
 </script>
 </body>
