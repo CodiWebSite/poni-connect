@@ -694,7 +694,7 @@ const AppSettingsPanel = () => {
                             {uploadingMusic ? 'Se încarcă...' : 'Încarcă fișier MP3'}
                           </Button>
                           <p className="text-[11px] text-muted-foreground mt-1">
-                            Max 50 MB. Fișierul devine automat sursa muzicii pentru kiosk.
+                            Max 400 MB. Fișierul devine automat sursa muzicii pentru kiosk.
                           </p>
                         </div>
                       )}
