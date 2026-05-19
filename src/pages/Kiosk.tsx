@@ -47,8 +47,15 @@ const t = {
 const formatTime = (d: Date) => d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
 
 const KIOSK_VIDEO_URL = 'https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4';
-const KIOSK_BG_MUSIC_VIDEO_ID = 'iTC49Hi4hb8';
-const KIOSK_BG_MUSIC_VOLUME = 30;
+
+/** Extracts a YouTube video ID from a full URL, short URL, or already-clean ID. */
+const extractYouTubeId = (raw: string): string => {
+  if (!raw) return '';
+  const s = raw.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+  const m = s.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : s;
+};
 
 const Kiosk = () => {
   const [now, setNow] = useState(new Date());
