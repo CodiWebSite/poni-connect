@@ -783,22 +783,49 @@ function setupBgMusic(cfg){
     var audUnmuted = false;
     if (optimisticPlay && optimisticPlay.catch){
       optimisticPlay.catch(function(){
-        // Fallback to muted autoplay, will unmute on first gesture.
+        // Fallback to muted autoplay; show prompt to enable sound on first gesture.
         __bgMusicAudio.muted = true;
         __bgMusicAudio.play().catch(function(){});
+        showSoundPrompt();
       });
     }
     __bgUnmuteHandler = function(){
       if (audUnmuted) return;
       __bgMusicAudio.muted = false;
       __bgMusicAudio.volume = Math.max(0, Math.min(1, cfg.volume / 100));
-      __bgMusicAudio.play().catch(function(){});
-      audUnmuted = true;
+      var p = __bgMusicAudio.play();
+      if (p && p.then) p.then(function(){ audUnmuted = true; hideSoundPrompt(); }).catch(function(){});
+      else { audUnmuted = true; hideSoundPrompt(); }
     };
   }
   ['click','touchstart','keydown','mousemove','pointerdown','wheel'].forEach(function(ev){
     window.addEventListener(ev, __bgUnmuteHandler, true);
   });
+}
+
+/* ── Sound enable prompt (browser autoplay fallback) ─────── */
+function showSoundPrompt(){
+  if (document.getElementById('soundPrompt')) return;
+  if (!document.getElementById('soundPromptStyle')){
+    var s = document.createElement('style');
+    s.id = 'soundPromptStyle';
+    s.textContent = '@keyframes soundPulse{0%,100%{transform:scale(1);box-shadow:0 8px 24px rgba(201,162,39,0.5),0 0 0 4px rgba(201,162,39,0.2)}50%{transform:scale(1.06);box-shadow:0 12px 32px rgba(201,162,39,0.7),0 0 0 8px rgba(201,162,39,0.15)}}';
+    document.head.appendChild(s);
+  }
+  var btn = document.createElement('button');
+  btn.id = 'soundPrompt';
+  btn.innerHTML = '🔊 Activează sunetul';
+  btn.style.cssText = 'position:fixed;bottom:80px;right:32px;z-index:9999;background:linear-gradient(135deg,#c9a227,#e6c04a);color:#0c1222;border:none;padding:18px 32px;border-radius:99px;font-size:22px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;animation:soundPulse 2s ease-in-out infinite;';
+  btn.onclick = function(){
+    if (__bgUnmuteHandler) __bgUnmuteHandler();
+    if (__bgYtPlayer){ try { __bgYtPlayer.unMute(); __bgYtPlayer.playVideo(); } catch(_){} }
+    hideSoundPrompt();
+  };
+  document.body.appendChild(btn);
+}
+function hideSoundPrompt(){
+  var el = document.getElementById('soundPrompt');
+  if (el) el.remove();
 }
 
 
