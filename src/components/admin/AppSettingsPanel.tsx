@@ -50,6 +50,9 @@ const AppSettingsPanel = () => {
   const [saving, setSaving] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingMusic, setUploadingMusic] = useState(false);
+  const [musicUploadProgress, setMusicUploadProgress] = useState(0);
+  const [musicUploadEtaSec, setMusicUploadEtaSec] = useState<number | null>(null);
+  const [musicUploadSpeedBps, setMusicUploadSpeedBps] = useState<number>(0);
   const musicFileInputRef = useRef<HTMLInputElement | null>(null);
   const [maintenanceReasonOpen, setMaintenanceReasonOpen] = useState(false);
   const [pendingMaintenance, setPendingMaintenance] = useState<boolean | null>(null);
