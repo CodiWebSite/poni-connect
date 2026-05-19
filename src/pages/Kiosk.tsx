@@ -269,6 +269,11 @@ const Kiosk = () => {
           ? prev
           : nextTickerMessages
       );
+
+      setMusicEnabled(map.kiosk_music_enabled !== false);
+      setMusicSource(map.kiosk_music_source === 'file' ? 'file' : 'youtube');
+      setMusicUrl(typeof map.kiosk_music_url === 'string' ? map.kiosk_music_url : '');
+      setMusicVolume(typeof map.kiosk_music_volume === 'number' ? map.kiosk_music_volume : 30);
     }
   }, []);
 
