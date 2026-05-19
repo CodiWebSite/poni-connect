@@ -297,13 +297,14 @@ const Kiosk = () => {
 
   return (
     <div className="h-screen w-screen bg-slate-50 text-foreground flex flex-col overflow-hidden select-none">
-      {/* Hidden YouTube background music mount */}
+      {/* Hidden background music mount (YouTube IFrame or <audio> element) */}
       <div
         id="kiosk-bg-music"
         aria-hidden="true"
         style={{ position: 'fixed', left: '-9999px', top: '-9999px', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
       >
         <div id="kiosk-bg-music-mount" />
+        <audio ref={audioRef} preload="auto" />
       </div>
       {/* ── Language indicator ─────────────────── */}
       <div className="absolute top-3 right-6 z-10">
