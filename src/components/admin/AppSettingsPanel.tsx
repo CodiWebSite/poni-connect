@@ -658,6 +658,47 @@ const AppSettingsPanel = () => {
                       {saving?.startsWith('kiosk_music') ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                       Salvează muzică
                     </Button>
+
+                    {/* Test playback */}
+                    <div className="mt-2 p-3 rounded-md border bg-muted/30 space-y-2">
+                      <div className="flex items-center gap-2">
+                        {musicTestStatus === 'idle' || musicTestStatus === 'error' ? (
+                          <Button size="sm" variant="secondary" onClick={startMusicTest}>
+                            <Play className="w-4 h-4 mr-2" />
+                            Testează muzică acum
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={stopMusicTest}>
+                            <Square className="w-4 h-4 mr-2" />
+                            Oprește test
+                          </Button>
+                        )}
+                        {musicTestStatus === 'starting' && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Pornește redarea...
+                          </span>
+                        )}
+                        {musicTestStatus === 'sound' && (
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
+                            <Volume2 className="w-3 h-3" /> Redă cu SUNET
+                          </span>
+                        )}
+                        {musicTestStatus === 'muted' && (
+                          <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
+                            <VolumeX className="w-3 h-3" /> Redă fără sunet (autoplay blocat)
+                          </span>
+                        )}
+                        {musicTestStatus === 'error' && (
+                          <span className="text-xs text-destructive flex items-center gap-1 font-medium">
+                            <AlertTriangle className="w-3 h-3" /> Eroare
+                          </span>
+                        )}
+                      </div>
+                      {musicTestMsg && (
+                        <p className="text-xs text-muted-foreground leading-relaxed">{musicTestMsg}</p>
+                      )}
+                      <div id={ytTestContainerId} className="w-px h-px overflow-hidden opacity-0 pointer-events-none" />
+                    </div>
                   </>
                 )}
               </div>
