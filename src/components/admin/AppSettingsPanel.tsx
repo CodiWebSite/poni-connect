@@ -362,27 +362,94 @@ const AppSettingsPanel = () => {
       e.target.value = '';
       return;
     }
+
     setUploadingMusic(true);
+    setMusicUploadProgress(0);
+    setMusicUploadEtaSec(null);
+    setMusicUploadSpeedBps(0);
+
     const ext = file.name.split('.').pop() || 'mp3';
     const fileName = `kiosk-bg-${Date.now()}.${ext}`;
-    const { data, error } = await supabase.storage
-      .from('kiosk-music')
-      .upload(fileName, file, { cacheControl: '3600', upsert: false, contentType: file.type || 'audio/mpeg' });
+    const bucket = 'kiosk-music';
 
-    if (error) {
-      toast({ title: 'Eroare upload', description: error.message, variant: 'destructive' });
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('Sesiune expirată. Reautentifică-te.');
+
+      const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string;
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${fileName}`;
+
+      const startedAt = Date.now();
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', uploadUrl, true);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.setRequestHeader('Content-Type', file.type || 'audio/mpeg');
+        xhr.setRequestHeader('x-upsert', 'false');
+        xhr.setRequestHeader('cache-control', '3600');
+
+        xhr.upload.onprogress = (ev) => {
+          if (!ev.lengthComputable) return;
+          const pct = Math.round((ev.loaded / ev.total) * 100);
+          const elapsedSec = Math.max((Date.now() - startedAt) / 1000, 0.001);
+          const speed = ev.loaded / elapsedSec;
+          const remaining = ev.total - ev.loaded;
+          const eta = speed > 0 ? remaining / speed : null;
+          setMusicUploadProgress(pct);
+          setMusicUploadSpeedBps(speed);
+          setMusicUploadEtaSec(eta);
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            let msg = `HTTP ${xhr.status}`;
+            try { msg = JSON.parse(xhr.responseText)?.message || msg; } catch {}
+            reject(new Error(msg));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Conexiune întreruptă în timpul încărcării.'));
+        xhr.onabort = () => reject(new Error('Încărcare anulată.'));
+
+        xhr.send(file);
+      });
+
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
+      setSettings(prev => ({ ...prev, kiosk_music_source: 'file', kiosk_music_url: urlData.publicUrl }));
+      await updateSetting('kiosk_music_source', 'file');
+      await updateSetting('kiosk_music_url', urlData.publicUrl);
+      setMusicUploadProgress(100);
+      toast({ title: 'Muzică încărcată', description: 'Fișierul a fost salvat ca sursă pentru kiosk.' });
+    } catch (err: any) {
+      toast({ title: 'Eroare upload', description: err?.message || 'Necunoscut', variant: 'destructive' });
+    } finally {
       setUploadingMusic(false);
+      setTimeout(() => {
+        setMusicUploadProgress(0);
+        setMusicUploadEtaSec(null);
+        setMusicUploadSpeedBps(0);
+      }, 1500);
       e.target.value = '';
-      return;
     }
+  };
 
-    const { data: urlData } = supabase.storage.from('kiosk-music').getPublicUrl(data.path);
-    setSettings(prev => ({ ...prev, kiosk_music_source: 'file', kiosk_music_url: urlData.publicUrl }));
-    await updateSetting('kiosk_music_source', 'file');
-    await updateSetting('kiosk_music_url', urlData.publicUrl);
-    toast({ title: 'Muzică încărcată', description: 'Fișierul a fost salvat ca sursă pentru kiosk.' });
-    setUploadingMusic(false);
-    e.target.value = '';
+  const formatEta = (sec: number | null) => {
+    if (sec === null || !isFinite(sec) || sec < 0) return '—';
+    if (sec < 1) return '<1s';
+    if (sec < 60) return `${Math.ceil(sec)}s`;
+    const m = Math.floor(sec / 60);
+    const s = Math.ceil(sec % 60);
+    return `${m}m ${s}s`;
+  };
+
+  const formatSpeed = (bps: number) => {
+    if (!bps) return '';
+    const mbps = bps / (1024 * 1024);
+    if (mbps >= 1) return `${mbps.toFixed(1)} MB/s`;
+    const kbps = bps / 1024;
+    return `${kbps.toFixed(0)} KB/s`;
   };
 
   const removeSlideshowImage = async (index: number) => {
