@@ -352,9 +352,9 @@ const AppSettingsPanel = () => {
       e.target.value = '';
       return;
     }
-    const maxBytes = 50 * 1024 * 1024;
+    const maxBytes = 400 * 1024 * 1024;
     if (file.size > maxBytes) {
-      toast({ title: 'Fișier prea mare', description: 'Mărime maximă: 50 MB.', variant: 'destructive' });
+      toast({ title: 'Fișier prea mare', description: 'Mărime maximă: 400 MB.', variant: 'destructive' });
       e.target.value = '';
       return;
     }
@@ -694,7 +694,7 @@ const AppSettingsPanel = () => {
                             {uploadingMusic ? 'Se încarcă...' : 'Încarcă fișier MP3'}
                           </Button>
                           <p className="text-[11px] text-muted-foreground mt-1">
-                            Max 50 MB. Fișierul devine automat sursa muzicii pentru kiosk.
+                            Max 400 MB. Fișierul devine automat sursa muzicii pentru kiosk.
                           </p>
                         </div>
                       )}
