@@ -98,7 +98,7 @@ const Kiosk = () => {
     }
 
     navigator.serviceWorker
-      .register('/kiosk-sw.js', { scope: '/kiosk' })
+      .register('/kiosk-sw.js', { scope: '/' })
       .catch(err => console.warn('[Kiosk SW] register failed', err));
   }, []);
 
