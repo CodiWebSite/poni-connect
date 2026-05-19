@@ -24,6 +24,8 @@ const KioskSidebarAnnouncements = () => {
   const [scrollDistance, setScrollDistance] = useState(0);
   const [scrollDuration, setScrollDuration] = useState(0);
   const [phase, setPhase] = useState<'idle' | 'holdTop' | 'scrolling' | 'holdBottom'>('idle');
+  const [totalMs, setTotalMs] = useState(0);
+  const [progressArmed, setProgressArmed] = useState(false);
 
   const fetchAnnouncements = useCallback(async () => {
     const { data } = await supabase
