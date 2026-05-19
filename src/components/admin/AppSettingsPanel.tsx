@@ -49,6 +49,8 @@ const AppSettingsPanel = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingMusic, setUploadingMusic] = useState(false);
+  const musicFileInputRef = useRef<HTMLInputElement | null>(null);
   const [maintenanceReasonOpen, setMaintenanceReasonOpen] = useState(false);
   const [pendingMaintenance, setPendingMaintenance] = useState<boolean | null>(null);
   const [musicTestStatus, setMusicTestStatus] = useState<'idle' | 'starting' | 'sound' | 'muted' | 'error'>('idle');
@@ -342,6 +344,43 @@ const AppSettingsPanel = () => {
     e.target.value = '';
   };
 
+  const handleMusicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('audio/') && !file.name.toLowerCase().endsWith('.mp3')) {
+      toast({ title: 'Format invalid', description: 'Acceptăm doar fișiere audio (MP3 recomandat).', variant: 'destructive' });
+      e.target.value = '';
+      return;
+    }
+    const maxBytes = 50 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast({ title: 'Fișier prea mare', description: 'Mărime maximă: 50 MB.', variant: 'destructive' });
+      e.target.value = '';
+      return;
+    }
+    setUploadingMusic(true);
+    const ext = file.name.split('.').pop() || 'mp3';
+    const fileName = `kiosk-bg-${Date.now()}.${ext}`;
+    const { data, error } = await supabase.storage
+      .from('kiosk-music')
+      .upload(fileName, file, { cacheControl: '3600', upsert: false, contentType: file.type || 'audio/mpeg' });
+
+    if (error) {
+      toast({ title: 'Eroare upload', description: error.message, variant: 'destructive' });
+      setUploadingMusic(false);
+      e.target.value = '';
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from('kiosk-music').getPublicUrl(data.path);
+    setSettings(prev => ({ ...prev, kiosk_music_source: 'file', kiosk_music_url: urlData.publicUrl }));
+    await updateSetting('kiosk_music_source', 'file');
+    await updateSetting('kiosk_music_url', urlData.publicUrl);
+    toast({ title: 'Muzică încărcată', description: 'Fișierul a fost salvat ca sursă pentru kiosk.' });
+    setUploadingMusic(false);
+    e.target.value = '';
+  };
+
   const removeSlideshowImage = async (index: number) => {
     const url = settings.kiosk_slideshow_images[index];
     // Try to delete from storage
@@ -630,6 +669,35 @@ const AppSettingsPanel = () => {
                           ? 'Poți lipi link complet — extragem automat ID-ul. Atenție: YouTube poate insera reclame.'
                           : 'Recomandat: fișier .mp3 lung sau loopabil, hostat pe icmpp.ro.'}
                       </p>
+
+                      {settings.kiosk_music_source === 'file' && (
+                        <div className="pt-1">
+                          <input
+                            ref={musicFileInputRef}
+                            type="file"
+                            accept="audio/*,.mp3"
+                            className="hidden"
+                            onChange={handleMusicUpload}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            type="button"
+                            onClick={() => musicFileInputRef.current?.click()}
+                            disabled={uploadingMusic}
+                          >
+                            {uploadingMusic ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Upload className="w-4 h-4 mr-2" />
+                            )}
+                            {uploadingMusic ? 'Se încarcă...' : 'Încarcă fișier MP3'}
+                          </Button>
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            Max 50 MB. Fișierul devine automat sursa muzicii pentru kiosk.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">
