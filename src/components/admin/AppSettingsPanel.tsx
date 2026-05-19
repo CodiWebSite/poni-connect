@@ -40,6 +40,10 @@ const AppSettingsPanel = () => {
     kiosk_message: '',
     kiosk_ticker_messages: [],
     kiosk_slideshow_images: [],
+    kiosk_music_enabled: true,
+    kiosk_music_source: 'youtube',
+    kiosk_music_url: 'iTC49Hi4hb8',
+    kiosk_music_volume: 30,
   });
   const [newTickerMsg, setNewTickerMsg] = useState('');
   const [loading, setLoading] = useState(true);
