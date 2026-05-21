@@ -234,6 +234,9 @@ const App = () => (
                 <Route path="/securitatea-mea" element={<AccountSecurity />} />
                 <Route path="/raporteaza-incident" element={<ReportIncident />} />
                 <Route path="/confidentialitate" element={<Privacy />} />
+                <Route path="/legal/confidentialitate" element={<PublicLegal />} />
+                <Route path="/legal/informare-autentificare" element={<PublicLegal />} />
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
