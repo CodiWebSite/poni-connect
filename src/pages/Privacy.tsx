@@ -112,7 +112,39 @@ export default function Privacy() {
           </CardContent>
         </Card>
 
+        <Card id="informare-auth">
+          <CardHeader>
+            <CardTitle>Informare privind prelucrarea datelor la autentificare</CardTitle>
+            <CardDescription>
+              Operator: Institutul de Chimie Macromoleculară „Petru Poni" Iași. DPO: dpo@icmpp.ro.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm leading-relaxed">
+            <p>
+              La autentificarea pe Intranetul ICMPP prelucrăm: <strong>adresa de email instituțională</strong>,
+              <strong> data și ora autentificării</strong>, <strong>adresa IP</strong>, un sumar tehnic al browserului
+              (user-agent) și, dacă activezi 2FA, identificatorul factorului TOTP și — opțional — un
+              <em> token criptat de dispozitiv de încredere</em> stocat pe browserul tău.
+            </p>
+            <p>
+              <strong>Scop:</strong> autentificare, prevenirea accesului neautorizat, audit de securitate,
+              respectarea obligațiilor legale. <strong>Temei:</strong> interes legitim al operatorului și
+              executarea raportului de muncă (art. 6(1)(b) și (f) RGPD).
+            </p>
+            <p>
+              <strong>Durata stocării:</strong> evenimente de autentificare 12 luni; jurnale CAPTCHA 30 zile;
+              dispozitive de încredere 30 zile sau până la revocare; coduri de recuperare până la consum sau
+              regenerare. Datele nu se transferă în afara SEE.
+            </p>
+            <p>
+              <strong>Drepturile tale:</strong> acces, rectificare, ștergere, restricționare, opoziție și
+              portabilitate. Le poți exercita din secțiunea de mai jos sau scriind la dpo@icmpp.ro.
+            </p>
+          </CardContent>
+        </Card>
+
         <Card id="solicita">
+
           <CardHeader>
             <CardTitle>Solicită un drept GDPR</CardTitle>
             <CardDescription>Cererile sunt înregistrate, auditate și soluționate în max. 30 de zile.</CardDescription>
