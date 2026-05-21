@@ -88,6 +88,7 @@ const Admin = () => {
         <TabsContent value="quiz-admin"><SecurityQuizAdminPanel /></TabsContent>
         <TabsContent value="incidents"><IncidentsPanel /></TabsContent>
         <TabsContent value="gdpr"><GdprPanel /></TabsContent>
+        <TabsContent value="leave-sandbox"><LeaveSandboxPanel /></TabsContent>
       </Tabs>
     </MainLayout>
   );
