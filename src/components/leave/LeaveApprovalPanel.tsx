@@ -167,11 +167,14 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
     setLoading(true);
 
-    const { data, error } = await supabase
+    const baseQuery: any = supabase
       .from('leave_requests')
       .select('*')
-      .eq('status', 'pending_department_head' as any)
+      .eq('status', 'pending_department_head' as any);
+    const { data, error } = await baseQuery
+      .eq('is_demo', isDemo)
       .order('created_at', { ascending: true }) as { data: any[] | null; error: any };
+
 
     if (error) {
       console.error('Error fetching pending requests:', error);
