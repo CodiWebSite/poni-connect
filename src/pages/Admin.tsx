@@ -2,7 +2,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Navigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert, ShieldCheck, History, Siren, ScrollText } from 'lucide-react';
+import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert, ShieldCheck, History, Siren, ScrollText, FlaskConical } from 'lucide-react';
 import AdminOverview from '@/components/admin/AdminOverview';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminRolesAccessPanel from '@/components/admin/AdminRolesAccessPanel';
@@ -14,6 +14,7 @@ import SecurityDashboard from '@/components/admin/SecurityDashboard';
 import SecurityQuizAdminPanel from '@/components/admin/SecurityQuizAdminPanel';
 import IncidentsPanel from '@/components/admin/IncidentsPanel';
 import GdprPanel from '@/components/admin/GdprPanel';
+import LeaveSandboxPanel from '@/components/admin/LeaveSandboxPanel';
 
 const Admin = () => {
   const { role, isRealSuperAdmin } = useUserRole();
