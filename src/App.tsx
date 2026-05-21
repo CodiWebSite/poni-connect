@@ -54,6 +54,8 @@ import Suggestions from "./pages/Suggestions";
 import AccountSecurity from "./pages/AccountSecurity";
 import ReportIncident from "./pages/ReportIncident";
 import Privacy from "./pages/Privacy";
+import PublicLegal from "./pages/PublicLegal";
+
 
 const queryClient = new QueryClient();
 
