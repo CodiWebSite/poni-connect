@@ -246,7 +246,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-background relative overflow-hidden">
+    <div className="min-h-screen flex bg-background relative overflow-x-hidden">
       {/* Left side — institutional academic panel with molecular pattern */}
       <div
         className="hidden lg:flex lg:w-1/2 relative items-center justify-center"
@@ -294,7 +294,7 @@ const Auth = () => {
       </div>
 
       {/* Right side — auth form */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 relative gap-6">
+      <div className="flex-1 min-w-0 w-full flex flex-col items-center justify-center p-4 sm:p-6 relative gap-6">
         <div className="absolute inset-0 text-primary opacity-[0.18] pointer-events-none lg:hidden">
           <MolecularPattern className="w-full h-full" />
         </div>
@@ -451,7 +451,8 @@ const Auth = () => {
                     </button>
                   </div>
 
-                  <div className="flex justify-center rounded-lg overflow-hidden [&>div]:max-w-full">
+                  <div className="flex flex-col items-center gap-3 rounded-lg overflow-hidden w-full [&>div]:max-w-full">
+
                     <Turnstile
                       ref={loginTurnstileRef}
                       siteKey={TURNSTILE_SITE_KEY}
@@ -534,7 +535,7 @@ const Auth = () => {
                     />
                   </div>
 
-                  <div className="flex justify-center rounded-lg overflow-hidden [&>div]:max-w-full">
+                  <div className="flex flex-col items-center gap-3 rounded-lg overflow-hidden w-full [&>div]:max-w-full">
                     <Turnstile
                       ref={signupTurnstileRef}
                       siteKey={TURNSTILE_SITE_KEY}
