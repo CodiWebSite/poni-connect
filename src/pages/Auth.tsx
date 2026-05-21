@@ -294,7 +294,7 @@ const Auth = () => {
       </div>
 
       {/* Right side — auth form */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 relative gap-6">
+      <div className="flex-1 min-w-0 w-full flex flex-col items-center justify-center p-4 sm:p-6 relative gap-6">
         <div className="absolute inset-0 text-primary opacity-[0.18] pointer-events-none lg:hidden">
           <MolecularPattern className="w-full h-full" />
         </div>
