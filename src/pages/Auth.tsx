@@ -586,13 +586,10 @@ const Auth = () => {
               </button>
 
               <div className="rounded-lg bg-muted/50 border border-border/60 px-4 py-3 text-xs text-muted-foreground space-y-2">
-                <p className="font-medium text-foreground/80">Asistență IT — pentru urgențe:</p>
-                <p>Condrea Codrin — Tehnician IT, interior <span className="font-medium">330</span></p>
-                <p>Buzdugan Cătălin — Departamentul IT, interior <span className="font-medium">160</span></p>
-                <p className="pt-0.5">
-                  <a href="mailto:condrea.codrin@icmpp.ro" className="text-primary hover:underline">condrea.codrin@icmpp.ro</a>
-                  {' · '}
-                  <a href="mailto:admin@icmpp.ro" className="text-primary hover:underline">admin@icmpp.ro</a>
+                <p className="font-medium text-foreground/80">Asistență IT instituțională</p>
+                <p>
+                  Pentru probleme de autentificare, parolă sau 2FA, contactează
+                  echipa IT a Institutului prin formularul securizat de mai jos.
                 </p>
                 <button
                   type="button"
@@ -608,9 +605,30 @@ const Auth = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* GDPR / legal footer */}
+      <footer className="relative z-10 w-full max-w-md mx-auto mt-6 text-center text-[11px] text-muted-foreground/80 space-y-1">
+        <p>
+          © {new Date().getFullYear()} Institutul de Chimie Macromoleculară „Petru Poni" Iași — Academia Română
+        </p>
+        <p className="space-x-2">
+          <a href="/privacy#informare-auth" className="hover:text-foreground hover:underline">
+            Informare privind prelucrarea datelor la autentificare
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href="/privacy" className="hover:text-foreground hover:underline">
+            Politica de confidențialitate
+          </a>
+        </p>
+        <p className="text-muted-foreground/60">
+          Prin autentificare confirmi că ai citit informarea RGPD și folosești
+          platforma exclusiv în interes de serviciu.
+        </p>
+      </footer>
       </div>
     </div>
   );
 };
+
 
 export default Auth;
