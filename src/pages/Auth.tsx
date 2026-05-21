@@ -246,7 +246,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-background relative overflow-hidden">
+    <div className="min-h-screen flex bg-background relative overflow-x-hidden">
       {/* Left side — institutional academic panel with molecular pattern */}
       <div
         className="hidden lg:flex lg:w-1/2 relative items-center justify-center"
