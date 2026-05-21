@@ -13,6 +13,9 @@ import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '@/integrations/supabase/client';
 import AccountHelpForm from '@/components/auth/AccountHelpForm';
 import HelpdeskContactForm from '@/components/auth/HelpdeskContactForm';
+import MolecularPattern from '@/components/auth/MolecularPattern';
+import { ShieldCheck, GraduationCap, FileLock2 } from 'lucide-react';
+
 
 
 const TURNSTILE_SITE_KEY = '0x4AAAAAACGNQ32sLxuYBXgD';
