@@ -613,11 +613,11 @@ const Auth = () => {
           © {new Date().getFullYear()} Institutul de Chimie Macromoleculară „Petru Poni" Iași — Academia Română
         </p>
         <p className="space-x-2">
-          <a href="/confidentialitate#informare-auth" className="hover:text-foreground hover:underline">
+          <a href="/legal/informare-autentificare" className="hover:text-foreground hover:underline">
             Informare privind prelucrarea datelor la autentificare
           </a>
           <span aria-hidden="true">·</span>
-          <a href="/confidentialitate" className="hover:text-foreground hover:underline">
+          <a href="/legal/confidentialitate" className="hover:text-foreground hover:underline">
             Politica de confidențialitate
           </a>
         </p>
