@@ -111,21 +111,47 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
 function MFAGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [needsMFA, setNeedsMFA] = useState<boolean | null>(null);
+  const [needsReenroll, setNeedsReenroll] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
+    let cancelled = false;
     if (!user) {
       setNeedsMFA(false);
+      setNeedsReenroll(false);
       return;
     }
 
-    supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
-      if (data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2') {
-        setNeedsMFA(true);
+    (async () => {
+      // 1) force_mfa_reenroll flag (e.g. after recovery-code use)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('force_mfa_reenroll')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (profile?.force_mfa_reenroll) {
+        setNeedsReenroll(true);
+        setNeedsMFA(false);
+        return;
+      }
+
+      // 2) Normal AAL check
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (cancelled) return;
+      if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+        // Trusted-device shortcut (already verified earlier this session)
+        if (sessionStorage.getItem('icmpp_trusted_session') === '1') {
+          setNeedsMFA(false);
+        } else {
+          setNeedsMFA(true);
+        }
       } else {
         setNeedsMFA(false);
       }
-    });
+    })();
+
+    return () => { cancelled = true; };
   }, [user]);
 
   // Don't block public routes
@@ -136,12 +162,17 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
 
   if (loading || needsMFA === null) return null;
 
+  if (needsReenroll && location.pathname !== '/settings') {
+    return <Navigate to="/settings?reenroll=1" replace />;
+  }
+
   if (needsMFA) {
     return <MFAChallengeScreen onVerified={() => setNeedsMFA(false)} />;
   }
 
   return <>{children}</>;
 }
+
 
 function GlobalChatNotifier() {
   useChatNotifications();
