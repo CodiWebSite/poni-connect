@@ -70,6 +70,10 @@ const Admin = () => {
               <ScrollText className="w-4 h-4" />
               <span className="hidden sm:inline">GDPR</span>
             </TabsTrigger>
+            <TabsTrigger value="leave-sandbox" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+              <FlaskConical className="w-4 h-4" />
+              <span className="hidden sm:inline">Test Concedii</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
