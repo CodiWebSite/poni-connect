@@ -171,7 +171,9 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       .from('leave_requests')
       .select('*')
       .eq('status', 'pending_department_head' as any)
+      .eq('is_demo' as any, isDemo as any)
       .order('created_at', { ascending: true }) as { data: any[] | null; error: any };
+
 
     if (error) {
       console.error('Error fetching pending requests:', error);
