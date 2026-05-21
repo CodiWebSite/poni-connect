@@ -535,7 +535,7 @@ const Auth = () => {
                     />
                   </div>
 
-                  <div className="flex justify-center rounded-lg overflow-hidden [&>div]:max-w-full">
+                  <div className="flex flex-col items-center gap-3 rounded-lg overflow-hidden w-full [&>div]:max-w-full">
                     <Turnstile
                       ref={signupTurnstileRef}
                       siteKey={TURNSTILE_SITE_KEY}
