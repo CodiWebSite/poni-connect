@@ -113,12 +113,34 @@ export function LeaveApprovalHistory({ refreshTrigger }: LeaveApprovalHistoryPro
       });
     }
 
+    // Fallback to profiles by user_id for cases where EPD is RLS-hidden
+    const userIds = [...new Set((data || []).map(r => (r as any).user_id).filter(Boolean))] as string[];
+    let profileMap: Record<string, { name: string; department: string }> = {};
+    if (userIds.length > 0) {
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, department')
+        .in('user_id', userIds);
+      (profs || []).forEach((p: any) => {
+        const parts = (p.full_name || '').trim().split(/\s+/);
+        let name = p.full_name || '';
+        if (parts.length >= 2) {
+          name = [parts.slice(-1)[0], ...parts.slice(0, -1)].join(' ').toUpperCase();
+        }
+        profileMap[p.user_id] = { name, department: p.department || '' };
+      });
+    }
+
     setRequests(
-      (data || []).map(r => ({
-        ...r,
-        employee_name: epdMap[r.epd_id]?.name || 'N/A',
-        employee_department: epdMap[r.epd_id]?.department || '',
-      }))
+      (data || []).map(r => {
+        const fromEpd = epdMap[r.epd_id];
+        const fromProfile = profileMap[(r as any).user_id];
+        return {
+          ...r,
+          employee_name: fromEpd?.name || fromProfile?.name || 'N/A',
+          employee_department: fromEpd?.department || fromProfile?.department || '',
+        };
+      })
     );
     setLoading(false);
   };
