@@ -216,14 +216,42 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       });
     }
 
-    let enrichedRequests = (data || []).map(r => ({
-      ...r,
-      approver_id: (r as any).approver_id || null,
-      employee_name: epdMap[r.epd_id]?.name || 'N/A',
-      employee_department: epdMap[r.epd_id]?.department || '',
-      employee_position: epdMap[r.epd_id]?.position || '',
-      employee_avatar_url: epdMap[r.epd_id]?.avatarUrl || null,
-    }));
+    // Fallback: load profiles by user_id for cases where EPD is invisible or missing
+    const userIdsForFallback = [...new Set((data || []).map(r => (r as any).user_id).filter(Boolean))] as string[];
+    let profileMap: Record<string, { name: string; department: string; position: string; avatarUrl: string | null }> = {};
+    if (userIdsForFallback.length > 0) {
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, department, position, avatar_url')
+        .in('user_id', userIdsForFallback);
+      (profs || []).forEach((p: any) => {
+        const parts = (p.full_name || '').trim().split(/\s+/);
+        let name = p.full_name || '';
+        if (parts.length >= 2) {
+          // profiles stores "FirstName LastName" → reformat as "LASTNAME FIRSTNAME"
+          name = [parts.slice(-1)[0], ...parts.slice(0, -1)].join(' ').toUpperCase();
+        }
+        profileMap[p.user_id] = {
+          name,
+          department: p.department || '',
+          position: p.position || '',
+          avatarUrl: p.avatar_url || null,
+        };
+      });
+    }
+
+    let enrichedRequests = (data || []).map(r => {
+      const fromEpd = epdMap[r.epd_id];
+      const fromProfile = profileMap[(r as any).user_id];
+      return {
+        ...r,
+        approver_id: (r as any).approver_id || null,
+        employee_name: fromEpd?.name || fromProfile?.name || 'N/A',
+        employee_department: fromEpd?.department || fromProfile?.department || '',
+        employee_position: fromEpd?.position || fromProfile?.position || '',
+        employee_avatar_url: fromEpd?.avatarUrl || fromProfile?.avatarUrl || null,
+      };
+    });
 
     if (!isSuperAdmin) {
       const { data: myProfile } = await supabase
