@@ -1327,11 +1327,15 @@ export type Database = {
           email: string
           id: string
           message: string
+          metadata: Json
           name: string
+          priority: string
+          related_user_id: string | null
           resolved_at: string | null
           resolved_by: string | null
           status: string
           subject: string
+          ticket_type: string
           updated_at: string
         }
         Insert: {
@@ -1340,11 +1344,15 @@ export type Database = {
           email: string
           id?: string
           message: string
+          metadata?: Json
           name: string
+          priority?: string
+          related_user_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
           subject?: string
+          ticket_type?: string
           updated_at?: string
         }
         Update: {
@@ -1353,11 +1361,15 @@ export type Database = {
           email?: string
           id?: string
           message?: string
+          metadata?: Json
           name?: string
+          priority?: string
+          related_user_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
           subject?: string
+          ticket_type?: string
           updated_at?: string
         }
         Relationships: []
@@ -2167,6 +2179,36 @@ export type Database = {
           },
         ]
       }
+      mfa_recovery_codes: {
+        Row: {
+          batch_id: string
+          code_hash: string
+          created_at: string
+          id: string
+          used_at: string | null
+          used_ip: string | null
+          user_id: string
+        }
+        Insert: {
+          batch_id: string
+          code_hash: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          used_ip?: string | null
+          user_id: string
+        }
+        Update: {
+          batch_id?: string
+          code_hash?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          used_ip?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_rules: {
         Row: {
           channel: string
@@ -2389,6 +2431,9 @@ export type Database = {
           birth_date: string | null
           created_at: string
           department: string | null
+          force_mfa_reason: string | null
+          force_mfa_reenroll: boolean
+          force_mfa_set_at: string | null
           full_name: string
           id: string
           phone: string | null
@@ -2401,6 +2446,9 @@ export type Database = {
           birth_date?: string | null
           created_at?: string
           department?: string | null
+          force_mfa_reason?: string | null
+          force_mfa_reenroll?: boolean
+          force_mfa_set_at?: string | null
           full_name: string
           id?: string
           phone?: string | null
@@ -2413,6 +2461,9 @@ export type Database = {
           birth_date?: string | null
           created_at?: string
           department?: string | null
+          force_mfa_reason?: string | null
+          force_mfa_reenroll?: boolean
+          force_mfa_set_at?: string | null
           full_name?: string
           id?: string
           phone?: string | null
@@ -3065,6 +3116,51 @@ export type Database = {
         }
         Relationships: []
       }
+      trusted_auth_devices: {
+        Row: {
+          created_at: string
+          created_ip: string | null
+          device_token_hash: string
+          expires_at: string
+          friendly_name: string | null
+          id: string
+          last_ip: string | null
+          last_used_at: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          user_agent_summary: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_ip?: string | null
+          device_token_hash: string
+          expires_at: string
+          friendly_name?: string | null
+          id?: string
+          last_ip?: string | null
+          last_used_at?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          user_agent_summary?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_ip?: string | null
+          device_token_hash?: string
+          expires_at?: string
+          friendly_name?: string | null
+          id?: string
+          last_ip?: string | null
+          last_used_at?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          user_agent_summary?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_custom_roles: {
         Row: {
           assigned_by: string | null
@@ -3415,6 +3511,10 @@ export type Database = {
           epd_id: string
           total_co_days: number
         }[]
+      }
+      revoke_all_trusted_devices: {
+        Args: { _reason: string; _user_id: string }
+        Returns: number
       }
       storage_archive_department_match: {
         Args: { _name: string }

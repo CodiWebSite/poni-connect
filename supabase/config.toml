@@ -53,3 +53,5 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = true
   [functions.send-reminder-email]
     verify_jwt = true
+  [functions.helpdesk-mfa-reset-request]
+    verify_jwt = false
