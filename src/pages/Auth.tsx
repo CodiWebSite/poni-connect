@@ -247,37 +247,70 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex bg-background relative overflow-hidden">
-      {/* Left side — decorative gradient panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center" style={{ background: 'var(--gradient-hero)' }}>
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-blob" />
-          <div className="absolute bottom-20 right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-blob animation-delay-2000" />
+      {/* Left side — institutional academic panel with molecular pattern */}
+      <div
+        className="hidden lg:flex lg:w-1/2 relative items-center justify-center"
+        style={{ background: 'var(--gradient-hero)' }}
+      >
+        <div className="absolute inset-0 text-white opacity-[0.55] pointer-events-none">
+          <MolecularPattern className="w-full h-full" />
         </div>
-        <div className="relative z-10 text-center space-y-6 px-12">
-          <img src="/logo-icmpp.png" alt="ICMPP" className="w-28 h-28 object-contain mx-auto drop-shadow-lg" />
-          <h2 className="text-3xl font-display font-bold text-white">ICMPP Intranet</h2>
-          <p className="text-white/70 text-sm max-w-xs mx-auto">
-            Institutul de Chimie Macromoleculară "Petru Poni" Iași — Platformă internă de management
+        <div className="relative z-10 max-w-md px-12 space-y-8">
+          <div className="flex items-center gap-3">
+            <img src="/logo-icmpp.png" alt="ICMPP" className="w-14 h-14 object-contain drop-shadow-lg" />
+            <div className="leading-tight">
+              <p className="text-white/70 text-[11px] uppercase tracking-[0.18em]">Academia Română</p>
+              <p className="text-white font-display font-semibold text-lg">ICMPP „Petru Poni"</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-3xl xl:text-4xl font-display font-bold text-white leading-tight">
+              Intranet instituțional
+            </h2>
+            <p className="text-white/75 text-sm leading-relaxed">
+              Spațiu de lucru securizat pentru personalul Institutului de Chimie
+              Macromoleculară „Petru Poni" Iași — concedii, documente, raportări HR,
+              comunicare internă.
+            </p>
+          </div>
+          <ul className="space-y-2.5 text-white/80 text-sm">
+            <li className="flex items-start gap-2.5">
+              <ShieldCheck className="w-4 h-4 mt-0.5 text-white/80 shrink-0" />
+              Autentificare în doi pași (TOTP) obligatorie
+            </li>
+            <li className="flex items-start gap-2.5">
+              <FileLock2 className="w-4 h-4 mt-0.5 text-white/80 shrink-0" />
+              Date prelucrate conform RGPD și politicii ICMPP
+            </li>
+            <li className="flex items-start gap-2.5">
+              <GraduationCap className="w-4 h-4 mt-0.5 text-white/80 shrink-0" />
+              Acces strict pentru angajații cu cont <span className="font-mono text-white/70">@icmpp.ro</span>
+            </li>
+          </ul>
+          <p className="text-white/50 text-[11px] pt-2 border-t border-white/15">
+            Sistem informatic intern. Accesul neautorizat este interzis și înregistrat.
           </p>
         </div>
       </div>
 
       {/* Right side — auth form */}
       <div className="flex-1 flex items-center justify-center p-6 relative">
-        {/* Animated background blobs (visible on mobile / right side) */}
+        <div className="absolute inset-0 text-primary opacity-[0.18] pointer-events-none lg:hidden">
+          <MolecularPattern className="w-full h-full" />
+        </div>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/6 rounded-full blur-3xl animate-blob" />
           <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/6 rounded-full blur-3xl animate-blob animation-delay-2000" />
         </div>
-      
+
       <Card className="w-full max-w-md relative animate-fade-in glass-card">
         <CardHeader className="text-center space-y-4 pb-2 lg:hidden">
           <div className="mx-auto">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl scale-150" />
-              <img 
-                src="/logo-icmpp.png" 
-                alt="ICMPP Logo" 
+              <img
+                src="/logo-icmpp.png"
+                alt="ICMPP Logo"
                 className="w-20 h-20 object-contain mx-auto relative z-10 drop-shadow-md"
               />
             </div>
@@ -295,6 +328,7 @@ const Auth = () => {
             Autentifică-te pentru a accesa platforma
           </CardDescription>
         </CardHeader>
+
         
         <CardContent>
           {showHelpdeskForm ? (
