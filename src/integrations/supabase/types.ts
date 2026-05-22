@@ -2641,6 +2641,101 @@ export type Database = {
         }
         Relationships: []
       }
+      registry_counters: {
+        Row: {
+          current_value: number
+          id: string
+          is_demo: boolean
+          series_key: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          current_value?: number
+          id?: string
+          is_demo?: boolean
+          series_key: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          current_value?: number
+          id?: string
+          is_demo?: boolean
+          series_key?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      registry_department_operators: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          department_key: string
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          department_key: string
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          department_key?: string
+          id?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_department_operators_department_key_fkey"
+            columns: ["department_key"]
+            isOneToOne: false
+            referencedRelation: "registry_department_settings"
+            referencedColumns: ["department_key"]
+          },
+        ]
+      }
+      registry_department_settings: {
+        Row: {
+          created_at: string
+          department_key: string
+          department_label: string
+          draft_prefix: string
+          id: string
+          is_active: boolean
+          profile_department_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department_key: string
+          department_label: string
+          draft_prefix: string
+          id?: string
+          is_active?: boolean
+          profile_department_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department_key?: string
+          department_label?: string
+          draft_prefix?: string
+          id?: string
+          is_active?: boolean
+          profile_department_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       request_routing_rules: {
         Row: {
           created_at: string
@@ -3598,6 +3693,28 @@ export type Database = {
         | "approved"
         | "rejected"
       procurement_urgency: "normal" | "urgent" | "foarte_urgent"
+      registry_confidentiality:
+        | "internal_normal"
+        | "department_only"
+        | "secretariat_only"
+        | "hr_sensitive"
+        | "legal_sensitive"
+        | "financial_sensitive"
+        | "restricted_management"
+      registry_entry_status:
+        | "active"
+        | "resolved"
+        | "dispatched"
+        | "cancelled"
+        | "archived_ready"
+      registry_entry_type: "intrare" | "iesire" | "intern"
+      registry_request_status:
+        | "draft"
+        | "submitted_to_secretariat"
+        | "needs_correction"
+        | "approved_registered"
+        | "rejected"
+        | "cancelled"
       suggestion_priority: "low" | "medium" | "high"
       suggestion_status:
         | "new"
@@ -3806,6 +3923,31 @@ export const Constants = {
         "rejected",
       ],
       procurement_urgency: ["normal", "urgent", "foarte_urgent"],
+      registry_confidentiality: [
+        "internal_normal",
+        "department_only",
+        "secretariat_only",
+        "hr_sensitive",
+        "legal_sensitive",
+        "financial_sensitive",
+        "restricted_management",
+      ],
+      registry_entry_status: [
+        "active",
+        "resolved",
+        "dispatched",
+        "cancelled",
+        "archived_ready",
+      ],
+      registry_entry_type: ["intrare", "iesire", "intern"],
+      registry_request_status: [
+        "draft",
+        "submitted_to_secretariat",
+        "needs_correction",
+        "approved_registered",
+        "rejected",
+        "cancelled",
+      ],
       suggestion_priority: ["low", "medium", "high"],
       suggestion_status: [
         "new",
