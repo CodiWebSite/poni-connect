@@ -44,7 +44,7 @@ export default function Registratura() {
   useEffect(() => { loadMyDept(); }, [loadMyDept]);
 
   if (authLoading || roleLoading) {
-    return <MainLayout><div className="p-8 text-muted-foreground">Se încarcă…</div></MainLayout>;
+    return <MainLayout title="Registratură"><div className="p-8 text-muted-foreground">Se încarcă…</div></MainLayout>;
   }
 
   const refresh = () => setRefreshKey((k) => k + 1);
