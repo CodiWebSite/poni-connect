@@ -191,17 +191,31 @@ export default function RegistryAdminPanel({ onChange }: { onChange: () => void 
           {depts.map((d) => (
             <Card key={d.id}>
               <CardContent className="p-3 flex items-center gap-3 flex-wrap">
-                <div className="flex-1 min-w-[200px]">
+                <div className="flex-1 min-w-[260px] space-y-1">
                   <div className="font-semibold">{d.department_label} <span className="text-xs text-muted-foreground font-mono">[{d.department_key}]</span></div>
-                  <div className="text-xs text-muted-foreground">
-                    Profil: „{d.profile_department_value}" • Prefix: <code>{d.draft_prefix}</code>
-                    {d.pin_hash ? <Badge className="ml-2 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">PIN setat</Badge> : <Badge variant="destructive" className="ml-2">FĂRĂ PIN</Badge>}
+                  <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                    Prefix: <code>{d.draft_prefix}</code>
+                    {d.pin_hash ? <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">PIN setat</Badge> : <Badge variant="destructive">FĂRĂ PIN</Badge>}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Label className="text-[11px] text-muted-foreground">Mapare profil:</Label>
+                    <select
+                      className="border rounded px-2 py-1 text-xs bg-background max-w-[420px]"
+                      value={d.profile_department_value}
+                      onChange={(e) => updateProfileValue(d, e.target.value)}
+                    >
+                      {!distinctDepartments.some((x) => x.toLowerCase() === (d.profile_department_value ?? "").toLowerCase()) && (
+                        <option value={d.profile_department_value}>„{d.profile_department_value}" (nepotrivit)</option>
+                      )}
+                      {distinctDepartments.map((dep) => <option key={dep} value={dep}>{dep}</option>)}
+                    </select>
                   </div>
                   {d.pin_rotated_at && <div className="text-[10px] text-muted-foreground">Rotit: {new Date(d.pin_rotated_at).toLocaleString("ro-RO")}</div>}
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={d.is_active} onCheckedChange={() => toggleDept(d)} />
                   <Button size="sm" variant="outline" onClick={() => requestRotatePin(d)}><KeyRound className="w-4 h-4 mr-1" />PIN</Button>
+                  <Button size="sm" variant="ghost" onClick={() => removeDept(d)}><Trash2 className="w-4 h-4" /></Button>
                 </div>
               </CardContent>
             </Card>
