@@ -259,7 +259,7 @@ const Sidebar = () => {
       '/leave-calendar': 'leave-calendar', '/formulare': 'formulare', '/leave-request': 'leave-request',
       '/my-team': 'my-team', '/library': 'library', '/room-bookings': 'room-bookings',
       '/activitati': 'activitati', '/chat': 'chat', '/medicina-muncii': 'medicina-muncii',
-      '/arhiva': 'arhiva', '/securitate-digitala': 'securitate-digitala', '/securitatea-mea': 'dashboard', '/raporteaza-incident': 'dashboard', '/confidentialitate': 'dashboard', '/sugestii': 'sugestii', '/ghid': 'ghid', '/install': 'install',
+      '/arhiva': 'arhiva', '/registratura': 'registratura', '/securitate-digitala': 'securitate-digitala', '/securitatea-mea': 'dashboard', '/raporteaza-incident': 'dashboard', '/confidentialitate': 'dashboard', '/sugestii': 'sugestii', '/ghid': 'ghid', '/install': 'install',
       '/hr-management': 'hr-management', '/salarizare': 'salarizare', '/settings': 'settings',
       '/system-status': 'system-status', '/carti-vizita': 'carti-vizita', '/admin': 'admin',
       '/changelog': 'changelog',
