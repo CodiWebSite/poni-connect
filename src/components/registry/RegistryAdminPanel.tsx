@@ -57,6 +57,10 @@ export default function RegistryAdminPanel({ onChange }: { onChange: () => void 
 
   useEffect(() => { load(); }, []);
 
+  const distinctDepartments = Array.from(
+    new Set(profiles.map((p) => (p.department ?? "").trim()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b, "ro"));
+
   const addDept = async () => {
     if (!newDept.department_key || !newDept.department_label || !newDept.profile_department_value || !newDept.draft_prefix) {
       toast.error("Completează toate câmpurile.");
@@ -67,6 +71,20 @@ export default function RegistryAdminPanel({ onChange }: { onChange: () => void 
     toast.success("Departament adăugat.");
     setNewDept({ department_key: "", department_label: "", profile_department_value: "", draft_prefix: "" });
     load(); onChange();
+  };
+
+  const updateProfileValue = async (d: Dept, value: string) => {
+    const { error } = await supabase.from("registry_department_settings").update({ profile_department_value: value }).eq("id", d.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Mapare actualizată.");
+    load(); onChange();
+  };
+
+  const removeDept = async (d: Dept) => {
+    if (!confirm(`Ștergi maparea „${d.department_label}"? Aceasta NU afectează intrările deja înregistrate.`)) return;
+    const { error } = await supabase.from("registry_department_settings").delete().eq("id", d.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Departament șters."); load(); onChange();
   };
 
   const toggleDept = async (d: Dept) => {
