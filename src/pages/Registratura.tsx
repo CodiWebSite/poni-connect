@@ -50,7 +50,7 @@ export default function Registratura() {
   const refresh = () => setRefreshKey((k) => k + 1);
 
   return (
-    <MainLayout>
+    <MainLayout title="Registratură Digitală" description="Registratură oficială ICMPP (BETA)">
       <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
