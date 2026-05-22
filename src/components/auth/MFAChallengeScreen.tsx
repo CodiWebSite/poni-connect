@@ -72,7 +72,7 @@ export default function MFAChallengeScreen({ onVerified }: MFAChallengeScreenPro
         return;
       }
 
-      const { error: verifyError } = await supabase.auth.mfa.verify({
+      const { data: verifiedSession, error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
         challengeId: challenge.id,
         code,
@@ -97,9 +97,15 @@ export default function MFAChallengeScreen({ onVerified }: MFAChallengeScreenPro
             body: {
               friendlyName: navigator.platform || 'Acest dispozitiv',
             },
+            headers: verifiedSession?.access_token
+              ? { Authorization: `Bearer ${verifiedSession.access_token}` }
+              : undefined,
           });
           if (!error && data?.token) {
             localStorage.setItem(TRUSTED_TOKEN_KEY, data.token);
+            sessionStorage.setItem('icmpp_trusted_session', '1');
+          } else {
+            toast.error(data?.error || 'Browserul de încredere nu a putut fi salvat');
           }
         } catch { /* non-fatal */ }
       }
