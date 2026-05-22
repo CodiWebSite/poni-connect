@@ -47,13 +47,10 @@ export default function MFAChallengeScreen({ onVerified }: MFAChallengeScreenPro
           const { data, error } = await supabase.functions.invoke('mfa-trusted-check', {
             body: { token },
           });
-          if (!error && data?.trusted) {
-            // Mark as AAL2 emulated? No — we cannot bypass Supabase AAL.
-            // Instead, treat trusted device as "do not display challenge again this session"
-            // by storing a flag and calling onVerified. This is the documented model.
+          if (!error && data?.valid) {
             sessionStorage.setItem('icmpp_trusted_session', '1');
             onVerified();
-          } else if (data?.invalid) {
+          } else if (data && data.valid === false && ['not_found', 'mismatch', 'revoked', 'expired', 'force_reenroll'].includes(data.reason)) {
             localStorage.removeItem(TRUSTED_TOKEN_KEY);
           }
         } catch { /* network: ignore, fallback to challenge */ }
@@ -98,7 +95,7 @@ export default function MFAChallengeScreen({ onVerified }: MFAChallengeScreenPro
         try {
           const { data, error } = await supabase.functions.invoke('mfa-trusted-create', {
             body: {
-              friendly_name: navigator.platform || 'Acest dispozitiv',
+              friendlyName: navigator.platform || 'Acest dispozitiv',
             },
           });
           if (!error && data?.token) {
