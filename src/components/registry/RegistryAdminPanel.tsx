@@ -57,6 +57,10 @@ export default function RegistryAdminPanel({ onChange }: { onChange: () => void 
 
   useEffect(() => { load(); }, []);
 
+  const distinctDepartments = Array.from(
+    new Set(profiles.map((p) => (p.department ?? "").trim()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b, "ro"));
+
   const addDept = async () => {
     if (!newDept.department_key || !newDept.department_label || !newDept.profile_department_value || !newDept.draft_prefix) {
       toast.error("Completează toate câmpurile.");
@@ -67,6 +71,20 @@ export default function RegistryAdminPanel({ onChange }: { onChange: () => void 
     toast.success("Departament adăugat.");
     setNewDept({ department_key: "", department_label: "", profile_department_value: "", draft_prefix: "" });
     load(); onChange();
+  };
+
+  const updateProfileValue = async (d: Dept, value: string) => {
+    const { error } = await supabase.from("registry_department_settings").update({ profile_department_value: value }).eq("id", d.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Mapare actualizată.");
+    load(); onChange();
+  };
+
+  const removeDept = async (d: Dept) => {
+    if (!confirm(`Ștergi maparea „${d.department_label}"? Aceasta NU afectează intrările deja înregistrate.`)) return;
+    const { error } = await supabase.from("registry_department_settings").delete().eq("id", d.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Departament șters."); load(); onChange();
   };
 
   const toggleDept = async (d: Dept) => {
@@ -155,7 +173,14 @@ export default function RegistryAdminPanel({ onChange }: { onChange: () => void 
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <Input placeholder="Cheie (ex: srus)" value={newDept.department_key} onChange={(e) => setNewDept({ ...newDept, department_key: e.target.value.toLowerCase() })} />
               <Input placeholder="Etichetă afișată" value={newDept.department_label} onChange={(e) => setNewDept({ ...newDept, department_label: e.target.value })} />
-              <Input placeholder="Valoare departament profil" value={newDept.profile_department_value} onChange={(e) => setNewDept({ ...newDept, profile_department_value: e.target.value })} />
+              <select
+                className="border rounded px-2 py-1 text-sm bg-background"
+                value={newDept.profile_department_value}
+                onChange={(e) => setNewDept({ ...newDept, profile_department_value: e.target.value })}
+              >
+                <option value="">— Departament din profiluri —</option>
+                {distinctDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
               <div className="flex gap-2">
                 <Input placeholder="Prefix draft (ex: SRUS)" value={newDept.draft_prefix} onChange={(e) => setNewDept({ ...newDept, draft_prefix: e.target.value.toUpperCase() })} />
                 <Button onClick={addDept}><Plus className="w-4 h-4" /></Button>
@@ -166,17 +191,31 @@ export default function RegistryAdminPanel({ onChange }: { onChange: () => void 
           {depts.map((d) => (
             <Card key={d.id}>
               <CardContent className="p-3 flex items-center gap-3 flex-wrap">
-                <div className="flex-1 min-w-[200px]">
+                <div className="flex-1 min-w-[260px] space-y-1">
                   <div className="font-semibold">{d.department_label} <span className="text-xs text-muted-foreground font-mono">[{d.department_key}]</span></div>
-                  <div className="text-xs text-muted-foreground">
-                    Profil: „{d.profile_department_value}" • Prefix: <code>{d.draft_prefix}</code>
-                    {d.pin_hash ? <Badge className="ml-2 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">PIN setat</Badge> : <Badge variant="destructive" className="ml-2">FĂRĂ PIN</Badge>}
+                  <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                    Prefix: <code>{d.draft_prefix}</code>
+                    {d.pin_hash ? <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">PIN setat</Badge> : <Badge variant="destructive">FĂRĂ PIN</Badge>}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Label className="text-[11px] text-muted-foreground">Mapare profil:</Label>
+                    <select
+                      className="border rounded px-2 py-1 text-xs bg-background max-w-[420px]"
+                      value={d.profile_department_value}
+                      onChange={(e) => updateProfileValue(d, e.target.value)}
+                    >
+                      {!distinctDepartments.some((x) => x.toLowerCase() === (d.profile_department_value ?? "").toLowerCase()) && (
+                        <option value={d.profile_department_value}>„{d.profile_department_value}" (nepotrivit)</option>
+                      )}
+                      {distinctDepartments.map((dep) => <option key={dep} value={dep}>{dep}</option>)}
+                    </select>
                   </div>
                   {d.pin_rotated_at && <div className="text-[10px] text-muted-foreground">Rotit: {new Date(d.pin_rotated_at).toLocaleString("ro-RO")}</div>}
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={d.is_active} onCheckedChange={() => toggleDept(d)} />
                   <Button size="sm" variant="outline" onClick={() => requestRotatePin(d)}><KeyRound className="w-4 h-4 mr-1" />PIN</Button>
+                  <Button size="sm" variant="ghost" onClick={() => removeDept(d)}><Trash2 className="w-4 h-4" /></Button>
                 </div>
               </CardContent>
             </Card>
