@@ -108,7 +108,7 @@ export default function AccountSecurity() {
 
   const revokeDevice = async (id: string) => {
     try {
-      const { error } = await supabase.functions.invoke('mfa-trusted-revoke', { body: { id } });
+      const { error } = await supabase.functions.invoke('mfa-trusted-revoke', { body: { deviceId: id } });
       if (error) throw error;
       toast({ title: 'Dispozitiv revocat' });
       await loadDevices();

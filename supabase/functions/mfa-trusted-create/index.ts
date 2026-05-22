@@ -1,12 +1,25 @@
 import { createClient } from "@supabase/supabase-js";
 import { corsHeaders, jsonResponse, sha256Hex, getClientIp, summarizeUserAgent } from "../_shared/auth-cors.ts";
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return jsonResponse({ error: "Neautentificat" }, 401);
+    if (!authHeader?.startsWith("Bearer ")) return jsonResponse({ error: "Neautentificat" }, 401);
+    const accessToken = authHeader.replace("Bearer ", "").trim();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -18,9 +31,11 @@ Deno.serve(async (req) => {
     const { data: { user } } = await caller.auth.getUser();
     if (!user) return jsonResponse({ error: "Sesiune invalidă" }, 401);
 
-    // Require AAL2 — the user must have just verified MFA
-    const { data: aal } = await caller.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal?.currentLevel !== "aal2") {
+    // Require AAL2 — inspect the JWT used for this request. Edge runtime clients
+    // don't persist the browser session, so mfa.getAuthenticatorAssuranceLevel()
+    // would read an empty local session and incorrectly reject valid MFA logins.
+    const claims = decodeJwtPayload(accessToken);
+    if (claims?.aal !== "aal2") {
       return jsonResponse({ error: "Trusted device necesită MFA verificat" }, 403);
     }
 
