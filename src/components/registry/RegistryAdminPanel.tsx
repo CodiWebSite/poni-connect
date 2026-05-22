@@ -173,7 +173,14 @@ export default function RegistryAdminPanel({ onChange }: { onChange: () => void 
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <Input placeholder="Cheie (ex: srus)" value={newDept.department_key} onChange={(e) => setNewDept({ ...newDept, department_key: e.target.value.toLowerCase() })} />
               <Input placeholder="Etichetă afișată" value={newDept.department_label} onChange={(e) => setNewDept({ ...newDept, department_label: e.target.value })} />
-              <Input placeholder="Valoare departament profil" value={newDept.profile_department_value} onChange={(e) => setNewDept({ ...newDept, profile_department_value: e.target.value })} />
+              <select
+                className="border rounded px-2 py-1 text-sm bg-background"
+                value={newDept.profile_department_value}
+                onChange={(e) => setNewDept({ ...newDept, profile_department_value: e.target.value })}
+              >
+                <option value="">— Departament din profiluri —</option>
+                {distinctDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
               <div className="flex gap-2">
                 <Input placeholder="Prefix draft (ex: SRUS)" value={newDept.draft_prefix} onChange={(e) => setNewDept({ ...newDept, draft_prefix: e.target.value.toUpperCase() })} />
                 <Button onClick={addDept}><Plus className="w-4 h-4" /></Button>
