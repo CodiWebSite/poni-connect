@@ -282,6 +282,7 @@ const Sidebar = () => {
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat', badge: unreadChat || undefined },
     { icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' },
     { icon: Archive, label: 'Arhivă Online', path: '/arhiva' },
+    { icon: ScrollText, label: 'Registratură', path: '/registratura' },
     { icon: ShieldCheck, label: 'Securitate Digitală', path: '/securitate-digitala' },
     { icon: ShieldCheck, label: 'Securitatea contului meu', path: '/securitatea-mea' },
     { icon: ShieldAlert, label: 'Raportează incident', path: '/raporteaza-incident' },
