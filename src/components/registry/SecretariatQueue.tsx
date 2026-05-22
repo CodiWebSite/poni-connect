@@ -48,7 +48,7 @@ export default function SecretariatQueue({ onChange }: { onChange: () => void })
     const { data } = await supabase
       .from("registry_requests")
       .select("*")
-      .eq("status", "submitted")
+      .eq("status", "submitted_to_secretariat")
       .neq("confidentiality", "restricted_management")
       .order("created_at", { ascending: true })
       .limit(100);
