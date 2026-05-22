@@ -2641,6 +2641,63 @@ export type Database = {
         }
         Relationships: []
       }
+      registry_assignments: {
+        Row: {
+          assigned_by: string | null
+          assigned_department_key: string | null
+          assigned_user_id: string | null
+          completed_at: string | null
+          created_at: string
+          due_date: string | null
+          entry_id: string
+          id: string
+          instructions: string | null
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_department_key?: string | null
+          assigned_user_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          entry_id: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_department_key?: string | null
+          assigned_user_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          entry_id?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_assignments_assigned_department_key_fkey"
+            columns: ["assigned_department_key"]
+            isOneToOne: false
+            referencedRelation: "registry_department_settings"
+            referencedColumns: ["department_key"]
+          },
+          {
+            foreignKeyName: "registry_assignments_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "registry_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_counters: {
         Row: {
           current_value: number
@@ -2735,6 +2792,252 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      registry_entries: {
+        Row: {
+          allocated_by: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          confidentiality: Database["public"]["Enums"]["registry_confidentiality"]
+          content: string | null
+          created_at: string
+          declared_registration_date: string | null
+          document_date: string | null
+          entry_type: Database["public"]["Enums"]["registry_entry_type"]
+          id: string
+          is_demo: boolean
+          is_late: boolean
+          late_reason: string | null
+          official_number: number
+          recipient: string | null
+          registration_date: string
+          request_id: string | null
+          sender: string | null
+          series_key: string
+          source_department_key: string | null
+          status: Database["public"]["Enums"]["registry_entry_status"]
+          subject: string | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          allocated_by?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          confidentiality?: Database["public"]["Enums"]["registry_confidentiality"]
+          content?: string | null
+          created_at?: string
+          declared_registration_date?: string | null
+          document_date?: string | null
+          entry_type: Database["public"]["Enums"]["registry_entry_type"]
+          id?: string
+          is_demo?: boolean
+          is_late?: boolean
+          late_reason?: string | null
+          official_number: number
+          recipient?: string | null
+          registration_date?: string
+          request_id?: string | null
+          sender?: string | null
+          series_key: string
+          source_department_key?: string | null
+          status?: Database["public"]["Enums"]["registry_entry_status"]
+          subject?: string | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          allocated_by?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          confidentiality?: Database["public"]["Enums"]["registry_confidentiality"]
+          content?: string | null
+          created_at?: string
+          declared_registration_date?: string | null
+          document_date?: string | null
+          entry_type?: Database["public"]["Enums"]["registry_entry_type"]
+          id?: string
+          is_demo?: boolean
+          is_late?: boolean
+          late_reason?: string | null
+          official_number?: number
+          recipient?: string | null
+          registration_date?: string
+          request_id?: string | null
+          sender?: string | null
+          series_key?: string
+          source_department_key?: string | null
+          status?: Database["public"]["Enums"]["registry_entry_status"]
+          subject?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_entries_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_entries_source_department_key_fkey"
+            columns: ["source_department_key"]
+            isOneToOne: false
+            referencedRelation: "registry_department_settings"
+            referencedColumns: ["department_key"]
+          },
+        ]
+      }
+      registry_entry_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          from_entry_id: string
+          id: string
+          link_type: string
+          note: string | null
+          to_entry_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          from_entry_id: string
+          id?: string
+          link_type?: string
+          note?: string | null
+          to_entry_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          from_entry_id?: string
+          id?: string
+          link_type?: string
+          note?: string | null
+          to_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_entry_links_from_entry_id_fkey"
+            columns: ["from_entry_id"]
+            isOneToOne: false
+            referencedRelation: "registry_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_entry_links_to_entry_id_fkey"
+            columns: ["to_entry_id"]
+            isOneToOne: false
+            referencedRelation: "registry_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_requests: {
+        Row: {
+          approved_entry_id: string | null
+          attachments_count: number
+          cancellation_reason: string | null
+          confidentiality: Database["public"]["Enums"]["registry_confidentiality"]
+          content: string | null
+          created_at: string
+          declared_registration_date: string
+          document_date: string | null
+          entry_type: Database["public"]["Enums"]["registry_entry_type"]
+          id: string
+          is_demo: boolean
+          is_late: boolean
+          late_reason: string | null
+          recipient: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sender: string | null
+          source_department_key: string
+          status: Database["public"]["Enums"]["registry_request_status"]
+          subject: string | null
+          submit_ip: unknown
+          submit_user_agent: string | null
+          submitted_by: string | null
+          temp_code: string
+          updated_at: string
+        }
+        Insert: {
+          approved_entry_id?: string | null
+          attachments_count?: number
+          cancellation_reason?: string | null
+          confidentiality?: Database["public"]["Enums"]["registry_confidentiality"]
+          content?: string | null
+          created_at?: string
+          declared_registration_date?: string
+          document_date?: string | null
+          entry_type: Database["public"]["Enums"]["registry_entry_type"]
+          id?: string
+          is_demo?: boolean
+          is_late?: boolean
+          late_reason?: string | null
+          recipient?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sender?: string | null
+          source_department_key: string
+          status?: Database["public"]["Enums"]["registry_request_status"]
+          subject?: string | null
+          submit_ip?: unknown
+          submit_user_agent?: string | null
+          submitted_by?: string | null
+          temp_code: string
+          updated_at?: string
+        }
+        Update: {
+          approved_entry_id?: string | null
+          attachments_count?: number
+          cancellation_reason?: string | null
+          confidentiality?: Database["public"]["Enums"]["registry_confidentiality"]
+          content?: string | null
+          created_at?: string
+          declared_registration_date?: string
+          document_date?: string | null
+          entry_type?: Database["public"]["Enums"]["registry_entry_type"]
+          id?: string
+          is_demo?: boolean
+          is_late?: boolean
+          late_reason?: string | null
+          recipient?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sender?: string | null
+          source_department_key?: string
+          status?: Database["public"]["Enums"]["registry_request_status"]
+          subject?: string | null
+          submit_ip?: unknown
+          submit_user_agent?: string | null
+          submitted_by?: string | null
+          temp_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_requests_approved_entry_fk"
+            columns: ["approved_entry_id"]
+            isOneToOne: false
+            referencedRelation: "registry_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_requests_source_department_key_fkey"
+            columns: ["source_department_key"]
+            isOneToOne: false
+            referencedRelation: "registry_department_settings"
+            referencedColumns: ["department_key"]
+          },
+        ]
       }
       request_routing_rules: {
         Row: {
@@ -3540,6 +3843,7 @@ export type Database = {
       can_manage_library: { Args: { _user_id: string }; Returns: boolean }
       can_manage_medical: { Args: { _user_id: string }; Returns: boolean }
       can_manage_procurement: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_registry: { Args: { _user_id: string }; Returns: boolean }
       can_manage_salarizare: { Args: { _user_id: string }; Returns: boolean }
       can_publish_announcements: {
         Args: { _user_id: string }
@@ -3547,6 +3851,10 @@ export type Database = {
       }
       can_publish_events: { Args: { _user_id: string }; Returns: boolean }
       can_view_medical_status: { Args: { _user_id: string }; Returns: boolean }
+      can_view_restricted_management: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       can_view_sensitive_profile_data: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
@@ -3556,6 +3864,10 @@ export type Database = {
       generate_leave_request_number: { Args: never; Returns: string }
       generate_procurement_request_number: { Args: never; Returns: string }
       get_user_department: { Args: { _user_id: string }; Returns: string }
+      get_user_registry_dept_key: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -3584,6 +3896,10 @@ export type Database = {
       }
       is_leave_approver_for_request: {
         Args: { _request_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_registry_operator: {
+        Args: { _department_key: string; _user_id: string }
         Returns: boolean
       }
       log_audit_event: {
