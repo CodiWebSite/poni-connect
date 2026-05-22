@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     if (reqRow.submitted_by !== userId && !isAdmin) {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    if (!["draft", "submitted"].includes(reqRow.status)) {
+    if (!["draft", "submitted_to_secretariat"].includes(reqRow.status)) {
       return new Response(JSON.stringify({ error: "invalid_status" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
