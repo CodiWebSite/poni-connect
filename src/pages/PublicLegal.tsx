@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileLock2, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { FileLock2, ArrowLeft, ShieldCheck, Globe, Home, ChevronRight } from 'lucide-react';
 import MolecularPattern from '@/components/auth/MolecularPattern';
 
 const RIGHTS = [
