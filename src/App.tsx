@@ -43,6 +43,7 @@ import MedicinaMuncii from "./pages/MedicinaMuncii";
 import InstallApp from "./pages/InstallApp";
 import Kiosk from "./pages/Kiosk";
 import Archive from "./pages/Archive";
+import Registratura from "./pages/Registratura";
 import PublicProfile from "./pages/PublicProfile";
 import BusinessCards from "./pages/BusinessCards";
 import Changelog from "./pages/Changelog";
