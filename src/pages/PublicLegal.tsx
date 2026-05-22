@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileLock2, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { FileLock2, ArrowLeft, ShieldCheck, Globe, Home, ChevronRight } from 'lucide-react';
 import MolecularPattern from '@/components/auth/MolecularPattern';
 
 const RIGHTS = [
@@ -24,6 +24,17 @@ const DATA_CATEGORIES = [
 
 export default function PublicLegal() {
   const { hash, pathname } = useLocation();
+
+  const isConfidentialitate = pathname.includes('confidentialitate') && !pathname.includes('informare');
+  const isInformare = pathname.includes('informare-autentificare');
+
+  const pageTitle = isInformare
+    ? 'Informare privind prelucrarea datelor la autentificare'
+    : 'Politica de confidențialitate';
+
+  const pageSubtitle = isInformare
+    ? 'Document public privind datele prelucrate la autentificare.'
+    : 'Document public privind protecția datelor personale (RGPD).'
 
   useEffect(() => {
     if (pathname.includes('informare-autentificare')) {
@@ -58,13 +69,34 @@ export default function PublicLegal() {
         </div>
       </header>
 
+      {/* Public document banner */}
+      <div className="relative z-10 bg-primary/5 border-b border-primary/10">
+        <div className="max-w-4xl mx-auto px-4 lg:px-8 py-3 flex items-center gap-2">
+          <Globe className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium text-primary">Document public</span>
+          <span className="text-sm text-muted-foreground">— disponibil fără autentificare</span>
+        </div>
+      </div>
+
       <main className="relative z-10 max-w-4xl mx-auto px-4 lg:px-8 py-10 space-y-6">
-        <div>
+        {/* Breadcrumb */}
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Link to="/auth" className="flex items-center gap-1 hover:text-foreground transition-colors">
+            <Home className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Autentificare</span>
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span>Documente publice</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span className="text-foreground font-medium">{pageTitle}</span>
+        </nav>
+
+        <div className="pt-2">
           <h1 className="text-3xl font-display font-bold flex items-center gap-3">
-            <FileLock2 className="w-8 h-8 text-primary" /> Confidențialitate & RGPD
+            <FileLock2 className="w-8 h-8 text-primary" /> {pageTitle}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Informații publice privind prelucrarea datelor pe Intranetul ICMPP.
+            {pageSubtitle}
           </p>
         </div>
 
