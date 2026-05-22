@@ -2698,6 +2698,63 @@ export type Database = {
           },
         ]
       }
+      registry_attachments: {
+        Row: {
+          bucket: string
+          created_at: string
+          entry_id: string | null
+          file_name: string
+          id: string
+          is_demo: boolean
+          mime_type: string | null
+          request_id: string | null
+          size_bytes: number
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          bucket?: string
+          created_at?: string
+          entry_id?: string | null
+          file_name: string
+          id?: string
+          is_demo?: boolean
+          mime_type?: string | null
+          request_id?: string | null
+          size_bytes: number
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          entry_id?: string | null
+          file_name?: string
+          id?: string
+          is_demo?: boolean
+          mime_type?: string | null
+          request_id?: string | null
+          size_bytes?: number
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_attachments_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "registry_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_attachments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_counters: {
         Row: {
           current_value: number
@@ -2768,6 +2825,11 @@ export type Database = {
           draft_prefix: string
           id: string
           is_active: boolean
+          pin_hash: string | null
+          pin_lockout_minutes: number
+          pin_max_attempts: number
+          pin_rotated_at: string | null
+          pin_rotated_by: string | null
           profile_department_value: string
           updated_at: string
         }
@@ -2778,6 +2840,11 @@ export type Database = {
           draft_prefix: string
           id?: string
           is_active?: boolean
+          pin_hash?: string | null
+          pin_lockout_minutes?: number
+          pin_max_attempts?: number
+          pin_rotated_at?: string | null
+          pin_rotated_by?: string | null
           profile_department_value: string
           updated_at?: string
         }
@@ -2788,6 +2855,11 @@ export type Database = {
           draft_prefix?: string
           id?: string
           is_active?: boolean
+          pin_hash?: string | null
+          pin_lockout_minutes?: number
+          pin_max_attempts?: number
+          pin_rotated_at?: string | null
+          pin_rotated_by?: string | null
           profile_department_value?: string
           updated_at?: string
         }
@@ -2934,6 +3006,80 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "registry_entries"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_orphan_storage: {
+        Row: {
+          bucket: string
+          created_at: string
+          failure_reason: string | null
+          id: string
+          resolved_at: string | null
+          retry_count: number
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          resolved_at?: string | null
+          retry_count?: number
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          resolved_at?: string | null
+          retry_count?: number
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      registry_pin_state: {
+        Row: {
+          created_at: string
+          department_key: string
+          failed_count: number
+          id: string
+          last_attempt_at: string | null
+          locked_until: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department_key: string
+          failed_count?: number
+          id?: string
+          last_attempt_at?: string | null
+          locked_until?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department_key?: string
+          failed_count?: number
+          id?: string
+          last_attempt_at?: string | null
+          locked_until?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_pin_state_department_key_fkey"
+            columns: ["department_key"]
+            isOneToOne: false
+            referencedRelation: "registry_department_settings"
+            referencedColumns: ["department_key"]
           },
         ]
       }
@@ -3834,9 +3980,68 @@ export type Database = {
       }
     }
     Functions: {
+      _allocate_official_number: {
+        Args: { _is_demo: boolean; _series_key: string; _year: number }
+        Returns: number
+      }
+      _delete_attachment_verified: {
+        Args: { _actor_user_id: string; _attachment_id: string }
+        Returns: Json
+      }
+      _register_attachment_verified: {
+        Args: {
+          _actor_user_id: string
+          _file_name: string
+          _is_demo: boolean
+          _mime_type: string
+          _request_id: string
+          _size_bytes: number
+          _storage_path: string
+        }
+        Returns: string
+      }
+      _report_orphan_storage: {
+        Args: { _bucket: string; _reason: string; _storage_path: string }
+        Returns: string
+      }
+      _submit_registry_request_verified: {
+        Args: {
+          _actor_ip: unknown
+          _actor_user_agent: string
+          _actor_user_id: string
+          _payload: Json
+        }
+        Returns: string
+      }
+      _verify_registry_pin: {
+        Args: { _department_key: string; _pin: string; _user_id: string }
+        Returns: Json
+      }
+      approve_registry_request: {
+        Args: {
+          _override_date?: string
+          _override_reason?: string
+          _request_id: string
+        }
+        Returns: string
+      }
+      approve_registry_request_restricted: {
+        Args: { _request_id: string }
+        Returns: Json
+      }
       archive_same_department: {
         Args: { _doc_department: string }
         Returns: boolean
+      }
+      assign_registry_entry: {
+        Args: {
+          _department_key?: string
+          _due_date?: string
+          _entry_id: string
+          _instructions?: string
+          _user_id?: string
+        }
+        Returns: string
       }
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
@@ -3859,7 +4064,15 @@ export type Database = {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
       }
+      cancel_registry_entry: {
+        Args: { _entry_id: string; _reason: string }
+        Returns: undefined
+      }
       ensure_department_group: { Args: { _user_id: string }; Returns: string }
+      ensure_registry_temp_sequence: {
+        Args: { _department_key: string }
+        Returns: undefined
+      }
       epd_same_department: { Args: { _epd_id: string }; Returns: boolean }
       generate_leave_request_number: { Args: never; Returns: string }
       generate_procurement_request_number: { Args: never; Returns: string }
@@ -3902,6 +4115,14 @@ export type Database = {
         Args: { _department_key: string; _user_id: string }
         Returns: boolean
       }
+      link_registry_entries: {
+        Args: {
+          _from_entry_id: string
+          _link_type?: string
+          _to_entry_id: string
+        }
+        Returns: string
+      }
       log_audit_event: {
         Args: {
           _action: string
@@ -3923,9 +4144,31 @@ export type Database = {
           total_co_days: number
         }[]
       }
+      reject_registry_request: {
+        Args: { _reason: string; _request_id: string }
+        Returns: undefined
+      }
       revoke_all_trusted_devices: {
         Args: { _reason: string; _user_id: string }
         Returns: number
+      }
+      rotate_department_pin: {
+        Args: { _department_key: string; _new_pin: string }
+        Returns: undefined
+      }
+      secretariat_restricted_queue: {
+        Args: never
+        Returns: {
+          attachments_count: number
+          created_at: string
+          declared_registration_date: string
+          document_date: string
+          entry_type: Database["public"]["Enums"]["registry_entry_type"]
+          id: string
+          is_late: boolean
+          source_department_key: string
+          temp_code: string
+        }[]
       }
       storage_archive_department_match: {
         Args: { _name: string }
@@ -3941,6 +4184,12 @@ export type Database = {
       user_same_department: {
         Args: { _target_user_id: string }
         Returns: boolean
+      }
+      verify_counter_integrity: {
+        Args: { _series_key: string; _year: number }
+        Returns: {
+          missing_number: number
+        }[]
       }
     }
     Enums: {
