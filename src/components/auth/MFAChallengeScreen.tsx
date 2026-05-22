@@ -93,14 +93,15 @@ export default function MFAChallengeScreen({ onVerified }: MFAChallengeScreenPro
       // Verified — register trusted device if requested
       if (trustDevice) {
         try {
-          const { data, error } = await supabase.functions.invoke('mfa-trusted-create', {
+          const invokeOptions = {
             body: {
               friendlyName: navigator.platform || 'Acest dispozitiv',
             },
-            headers: verifiedSession?.access_token
-              ? { Authorization: `Bearer ${verifiedSession.access_token}` }
-              : undefined,
-          });
+            ...(verifiedSession?.access_token
+              ? { headers: { Authorization: `Bearer ${verifiedSession.access_token}` } }
+              : {}),
+          };
+          const { data, error } = await supabase.functions.invoke('mfa-trusted-create', invokeOptions);
           if (!error && data?.token) {
             localStorage.setItem(TRUSTED_TOKEN_KEY, data.token);
             sessionStorage.setItem('icmpp_trusted_session', '1');
