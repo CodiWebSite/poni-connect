@@ -95,7 +95,7 @@ export default function MFAChallengeScreen({ onVerified }: MFAChallengeScreenPro
         try {
           const { data, error } = await supabase.functions.invoke('mfa-trusted-create', {
             body: {
-              friendly_name: navigator.platform || 'Acest dispozitiv',
+              friendlyName: navigator.platform || 'Acest dispozitiv',
             },
           });
           if (!error && data?.token) {
