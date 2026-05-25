@@ -482,9 +482,17 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               id="start_date"
               type="date"
               value={startDate}
-              onChange={e => setStartDate(e.target.value)}
+              onChange={e => {
+                const v = e.target.value;
+                if (v && isWeekend(parseISO(v))) {
+                  toast({ title: 'Zi nelucrătoare', description: 'Sâmbăta și duminica nu pot fi selectate.', variant: 'destructive' });
+                  return;
+                }
+                setStartDate(v);
+              }}
               min={format(new Date(), 'yyyy-MM-dd')}
             />
+            <p className="text-xs text-muted-foreground">Sâmbăta și duminica sunt nelucrătoare.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="end_date">Data sfârșit *</Label>
@@ -492,9 +500,17 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               id="end_date"
               type="date"
               value={endDate}
-              onChange={e => setEndDate(e.target.value)}
+              onChange={e => {
+                const v = e.target.value;
+                if (v && isWeekend(parseISO(v))) {
+                  toast({ title: 'Zi nelucrătoare', description: 'Sâmbăta și duminica nu pot fi selectate.', variant: 'destructive' });
+                  return;
+                }
+                setEndDate(v);
+              }}
               min={startDate || format(new Date(), 'yyyy-MM-dd')}
             />
+            <p className="text-xs text-muted-foreground">Sâmbăta și duminica sunt nelucrătoare.</p>
           </div>
         </div>
 
