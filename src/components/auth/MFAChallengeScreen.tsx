@@ -17,6 +17,7 @@ interface MFAChallengeScreenProps {
 
 const MAX_ATTEMPTS = 5;
 const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
+const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
 
 export default function MFAChallengeScreen({ onVerified }: MFAChallengeScreenProps) {
   const [code, setCode] = useState('');
@@ -48,7 +49,8 @@ export default function MFAChallengeScreen({ onVerified }: MFAChallengeScreenPro
             body: { token },
           });
           if (!error && data?.valid) {
-            sessionStorage.setItem('icmpp_trusted_session', '1');
+            const { data: userData } = await supabase.auth.getUser();
+            sessionStorage.setItem(TRUSTED_SESSION_KEY, userData?.user?.id ?? '1');
             onVerified();
           } else if (data && data.valid === false && ['not_found', 'mismatch', 'revoked', 'expired', 'force_reenroll'].includes(data.reason)) {
             localStorage.removeItem(TRUSTED_TOKEN_KEY);
@@ -104,7 +106,8 @@ export default function MFAChallengeScreen({ onVerified }: MFAChallengeScreenPro
           const { data, error } = await supabase.functions.invoke('mfa-trusted-create', invokeOptions);
           if (!error && data?.token) {
             localStorage.setItem(TRUSTED_TOKEN_KEY, data.token);
-            sessionStorage.setItem('icmpp_trusted_session', '1');
+            const { data: userData } = await supabase.auth.getUser();
+            sessionStorage.setItem(TRUSTED_SESSION_KEY, userData?.user?.id ?? '1');
           } else {
             toast.error(data?.error || 'Browserul de încredere nu a putut fi salvat');
           }
