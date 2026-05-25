@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from '@/components/shared/SignaturePad';
-import { Calendar, Loader2, Send, AlertTriangle } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Send, AlertTriangle } from 'lucide-react';
 import { format, eachDayOfInterval, parseISO, isWeekend, addDays } from 'date-fns';
 
 function formatDate(dateStr: string): string {
@@ -18,6 +18,9 @@ function formatDate(dateStr: string): string {
 }
 import { ro } from 'date-fns/locale';
 import { isPublicHoliday, isDayOff } from '@/utils/romanianHolidays';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 interface EmployeeData {
   id: string;
@@ -431,14 +434,14 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
+          <CalendarIcon className="w-5 h-5" />
           Cerere Concediu de Odihnă
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {isDemo && (
           <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm flex items-center gap-2">
-            <Calendar className="w-4 h-4 flex-shrink-0" />
+            <CalendarIcon className="w-4 h-4 flex-shrink-0" />
             Această cerere este de exercițiu (Mod Demo). Nu va afecta soldul real de concediu.
           </div>
         )}
@@ -478,38 +481,97 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="start_date">Data început *</Label>
-            <Input
-              id="start_date"
-              type="date"
-              value={startDate}
-              onChange={e => {
-                const v = e.target.value;
-                if (v && isWeekend(parseISO(v))) {
-                  toast({ title: 'Zi nelucrătoare', description: 'Sâmbăta și duminica nu pot fi selectate.', variant: 'destructive' });
-                  return;
-                }
-                setStartDate(v);
-              }}
-              min={format(new Date(), 'yyyy-MM-dd')}
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="start_date"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(parseISO(startDate), 'dd.MM.yyyy') : <span>Selectați data</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-1" align="start">
+                <Calendar
+                  mode="single"
+                  selected={startDate ? parseISO(startDate) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      const v = format(date, 'yyyy-MM-dd');
+                      if (isWeekend(date)) {
+                        toast({ title: 'Zi nelucrătoare', description: 'Sâmbăta și duminica nu pot fi selectate.', variant: 'destructive' });
+                        setStartDate('');
+                        return;
+                      }
+                      setStartDate(v);
+                    } else {
+                      setStartDate('');
+                    }
+                  }}
+                  disabled={(date) => {
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    return date < today || isWeekend(date);
+                  }}
+                  locale={ro}
+                  weekStartsOn={1}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
             <p className="text-xs text-muted-foreground">Sâmbăta și duminica sunt nelucrătoare.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="end_date">Data sfârșit *</Label>
-            <Input
-              id="end_date"
-              type="date"
-              value={endDate}
-              onChange={e => {
-                const v = e.target.value;
-                if (v && isWeekend(parseISO(v))) {
-                  toast({ title: 'Zi nelucrătoare', description: 'Sâmbăta și duminica nu pot fi selectate.', variant: 'destructive' });
-                  return;
-                }
-                setEndDate(v);
-              }}
-              min={startDate || format(new Date(), 'yyyy-MM-dd')}
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="end_date"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(parseISO(endDate), 'dd.MM.yyyy') : <span>Selectați data</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-1" align="start">
+                <Calendar
+                  mode="single"
+                  selected={endDate ? parseISO(endDate) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      const v = format(date, 'yyyy-MM-dd');
+                      if (isWeekend(date)) {
+                        toast({ title: 'Zi nelucrătoare', description: 'Sâmbăta și duminica nu pot fi selectate.', variant: 'destructive' });
+                        setEndDate('');
+                        return;
+                      }
+                      setEndDate(v);
+                    } else {
+                      setEndDate('');
+                    }
+                  }}
+                  disabled={(date) => {
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const minDate = startDate ? parseISO(startDate) : today;
+                    return date < minDate || isWeekend(date);
+                  }}
+                  locale={ro}
+                  weekStartsOn={1}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
             <p className="text-xs text-muted-foreground">Sâmbăta și duminica sunt nelucrătoare.</p>
           </div>
         </div>
