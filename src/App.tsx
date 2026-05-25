@@ -43,6 +43,9 @@ import MedicinaMuncii from "./pages/MedicinaMuncii";
 import InstallApp from "./pages/InstallApp";
 import Kiosk from "./pages/Kiosk";
 import Archive from "./pages/Archive";
+
+const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
+const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
 import Registratura from "./pages/Registratura";
 import PublicProfile from "./pages/PublicProfile";
 import BusinessCards from "./pages/BusinessCards";
@@ -143,12 +146,35 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (cancelled) return;
       if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
-        // Trusted-device shortcut (already verified earlier this session)
-        if (sessionStorage.getItem('icmpp_trusted_session') === '1') {
+        // Trusted-device shortcut: validate the saved 30-day browser token before showing MFA.
+        if (sessionStorage.getItem(TRUSTED_SESSION_KEY) === user.id) {
           setNeedsMFA(false);
-        } else {
-          setNeedsMFA(true);
+          return;
         }
+
+        const trustedToken = localStorage.getItem(TRUSTED_TOKEN_KEY);
+        if (trustedToken) {
+          try {
+            const { data, error } = await supabase.functions.invoke('mfa-trusted-check', {
+              body: { token: trustedToken },
+            });
+            if (cancelled) return;
+
+            if (!error && data?.valid) {
+              sessionStorage.setItem(TRUSTED_SESSION_KEY, user.id);
+              setNeedsMFA(false);
+              return;
+            }
+
+            if (data?.valid === false && ['not_found', 'mismatch', 'revoked', 'expired', 'force_reenroll'].includes(data.reason)) {
+              localStorage.removeItem(TRUSTED_TOKEN_KEY);
+            }
+          } catch {
+            // Network/function errors fall back to normal MFA challenge.
+          }
+        }
+
+        setNeedsMFA(true);
       } else {
         setNeedsMFA(false);
       }
