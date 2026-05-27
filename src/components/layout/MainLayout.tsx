@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import MobileNav from './MobileNav';
@@ -10,9 +10,8 @@ import { usePresence } from '@/hooks/usePresence';
 import { usePageTracking } from '@/hooks/useAnalytics';
 import { useIdleLogout } from '@/hooks/useIdleLogout';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { useLocation } from 'react-router-dom';
-import { AlertTriangle, Clock, X } from 'lucide-react';
+import { AlertTriangle, Clock } from 'lucide-react';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -20,25 +19,10 @@ interface MainLayoutProps {
   description?: ReactNode;
 }
 
-const SECRETARIAT_BANNER_KEY = 'secretariat-hours-banner-dismissed';
-
 const SecretariatHoursNotice = () => {
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    setDismissed(localStorage.getItem(SECRETARIAT_BANNER_KEY) === 'true');
-  }, []);
-
-  if (dismissed) return null;
-
-  const handleDismiss = () => {
-    localStorage.setItem(SECRETARIAT_BANNER_KEY, 'true');
-    setDismissed(true);
-  };
-
   return (
     <div className="relative mb-4 overflow-hidden rounded-xl border border-warning/30 bg-warning/10 px-3 py-3 shadow-sm sm:px-4">
-      <div className="flex min-w-0 items-start gap-3 pr-9">
+      <div className="flex min-w-0 items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-warning/15">
           <Clock className="h-5 w-5 text-warning" />
         </div>
@@ -51,14 +35,6 @@ const SecretariatHoursNotice = () => {
           </p>
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={handleDismiss}
-        className="absolute right-2 top-2 h-7 w-7 text-muted-foreground hover:bg-warning/15 hover:text-foreground"
-      >
-        <X className="h-4 w-4" />
-      </Button>
     </div>
   );
 };
