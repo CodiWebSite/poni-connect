@@ -29,17 +29,17 @@ const SecretariatHoursBanner = ({ children }: { children: React.ReactNode }) => 
   return (
     <div className="space-y-4">
       {!dismissed && (
-        <div className="relative rounded-xl border border-amber-200/60 bg-gradient-to-r from-amber-50 to-amber-100/60 dark:from-amber-950/30 dark:to-amber-900/20 p-4 shadow-sm">
-          <div className="flex items-start gap-3 pr-8">
+        <div className="relative rounded-xl border border-amber-200/60 bg-gradient-to-r from-amber-50 to-amber-100/60 dark:from-amber-950/30 dark:to-amber-900/20 p-3 sm:p-4 shadow-sm overflow-hidden">
+          <div className="flex items-start gap-3 pr-10">
             <div className="mt-0.5 w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
               <Clock className="w-5 h-5 text-amber-700 dark:text-amber-400" />
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-                Program secretariat cu publicul — 09:00–13:00
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200 break-words">
+                Program secretariat cu publicul: 09:00–13:00
               </p>
-              <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
-                Stimați colegi, vă informăm că programul de secretariat cu publicul se va desfășura în intervalul orar 09:00–13:00. Vă mulțumim pentru înțelegere și colaborare.
+              <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-1 break-words leading-relaxed">
+                Vă informăm că programul de secretariat cu publicul se desfășoară în intervalul 09:00–13:00. Mulțumim pentru înțelegere.
               </p>
             </div>
           </div>
