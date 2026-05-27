@@ -27,7 +27,7 @@ const SecretariatHoursBanner = ({ children }: { children: React.ReactNode }) => 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full min-w-0 max-w-full overflow-x-hidden">
       {!dismissed && (
         <div className="relative rounded-xl border border-amber-200/60 bg-gradient-to-r from-amber-50 to-amber-100/60 dark:from-amber-950/30 dark:to-amber-900/20 p-3 sm:p-4 shadow-sm overflow-hidden">
           <div className="flex items-start gap-3 pr-10">
