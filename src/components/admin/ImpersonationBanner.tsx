@@ -117,13 +117,15 @@ const ImpersonationBanner = () => {
         <Button
           size="sm"
           variant="outline"
-          className="fixed top-3 right-3 z-[100] h-8 gap-1.5 bg-background/80 backdrop-blur-sm border-border/50 text-xs shadow-md hover:shadow-lg transition-shadow"
+          className="fixed bottom-3 right-3 z-[100] h-8 w-8 p-0 gap-0 bg-background/40 backdrop-blur-sm border-border/30 text-xs shadow-sm opacity-20 hover:opacity-100 hover:w-auto hover:px-3 hover:gap-1.5 transition-all duration-200 overflow-hidden group"
+          title="View As"
         >
-          <Eye className="w-3.5 h-3.5" />
-          View As
+          <Eye className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="hidden group-hover:inline whitespace-nowrap">View As</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
+      <PopoverContent align="end" side="top" className="w-80 p-0">
+
         <Tabs defaultValue="role" className="w-full">
           <div className="border-b px-3 pt-3 pb-0">
             <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
