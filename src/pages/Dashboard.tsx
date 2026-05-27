@@ -70,22 +70,22 @@ const Dashboard = () => {
   }
 
   // Super Admin — Control Center
-  if (isSuperAdmin) return <SuperAdminDashboard />;
+  if (isSuperAdmin) return <SecretariatHoursBanner><SuperAdminDashboard /></SecretariatHoursBanner>;
 
   // HR & SRUS — HR Operations Center
-  if (isHR || isSefSRUS) return <HRStaffDashboard />;
+  if (isHR || isSefSRUS) return <SecretariatHoursBanner><HRStaffDashboard /></SecretariatHoursBanner>;
 
   // Leadership — Department Head Dashboard
-  if (role && LEADERSHIP_ROLES.includes(role)) return <SefDepartmentDashboard />;
+  if (role && LEADERSHIP_ROLES.includes(role)) return <SecretariatHoursBanner><SefDepartmentDashboard /></SecretariatHoursBanner>;
 
   // Medical — Medicina Muncii Dashboard
-  if (isMedicMuncii) return <MedicMunciiDashboard />;
+  if (isMedicMuncii) return <SecretariatHoursBanner><MedicMunciiDashboard /></SecretariatHoursBanner>;
 
   // Operational roles — Compact module-focused dashboard
-  if (role && OPERATIONAL_ROLES.includes(role)) return <OperationalRoleDashboard role={role} />;
+  if (role && OPERATIONAL_ROLES.includes(role)) return <SecretariatHoursBanner><OperationalRoleDashboard role={role} /></SecretariatHoursBanner>;
 
   // Default — Employee Dashboard
-  return <EmployeeDashboard />;
+  return <SecretariatHoursBanner><EmployeeDashboard /></SecretariatHoursBanner>;
 };
 
 export default Dashboard;
