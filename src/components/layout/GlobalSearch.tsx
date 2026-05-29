@@ -19,7 +19,6 @@ type ResultType =
   | 'magazine'
   | 'suggestion'
   | 'equipment'
-  | 'registry'
   | 'archive'
   | 'room';
 
