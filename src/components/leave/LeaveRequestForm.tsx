@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from '@/components/shared/SignaturePad';
-import { Calendar as CalendarIcon, Loader2, Send, AlertTriangle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Calendar as CalendarIcon, Loader2, Send, AlertTriangle, UserCheck } from 'lucide-react';
 import { format, eachDayOfInterval, parseISO, isWeekend, addDays } from 'date-fns';
 
 function formatDate(dateStr: string): string {
@@ -63,6 +64,8 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   const [signature, setSignature] = useState<string | null>(null);
   const [workingDays, setWorkingDays] = useState(0);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [delegateReminderOpen, setDelegateReminderOpen] = useState(false);
+  const [delegatePeriod, setDelegatePeriod] = useState<{ start: string; end: string } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -406,6 +409,31 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       }
 
       onSubmitted();
+
+      // Reminder for approvers (department heads / designated approvers) to set a delegate
+      try {
+        const [{ data: deptAppr }, { data: empAppr }] = await Promise.all([
+          supabase.from('leave_department_approvers').select('id').eq('approver_user_id', user.id).limit(1),
+          supabase.from('leave_approvers').select('id').eq('approver_user_id', user.id).limit(1),
+        ]);
+        const isApprover = (deptAppr?.length || 0) > 0 || (empAppr?.length || 0) > 0;
+        if (isApprover) {
+          const { data: existingDelegates } = await supabase
+            .from('leave_approval_delegates' as any)
+            .select('id, start_date, end_date, is_active')
+            .eq('delegator_user_id', user.id)
+            .eq('is_active', true)
+            .lte('start_date', endDate)
+            .gte('end_date', startDate);
+
+          if (!existingDelegates || existingDelegates.length === 0) {
+            setDelegatePeriod({ start: startDate, end: endDate });
+            setDelegateReminderOpen(true);
+          }
+        }
+      } catch (e) {
+        console.warn('Delegate reminder check failed:', e);
+      }
     }
 
     setSubmitting(false);
@@ -431,6 +459,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -645,5 +674,59 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         </div>
       </CardContent>
     </Card>
+
+    <Dialog open={delegateReminderOpen} onOpenChange={setDelegateReminderOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-primary" />
+            Desemnați un înlocuitor pentru aprobări?
+          </DialogTitle>
+          <DialogDescription className="pt-2 space-y-2">
+            <span className="block">
+              Întrucât aveți atribuții de aprobare a cererilor de concediu, vă recomandăm să desemnați un coleg care să preia temporar aceste responsabilități pe perioada absenței dumneavoastră
+              {delegatePeriod && (
+                <> (<strong>{formatDate(delegatePeriod.start)} – {formatDate(delegatePeriod.end)}</strong>)</>
+              )}.
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              Această setare este opțională și poate fi configurată oricând din tab-ul <strong>Înlocuitor</strong>.
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setDelegateReminderOpen(false);
+              toast({
+                title: 'Reminder',
+                description: 'Puteți desemna un înlocuitor oricând din tab-ul „Înlocuitor".',
+              });
+            }}
+          >
+            Mai târziu
+          </Button>
+          <Button
+            onClick={() => {
+              setDelegateReminderOpen(false);
+              const sp = new URLSearchParams(window.location.search);
+              sp.set('tab', 'delegate');
+              if (delegatePeriod) {
+                sp.set('from', delegatePeriod.start);
+                sp.set('to', delegatePeriod.end);
+              }
+              window.history.pushState({}, '', `${window.location.pathname}?${sp.toString()}`);
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="gap-2"
+          >
+            <UserCheck className="w-4 h-4" />
+            Setează acum
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
