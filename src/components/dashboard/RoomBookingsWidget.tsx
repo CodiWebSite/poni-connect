@@ -116,7 +116,26 @@ export default function RoomBookingsWidget() {
       .filter(b => b.room === roomId && new Date(b.start_time) > now)
       .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())[0];
 
+  const openRoom = (roomId: string) => {
+    const current = getCurrentBooking(roomId);
+    const next = getNextBooking(roomId);
+    const roomBookings = getRoomBookings(roomId);
+
+    if (current) {
+      openDetails(current);
+      return;
+    }
+
+    if (next && roomBookings.length === 1) {
+      openDetails(next);
+      return;
+    }
+
+    setRoomListOpen(roomId);
+  };
+
   const openDetails = (b: RoomBooking) => {
+    setRoomListOpen(null);
     setSelected(b);
     setEditing(false);
     setEditTitle(b.title);
@@ -216,7 +235,8 @@ export default function RoomBookingsWidget() {
                 <button
                   key={room.id}
                   type="button"
-                  onClick={() => setRoomListOpen(room.id)}
+                  onClick={() => openRoom(room.id)}
+                  aria-label={`Deschide detalii programări pentru ${room.label}`}
                   className={cn(
                     "w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left",
                     "hover:shadow-sm hover:-translate-y-px cursor-pointer",
