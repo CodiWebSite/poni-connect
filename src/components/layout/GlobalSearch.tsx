@@ -196,7 +196,7 @@ export const GlobalSearch = () => {
 
   const SearchResultsList = () => {
     const order: ResultType[] = [
-      'announcement','event','employee','document','registry','archive',
+      'announcement','event','employee','document','archive',
       'library','magazine','equipment','room','suggestion',
     ];
 
