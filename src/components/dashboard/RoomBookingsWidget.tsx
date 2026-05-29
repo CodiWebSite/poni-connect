@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { Plus, DoorOpen, Clock, CalendarDays, Pencil, Trash2, User, X } from 'lucide-react';
+import { Plus, DoorOpen, Clock, CalendarDays, Pencil, Trash2, User, X, ChevronRight } from 'lucide-react';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -43,6 +43,11 @@ export default function RoomBookingsWidget() {
   const { isSuperAdmin } = useUserRole();
   const [bookings, setBookings] = useState<RoomBooking[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Room list dialog
+  const [roomListOpen, setRoomListOpen] = useState<string | null>(null);
+
+  // Single booking details/edit dialog
   const [selected, setSelected] = useState<RoomBooking | null>(null);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -99,6 +104,9 @@ export default function RoomBookingsWidget() {
   };
 
   const now = new Date();
+
+  const getRoomBookings = (roomId: string) =>
+    bookings.filter(b => b.room === roomId);
 
   const getCurrentBooking = (roomId: string) =>
     bookings.find(b => b.room === roomId && new Date(b.start_time) <= now && new Date(b.end_time) > now);
@@ -168,6 +176,9 @@ export default function RoomBookingsWidget() {
     fetchBookings();
   };
 
+  const activeRoom = ROOMS.find(r => r.id === roomListOpen);
+  const activeRoomBookings = roomListOpen ? getRoomBookings(roomListOpen) : [];
+
   return (
     <>
       <Card className="border-primary/20 shadow-card-hover hover:-translate-y-0.5 transition-all duration-300">
@@ -198,23 +209,30 @@ export default function RoomBookingsWidget() {
             ROOMS.map(room => {
               const current = getCurrentBooking(room.id);
               const next = getNextBooking(room.id);
+              const roomBookings = getRoomBookings(room.id);
               const isOccupied = !!current;
-              const activeBooking = current || next;
 
               return (
-                <div
+                <button
                   key={room.id}
+                  type="button"
+                  onClick={() => setRoomListOpen(room.id)}
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                    isOccupied ? "bg-destructive/5 border-destructive/20" : "bg-success/5 border-success/20",
-                    activeBooking && "cursor-pointer hover:bg-opacity-80"
+                    "w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left",
+                    "hover:shadow-sm hover:-translate-y-px cursor-pointer",
+                    isOccupied ? "bg-destructive/5 border-destructive/20 hover:bg-destructive/10" : "bg-success/5 border-success/20 hover:bg-success/10"
                   )}
-                  onClick={() => activeBooking && openDetails(activeBooking)}
-                  role={activeBooking ? 'button' : undefined}
                 >
                   <div className="text-2xl">{room.icon}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold">{room.label}</p>
+                    <p className="text-sm font-semibold flex items-center gap-2">
+                      {room.label}
+                      {roomBookings.length > 0 && (
+                        <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                          {roomBookings.length}
+                        </Badge>
+                      )}
+                    </p>
                     {isOccupied ? (
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="relative flex h-2 w-2">
@@ -230,9 +248,7 @@ export default function RoomBookingsWidget() {
                       </div>
                     ) : next ? (
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="relative flex h-2 w-2">
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
-                        </span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
                         <span className="text-xs text-success font-medium">Liberă acum</span>
                         <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                           <Clock className="w-3 h-3" />
@@ -241,30 +257,86 @@ export default function RoomBookingsWidget() {
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="relative flex h-2 w-2">
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
-                        </span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
                         <span className="text-xs text-success font-medium">Liberă toată ziua</span>
                       </div>
                     )}
                   </div>
-                  <Link to="/room-bookings" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="sm"
-                      variant={isOccupied ? "outline" : "default"}
-                      className={cn("h-7 text-xs", !isOccupied && "bg-success hover:bg-success/90")}
-                    >
-                      <CalendarDays className="w-3.5 h-3.5 mr-1" />
-                      {isOccupied ? 'Vezi' : 'Rezervă'}
-                    </Button>
-                  </Link>
-                </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                </button>
               );
             })
           )}
         </CardContent>
       </Card>
 
+      {/* Room bookings list dialog */}
+      <Dialog open={!!roomListOpen} onOpenChange={(o) => { if (!o) setRoomListOpen(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">{activeRoom?.icon}</span>
+              {activeRoom?.label}
+            </DialogTitle>
+            <DialogDescription>
+              Rezervări pentru astăzi, {format(new Date(), 'd MMMM', { locale: ro })}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto -mx-1 px-1">
+            {activeRoomBookings.length === 0 ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                Nicio rezervare pentru astăzi.
+              </div>
+            ) : (
+              activeRoomBookings.map(b => {
+                const isCurrent = new Date(b.start_time) <= now && new Date(b.end_time) > now;
+                const isPast = new Date(b.end_time) <= now;
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => openDetails(b)}
+                    className={cn(
+                      "w-full text-left p-3 rounded-lg border transition-colors hover:bg-accent",
+                      isCurrent && "border-destructive/30 bg-destructive/5",
+                      isPast && "opacity-60"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{b.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {format(new Date(b.start_time), 'HH:mm')} — {format(new Date(b.end_time), 'HH:mm')}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {b.profile_name}
+                        </p>
+                      </div>
+                      {isCurrent && (
+                        <Badge variant="destructive" className="text-[10px]">Acum</Badge>
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Link to="/room-bookings" className="w-full sm:w-auto">
+              <Button variant="default" size="sm" className="w-full">
+                <Plus className="w-3.5 h-3.5 mr-1" /> Rezervare nouă
+              </Button>
+            </Link>
+            <Button variant="ghost" size="sm" onClick={() => setRoomListOpen(null)}>Închide</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Single booking details / edit */}
       <Dialog open={!!selected} onOpenChange={(o) => { if (!o) { setSelected(null); setEditing(false); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
