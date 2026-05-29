@@ -39,7 +39,6 @@ const typeMeta: Record<ResultType, { icon: any; label: string; color: string }> 
   magazine: { icon: BookOpen, label: 'Revistă', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
   suggestion: { icon: Lightbulb, label: 'Sugestie', color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' },
   equipment: { icon: Boxes, label: 'Echipament', color: 'bg-slate-500/10 text-slate-600 dark:text-slate-300' },
-  registry: { icon: Inbox, label: 'Registratură', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' },
   archive: { icon: Archive, label: 'Arhivă', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
   room: { icon: DoorOpen, label: 'Rezervare sală', color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400' },
 };
