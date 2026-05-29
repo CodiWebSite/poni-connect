@@ -248,7 +248,7 @@ const App = () => (
                 <Route path="/medicina-muncii" element={<MedicinaMuncii />} />
                 <Route path="/install" element={<InstallApp />} />
                 <Route path="/arhiva" element={<Archive />} />
-                <Route path="/registratura" element={<Registratura />} />
+                
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="/profil/:id" element={<PublicProfile />} />
