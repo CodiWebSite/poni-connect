@@ -11,6 +11,7 @@ import HRAlerts from './HRAlerts';
 import LeaveByDepartment from './LeaveByDepartment';
 import ChangelogWidget from './ChangelogWidget';
 import DashboardAnnouncements from './DashboardAnnouncements';
+import RoomBookingsWidget from './RoomBookingsWidget';
 import {
   Users, FileWarning, Inbox, CreditCard, Calendar, ClipboardList,
   FolderOpen, AlertTriangle, UserX,
@@ -68,6 +69,11 @@ const HRStaffDashboard = () => {
       <DashboardAlertsBanner />
       <MFARecommendationBanner />
       <DashboardGreeting subtitle="Centru operațional HR" />
+
+      {/* Room Bookings — prominent placement */}
+      <div className="mt-4">
+        <RoomBookingsWidget />
+      </div>
 
       {/* Pending + Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">

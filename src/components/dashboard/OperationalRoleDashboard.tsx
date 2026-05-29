@@ -7,6 +7,7 @@ import DashboardAnnouncements from './DashboardAnnouncements';
 import ActivityHistory from './ActivityHistory';
 import ChangelogWidget from './ChangelogWidget';
 import PersonalLeaveWidget from './PersonalLeaveWidget';
+import RoomBookingsWidget from './RoomBookingsWidget';
 import {
   UserCircle, Calendar, FolderDown, BookOpen, DollarSign, FileText,
   ShoppingCart, Scale, Megaphone, Mail, LucideIcon,
@@ -74,6 +75,11 @@ const OperationalRoleDashboard = ({ role }: OperationalRoleDashboardProps) => {
       <DashboardAlertsBanner />
       <MFARecommendationBanner />
       <DashboardGreeting subtitle={config.subtitle} />
+
+      {/* Room Bookings — prominent placement */}
+      <div className="mt-4">
+        <RoomBookingsWidget />
+      </div>
 
       {/* Announcements + Leave */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">

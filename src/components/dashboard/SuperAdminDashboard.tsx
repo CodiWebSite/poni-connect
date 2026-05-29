@@ -14,6 +14,7 @@ import AnalyticsWidget from './AnalyticsWidget';
 import AdoptionTrendChart from './AdoptionTrendChart';
 import ChangelogWidget from './ChangelogWidget';
 import DashboardAnnouncements from './DashboardAnnouncements';
+import RoomBookingsWidget from './RoomBookingsWidget';
 import {
   Users, ShieldCheck, ScrollText, Settings, Activity, UserPlus,
   TicketCheck, FileWarning, UserX, Inbox, Database, HeartPulse,
@@ -89,6 +90,11 @@ const SuperAdminDashboard = () => {
       <DashboardAlertsBanner />
       <MFARecommendationBanner />
       <DashboardGreeting subtitle="Centru de control administrativ" />
+
+      {/* Room Bookings — prominent placement */}
+      <div className="mt-4">
+        <RoomBookingsWidget />
+      </div>
 
       {/* Alerts & Pending */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
