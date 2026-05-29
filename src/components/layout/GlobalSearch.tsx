@@ -154,12 +154,6 @@ export const GlobalSearch = () => {
         description: [e.brand_model, e.inventory_number && `inv. ${e.inventory_number}`, e.serial_number && `SN ${e.serial_number}`].filter(Boolean).join(' • '),
         type: 'equipment', url: '/inventory',
       }));
-      (regR.data || []).forEach((r: any) => merged.push({
-        id: r.id,
-        title: `${r.series_key || ''}-${r.year || ''}-${r.official_number || ''} ${r.subject ? '· ' + r.subject : ''}`.trim(),
-        description: [r.sender && `de la ${r.sender}`, r.recipient && `către ${r.recipient}`].filter(Boolean).join(' • '),
-        type: 'registry', url: '/registratura',
-      }));
       (arcR.data || []).forEach((a: any) => merged.push({
         id: a.id, title: a.file_name || a.registration_number,
         description: [a.registration_number, a.department, a.description].filter(Boolean).join(' • '),
