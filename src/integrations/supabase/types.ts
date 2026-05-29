@@ -3800,6 +3800,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_signatures: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          label: string
+          signature_data: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          signature_data: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          signature_data?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       employee_directory: {
