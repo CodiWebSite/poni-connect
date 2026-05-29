@@ -459,6 +459,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
