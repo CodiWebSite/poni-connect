@@ -64,6 +64,8 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   const [signature, setSignature] = useState<string | null>(null);
   const [workingDays, setWorkingDays] = useState(0);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [delegateReminderOpen, setDelegateReminderOpen] = useState(false);
+  const [delegatePeriod, setDelegatePeriod] = useState<{ start: string; end: string } | null>(null);
 
   useEffect(() => {
     if (user) {
