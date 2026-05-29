@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from '@/components/shared/SignaturePad';
-import { Calendar as CalendarIcon, Loader2, Send, AlertTriangle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Calendar as CalendarIcon, Loader2, Send, AlertTriangle, UserCheck } from 'lucide-react';
 import { format, eachDayOfInterval, parseISO, isWeekend, addDays } from 'date-fns';
 
 function formatDate(dateStr: string): string {
