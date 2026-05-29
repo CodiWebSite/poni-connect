@@ -9,6 +9,7 @@ import PendingActionsWidget, { PendingAction } from './PendingActionsWidget';
 import StatCard from './StatCard';
 import DashboardAnnouncements from './DashboardAnnouncements';
 import ChangelogWidget from './ChangelogWidget';
+import RoomBookingsWidget from './RoomBookingsWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -120,6 +121,11 @@ const MedicMunciiDashboard = () => {
       <DashboardAlertsBanner />
       <MFARecommendationBanner />
       <DashboardGreeting subtitle="Monitorizare medicina muncii" />
+
+      {/* Room Bookings — prominent placement */}
+      <div className="mt-4">
+        <RoomBookingsWidget />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
         <PendingActionsWidget actions={pendingActions} loading={loading} />

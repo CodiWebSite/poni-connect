@@ -11,6 +11,7 @@ import ActivityHistory from './ActivityHistory';
 import PersonalLeaveWidget from './PersonalLeaveWidget';
 import ChangelogWidget from './ChangelogWidget';
 import InstallAppBanner from './InstallAppBanner';
+import RoomBookingsWidget from './RoomBookingsWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -98,6 +99,11 @@ const EmployeeDashboard = () => {
       <DashboardAlertsBanner />
       <MFARecommendationBanner />
       <DashboardGreeting subtitle="Iată un rezumat al situației tale." />
+
+      {/* Room Bookings — prominent placement */}
+      <div className="mt-4">
+        <RoomBookingsWidget />
+      </div>
 
       {/* Announcements */}
       <div className="mt-4">
