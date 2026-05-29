@@ -101,7 +101,7 @@ export const GlobalSearch = () => {
       // All queries run in parallel. RLS automatically restricts results
       // per role/department/GDPR — we never bypass it on the client.
       const [
-        annR, docR, empR, evtR, libR, magR, sugR, eqR, regR, arcR, roomR,
+        annR, docR, empR, evtR, libR, magR, sugR, eqR, arcR, roomR,
       ] = await Promise.all([
         supabase.from('announcements').select('id, title, content').or(`title.ilike.${like},content.ilike.${like}`).limit(4),
         supabase.from('documents').select('id, name, description').or(`name.ilike.${like},description.ilike.${like}`).limit(4),
@@ -111,7 +111,6 @@ export const GlobalSearch = () => {
         supabase.from('library_magazines').select('id, titlu, an, volum, numar').ilike('titlu', like).limit(3),
         supabase.from('suggestions').select('id, title, description').or(`title.ilike.${like},description.ilike.${like}`).limit(3),
         supabase.from('equipment_items').select('id, name, serial_number, inventory_number, brand_model').or(`name.ilike.${like},serial_number.ilike.${like},inventory_number.ilike.${like},brand_model.ilike.${like}`).limit(4),
-        supabase.from('registry_entries').select('id, official_number, year, series_key, subject, sender, recipient').or(`subject.ilike.${like},sender.ilike.${like},recipient.ilike.${like}`).limit(4),
         supabase.from('archive_documents').select('id, file_name, description, registration_number, department').or(`file_name.ilike.${like},description.ilike.${like},registration_number.ilike.${like}`).limit(3),
         supabase.from('room_bookings').select('id, title, room, description, start_time').or(`title.ilike.${like},room.ilike.${like},description.ilike.${like}`).limit(3),
       ]);
