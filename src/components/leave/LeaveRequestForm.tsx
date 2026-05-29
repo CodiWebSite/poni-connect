@@ -673,5 +673,59 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         </div>
       </CardContent>
     </Card>
+
+    <Dialog open={delegateReminderOpen} onOpenChange={setDelegateReminderOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-primary" />
+            Desemnați un înlocuitor pentru aprobări?
+          </DialogTitle>
+          <DialogDescription className="pt-2 space-y-2">
+            <span className="block">
+              Întrucât aveți atribuții de aprobare a cererilor de concediu, vă recomandăm să desemnați un coleg care să preia temporar aceste responsabilități pe perioada absenței dumneavoastră
+              {delegatePeriod && (
+                <> (<strong>{formatDate(delegatePeriod.start)} – {formatDate(delegatePeriod.end)}</strong>)</>
+              )}.
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              Această setare este opțională și poate fi configurată oricând din tab-ul <strong>Înlocuitor</strong>.
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setDelegateReminderOpen(false);
+              toast({
+                title: 'Reminder',
+                description: 'Puteți desemna un înlocuitor oricând din tab-ul „Înlocuitor".',
+              });
+            }}
+          >
+            Mai târziu
+          </Button>
+          <Button
+            onClick={() => {
+              setDelegateReminderOpen(false);
+              const sp = new URLSearchParams(window.location.search);
+              sp.set('tab', 'delegate');
+              if (delegatePeriod) {
+                sp.set('from', delegatePeriod.start);
+                sp.set('to', delegatePeriod.end);
+              }
+              window.history.pushState({}, '', `${window.location.pathname}?${sp.toString()}`);
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="gap-2"
+          >
+            <UserCheck className="w-4 h-4" />
+            Setează acum
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
