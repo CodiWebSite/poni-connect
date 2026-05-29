@@ -46,7 +46,7 @@ import Archive from "./pages/Archive";
 
 const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
 const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
-import Registratura from "./pages/Registratura";
+
 import PublicProfile from "./pages/PublicProfile";
 import BusinessCards from "./pages/BusinessCards";
 import Changelog from "./pages/Changelog";
@@ -248,7 +248,7 @@ const App = () => (
                 <Route path="/medicina-muncii" element={<MedicinaMuncii />} />
                 <Route path="/install" element={<InstallApp />} />
                 <Route path="/arhiva" element={<Archive />} />
-                <Route path="/registratura" element={<Registratura />} />
+                
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="/profil/:id" element={<PublicProfile />} />

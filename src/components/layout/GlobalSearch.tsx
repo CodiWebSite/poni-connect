@@ -19,7 +19,6 @@ type ResultType =
   | 'magazine'
   | 'suggestion'
   | 'equipment'
-  | 'registry'
   | 'archive'
   | 'room';
 
@@ -40,7 +39,6 @@ const typeMeta: Record<ResultType, { icon: any; label: string; color: string }> 
   magazine: { icon: BookOpen, label: 'Revistă', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
   suggestion: { icon: Lightbulb, label: 'Sugestie', color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' },
   equipment: { icon: Boxes, label: 'Echipament', color: 'bg-slate-500/10 text-slate-600 dark:text-slate-300' },
-  registry: { icon: Inbox, label: 'Registratură', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' },
   archive: { icon: Archive, label: 'Arhivă', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
   room: { icon: DoorOpen, label: 'Rezervare sală', color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400' },
 };
@@ -103,7 +101,7 @@ export const GlobalSearch = () => {
       // All queries run in parallel. RLS automatically restricts results
       // per role/department/GDPR — we never bypass it on the client.
       const [
-        annR, docR, empR, evtR, libR, magR, sugR, eqR, regR, arcR, roomR,
+        annR, docR, empR, evtR, libR, magR, sugR, eqR, arcR, roomR,
       ] = await Promise.all([
         supabase.from('announcements').select('id, title, content').or(`title.ilike.${like},content.ilike.${like}`).limit(4),
         supabase.from('documents').select('id, name, description').or(`name.ilike.${like},description.ilike.${like}`).limit(4),
@@ -113,7 +111,6 @@ export const GlobalSearch = () => {
         supabase.from('library_magazines').select('id, titlu, an, volum, numar').ilike('titlu', like).limit(3),
         supabase.from('suggestions').select('id, title, description').or(`title.ilike.${like},description.ilike.${like}`).limit(3),
         supabase.from('equipment_items').select('id, name, serial_number, inventory_number, brand_model').or(`name.ilike.${like},serial_number.ilike.${like},inventory_number.ilike.${like},brand_model.ilike.${like}`).limit(4),
-        supabase.from('registry_entries').select('id, official_number, year, series_key, subject, sender, recipient').or(`subject.ilike.${like},sender.ilike.${like},recipient.ilike.${like}`).limit(4),
         supabase.from('archive_documents').select('id, file_name, description, registration_number, department').or(`file_name.ilike.${like},description.ilike.${like},registration_number.ilike.${like}`).limit(3),
         supabase.from('room_bookings').select('id, title, room, description, start_time').or(`title.ilike.${like},room.ilike.${like},description.ilike.${like}`).limit(3),
       ]);
@@ -157,12 +154,6 @@ export const GlobalSearch = () => {
         description: [e.brand_model, e.inventory_number && `inv. ${e.inventory_number}`, e.serial_number && `SN ${e.serial_number}`].filter(Boolean).join(' • '),
         type: 'equipment', url: '/inventory',
       }));
-      (regR.data || []).forEach((r: any) => merged.push({
-        id: r.id,
-        title: `${r.series_key || ''}-${r.year || ''}-${r.official_number || ''} ${r.subject ? '· ' + r.subject : ''}`.trim(),
-        description: [r.sender && `de la ${r.sender}`, r.recipient && `către ${r.recipient}`].filter(Boolean).join(' • '),
-        type: 'registry', url: '/registratura',
-      }));
       (arcR.data || []).forEach((a: any) => merged.push({
         id: a.id, title: a.file_name || a.registration_number,
         description: [a.registration_number, a.department, a.description].filter(Boolean).join(' • '),
@@ -205,7 +196,7 @@ export const GlobalSearch = () => {
 
   const SearchResultsList = () => {
     const order: ResultType[] = [
-      'announcement','event','employee','document','registry','archive',
+      'announcement','event','employee','document','archive',
       'library','magazine','equipment','room','suggestion',
     ];
 
