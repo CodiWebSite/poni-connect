@@ -409,6 +409,31 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       }
 
       onSubmitted();
+
+      // Reminder for approvers (department heads / designated approvers) to set a delegate
+      try {
+        const [{ data: deptAppr }, { data: empAppr }] = await Promise.all([
+          supabase.from('leave_department_approvers').select('id').eq('approver_user_id', user.id).limit(1),
+          supabase.from('leave_approvers').select('id').eq('approver_user_id', user.id).limit(1),
+        ]);
+        const isApprover = (deptAppr?.length || 0) > 0 || (empAppr?.length || 0) > 0;
+        if (isApprover) {
+          const { data: existingDelegates } = await supabase
+            .from('leave_approval_delegates' as any)
+            .select('id, start_date, end_date, is_active')
+            .eq('delegator_user_id', user.id)
+            .eq('is_active', true)
+            .lte('start_date', endDate)
+            .gte('end_date', startDate);
+
+          if (!existingDelegates || existingDelegates.length === 0) {
+            setDelegatePeriod({ start: startDate, end: endDate });
+            setDelegateReminderOpen(true);
+          }
+        }
+      } catch (e) {
+        console.warn('Delegate reminder check failed:', e);
+      }
     }
 
     setSubmitting(false);
