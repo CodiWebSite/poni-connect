@@ -15,6 +15,7 @@ import AccountHelpForm from '@/components/auth/AccountHelpForm';
 import HelpdeskContactForm from '@/components/auth/HelpdeskContactForm';
 import MolecularPattern from '@/components/auth/MolecularPattern';
 import { ShieldCheck, GraduationCap, FileLock2 } from 'lucide-react';
+import { BiometricUnlockButton } from '@/components/native/BiometricUnlockButton';
 
 
 
@@ -488,6 +489,9 @@ const Auth = () => {
                   
                   <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
                     {isLoading ? 'Se procesează...' : 'Autentificare'}
+                  </Button>
+
+                  <BiometricUnlockButton onSuccess={() => navigate('/')} />
                   </Button>
                 </form>
               </TabsContent>
