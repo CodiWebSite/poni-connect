@@ -2,7 +2,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Navigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert, ShieldCheck, History, Siren, ScrollText, FlaskConical } from 'lucide-react';
+import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert, ShieldCheck, History, Siren, ScrollText, FlaskConical, Megaphone } from 'lucide-react';
+import BroadcastNotificationPanel from '@/components/admin/BroadcastNotificationPanel';
 import AdminOverview from '@/components/admin/AdminOverview';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminRolesAccessPanel from '@/components/admin/AdminRolesAccessPanel';
@@ -74,6 +75,10 @@ const Admin = () => {
               <FlaskConical className="w-4 h-4" />
               <span className="hidden sm:inline">Test Concedii</span>
             </TabsTrigger>
+            <TabsTrigger value="broadcast" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+              <Megaphone className="w-4 h-4" />
+              <span className="hidden sm:inline">Broadcast</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -89,6 +94,7 @@ const Admin = () => {
         <TabsContent value="incidents"><IncidentsPanel /></TabsContent>
         <TabsContent value="gdpr"><GdprPanel /></TabsContent>
         <TabsContent value="leave-sandbox"><LeaveSandboxPanel /></TabsContent>
+        <TabsContent value="broadcast"><BroadcastNotificationPanel /></TabsContent>
       </Tabs>
     </MainLayout>
   );
