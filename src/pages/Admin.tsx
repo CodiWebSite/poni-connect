@@ -75,6 +75,10 @@ const Admin = () => {
               <FlaskConical className="w-4 h-4" />
               <span className="hidden sm:inline">Test Concedii</span>
             </TabsTrigger>
+            <TabsTrigger value="broadcast" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+              <Megaphone className="w-4 h-4" />
+              <span className="hidden sm:inline">Broadcast</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
