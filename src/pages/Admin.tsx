@@ -94,6 +94,7 @@ const Admin = () => {
         <TabsContent value="incidents"><IncidentsPanel /></TabsContent>
         <TabsContent value="gdpr"><GdprPanel /></TabsContent>
         <TabsContent value="leave-sandbox"><LeaveSandboxPanel /></TabsContent>
+        <TabsContent value="broadcast"><BroadcastNotificationPanel /></TabsContent>
       </Tabs>
     </MainLayout>
   );
