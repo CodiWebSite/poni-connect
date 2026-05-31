@@ -34,7 +34,7 @@ export async function initPushNotifications(): Promise<void> {
       try {
         const { data } = await supabase.auth.getUser();
         if (!data.user) return;
-        await supabase.from('push_tokens').upsert(
+        await (supabase.from('push_tokens' as any) as any).upsert(
           {
             user_id: data.user.id,
             token: token.value,
