@@ -54,12 +54,16 @@ npx cap add android
 
 Acest pas creează folderul `android/` cu un proiect Android Studio complet.
 
-### 4. Build web + sincronizare
+### 4. Build web + generare icoane + sincronizare
 
 ```bash
 npm run build
+npx capacitor-assets generate --android   # generează icoane + splash din folderul resources/
 npx cap sync android
 ```
+
+> 💡 Logo-ul Petru Poni se află în `resources/` (icon.png, icon-foreground.png, icon-background.png, splash.png, splash-dark.png). Rulează `capacitor-assets generate` ori de câte ori înlocuiești logo-ul.
+
 
 ### 5. Deschide în Android Studio
 
