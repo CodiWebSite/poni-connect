@@ -42,18 +42,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch all push subscriptions for this user
+    // ---------------- Web Push (VAPID, browsers + PWA) ----------------
     const { data: subs, error } = await supabase
       .from("push_subscriptions")
       .select("id, endpoint, p256dh_key, auth_key")
       .eq("user_id", payload.user_id);
 
     if (error) throw error;
-    if (!subs || subs.length === 0) {
-      return new Response(JSON.stringify({ sent: 0, reason: "no_subscriptions" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+
+    const notificationData = {
+      url: getUrlForNotification(payload.related_type, payload.related_id, payload.type),
+      type: payload.type,
+      related_id: payload.related_id,
+      related_type: payload.related_type,
+      notification_id: payload.notification_id,
+    };
 
     const notificationPayload = JSON.stringify({
       title: payload.title,
@@ -61,47 +64,103 @@ Deno.serve(async (req) => {
       icon: "/pwa-192x192.png",
       badge: "/pwa-192x192.png",
       tag: payload.notification_id || `notif-${Date.now()}`,
-      data: {
-        url: getUrlForNotification(payload.related_type, payload.related_id, payload.type),
-        type: payload.type,
-        related_id: payload.related_id,
-        related_type: payload.related_type,
-        notification_id: payload.notification_id,
-      },
+      data: notificationData,
     });
 
-    let sent = 0;
+    let webSent = 0;
     const expiredIds: string[] = [];
 
-    await Promise.all(
-      subs.map(async (s) => {
-        try {
-          await webpush.sendNotification(
-            {
-              endpoint: s.endpoint,
-              keys: { p256dh: s.p256dh_key, auth: s.auth_key },
-            },
-            notificationPayload
-          );
-          sent++;
-        } catch (err: any) {
-          // 410 Gone or 404 -> subscription expired, remove it
-          if (err?.statusCode === 410 || err?.statusCode === 404) {
-            expiredIds.push(s.id);
-          } else {
-            console.error("Push send error:", err?.statusCode, err?.body);
+    if (subs && subs.length > 0) {
+      await Promise.all(
+        subs.map(async (s) => {
+          try {
+            await webpush.sendNotification(
+              {
+                endpoint: s.endpoint,
+                keys: { p256dh: s.p256dh_key, auth: s.auth_key },
+              },
+              notificationPayload
+            );
+            webSent++;
+          } catch (err: any) {
+            if (err?.statusCode === 410 || err?.statusCode === 404) {
+              expiredIds.push(s.id);
+            } else {
+              console.error("Push send error:", err?.statusCode, err?.body);
+            }
           }
-        }
-      })
-    );
+        })
+      );
 
-    if (expiredIds.length > 0) {
-      await supabase.from("push_subscriptions").delete().in("id", expiredIds);
+      if (expiredIds.length > 0) {
+        await supabase.from("push_subscriptions").delete().in("id", expiredIds);
+      }
     }
 
-    return new Response(JSON.stringify({ sent, expired: expiredIds.length }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // ---------------- Native Push (FCM, Android app) ----------------
+    let nativeSent = 0;
+    const expiredTokenIds: string[] = [];
+    const FCM_SERVER_KEY = Deno.env.get("FCM_SERVER_KEY");
+
+    if (FCM_SERVER_KEY) {
+      const { data: tokens } = await supabase
+        .from("push_tokens")
+        .select("id, token, platform")
+        .eq("user_id", payload.user_id);
+
+      if (tokens && tokens.length > 0) {
+        await Promise.all(
+          tokens.map(async (t) => {
+            try {
+              const res = await fetch("https://fcm.googleapis.com/fcm/send", {
+                method: "POST",
+                headers: {
+                  Authorization: `key=${FCM_SERVER_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  to: t.token,
+                  notification: {
+                    title: payload.title,
+                    body: payload.message,
+                    sound: "default",
+                  },
+                  data: notificationData,
+                  priority: "high",
+                }),
+              });
+              const json = await res.json();
+              if (json.success === 1) {
+                nativeSent++;
+              } else if (
+                json.results?.[0]?.error === "NotRegistered" ||
+                json.results?.[0]?.error === "InvalidRegistration"
+              ) {
+                expiredTokenIds.push(t.id);
+              } else {
+                console.warn("FCM error", json);
+              }
+            } catch (err) {
+              console.error("FCM send error", err);
+            }
+          })
+        );
+
+        if (expiredTokenIds.length > 0) {
+          await supabase.from("push_tokens").delete().in("id", expiredTokenIds);
+        }
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        web_sent: webSent,
+        native_sent: nativeSent,
+        expired_web: expiredIds.length,
+        expired_native: expiredTokenIds.length,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error("send-push-notification error:", e);
     return new Response(JSON.stringify({ error: "Internal error" }), {
