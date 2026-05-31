@@ -399,6 +399,9 @@ const Settings = () => {
         {/* Push Notifications (PWA) */}
         <PushNotificationsPanel />
 
+        {/* Biometric Authentication (Android app only) */}
+        <BiometricSettings />
+
         {/* Security & Sessions */}
         <SecurityPanel />
 
