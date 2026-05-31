@@ -17,6 +17,100 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+// ---------------- FCM HTTP v1 OAuth (Service Account) ----------------
+interface ServiceAccount {
+  client_email: string;
+  private_key: string;
+  project_id: string;
+  token_uri: string;
+}
+
+let cachedToken: { token: string; expiresAt: number } | null = null;
+let cachedServiceAccount: ServiceAccount | null = null;
+
+function getServiceAccount(): ServiceAccount | null {
+  if (cachedServiceAccount) return cachedServiceAccount;
+  const raw = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON");
+  if (!raw) return null;
+  try {
+    cachedServiceAccount = JSON.parse(raw) as ServiceAccount;
+    return cachedServiceAccount;
+  } catch (e) {
+    console.error("Invalid FCM_SERVICE_ACCOUNT_JSON:", e);
+    return null;
+  }
+}
+
+function base64UrlEncode(data: Uint8Array | string): string {
+  const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
+  let str = "";
+  for (const b of bytes) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const b64 = pem
+    .replace(/-----BEGIN [^-]+-----/g, "")
+    .replace(/-----END [^-]+-----/g, "")
+    .replace(/\s+/g, "");
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf.buffer;
+}
+
+async function getAccessToken(sa: ServiceAccount): Promise<string> {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
+    return cachedToken.token;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const claim = {
+    iss: sa.client_email,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    aud: sa.token_uri || "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
+  };
+
+  const unsigned = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify(claim))}`;
+
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    pemToArrayBuffer(sa.private_key),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    key,
+    new TextEncoder().encode(unsigned),
+  );
+  const jwt = `${unsigned}.${base64UrlEncode(new Uint8Array(sig))}`;
+
+  const res = await fetch(sa.token_uri || "https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`OAuth token exchange failed: ${res.status} ${txt}`);
+  }
+  const json = await res.json();
+  cachedToken = {
+    token: json.access_token as string,
+    expiresAt: Date.now() + (json.expires_in as number) * 1000,
+  };
+  return cachedToken.token;
+}
+
 interface Payload {
   user_id: string;
   title: string;
@@ -97,57 +191,85 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ---------------- Native Push (FCM, Android app) ----------------
+    // ---------------- Native Push (FCM HTTP v1, Android app) ----------------
     let nativeSent = 0;
     const expiredTokenIds: string[] = [];
-    const FCM_SERVER_KEY = Deno.env.get("FCM_SERVER_KEY");
+    const sa = getServiceAccount();
 
-    if (FCM_SERVER_KEY) {
+    if (sa) {
       const { data: tokens } = await supabase
         .from("push_tokens")
         .select("id, token, platform")
         .eq("user_id", payload.user_id);
 
       if (tokens && tokens.length > 0) {
-        await Promise.all(
-          tokens.map(async (t) => {
-            try {
-              const res = await fetch("https://fcm.googleapis.com/fcm/send", {
-                method: "POST",
-                headers: {
-                  Authorization: `key=${FCM_SERVER_KEY}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  to: t.token,
-                  notification: {
-                    title: payload.title,
-                    body: payload.message,
-                    sound: "default",
-                  },
-                  data: notificationData,
-                  priority: "high",
-                }),
-              });
-              const json = await res.json();
-              if (json.success === 1) {
-                nativeSent++;
-              } else if (
-                json.results?.[0]?.error === "NotRegistered" ||
-                json.results?.[0]?.error === "InvalidRegistration"
-              ) {
-                expiredTokenIds.push(t.id);
-              } else {
-                console.warn("FCM error", json);
-              }
-            } catch (err) {
-              console.error("FCM send error", err);
-            }
-          })
-        );
+        let accessToken: string;
+        try {
+          accessToken = await getAccessToken(sa);
+        } catch (e) {
+          console.error("FCM v1 auth failed:", e);
+          accessToken = "";
+        }
 
-        if (expiredTokenIds.length > 0) {
-          await supabase.from("push_tokens").delete().in("id", expiredTokenIds);
+        if (accessToken) {
+          const fcmUrl = `https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`;
+
+          // FCM v1 only accepts string values in data payload
+          const dataStrings: Record<string, string> = {};
+          for (const [k, v] of Object.entries(notificationData)) {
+            if (v !== undefined && v !== null) dataStrings[k] = String(v);
+          }
+
+          await Promise.all(
+            tokens.map(async (t) => {
+              try {
+                const res = await fetch(fcmUrl, {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    message: {
+                      token: t.token,
+                      notification: {
+                        title: payload.title,
+                        body: payload.message,
+                      },
+                      data: dataStrings,
+                      android: {
+                        priority: "HIGH",
+                        notification: { sound: "default" },
+                      },
+                    },
+                  }),
+                });
+
+                if (res.ok) {
+                  nativeSent++;
+                } else {
+                  const errBody = await res.json().catch(() => ({}));
+                  const errCode = errBody?.error?.details?.[0]?.errorCode || errBody?.error?.status;
+                  if (
+                    res.status === 404 ||
+                    errCode === "UNREGISTERED" ||
+                    errCode === "INVALID_ARGUMENT" ||
+                    errCode === "NOT_FOUND"
+                  ) {
+                    expiredTokenIds.push(t.id);
+                  } else {
+                    console.warn("FCM v1 error", res.status, errBody);
+                  }
+                }
+              } catch (err) {
+                console.error("FCM v1 send error", err);
+              }
+            }),
+          );
+
+          if (expiredTokenIds.length > 0) {
+            await supabase.from("push_tokens").delete().in("id", expiredTokenIds);
+          }
         }
       }
     }
