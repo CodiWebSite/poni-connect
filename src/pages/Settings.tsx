@@ -13,6 +13,7 @@ import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw, Loc
 import { cn } from '@/lib/utils';
 import OnboardingTour from '@/components/onboarding/OnboardingTour';
 import SecurityPanel from '@/components/settings/SecurityPanel';
+import { BiometricSettings } from '@/components/native/BiometricSettings';
 import PushNotificationsPanel from '@/components/settings/PushNotificationsPanel';
 
 interface Profile {
@@ -398,6 +399,9 @@ const Settings = () => {
         </Card>
         {/* Push Notifications (PWA) */}
         <PushNotificationsPanel />
+
+        {/* Biometric Authentication (Android app only) */}
+        <BiometricSettings />
 
         {/* Security & Sessions */}
         <SecurityPanel />

@@ -25,6 +25,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Register native push token after successful sign-in (Android app only)
+        if (event === 'SIGNED_IN' && session?.user) {
+          import('@/native/pushNotifications')
+            .then((m) => m.initPushNotifications())
+            .catch(() => {});
+        }
       }
     );
 
@@ -33,6 +40,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) {
+        import('@/native/pushNotifications')
+          .then((m) => m.initPushNotifications())
+          .catch(() => {});
+      }
     });
 
     return () => subscription.unsubscribe();
