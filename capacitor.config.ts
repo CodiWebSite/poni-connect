@@ -41,9 +41,10 @@ const config: CapacitorConfig = {
       backgroundColor: '#0f172a',
       overlaysWebView: false,
     },
-    PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert'],
-    },
+    // PushNotifications: activează după configurarea Firebase (google-services.json)
+    // PushNotifications: {
+    //   presentationOptions: ['badge', 'sound', 'alert'],
+    // },
   },
 };
 
