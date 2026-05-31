@@ -14,6 +14,17 @@ let initialized = false;
 
 export async function initPushNotifications(): Promise<void> {
   if (!Capacitor.isNativePlatform() || initialized) return;
+
+  // GATE: nu apela register() decât dacă FCM este configurat explicit.
+  // Fără google-services.json, PushNotifications.register() aruncă o excepție nativă
+  // ("Default FirebaseApp is not initialized") care crash-uiește WebView-ul Android.
+  // Activează doar după ce adaugi google-services.json și setezi VITE_FCM_ENABLED=true.
+  const fcmEnabled = (import.meta as any).env?.VITE_FCM_ENABLED === 'true';
+  if (!fcmEnabled) {
+    console.info('[push] FCM not enabled — skipping native push registration');
+    return;
+  }
+
   initialized = true;
 
   try {
