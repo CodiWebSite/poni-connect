@@ -492,7 +492,6 @@ const Auth = () => {
                   </Button>
 
                   <BiometricUnlockButton onSuccess={() => navigate('/')} />
-                  </Button>
                 </form>
               </TabsContent>
               
