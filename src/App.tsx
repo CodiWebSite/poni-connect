@@ -43,6 +43,7 @@ import MedicinaMuncii from "./pages/MedicinaMuncii";
 import InstallApp from "./pages/InstallApp";
 import Kiosk from "./pages/Kiosk";
 import Archive from "./pages/Archive";
+import MeetingsAgenda from "./pages/MeetingsAgenda";
 
 const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
 const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
@@ -248,6 +249,7 @@ const App = () => (
                 <Route path="/medicina-muncii" element={<MedicinaMuncii />} />
                 <Route path="/install" element={<InstallApp />} />
                 <Route path="/arhiva" element={<Archive />} />
+                <Route path="/agenda-intalniri" element={<MeetingsAgenda />} />
                 
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />
