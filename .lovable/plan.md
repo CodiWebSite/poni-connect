@@ -1,64 +1,122 @@
-## Diagnostic
+## Modul „Agenda întâlniri"
 
-Cererea Luminitei Marin ajunge la Marcela Mihai pentru că `leave_requests.approver_id` se setează corect din `leave_approvers` (mapare individuală). Panoul de aprobare însă afișează `N/A` pentru că:
+Modul privat pentru `super_admin`, `director_institut`, `director_adjunct`, `secretariat` — calendar de întâlniri cu remindere pe email.
 
-1. **RLS pe `employee_personal_data` este incompletă.** Politica `Leave approvers can view EPD of approved departments` folosește `is_leave_approver_for_epd(auth.uid(), id)`, iar funcția verifică **doar** `leave_department_approvers`:
+### Context tehnic verificat
+- `profiles` NU conține email → emailurile se iau din `auth.users` printr-o funcție SECURITY DEFINER restrânsă la rolurile permise, sau prin `employee_personal_data.email`.
+- `pg_cron` și `pg_net` sunt active → reminderele se planifică direct prin cron.
+- SMTP deja configurat (`SMTP_HOST/USER/PASS/PORT/FROM`) → fără secrete noi, fără expunere în frontend.
+- Timezone calcul reminder: `Europe/Bucharest` (stocăm `start_at` ca `timestamptz`).
 
-   ```sql
-   SELECT EXISTS (
-     SELECT 1 FROM employee_personal_data epd
-     JOIN leave_department_approvers lda ON lda.department = epd.department
-     WHERE epd.id = _epd_id AND lda.approver_user_id = _user_id
-   );
-   ```
+### 1. Bază de date (migrare)
 
-   Pentru aprobatorii desemnați individual via `leave_approvers` și pentru delegații activi, această verificare returnează `false` → RLS blochează rândul EPD → `epdMap` rămâne gol → `N/A`. Pentru o aprobare cross-departament (Marcela aprobă pe cineva din alt departament) același bug apare.
+**Helper**
+```sql
+CREATE FUNCTION can_manage_meetings(_uid uuid) RETURNS boolean
+-- super_admin / director_institut / director_adjunct / secretariat
+```
 
-2. **Fallback de afișare lipsește.** `LeaveApprovalPanel.tsx` se bazează exclusiv pe `epd_id → employee_personal_data`. Dacă EPD lipsește sau este invizibil, nu încearcă `profiles.full_name` via `leave_requests.user_id`, deși tabela `profiles` are RLS permisiv pentru utilizatorii autentificați.
+**Tabela `meetings`**
+- `id`, `title`, `start_at timestamptz`, `end_at timestamptz` (validare end > start),
+- `location`, `participants text`, `notes text`,
+- `status` enum `meeting_status` (`scheduled` | `cancelled` | `completed`, default `scheduled`),
+- `created_by uuid` (auth.users), 
+- `reminder_enabled bool default false`,
+- `reminder_emails text[] default '{}'`,
+- `reminder_offset_minutes int` (10 / 30 / 60 / 1440),
+- `reminder_sent_at timestamptz`,
+- `created_at`, `updated_at` + trigger.
 
-## Soluție
+**RLS** — single policy FOR ALL: `USING/WITH CHECK can_manage_meetings(auth.uid())`. GRANT pe `authenticated` + `service_role`. Fără grant `anon`.
 
-### 1. Extinde funcția `is_leave_approver_for_epd` (migration SQL)
+**Funcție emailuri director+secretariat** (SECURITY DEFINER, restrânsă la `can_manage_meetings`):
+```
+get_meeting_default_recipients() RETURNS text[]
+-- join user_roles cu auth.users pe rolurile țintă
+```
 
-Aliniaz-o cu logica `is_leave_approver_for_request` pentru a acoperi toate căile de aprobare:
+### 2. Rutare & gardă acces
 
-- aprobator desemnat individual în `leave_approvers` (link `employee_user_id` → `employee_records.user_id` → `epd.employee_record_id`)
-- aprobator pe departament în `leave_department_approvers` (păstrat)
-- delegat activ al unui aprobator individual (`leave_approval_delegates` cu `is_active=true` și `CURRENT_DATE BETWEEN start_date AND end_date`)
-- delegat activ al unui aprobator pe departament
+- Pagină `src/pages/MeetingsAgenda.tsx`, rută `/agenda-intalniri` în `App.tsx`.
+- Gardă internă pe pagină: dacă rol neautorizat → redirect `/` + toast „Acces interzis".
+- Link Sidebar afișat condiționat în grupul „Administrare" (icon `CalendarClock`).
 
-Funcția rămâne `SECURITY DEFINER STABLE`, fără recursivitate (nu interoghează `employee_personal_data` pentru decizia RLS pe `employee_personal_data` — folosește doar `leave_approvers`, `leave_department_approvers`, `employee_records`, `leave_approval_delegates`, plus join-ul `epd.id`/`epd.department` deja permis în interiorul SECURITY DEFINER).
+### 3. UI calendar
 
-Politica RLS existentă rămâne neschimbată (continuă să cheme funcția); doar corpul funcției crește. Nicio dată existentă nu e ștearsă.
+Bibliotecă: **`react-big-calendar`** (month / week / day) + `date-fns` (deja prezent) cu locale `ro`.
 
-### 2. Fallback robust în `LeaveApprovalPanel.tsx`
+Layout pagină:
+```
+[Filtre: status • date range • search]  [+ Întâlnire nouă]
+[Tabs Month | Week | Day]
+[Calendar]
+[Listă compactă întâlniri filtrate — vizibilă pe mobil]
+```
 
-- După `epdMap`, construiește în paralel un `profileMap` din `profiles` folosind `leave_requests.user_id` (lista de `user_id` din cererile încărcate).
-- La compunerea rândului: `employee_name = epdMap[epd_id]?.name || profileMap[user_id]?.full_name (reformatat NUME PRENUME via formatNumePrenume) || 'N/A'`.
-- Departament / poziție: dacă lipsesc din EPD, încearcă `profiles.department` / `profiles.position`.
-- Avatar: dacă EPD nu e vizibil, folosește direct `profiles.avatar_url` din `profileMap`.
-- Păstrează logul existent în `audit_logs` când totuși ajungem la `N/A` (semnal pentru cazuri reziduale).
+- Click pe slot gol → modal „Adăugare rapidă" cu data/ora pre-completată.
+- Click pe eveniment → modal Detalii (View → Edit → Delete cu confirmare).
+- Badge-uri colorate prin tokens semantice (`primary` / `success` / `destructive`).
+- Mobil: default view „Day"; filtrele într-un Sheet.
 
-### 3. Aceeași tratare pentru ecranele înrudite
+### 4. Modal întâlnire (react-hook-form + zod)
 
-Aplică același pattern (EPD primar + fallback profiles) acolo unde apare deja `N/A` din același motiv pentru aprobatori:
+Câmpuri: titlu, dată, oră început, oră final, locație, participanți (textarea), observații, status.
 
-- `src/components/leave/LeaveApprovalHistory.tsx`
-- `src/components/leave/LeaveRequestsHR.tsx` (HR are deja acces, dar fallback-ul nu strică)
-- orice altă listă care folosește `epdMap[r.epd_id]?.name || 'N/A'` cu rezultate vizibile aprobatorilor
+Bloc reminder:
+- Switch „Trimite reminder pe email".
+- Când e activ:
+  - Multi-input emailuri (chips) — buton „Adaugă director + secretariat" care preia rezultatul din `get_meeting_default_recipients`.
+  - Select moment: 10 min / 30 min / 1 oră / 1 zi înainte.
 
-(Voi face un `rg` în implementare și voi corecta doar fișierele care au exact același pattern.)
+Validare: end > start; dacă reminder activ → cel puțin un email valid.
 
-### Ce NU schimb
+### 5. Email reminder
 
-- Nu reset, nu drop, nu DELETE pe date.
-- Nu modific proiectul Supabase / Lovable Cloud.
-- Nu adaug câmpuri PII suplimentare în query-uri (doar `full_name`, `department`, `position`, `avatar_url` — deja folosite în UI).
-- Nu schimb fluxul de rutare al cererilor și nici logica de aprobare/aprobare-delegată.
+**Edge Function `send-meeting-reminder`** (Deno + npm:nodemailer, urmează standardul edge sec):
+- Validează JWT, cere `can_manage_meetings` (pentru apel manual) sau acceptă `Authorization` cu service role (pentru cron).
+- Input: `{ meeting_id }`.
+- Încarcă meeting-ul, trimite email HTML brandate (titlu, dată/oră Europe/Bucharest, locație, participanți, notes), marchează `reminder_sent_at = now()`.
+- Buton manual „Trimite reminder acum" în modal pentru test/manual.
 
-## Verificare după implementare
+**Cron (pg_cron + pg_net)** — job la fiecare 5 minute:
+```sql
+SELECT cron.schedule('meeting-reminders-5m', '*/5 * * * *', $$
+  SELECT net.http_post(
+    url := 'https://<ref>.supabase.co/functions/v1/send-meeting-reminder',
+    headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer <anon>'),
+    body := jsonb_build_object('meeting_id', m.id)
+  )
+  FROM meetings m
+  WHERE m.status = 'scheduled'
+    AND m.reminder_enabled = true
+    AND m.reminder_sent_at IS NULL
+    AND now() >= m.start_at - (m.reminder_offset_minutes || ' minutes')::interval
+    AND now() <  m.start_at;
+$$);
+```
+Cron-ul se programează prin `supabase--insert` (anon key inline — nu trece prin migration).
 
-1. SQL: `SELECT is_leave_approver_for_epd('<marcela_user_id>', '<luminita_epd_id>')` → `true`.
-2. UI: login ca aprobator individual / delegat → cererile arată numele corect; aprobarea funcționează.
-3. Cazurile existente (șef departament, HR, SRUS) rămân neafectate.
-4. Verific `audit_logs` pentru noi intrări `leave_approval_name_fallback` → ar trebui să dispară pentru cazurile reproduse.
+**Fallback** dacă cron eșuează la programare: edge function rămâne funcțională manual, plus instrucțiuni în README.
+
+### 6. Filtre & căutare
+
+State local + memoizare:
+- Status (Select)
+- Date range (DateRangePicker)
+- Search debounced (title / location / participants / notes)
+Filtrele se aplică deopotrivă pe evenimentele din calendar și pe lista compactă.
+
+### 7. Securitate & confidențialitate
+
+- Nicio expunere SMTP în frontend.
+- Funcția de emailuri default e SECURITY DEFINER + verifică rolul apelantului.
+- RLS strict — alți useri primesc 0 rânduri și nu pot insera/edita.
+- Audit log opțional pe create/update/delete (folosind `log_audit_event`).
+
+### 8. Verificări
+
+- Login `user` → fără link în meniu; `/agenda-intalniri` redirectează.
+- CRUD complet cu `secretariat`.
+- Salvare cu reminder → câmpurile persistă corect.
+- Apel manual al edge function pe un meeting de test → email primit.
+- Verificare în DB că `reminder_sent_at` se setează după trimitere.

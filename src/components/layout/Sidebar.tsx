@@ -12,6 +12,7 @@ import { useSidebarContext } from '@/contexts/SidebarContext';
 import {
   Home,
   Calendar,
+  CalendarClock,
   Settings,
   LogOut,
   ChevronLeft,
@@ -294,9 +295,18 @@ const Sidebar = () => {
     { icon: Download, label: 'Instalează App', path: '/install' },
   ];
 
+  const canAccessMeetings =
+    isSuperAdmin ||
+    role === 'director_institut' ||
+    role === 'director_adjunct' ||
+    role === 'secretariat';
+
   const allManagementItems = [
     { icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR },
     { icon: Banknote, label: 'Salarizare', path: '/salarizare' },
+    ...(canAccessMeetings
+      ? [{ icon: CalendarClock, label: 'Agenda întâlniri', path: '/agenda-intalniri' }]
+      : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     { icon: ServerCog, label: 'Stare Sistem', path: '/system-status' },
     
