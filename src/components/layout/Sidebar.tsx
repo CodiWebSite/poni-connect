@@ -297,9 +297,9 @@ const Sidebar = () => {
 
   const canAccessMeetings =
     isSuperAdmin ||
-    role === 'director_institut' ||
-    role === 'director_adjunct' ||
-    role === 'secretariat';
+    ['director_institut', 'director_adjunct', 'secretariat'].some(
+      (r) => role === r || allRoles.includes(r as any)
+    );
 
   const allManagementItems = [
     { icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR },
