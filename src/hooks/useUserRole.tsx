@@ -75,6 +75,7 @@ export function useUserRole() {
   return { 
     role, 
     realRole,
+    allRoles,
     isRealSuperAdmin,
     isSuperAdmin,
     isHR,
