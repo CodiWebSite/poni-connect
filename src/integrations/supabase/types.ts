@@ -2179,6 +2179,60 @@ export type Database = {
           },
         ]
       }
+      meetings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_at: string
+          id: string
+          location: string | null
+          notes: string | null
+          participants: string | null
+          reminder_emails: string[]
+          reminder_enabled: boolean
+          reminder_offset_minutes: number
+          reminder_sent_at: string | null
+          start_at: string
+          status: Database["public"]["Enums"]["meeting_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_at: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          participants?: string | null
+          reminder_emails?: string[]
+          reminder_enabled?: boolean
+          reminder_offset_minutes?: number
+          reminder_sent_at?: string | null
+          start_at: string
+          status?: Database["public"]["Enums"]["meeting_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_at?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          participants?: string | null
+          reminder_emails?: string[]
+          reminder_enabled?: boolean
+          reminder_offset_minutes?: number
+          reminder_sent_at?: string | null
+          start_at?: string
+          status?: Database["public"]["Enums"]["meeting_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mfa_recovery_codes: {
         Row: {
           batch_id: string
@@ -3600,6 +3654,7 @@ export type Database = {
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
       can_manage_library: { Args: { _user_id: string }; Returns: boolean }
       can_manage_medical: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_meetings: { Args: { _user_id: string }; Returns: boolean }
       can_manage_procurement: { Args: { _user_id: string }; Returns: boolean }
       can_manage_salarizare: { Args: { _user_id: string }; Returns: boolean }
       can_publish_announcements: {
@@ -3628,6 +3683,7 @@ export type Database = {
       epd_same_department: { Args: { _epd_id: string }; Returns: boolean }
       generate_leave_request_number: { Args: never; Returns: string }
       generate_procurement_request_number: { Args: never; Returns: string }
+      get_meeting_default_recipients: { Args: never; Returns: string[] }
       get_user_department: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
@@ -3757,6 +3813,7 @@ export type Database = {
         | "approved"
         | "rejected"
       medical_fitness_status: "apt" | "apt_conditionat" | "inapt" | "pending"
+      meeting_status: "scheduled" | "cancelled" | "completed"
       procurement_category:
         | "consumabile_laborator"
         | "echipamente_it"
@@ -3963,6 +4020,7 @@ export const Constants = {
         "rejected",
       ],
       medical_fitness_status: ["apt", "apt_conditionat", "inapt", "pending"],
+      meeting_status: ["scheduled", "cancelled", "completed"],
       procurement_category: [
         "consumabile_laborator",
         "echipamente_it",
