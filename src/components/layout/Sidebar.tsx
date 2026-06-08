@@ -56,7 +56,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { role, isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
+  const { role, allRoles, isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
   const { isDesignatedApprover } = useIsApprover();
   const { canAccessPage } = usePageAccess();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
@@ -297,9 +297,9 @@ const Sidebar = () => {
 
   const canAccessMeetings =
     isSuperAdmin ||
-    role === 'director_institut' ||
-    role === 'director_adjunct' ||
-    role === 'secretariat';
+    ['director_institut', 'director_adjunct', 'secretariat'].some(
+      (r) => role === r || allRoles.includes(r as any)
+    );
 
   const allManagementItems = [
     { icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR },

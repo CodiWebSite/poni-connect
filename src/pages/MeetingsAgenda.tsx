@@ -129,13 +129,13 @@ const statusLabel = (s: Meeting["status"]) =>
 export default function MeetingsAgenda() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { role, loading: roleLoading, isSuperAdmin } = useUserRole();
+  const { role, allRoles, loading: roleLoading, isSuperAdmin } = useUserRole();
 
   const isAuthorized =
     isSuperAdmin ||
-    role === "director_institut" ||
-    role === "director_adjunct" ||
-    role === "secretariat";
+    ["director_institut", "director_adjunct", "secretariat"].some(
+      (r) => role === r || allRoles.includes(r as any)
+    );
 
   useEffect(() => {
     if (!roleLoading && !isAuthorized) {
