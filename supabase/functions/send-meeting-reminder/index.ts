@@ -55,11 +55,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Allow service-role calls (cron). Otherwise require an authorized user role.
+    // Allow service-role calls (cron / admin) and anon-key system calls (pg_cron).
+    // Otherwise require an authorized user role.
     const isServiceRole = token === serviceRoleKey;
-
-    if (!isServiceRole) {
-      const supabaseAuth = createClient(supabaseUrl, anonKey, {
+    const isSystemAnon = token === anonKey;
+      if (!isServiceRole && !isSystemAnon) {
         global: { headers: { Authorization: `Bearer ${token}` } },
       });
       const { data: userData, error: userErr } = await supabaseAuth.auth.getUser(token);
