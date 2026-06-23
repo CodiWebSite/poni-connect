@@ -190,6 +190,16 @@ Deno.serve(async (req) => {
     `;
 
     let sent = 0;
+    const perRecipientErrors: { to: string; error: string }[] = [];
+    let transporterVerifyError: string | null = null;
+
+    try {
+      await transporter.verify();
+    } catch (e) {
+      transporterVerifyError = (e as Error)?.message || String(e);
+      console.error("[INTERNAL] SMTP verify failed:", transporterVerifyError);
+    }
+
     for (const to of recipients) {
       try {
         await transporter.sendMail({
@@ -200,22 +210,119 @@ Deno.serve(async (req) => {
         });
         sent++;
       } catch (e) {
-        console.error("Send failed for", to, e);
+        const msg = (e as Error)?.message || String(e);
+        console.error("Send failed for", to, msg);
+        perRecipientErrors.push({ to, error: msg });
       }
     }
 
-    await admin
-      .from("meetings")
-      .update({ reminder_sent_at: new Date().toISOString() })
-      .eq("id", meeting_id);
+    const allFailed = sent === 0;
+    const partialFailure = !allFailed && perRecipientErrors.length > 0;
+    const success = !allFailed && !transporterVerifyError;
+    const statusCode = success ? 200 : (allFailed ? 502 : 207);
+    const errorMessage = transporterVerifyError
+      ? `SMTP indisponibil: ${transporterVerifyError}`
+      : (allFailed
+          ? `Trimitere eșuată pentru toți destinatarii (${recipients.length}). Primul motiv: ${perRecipientErrors[0]?.error || "necunoscut"}`
+          : (partialFailure
+              ? `Trimitere parțială: ${sent}/${recipients.length}. Eșuat: ${perRecipientErrors.map(e => `${e.to} (${e.error})`).join("; ")}`
+              : null));
 
-    return new Response(JSON.stringify({ success: true, sent }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const { data: logRow } = await admin
+      .from("meeting_reminder_logs")
+      .insert({
+        meeting_id,
+        success,
+        recipients_total: recipients.length,
+        recipients_sent: sent,
+        status_code: statusCode,
+        error_message: errorMessage,
+        details: {
+          per_recipient_errors: perRecipientErrors,
+          smtp_host: smtpHost,
+          meeting_title: meeting.title,
+          meeting_start_at: meeting.start_at,
+        },
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (success || partialFailure) {
+      await admin
+        .from("meetings")
+        .update({ reminder_sent_at: new Date().toISOString() })
+        .eq("id", meeting_id);
+    }
+
+    if (!success) {
+      try {
+        const { data: notifTargets } = await admin
+          .from("user_roles")
+          .select("user_id")
+          .in("role", ["super_admin", "secretariat", "director_institut", "director_adjunct"]);
+
+        const uniqueUserIds = Array.from(
+          new Set(((notifTargets || []) as { user_id: string }[]).map((r) => r.user_id))
+        );
+
+        if (uniqueUserIds.length > 0) {
+          const title = allFailed
+            ? "Reminder întâlnire — EȘUAT"
+            : "Reminder întâlnire — trimitere parțială";
+          const message = `Întâlnire: ${meeting.title} (${formatBucharest(meeting.start_at)}). ${errorMessage || "Eroare necunoscută"}. Trimise: ${sent}/${recipients.length}.`;
+
+          const rows = uniqueUserIds.map((uid) => ({
+            user_id: uid,
+            title,
+            message,
+            type: allFailed ? "error" : "warning",
+            related_type: "meeting_reminder_log",
+            related_id: (logRow as any)?.id ?? meeting_id,
+          }));
+
+          await admin.from("notifications").insert(rows);
+        }
+      } catch (notifErr) {
+        console.error("[INTERNAL] failed to enqueue failure notifications:", notifErr);
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        success,
+        sent,
+        recipients_total: recipients.length,
+        status_code: statusCode,
+        error_message: errorMessage,
+        per_recipient_errors: perRecipientErrors,
+      }),
+      {
+        status: success ? 200 : statusCode,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   } catch (err) {
     console.error("[INTERNAL] send-meeting-reminder error:", err);
-    return new Response(JSON.stringify({ error: "Internal error" }), {
+    const msg = (err as Error)?.message || String(err);
+    try {
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const body = await req.clone().json().catch(() => ({} as any));
+      if (body?.meeting_id) {
+        await admin.from("meeting_reminder_logs").insert({
+          meeting_id: body.meeting_id,
+          success: false,
+          recipients_total: 0,
+          recipients_sent: 0,
+          status_code: 500,
+          error_message: `Internal error: ${msg}`,
+          details: {},
+        });
+      }
+    } catch (_) {}
+    return new Response(JSON.stringify({ error: "Internal error", message: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
