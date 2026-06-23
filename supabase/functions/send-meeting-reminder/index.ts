@@ -55,15 +55,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Decode JWT role claim (no signature check — we only use it to allow
-    // pg_cron system calls that come in with the anon/publishable key).
+    // Decode JWT role claim (no signature check — the Supabase edge runtime
+    // already validates the JWT signature before our handler runs).
     let jwtRole: string | null = null;
     try {
-      const payload = JSON.parse(atob(token.split(".")[1] || ""));
+      const part = token.split(".")[1] || "";
+      const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+      const pad = b64.length % 4 ? b64 + "=".repeat(4 - (b64.length % 4)) : b64;
+      const payload = JSON.parse(atob(pad));
       jwtRole = payload?.role ?? null;
-    } catch {
+    } catch (e) {
+      console.error("[INTERNAL] JWT decode failed:", e);
       jwtRole = null;
     }
+    console.log("[INTERNAL] auth check — jwtRole:", jwtRole);
 
     const isServiceRole = token === serviceRoleKey || jwtRole === "service_role";
     const isSystemAnon = token === anonKey || jwtRole === "anon";
