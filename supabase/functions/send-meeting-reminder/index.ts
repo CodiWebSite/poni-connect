@@ -55,11 +55,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Allow service-role calls (cron / admin) and anon-key system calls (pg_cron).
-    // Otherwise require an authorized user role.
-    const isServiceRole = token === serviceRoleKey;
-    const isSystemAnon = token === anonKey;
-      if (!isServiceRole && !isSystemAnon) {
+    // Decode JWT role claim (no signature check — the Supabase edge runtime
+    // already validates the JWT signature before our handler runs).
+    let jwtRole: string | null = null;
+    try {
+      const part = token.split(".")[1] || "";
+      const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+      const pad = b64.length % 4 ? b64 + "=".repeat(4 - (b64.length % 4)) : b64;
+      const payload = JSON.parse(atob(pad));
+      jwtRole = payload?.role ?? null;
+    } catch (e) {
+      console.error("[INTERNAL] JWT decode failed:", e);
+      jwtRole = null;
+    }
+    console.log("[INTERNAL] auth check — jwtRole:", jwtRole);
+
+    const isServiceRole = token === serviceRoleKey || jwtRole === "service_role";
+    const isSystemAnon = token === anonKey || jwtRole === "anon";
+
+    if (!isServiceRole && !isSystemAnon) {
       const supabaseAuth = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: `Bearer ${token}` } },
       });
