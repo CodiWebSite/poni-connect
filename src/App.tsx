@@ -44,6 +44,7 @@ import InstallApp from "./pages/InstallApp";
 import Kiosk from "./pages/Kiosk";
 import Archive from "./pages/Archive";
 import MeetingsAgenda from "./pages/MeetingsAgenda";
+import MeetingRemindersStatus from "./pages/MeetingRemindersStatus";
 
 const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
 const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
@@ -250,6 +251,7 @@ const App = () => (
                 <Route path="/install" element={<InstallApp />} />
                 <Route path="/arhiva" element={<Archive />} />
                 <Route path="/agenda-intalniri" element={<MeetingsAgenda />} />
+                <Route path="/agenda-intalniri/reminder-status" element={<MeetingRemindersStatus />} />
                 
                 <Route path="/system-status" element={<SystemStatus />} />
                 <Route path="/maintenance" element={<Maintenance />} />

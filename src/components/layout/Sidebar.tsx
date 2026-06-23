@@ -46,6 +46,7 @@ import {
   ShieldAlert,
   FileLock2,
   ScrollText,
+  Bell,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -305,7 +306,10 @@ const Sidebar = () => {
     { icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR },
     { icon: Banknote, label: 'Salarizare', path: '/salarizare' },
     ...(canAccessMeetings
-      ? [{ icon: CalendarClock, label: 'Agenda întâlniri', path: '/agenda-intalniri' }]
+      ? [
+          { icon: CalendarClock, label: 'Agenda întâlniri', path: '/agenda-intalniri' },
+          { icon: Bell, label: 'Status reminder-e', path: '/agenda-intalniri/reminder-status' },
+        ]
       : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     { icon: ServerCog, label: 'Stare Sistem', path: '/system-status' },
