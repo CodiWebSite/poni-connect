@@ -55,3 +55,5 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = true
   [functions.helpdesk-mfa-reset-request]
     verify_jwt = false
+  [functions.send-meeting-reminder]
+    verify_jwt = false
