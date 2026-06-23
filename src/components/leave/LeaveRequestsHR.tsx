@@ -114,11 +114,11 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const fetchAllRequests = async () => {
     setLoading(true);
 
-    const baseQuery = supabase
+    const { data, error } = await (supabase
       .from('leave_requests')
-      .select('*');
-    
-    const { data, error } = await (baseQuery as any).eq('is_demo', isDemo).order('created_at', { ascending: false }) as { data: any[] | null; error: any };
+      .select('*') as any)
+      .eq('is_demo', isDemo)
+      .order('created_at', { ascending: false }) as { data: any[] | null; error: any };
 
     if (error) {
       console.error('Error fetching leave requests:', error);
@@ -126,112 +126,85 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       return;
     }
 
-    // Enrich with employee data
-    const epdIds = [...new Set((data || []).map(r => r.epd_id).filter(Boolean))];
-    let epdMap: Record<string, { name: string; department: string; position: string; grade: string }> = {};
-
-    if (epdIds.length > 0) {
-      const { data: epdData } = await supabase
-        .from('employee_personal_data')
-        .select('id, first_name, last_name, department, position, grade')
-        .in('id', epdIds);
-
-      (epdData || []).forEach(e => {
-        epdMap[e.id] = {
-          name: `${e.last_name} ${e.first_name}`,
-          department: e.department || '',
-          position: e.position || '',
-          grade: e.grade || '',
-        };
-      });
-    }
-
-    // Get approver names (dept heads + directors)
-    const deptHeadIds = [...new Set((data || []).map(r => r.dept_head_id).filter(Boolean))];
-    const directorIds = [...new Set((data || []).map(r => r.director_id).filter(Boolean))];
+    const rows = data || [];
+    const epdIds = [...new Set(rows.map(r => r.epd_id).filter(Boolean))] as string[];
+    const deptHeadIds = [...new Set(rows.map(r => r.dept_head_id).filter(Boolean))] as string[];
+    const directorIds = [...new Set(rows.map(r => r.director_id).filter(Boolean))] as string[];
     const allApproverIds = [...new Set([...deptHeadIds, ...directorIds])];
-    let approverMap: Record<string, string> = {};
-    if (allApproverIds.length > 0) {
-      const { data: approverProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', allApproverIds);
-      (approverProfiles || []).forEach(p => {
-        approverMap[p.user_id] = p.full_name;
-      });
-    }
 
-    // Get avatar URLs via employee_records -> profiles
-    const recordIds = [...new Set(Object.values(epdMap).map((_, i) => epdIds[i]).filter(Boolean))];
-    let avatarMap: Record<string, string> = {};
-    if (epdIds.length > 0) {
-      const { data: recordsData } = await supabase
+    // Phase 1: fetch EPD (with employee_record_id), approver profiles and carryovers IN PARALLEL
+    const [epdRes, approverRes, carryoverRes] = await Promise.all([
+      epdIds.length
+        ? supabase
+            .from('employee_personal_data')
+            .select('id, first_name, last_name, department, position, grade, employee_record_id')
+            .in('id', epdIds)
+        : Promise.resolve({ data: [] as any[] }),
+      allApproverIds.length
+        ? supabase
+            .from('profiles')
+            .select('user_id, full_name')
+            .in('user_id', allApproverIds)
+        : Promise.resolve({ data: [] as any[] }),
+      epdIds.length
+        ? supabase
+            .from('leave_carryover')
+            .select('employee_personal_data_id, from_year, to_year, initial_days, remaining_days, updated_at')
+            .in('employee_personal_data_id', epdIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const epdMap: Record<string, { name: string; department: string; position: string; grade: string }> = {};
+    const epdToRecordId: Record<string, string> = {};
+    (epdRes.data || []).forEach((e: any) => {
+      epdMap[e.id] = {
+        name: `${e.last_name} ${e.first_name}`,
+        department: e.department || '',
+        position: e.position || '',
+        grade: e.grade || '',
+      };
+      if (e.employee_record_id) epdToRecordId[e.id] = e.employee_record_id;
+    });
+
+    const approverMap: Record<string, string> = {};
+    (approverRes.data || []).forEach((p: any) => { approverMap[p.user_id] = p.full_name; });
+
+    const carryoverMap: Record<string, { from_year: number; to_year: number; initial_days: number; remaining_days: number; updated_at: string }[]> = {};
+    (carryoverRes.data || []).forEach((c: any) => {
+      if (!carryoverMap[c.employee_personal_data_id]) carryoverMap[c.employee_personal_data_id] = [];
+      carryoverMap[c.employee_personal_data_id].push({
+        from_year: c.from_year,
+        to_year: c.to_year,
+        initial_days: c.initial_days,
+        remaining_days: c.remaining_days,
+        updated_at: c.updated_at,
+      });
+    });
+
+    // Phase 2: fetch employee_records to get user_id, then avatars from profiles
+    const avatarMap: Record<string, string> = {};
+    const recordIdsForAvatar = [...new Set(Object.values(epdToRecordId))];
+    if (recordIdsForAvatar.length > 0) {
+      const { data: records } = await supabase
         .from('employee_records')
         .select('id, user_id')
-        .in('id', (data || []).map(r => r.epd_id).filter(Boolean).map(epdId => {
-          // We need employee_record_id from EPD, not epd_id directly
-          return epdId;
-        }));
-      
-      // Get employee_record_ids from EPD
-      const { data: epdWithRecords } = await supabase
-        .from('employee_personal_data')
-        .select('id, employee_record_id')
-        .in('id', epdIds);
-      
-      const epdToRecordId: Record<string, string> = {};
-      (epdWithRecords || []).forEach(e => {
-        if (e.employee_record_id) epdToRecordId[e.id] = e.employee_record_id;
-      });
+        .in('id', recordIdsForAvatar);
+      const recordToUserId: Record<string, string> = {};
+      (records || []).forEach((r: any) => { recordToUserId[r.id] = r.user_id; });
 
-      const recordIdsForAvatar = [...new Set(Object.values(epdToRecordId))];
-      if (recordIdsForAvatar.length > 0) {
-        const { data: records } = await supabase
-          .from('employee_records')
-          .select('id, user_id')
-          .in('id', recordIdsForAvatar);
-        
-        const recordToUserId: Record<string, string> = {};
-        (records || []).forEach(r => { recordToUserId[r.id] = r.user_id; });
-
-        const userIdsForAvatar = [...new Set(Object.values(recordToUserId))];
-        if (userIdsForAvatar.length > 0) {
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('user_id, avatar_url')
-            .in('user_id', userIdsForAvatar);
-          
-          const userToAvatar: Record<string, string> = {};
-          (profilesData || []).forEach(p => { if (p.avatar_url) userToAvatar[p.user_id] = p.avatar_url; });
-
-          // Map EPD id -> avatar_url
-          Object.entries(epdToRecordId).forEach(([epdId, recordId]) => {
-            const userId = recordToUserId[recordId];
-            if (userId && userToAvatar[userId]) {
-              avatarMap[epdId] = userToAvatar[userId];
-            }
-          });
-        }
-      }
-    }
-
-    // Fetch carryover data to determine source (Report vs Sold)
-    let carryoverMap: Record<string, { from_year: number; to_year: number; initial_days: number; remaining_days: number; updated_at: string }[]> = {};
-    if (epdIds.length > 0) {
-      const { data: carryovers } = await supabase
-        .from('leave_carryover')
-        .select('employee_personal_data_id, from_year, to_year, initial_days, remaining_days, updated_at')
-        .in('employee_personal_data_id', epdIds);
-      (carryovers || []).forEach(c => {
-        if (!carryoverMap[c.employee_personal_data_id]) carryoverMap[c.employee_personal_data_id] = [];
-        carryoverMap[c.employee_personal_data_id].push({
-          from_year: c.from_year,
-          to_year: c.to_year,
-          initial_days: c.initial_days,
-          remaining_days: c.remaining_days,
-          updated_at: c.updated_at,
+      const userIdsForAvatar = [...new Set(Object.values(recordToUserId))];
+      if (userIdsForAvatar.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, avatar_url')
+          .in('user_id', userIdsForAvatar);
+        const userToAvatar: Record<string, string> = {};
+        (profilesData || []).forEach((p: any) => { if (p.avatar_url) userToAvatar[p.user_id] = p.avatar_url; });
+        Object.entries(epdToRecordId).forEach(([epdId, recordId]) => {
+          const userId = recordToUserId[recordId];
+          if (userId && userToAvatar[userId]) avatarMap[epdId] = userToAvatar[userId];
         });
-      });
+      }
     }
 
     // FIFO simulation per employee:
