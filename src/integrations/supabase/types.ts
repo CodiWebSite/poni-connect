@@ -2179,6 +2179,53 @@ export type Database = {
           },
         ]
       }
+      meeting_reminder_logs: {
+        Row: {
+          attempted_at: string
+          created_at: string
+          details: Json
+          error_message: string | null
+          id: string
+          meeting_id: string
+          recipients_sent: number
+          recipients_total: number
+          status_code: number | null
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          created_at?: string
+          details?: Json
+          error_message?: string | null
+          id?: string
+          meeting_id: string
+          recipients_sent?: number
+          recipients_total?: number
+          status_code?: number | null
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          created_at?: string
+          details?: Json
+          error_message?: string | null
+          id?: string
+          meeting_id?: string
+          recipients_sent?: number
+          recipients_total?: number
+          status_code?: number | null
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_reminder_logs_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meetings: {
         Row: {
           created_at: string
