@@ -46,6 +46,7 @@ import {
   ShieldAlert,
   FileLock2,
   ScrollText,
+  Bell,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
