@@ -305,7 +305,10 @@ const Sidebar = () => {
     { icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR },
     { icon: Banknote, label: 'Salarizare', path: '/salarizare' },
     ...(canAccessMeetings
-      ? [{ icon: CalendarClock, label: 'Agenda întâlniri', path: '/agenda-intalniri' }]
+      ? [
+          { icon: CalendarClock, label: 'Agenda întâlniri', path: '/agenda-intalniri' },
+          { icon: Bell, label: 'Status reminder-e', path: '/agenda-intalniri/reminder-status' },
+        ]
       : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     { icon: ServerCog, label: 'Stare Sistem', path: '/system-status' },
