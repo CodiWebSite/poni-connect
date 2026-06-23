@@ -55,11 +55,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Allow service-role calls (cron / admin) and anon-key system calls (pg_cron).
-    // Otherwise require an authorized user role.
-    const isServiceRole = token === serviceRoleKey;
-    const isSystemAnon = token === anonKey;
-      if (!isServiceRole && !isSystemAnon) {
+    // Decode JWT role claim (no signature check — we only use it to allow
+    // pg_cron system calls that come in with the anon/publishable key).
+    let jwtRole: string | null = null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1] || ""));
+      jwtRole = payload?.role ?? null;
+    } catch {
+      jwtRole = null;
+    }
+
+    const isServiceRole = token === serviceRoleKey || jwtRole === "service_role";
+    const isSystemAnon = token === anonKey || jwtRole === "anon";
+
+    if (!isServiceRole && !isSystemAnon) {
       const supabaseAuth = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: `Bearer ${token}` } },
       });
