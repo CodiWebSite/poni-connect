@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { History, Pencil, Trash2, Loader2, Calendar, Paperclip, Download, Plus, AlertTriangle, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -566,78 +567,105 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
               <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
               <p className="text-sm">Nu există concedii înregistrate.</p>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {leaves.map((leave) => {
-                const details = leave.details || {};
-                const status = leaveStatusConfig[leave.status] || leaveStatusConfig.pending;
-                const startDate = details.startDate ? new Date(details.startDate) : null;
-                const endDate = details.endDate ? new Date(details.endDate) : null;
-                const leaveType = (details.leaveType || details.leave_type || 'co').toLowerCase();
-                const typeStyle = getLeaveStyle(leaveType);
+          ) : (() => {
+            const getType = (l: LeaveHistoryItem) => (l.details?.leaveType || l.details?.leave_type || 'co').toString().toLowerCase();
+            const groups: { key: string; label: string; items: LeaveHistoryItem[] }[] = [
+              { key: 'co', label: 'Concediu de odihnă', items: leaves.filter(l => ['co', 'concediu_odihna'].includes(getType(l))) },
+              { key: 'cm', label: 'Concediu medical', items: leaves.filter(l => ['cm', 'bo', 'concediu_medical', 'prb'].includes(getType(l))) },
+              { key: 'd',  label: 'Deplasări', items: leaves.filter(l => ['d'].includes(getType(l))) },
+              { key: 'ev', label: 'Evenimente / Libere', items: leaves.filter(l => ['ev', 'eveniment', 'l', 'i'].includes(getType(l))) },
+              { key: 'other', label: 'Alte absențe', items: leaves.filter(l => !['co','concediu_odihna','cm','bo','concediu_medical','prb','d','ev','eveniment','l','i'].includes(getType(l))) },
+            ];
+            const visibleGroups = groups.filter(g => g.items.length > 0);
+            const defaultTab = visibleGroups[0]?.key || 'co';
 
-                return (
-                  <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 border rounded-lg hover:bg-muted/40 transition-colors">
-                    <div className="space-y-0.5 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge className={`text-[10px] font-bold ${typeStyle.color} ${typeStyle.bg} border-0`}>{typeStyle.label}</Badge>
-                        <p className="font-medium text-sm">
-                          {startDate && endDate
-                            ? `${format(startDate, 'dd.MM.yyyy', { locale: ro })} — ${format(endDate, 'dd.MM.yyyy', { locale: ro })}`
-                            : 'Perioadă nespecificată'}
-                        </p>
-                        <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
-                        {details.manualEntry && <Badge variant="outline" className="text-[10px]">HR</Badge>}
-                        {details.source === 'leave_requests' && <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800">Online</Badge>}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                        {details.numberOfDays && <span className="font-medium">{details.numberOfDays} zile</span>}
-                        {details.year && <span>An: {details.year}</span>}
-                        {details.request_number && <span className="font-mono">{details.request_number}</span>}
-                        <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
-                      </div>
-                      {details.notes && <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>}
-                      {details.scannedDocumentUrl && (
-                        <button
-                          className="flex items-center gap-1 text-xs text-primary hover:underline mt-1"
-                          onClick={async () => {
-                            try {
-                              const { data, error } = await supabase.storage.from('employee-documents').download(details.scannedDocumentUrl);
-                              if (error) throw error;
-                              const url = URL.createObjectURL(data);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = details.scannedDocumentName || details.scannedDocumentUrl.split('/').pop() || 'document';
-                              document.body.appendChild(a);
-                              a.click();
-                              document.body.removeChild(a);
-                              URL.revokeObjectURL(url);
-                            } catch (err) {
-                              console.error('Download error:', err);
-                            }
-                          }}
-                        >
-                          <Paperclip className="w-3 h-3" />
-                          {details.scannedDocumentName || 'Scanare atașată'}
-                          <Download className="w-3 h-3" />
-                        </button>
-                      )}
+            const renderItem = (leave: LeaveHistoryItem) => {
+              const details = leave.details || {};
+              const status = leaveStatusConfig[leave.status] || leaveStatusConfig.pending;
+              const startDate = details.startDate ? new Date(details.startDate) : null;
+              const endDate = details.endDate ? new Date(details.endDate) : null;
+              const leaveType = (details.leaveType || details.leave_type || 'co').toLowerCase();
+              const typeStyle = getLeaveStyle(leaveType);
+              return (
+                <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 border rounded-lg hover:bg-muted/40 transition-colors">
+                  <div className="space-y-0.5 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className={`text-[10px] font-bold ${typeStyle.color} ${typeStyle.bg} border-0`}>{typeStyle.label}</Badge>
+                      <p className="font-medium text-sm">
+                        {startDate && endDate
+                          ? `${format(startDate, 'dd.MM.yyyy', { locale: ro })} — ${format(endDate, 'dd.MM.yyyy', { locale: ro })}`
+                          : 'Perioadă nespecificată'}
+                      </p>
+                      <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
+                      {details.manualEntry && <Badge variant="outline" className="text-[10px]">HR</Badge>}
+                      {details.source === 'leave_requests' && <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800">Online</Badge>}
                     </div>
-                    <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="sm" onClick={() => setEditingLeave(leave)}>
-                        <Pencil className="w-4 h-4 mr-1" />
-                        Editează
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => deleteLeave(leave)} disabled={deletingId === leave.id}>
-                        {deletingId === leave.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-1" />}
-                        Șterge
-                      </Button>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                      {details.numberOfDays && <span className="font-medium">{details.numberOfDays} zile</span>}
+                      {details.year && <span>An: {details.year}</span>}
+                      {details.request_number && <span className="font-mono">{details.request_number}</span>}
+                      <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
                     </div>
+                    {details.notes && <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>}
+                    {details.scannedDocumentUrl && (
+                      <button
+                        className="flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                        onClick={async () => {
+                          try {
+                            const { data, error } = await supabase.storage.from('employee-documents').download(details.scannedDocumentUrl);
+                            if (error) throw error;
+                            const url = URL.createObjectURL(data);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = details.scannedDocumentName || details.scannedDocumentUrl.split('/').pop() || 'document';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          } catch (err) {
+                            console.error('Download error:', err);
+                          }
+                        }}
+                      >
+                        <Paperclip className="w-3 h-3" />
+                        {details.scannedDocumentName || 'Scanare atașată'}
+                        <Download className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="sm" onClick={() => setEditingLeave(leave)}>
+                      <Pencil className="w-4 h-4 mr-1" />
+                      Editează
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => deleteLeave(leave)} disabled={deletingId === leave.id}>
+                      {deletingId === leave.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-1" />}
+                      Șterge
+                    </Button>
+                  </div>
+                </div>
+              );
+            };
+
+            return (
+              <Tabs defaultValue={defaultTab} className="w-full">
+                <TabsList className="w-full flex-wrap h-auto justify-start">
+                  {visibleGroups.map(g => (
+                    <TabsTrigger key={g.key} value={g.key} className="text-xs">
+                      {g.label}
+                      <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5">{g.items.length}</Badge>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {visibleGroups.map(g => (
+                  <TabsContent key={g.key} value={g.key} className="space-y-2 mt-3">
+                    {g.items.map(renderItem)}
+                  </TabsContent>
+                ))}
+              </Tabs>
+            );
+          })()}
+
         </DialogContent>
       </Dialog>
 
