@@ -808,28 +808,29 @@ const MyProfile = () => {
                   </Card>
 
                   {/* Separate card for non-CO absences — CM, D, EV, etc. */}
-                  <Card className="animate-fade-in border-accent/30 bg-accent/5" style={{ animationDelay: '120ms' }}>
+                  <Card className="animate-fade-in border-2 border-accent/40 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent shadow-md" style={{ animationDelay: '120ms' }}>
                     <CardHeader className="pb-3">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Briefcase className="w-5 h-5 text-accent" />
-                          Deplasări, Concedii Medicale și alte absențe
+                        <CardTitle className="flex items-start sm:items-center gap-2 text-base">
+                          <Briefcase className="w-5 h-5 text-accent shrink-0 mt-0.5 sm:mt-0" />
+                          <span className="leading-tight">Deplasări, Concedii Medicale și alte absențe</span>
                         </CardTitle>
-                        <Badge variant="outline" className="w-fit border-accent/30 bg-background/70 text-accent">
+                        <Badge variant="outline" className="w-fit border-accent/40 bg-background/80 text-accent font-semibold">
                           Fără CO
                         </Badge>
                       </div>
-                      {otherItems.length > 0 && (
-                        <CardDescription>
-                          {otherItems.length} {otherItems.length === 1 ? 'înregistrare' : 'înregistrări'} — separat de Istoricul Concediilor
-                        </CardDescription>
-                      )}
+                      <CardDescription className="mt-1">
+                        {otherItems.length > 0
+                          ? `${otherItems.length} ${otherItems.length === 1 ? 'înregistrare' : 'înregistrări'} — separat de Istoricul Concediilor`
+                          : 'Categorii: CM, Deplasări, Evenimente, CFP, CCC, CFS și altele'}
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       {otherItems.length > 0 ? renderTimeline(otherItems) : (
                         <div className="text-center py-6 text-muted-foreground">
-                          <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                          <Briefcase className="w-10 h-10 mx-auto mb-2 opacity-40" />
                           <p className="text-sm">Nu aveți alte absențe înregistrate.</p>
+                          <p className="text-xs mt-1">Vor apărea aici când HR adaugă deplasări, concedii medicale sau alte tipuri.</p>
                         </div>
                       )}
                     </CardContent>
