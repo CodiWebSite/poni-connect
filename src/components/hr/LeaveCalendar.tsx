@@ -289,7 +289,12 @@ const LeaveCalendar = () => {
   };
 
   // Get unique departments for filter — normalize known duplicates
-  const normalizeDept = (d: string) => d.trim() === 'Oficiu Juridic' ? 'Oficiu juridic' : d.trim();
+  const normalizeDept = (d: string) => {
+    const t = d.trim();
+    // Match variants: "Oficiu Juridic", "OFICIU JURIDIC", "OFICIUL JURIDIC", "Oficiul juridic", etc.
+    if (/^oficiu(l)?\s+juridic$/i.test(t)) return 'Oficiu juridic';
+    return t;
+  };
   const dynamicDepts = leaves.map(l => l.department ? normalizeDept(l.department) : '').filter(Boolean);
   if (!dynamicDepts.includes('Oficiu juridic')) {
     dynamicDepts.push('Oficiu juridic');
