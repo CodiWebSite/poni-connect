@@ -737,68 +737,98 @@ const MyProfile = () => {
                 )}
               </CardHeader>
               <CardContent>
-                {leaveHistory.length > 0 ? (
-                  <div className="relative pl-6">
-                    {/* Timeline line */}
-                    <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
-                    
-                    <div className="space-y-3">
-                      {leaveHistory.map((leave, idx) => {
-                        const details = leave.details || {};
-                        const status = leaveStatusConfig[leave.status] || leaveStatusConfig.pending;
-                        const startDate = details.startDate ? new Date(details.startDate) : null;
-                        const endDate = details.endDate ? new Date(details.endDate) : null;
-                        
-                        return (
-                          <div 
-                            key={leave.id} 
-                            className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 border rounded-lg hover:bg-muted/30 hover:shadow-sm transition-all duration-300 hover:-translate-y-0.5"
-                            style={{ animationDelay: `${idx * 30}ms` }}
-                          >
-                            {/* Timeline dot */}
-                            <div className={`absolute -left-6 top-4 w-[18px] h-[18px] rounded-full border-[3px] border-background ${status.color} shadow-sm`} />
-                            
+                {leaveHistory.length > 0 ? (() => {
+                  const getType = (l: LeaveHistoryItem) => {
+                    if (l.source === 'leave_requests') return 'co';
+                    return (l.details?.leaveType || l.details?.leave_type || 'co').toString().toLowerCase();
+                  };
+                  const groups: { key: string; label: string; items: LeaveHistoryItem[] }[] = [
+                    { key: 'co', label: 'Concediu de odihnă', items: leaveHistory.filter(l => ['co', 'concediu_odihna'].includes(getType(l))) },
+                    { key: 'cm', label: 'Concediu medical', items: leaveHistory.filter(l => ['cm', 'bo', 'concediu_medical', 'prb'].includes(getType(l))) },
+                    { key: 'd',  label: 'Deplasări', items: leaveHistory.filter(l => getType(l) === 'd') },
+                    { key: 'ev', label: 'Evenimente / Libere', items: leaveHistory.filter(l => ['ev', 'eveniment', 'l', 'i'].includes(getType(l))) },
+                    { key: 'other', label: 'Altele', items: leaveHistory.filter(l => !['co','concediu_odihna','cm','bo','concediu_medical','prb','d','ev','eveniment','l','i'].includes(getType(l))) },
+                  ];
+                  const visibleGroups = groups.filter(g => g.items.length > 0);
+                  const defaultTab = visibleGroups[0]?.key || 'co';
+
+                  const renderTimeline = (items: LeaveHistoryItem[]) => (
+                    <div className="relative pl-6">
+                      <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
+                      <div className="space-y-3">
+                        {items.map((leave, idx) => {
+                          const details = leave.details || {};
+                          const status = leaveStatusConfig[leave.status] || leaveStatusConfig.pending;
+                          const startDate = details.startDate ? new Date(details.startDate) : null;
+                          const endDate = details.endDate ? new Date(details.endDate) : null;
+                          return (
+                            <div
+                              key={leave.id}
+                              className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 border rounded-lg hover:bg-muted/30 hover:shadow-sm transition-all duration-300 hover:-translate-y-0.5"
+                              style={{ animationDelay: `${idx * 30}ms` }}
+                            >
+                              <div className={`absolute -left-6 top-4 w-[18px] h-[18px] rounded-full border-[3px] border-background ${status.color} shadow-sm`} />
                               <div className="space-y-0.5 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {(() => {
-                                  const leaveTypeKey = leave.source === 'leave_requests' ? 'co' : (details.leaveType || details.leave_type || 'co');
-                                  const style = getLeaveStyle(leaveTypeKey);
-                                  return (
-                                    <Badge variant="outline" className={`text-[10px] font-bold ${style.color} ${style.bg} border-0`}>
-                                      {style.label}
-                                    </Badge>
-                                  );
-                                })()}
-                                <p className="font-semibold text-sm">
-                                  {startDate && endDate
-                                    ? `${format(startDate, 'dd MMM', { locale: ro })} — ${format(endDate, 'dd MMM yyyy', { locale: ro })}`
-                                    : 'Perioadă nespecificată'}
-                                </p>
-                                <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
-                                {leave.source === 'leave_requests' && leave.request_number && (
-                                  <Badge variant="outline" className="text-[10px] font-mono">{leave.request_number}</Badge>
-                                )}
-                                {details.manualEntry && <Badge variant="outline" className="text-[10px]">HR</Badge>}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {(() => {
+                                    const leaveTypeKey = leave.source === 'leave_requests' ? 'co' : (details.leaveType || details.leave_type || 'co');
+                                    const style = getLeaveStyle(leaveTypeKey);
+                                    return (
+                                      <Badge variant="outline" className={`text-[10px] font-bold ${style.color} ${style.bg} border-0`}>
+                                        {style.label}
+                                      </Badge>
+                                    );
+                                  })()}
+                                  <p className="font-semibold text-sm">
+                                    {startDate && endDate
+                                      ? `${format(startDate, 'dd MMM', { locale: ro })} — ${format(endDate, 'dd MMM yyyy', { locale: ro })}`
+                                      : 'Perioadă nespecificată'}
+                                  </p>
+                                  <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
+                                  {leave.source === 'leave_requests' && leave.request_number && (
+                                    <Badge variant="outline" className="text-[10px] font-mono">{leave.request_number}</Badge>
+                                  )}
+                                  {details.manualEntry && <Badge variant="outline" className="text-[10px]">HR</Badge>}
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  {details.numberOfDays && <span className="font-medium">{details.numberOfDays} zile</span>}
+                                  {details.replacementName && <span>Înlocuitor: {details.replacementName}</span>}
+                                  <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
+                                </div>
+                                {details.notes && <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>}
                               </div>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                {details.numberOfDays && <span className="font-medium">{details.numberOfDays} zile</span>}
-                                {details.replacementName && <span>Înlocuitor: {details.replacementName}</span>}
-                                <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
-                              </div>
-                              {details.notes && <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>}
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ) : (
+                  );
+
+                  return (
+                    <Tabs defaultValue={defaultTab} className="w-full">
+                      <TabsList className="w-full flex-wrap h-auto justify-start mb-3">
+                        {visibleGroups.map(g => (
+                          <TabsTrigger key={g.key} value={g.key} className="text-xs">
+                            {g.label}
+                            <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5">{g.items.length}</Badge>
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      {visibleGroups.map(g => (
+                        <TabsContent key={g.key} value={g.key}>
+                          {renderTimeline(g.items)}
+                        </TabsContent>
+                      ))}
+                    </Tabs>
+                  );
+                })() : (
                   <div className="text-center py-6 text-muted-foreground">
                     <History className="w-10 h-10 mx-auto mb-2 opacity-40" />
                     <p className="text-sm">Nu aveți concedii înregistrate.</p>
                   </div>
                 )}
               </CardContent>
+
             </Card>
           </div>
 
