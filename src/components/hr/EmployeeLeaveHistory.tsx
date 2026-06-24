@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { History, Pencil, Trash2, Loader2, Calendar, Paperclip, Download, Plus, AlertTriangle, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
