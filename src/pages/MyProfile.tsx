@@ -21,7 +21,6 @@ import {
   Gift, ArrowRightLeft, Scale, ShieldCheck, HelpCircle, Copy, Check, UserCheck,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { formatNumePrenume } from '@/utils/formatName';
@@ -808,15 +807,22 @@ const MyProfile = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Other absences — CM, D, EV, etc. */}
-                  <Card className="animate-fade-in" style={{ animationDelay: '120ms' }}>
+                  {/* Separate card for non-CO absences — CM, D, EV, etc. */}
+                  <Card className="animate-fade-in border-accent/30 bg-accent/5" style={{ animationDelay: '120ms' }}>
                     <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Calendar className="w-5 h-5 text-primary" />
-                        Deplasări, Concedii Medicale și alte absențe
-                      </CardTitle>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Briefcase className="w-5 h-5 text-accent" />
+                          Deplasări, Concedii Medicale și alte absențe
+                        </CardTitle>
+                        <Badge variant="outline" className="w-fit border-accent/30 bg-background/70 text-accent">
+                          Fără CO
+                        </Badge>
+                      </div>
                       {otherItems.length > 0 && (
-                        <CardDescription>{otherItems.length} {otherItems.length === 1 ? 'înregistrare' : 'înregistrări'}</CardDescription>
+                        <CardDescription>
+                          {otherItems.length} {otherItems.length === 1 ? 'înregistrare' : 'înregistrări'} — separat de Istoricul Concediilor
+                        </CardDescription>
                       )}
                     </CardHeader>
                     <CardContent>
