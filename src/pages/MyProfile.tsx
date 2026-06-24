@@ -21,6 +21,7 @@ import {
   Gift, ArrowRightLeft, Scale, ShieldCheck, HelpCircle, Copy, Check, UserCheck,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { formatNumePrenume } from '@/utils/formatName';
