@@ -276,6 +276,20 @@ const App = () => (
                 <Route path="/legal/confidentialitate" element={<PublicLegal />} />
                 <Route path="/legal/informare-autentificare" element={<PublicLegal />} />
 
+                {/* INTRANET SOCIAL */}
+                <Route path="/social" element={<SocialFeed />} />
+                <Route path="/social/comunitati" element={<Communities />} />
+                <Route path="/social/comunitati/:slug" element={<CommunityDetail />} />
+                <Route path="/social/anunturi" element={<Announcements />} />
+                <Route path="/social/aniversari" element={<Birthdays />} />
+                <Route path="/social/colegi" element={<Colleagues />} />
+                <Route path="/social/organigrama" element={<OrgChart />} />
+                <Route path="/social/activitati" element={<RecreationalActivities />} />
+                <Route path="/social/chat" element={<Chat />} />
+                <Route path="/social/arhiva" element={<Archive />} />
+                <Route path="/social/securitate" element={<SecurityQuiz />} />
+                <Route path="/social/setari" element={<SocialSettings />} />
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceGuard>
