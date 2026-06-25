@@ -39,18 +39,22 @@ const Communities = () => {
     const uid = auth.user?.id ?? null;
     setCurrentUserId(uid);
 
-    const [{ data: communities }, { data: memberships }, { data: counts }] = await Promise.all([
+    const [communitiesRes, membershipsRes, countsRes] = await Promise.all([
       supabase
         .from('communities')
         .select('id, name, slug, description, visibility, is_archived, created_by')
         .order('created_at', { ascending: false }),
       uid
         ? supabase.from('community_members').select('community_id').eq('user_id', uid)
-        : Promise.resolve({ data: [] as { community_id: string }[] }),
+        : Promise.resolve({ data: [] as { community_id: string }[] } as any),
       supabase.from('community_members').select('community_id'),
     ]);
 
-    const memberSet = new Set((memberships?.data ?? memberships ?? []).map((m: any) => m.community_id));
+    const communities = communitiesRes.data;
+    const memberships = (membershipsRes as any).data ?? [];
+    const counts = countsRes.data ?? [];
+
+    const memberSet = new Set((memberships as any[]).map((m) => m.community_id));
     const countMap = new Map<string, number>();
     (counts ?? []).forEach((r: any) => {
       countMap.set(r.community_id, (countMap.get(r.community_id) ?? 0) + 1);
