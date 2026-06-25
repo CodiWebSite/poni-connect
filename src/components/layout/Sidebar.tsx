@@ -280,7 +280,7 @@ const Sidebar = () => {
     { icon: BookOpen, label: 'Bibliotecă', path: '/library' },
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
     { icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' },
-    { icon: CreditCard, label: 'Cărți Vizită', path: '/carti-vizita' },
+    
     { icon: ShieldCheck, label: 'Securitatea contului meu', path: '/securitatea-mea' },
     { icon: ShieldAlert, label: 'Raportează incident', path: '/raporteaza-incident' },
     { icon: FileLock2, label: 'Confidențialitate & GDPR', path: '/confidentialitate' },
