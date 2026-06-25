@@ -94,6 +94,8 @@ const Header = ({ title, description }: HeaderProps) => {
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
 
+          <HubSwitcher />
+
           <NotificationBell />
 
           <div className="hidden sm:flex items-center gap-3 pl-2 md:pl-4 border-l border-border">
