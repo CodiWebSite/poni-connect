@@ -63,14 +63,26 @@ const OrgChart = () => {
           </Button>
         </div>
 
-        <Button
-          variant="secondary"
-          className="rounded-xl"
-          onClick={() => toast.info('Exportul va fi disponibil într-o iterație viitoare')}
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Exportă
-        </Button>
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <Button
+              variant="secondary"
+              className="rounded-xl"
+              onClick={() => toast.info('Editorul de organigramă va fi disponibil într-o iterație viitoare')}
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              Editează
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            className="rounded-xl"
+            onClick={() => toast.info('Exportul va fi disponibil într-o iterație viitoare')}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportă
+          </Button>
+        </div>
       </div>
 
       <div className="flex justify-center py-12 overflow-auto">
