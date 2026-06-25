@@ -64,11 +64,13 @@ const CommunityDetail = () => {
           <div className="flex items-center justify-between mb-4">
             <h1 className="font-display font-bold text-2xl">{name}</h1>
             <Button
+              variant="secondary"
               className="rounded-xl"
-              onClick={() => toast.info('Postările vor fi disponibile într-o iterație viitoare')}
+              disabled
+              title="Disponibil într-o iterație viitoare"
             >
               <Plus className="w-4 h-4 mr-1.5" />
-              Postare nouă
+              Postare nouă (în curând)
             </Button>
           </div>
 
@@ -111,20 +113,6 @@ const CommunityDetail = () => {
           <Card className="p-5 rounded-2xl border-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg">Despre</h3>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => toast.info('Iterație viitoare')}
-                >
-                  <LogOut className="w-3.5 h-3.5 mr-1.5" />
-                  Ieșire
-                </Button>
-                <Button variant="ghost" size="icon" className="rounded-xl">
-                  <SettingsIcon className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
 
             <div className="flex items-center gap-2 mb-4">
@@ -137,14 +125,6 @@ const CommunityDetail = () => {
 
             <div className="flex items-center justify-between mb-3">
               <p className="font-semibold text-sm">Membri (1)</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-xl text-primary hover:text-primary"
-                onClick={() => toast.info('Iterație viitoare')}
-              >
-                Adaugă membri
-              </Button>
             </div>
 
             <div className="relative mb-3">
@@ -153,7 +133,7 @@ const CommunityDetail = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50">
+              <div className="flex items-center gap-3 p-2 rounded-xl">
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
                   {me.initials}
                 </div>
@@ -164,11 +144,12 @@ const CommunityDetail = () => {
                   </div>
                   <p className="text-xs text-muted-foreground truncate">{me.email}</p>
                 </div>
-                <Button variant="ghost" size="icon" className="rounded-xl h-7 w-7">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
               </div>
             </div>
+
+            <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
+              Gestionarea membrilor, editarea și arhivarea comunității vor fi disponibile într-o iterație viitoare.
+            </p>
           </Card>
         </div>
       </div>

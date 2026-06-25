@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import SocialLayout from '@/components/layout/SocialLayout';
 import { Button } from '@/components/ui/button';
-import { Minus, Plus, Maximize2, Download } from 'lucide-react';
+import { Minus, Plus, Maximize2, Download, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 
 const OrgChart = () => {
   const { user } = useAuth();
+  const { canManageHR, isSuperAdmin } = useUserRole();
+  const canEdit = canManageHR || isSuperAdmin;
   const [zoom, setZoom] = useState(1);
   const [me, setMe] = useState<{ name: string; position: string; initials: string } | null>(null);
 
@@ -60,14 +63,26 @@ const OrgChart = () => {
           </Button>
         </div>
 
-        <Button
-          variant="secondary"
-          className="rounded-xl"
-          onClick={() => toast.info('Exportul va fi disponibil într-o iterație viitoare')}
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Exportă
-        </Button>
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <Button
+              variant="secondary"
+              className="rounded-xl"
+              onClick={() => toast.info('Editorul de organigramă va fi disponibil într-o iterație viitoare')}
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              Editează
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            className="rounded-xl"
+            onClick={() => toast.info('Exportul va fi disponibil într-o iterație viitoare')}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportă
+          </Button>
+        </div>
       </div>
 
       <div className="flex justify-center py-12 overflow-auto">

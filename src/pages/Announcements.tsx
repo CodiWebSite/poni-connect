@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import SocialLayout from '@/components/layout/SocialLayout';
 import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -38,6 +40,9 @@ interface Announcement {
 }
 
 const Announcements = () => {
+  const location = useLocation();
+  const isSocial = location.pathname.startsWith('/social');
+  const Layout = isSocial ? SocialLayout : MainLayout;
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -194,7 +199,7 @@ const Announcements = () => {
   };
 
   return (
-    <MainLayout title="Anunțuri" description="Comunicate și informații importante">
+    <Layout title="Anunțuri" description="Comunicate și informații importante">
       {canPost && (
         <div className="flex justify-end mb-6">
           <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
@@ -320,7 +325,7 @@ const Announcements = () => {
           ))}
         </div>
       )}
-    </MainLayout>
+    </Layout>
   );
 };
 

@@ -53,6 +53,39 @@ export const quickLinks = [
 
 export const articles: GuideArticle[] = [
 
+  {
+    id: 'hub-social',
+    title: 'INTRANET SOCIAL — noul hub de comunicare',
+    category: 'modules',
+    iconName: 'LayoutGrid',
+    summary: 'Platforma a fost reorganizată în două spații: INTRANET CORE HR (procese de muncă) și INTRANET SOCIAL (comunitate). Comutarea se face din colțul dreapta-sus.',
+    tags: ['hub', 'social', 'core hr', 'app switcher', 'comunități', 'organigramă', 'aniversări'],
+    relatedIds: ['welcome'],
+    irisPrompts: ['Cum schimb între Core HR și Social?', 'Ce conține Intranet Social?'],
+    sections: [
+      {
+        title: 'Cele două spații',
+        paragraphs: [
+          'INTRANET CORE HR conține tot ce ține de munca ta: dashboard, profil, concedii, formulare, salarizare, medicină muncii, gestiune HR.',
+          'INTRANET SOCIAL conține Feed-ul, Comunitățile, Anunțurile, Aniversările, Colegii, Organigrama, Activitățile și Mesageria.',
+        ],
+      },
+      {
+        title: 'Cum comut între ele',
+        paragraphs: ['În colțul dreapta-sus, lângă numele tău, apare un buton cu 4 pătrate (App Switcher). Click pe el și alegi spațiul dorit. Alegerea se memorează pe acest dispozitiv.'],
+      },
+      {
+        title: 'Stadiu actual al modulelor sociale',
+        paragraphs: [
+          'Feed-ul, Comunitățile, Organigrama editabilă și crearea de postări sunt în fază de „shell". Datele și funcționalitatea completă vor fi livrate în iterații viitoare.',
+          'Funcționează deja: Anunțurile, Aniversările (din data angajării), Colegii, Mesageria, Arhiva online, Activitățile, Securitatea Digitală.',
+        ],
+        tip: 'Modulul „Cărți de Vizită" a fost retras din Core HR.',
+      },
+    ],
+  },
+
+
   // ─── ÎNCEPE DE AICI ───────────────────────────
 
   {
