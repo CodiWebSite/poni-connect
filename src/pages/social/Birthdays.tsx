@@ -26,34 +26,46 @@ const Birthdays = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
-      // Work anniversaries from employee_personal_data.hire_date
-      const { data: epd } = await supabase
-        .from('employee_personal_data')
-        .select('id, first_name, last_name, hire_date')
-        .eq('is_archived', false);
+    const fetchData = async () => {
+      // Work anniversaries from employee_records.hire_date joined with profile name
+      const { data: records } = await supabase
+        .from('employee_records')
+        .select('id, user_id, hire_date')
+        .not('hire_date', 'is', null);
 
-      const works: AnniversaryItem[] = (epd || [])
-        .filter((e) => e.hire_date)
-        .map((e) => {
-          const d = new Date(e.hire_date as string);
-          if (d.getMonth() + 1 !== month) return null;
-          const yrs = year - d.getFullYear();
-          if (yrs <= 0) return null;
+      const monthRecords = (records || []).filter((r) => {
+        if (!r.hire_date) return false;
+        const d = new Date(r.hire_date);
+        return d.getMonth() + 1 === month && year - d.getFullYear() > 0;
+      });
+
+      const userIds = monthRecords.map((r) => r.user_id).filter(Boolean) as string[];
+      let nameMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds);
+        (profs || []).forEach((p) => {
+          if (p.user_id) nameMap[p.user_id] = p.full_name || '';
+        });
+      }
+
+      const works: AnniversaryItem[] = monthRecords
+        .map((r) => {
+          const d = new Date(r.hire_date as string);
           return {
-            id: e.id,
-            name: `${e.first_name} ${e.last_name}`.trim(),
+            id: r.id,
+            name: (r.user_id && nameMap[r.user_id]) || 'Coleg',
             day: d.getDate(),
-            years: yrs,
+            years: year - d.getFullYear(),
           };
         })
-        .filter((x): x is AnniversaryItem => x !== null)
         .sort((a, b) => a.day - b.day);
 
       setWorkAnniversaries(works);
 
       // Birthdays — opt-in pentru zile de naștere (va fi adăugat ulterior).
-      // Pentru iterația aceasta lista rămâne goală.
       setBirthdays([]);
 
       setLoading(false);
