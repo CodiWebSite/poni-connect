@@ -40,6 +40,9 @@ interface Announcement {
 }
 
 const Announcements = () => {
+  const location = useLocation();
+  const isSocial = location.pathname.startsWith('/social');
+  const Layout = isSocial ? SocialLayout : MainLayout;
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
