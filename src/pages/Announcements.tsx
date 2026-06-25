@@ -199,7 +199,7 @@ const Announcements = () => {
   };
 
   return (
-    <MainLayout title="Anunțuri" description="Comunicate și informații importante">
+    <Layout title="Anunțuri" description="Comunicate și informații importante">
       {canPost && (
         <div className="flex justify-end mb-6">
           <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
