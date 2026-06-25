@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import SocialLayout from '@/components/layout/SocialLayout';
 import { Button } from '@/components/ui/button';
-import { Minus, Plus, Maximize2, Download } from 'lucide-react';
+import { Minus, Plus, Maximize2, Download, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 
 const OrgChart = () => {
