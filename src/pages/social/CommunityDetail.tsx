@@ -64,11 +64,13 @@ const CommunityDetail = () => {
           <div className="flex items-center justify-between mb-4">
             <h1 className="font-display font-bold text-2xl">{name}</h1>
             <Button
+              variant="secondary"
               className="rounded-xl"
-              onClick={() => toast.info('Postările vor fi disponibile într-o iterație viitoare')}
+              disabled
+              title="Disponibil într-o iterație viitoare"
             >
               <Plus className="w-4 h-4 mr-1.5" />
-              Postare nouă
+              Postare nouă (în curând)
             </Button>
           </div>
 
