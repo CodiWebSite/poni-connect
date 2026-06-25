@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 
 const OrgChart = () => {
   const { user } = useAuth();
+  const { canManageHR, isSuperAdmin } = useUserRole();
+  const canEdit = canManageHR || isSuperAdmin;
   const [zoom, setZoom] = useState(1);
   const [me, setMe] = useState<{ name: string; position: string; initials: string } | null>(null);
 
