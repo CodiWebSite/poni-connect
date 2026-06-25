@@ -70,7 +70,7 @@ const Birthdays = () => {
 
       setLoading(false);
     };
-    fetch();
+    fetchData();
   }, [month, year]);
 
   return (
