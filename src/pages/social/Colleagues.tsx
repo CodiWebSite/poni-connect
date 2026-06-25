@@ -113,10 +113,7 @@ const Colleagues = () => {
               <ul>
                 {filtered.map((c) => (
                   <li key={c.id}>
-                    <Link
-                      to={c.user_id ? `/profil/${c.user_id}` : '#'}
-                      className="grid grid-cols-[1fr_1fr_auto] items-center px-6 py-4 border-b border-border last:border-0 hover:bg-muted/40 transition-colors"
-                    >
+                    <div className="grid grid-cols-[1fr_1fr_auto] items-center px-6 py-4 border-b border-border last:border-0">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {c.avatar_url ? (
@@ -130,8 +127,8 @@ const Colleagues = () => {
                         <span className="text-sm font-medium">{c.full_name}</span>
                       </div>
                       <span className="text-sm text-muted-foreground">{c.position || '—'}</span>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    </Link>
+                      <span className="w-4" />
+                    </div>
                   </li>
                 ))}
               </ul>
