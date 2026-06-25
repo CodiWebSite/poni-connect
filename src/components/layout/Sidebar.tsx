@@ -272,7 +272,6 @@ const Sidebar = () => {
 
   const allMainItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
-    { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
@@ -280,12 +279,8 @@ const Sidebar = () => {
     { icon: Users, label: 'Echipa Mea', path: '/my-team' },
     { icon: BookOpen, label: 'Bibliotecă', path: '/library' },
     { icon: DoorOpen, label: 'Programări Săli', path: '/room-bookings' },
-    { icon: PartyPopper, label: 'Activități Recreative', path: '/activitati' },
-    { icon: MessageCircle, label: 'Mesagerie', path: '/chat', badge: unreadChat || undefined },
     { icon: Activity, label: 'Medicină Muncii', path: '/medicina-muncii' },
-    { icon: Archive, label: 'Arhivă Online', path: '/arhiva' },
-    
-    { icon: ShieldCheck, label: 'Securitate Digitală', path: '/securitate-digitala' },
+    { icon: CreditCard, label: 'Cărți Vizită', path: '/carti-vizita' },
     { icon: ShieldCheck, label: 'Securitatea contului meu', path: '/securitatea-mea' },
     { icon: ShieldAlert, label: 'Raportează incident', path: '/raporteaza-incident' },
     { icon: FileLock2, label: 'Confidențialitate & GDPR', path: '/confidentialitate' },
