@@ -45,6 +45,13 @@ import Kiosk from "./pages/Kiosk";
 import Archive from "./pages/Archive";
 import MeetingsAgenda from "./pages/MeetingsAgenda";
 import MeetingRemindersStatus from "./pages/MeetingRemindersStatus";
+import SocialFeed from "./pages/social/SocialFeed";
+import Communities from "./pages/social/Communities";
+import CommunityDetail from "./pages/social/CommunityDetail";
+import Birthdays from "./pages/social/Birthdays";
+import Colleagues from "./pages/social/Colleagues";
+import OrgChart from "./pages/social/OrgChart";
+import SocialSettings from "./pages/social/SocialSettings";
 
 const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
 const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
@@ -268,6 +275,20 @@ const App = () => (
                 <Route path="/confidentialitate" element={<Privacy />} />
                 <Route path="/legal/confidentialitate" element={<PublicLegal />} />
                 <Route path="/legal/informare-autentificare" element={<PublicLegal />} />
+
+                {/* INTRANET SOCIAL */}
+                <Route path="/social" element={<SocialFeed />} />
+                <Route path="/social/comunitati" element={<Communities />} />
+                <Route path="/social/comunitati/:slug" element={<CommunityDetail />} />
+                <Route path="/social/anunturi" element={<Announcements />} />
+                <Route path="/social/aniversari" element={<Birthdays />} />
+                <Route path="/social/colegi" element={<Colleagues />} />
+                <Route path="/social/organigrama" element={<OrgChart />} />
+                <Route path="/social/activitati" element={<RecreationalActivities />} />
+                <Route path="/social/chat" element={<Chat />} />
+                <Route path="/social/arhiva" element={<Archive />} />
+                <Route path="/social/securitate" element={<SecurityQuiz />} />
+                <Route path="/social/setari" element={<SocialSettings />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
