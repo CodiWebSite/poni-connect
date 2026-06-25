@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { GlobalSearch } from '@/components/layout/GlobalSearch';
 import MobileNav from '@/components/layout/MobileNav';
-import { Button } from '@/components/ui/button';
+import HubSwitcher from '@/components/layout/HubSwitcher';
 import { Sun, Moon, ChevronRight, FlaskConical, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useLocation, Link } from 'react-router-dom';
