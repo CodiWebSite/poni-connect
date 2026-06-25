@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import SocialLayout from '@/components/layout/SocialLayout';
 import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
