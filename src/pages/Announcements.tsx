@@ -325,7 +325,7 @@ const Announcements = () => {
           ))}
         </div>
       )}
-    </MainLayout>
+    </Layout>
   );
 };
 
