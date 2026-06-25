@@ -659,6 +659,74 @@ export type Database = {
           },
         ]
       }
+      communities: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_archived: boolean
+          name: string
+          slug: string
+          updated_at: string
+          visibility: Database["public"]["Enums"]["community_visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["community_visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["community_visibility"]
+        }
+        Relationships: []
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["community_member_role"]
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["community_member_role"]
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["community_member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_holidays: {
         Row: {
           created_at: string
@@ -3697,6 +3765,7 @@ export type Database = {
         }
         Returns: string
       }
+      can_manage_communities: { Args: { _user_id: string }; Returns: boolean }
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
       can_manage_library: { Args: { _user_id: string }; Returns: boolean }
@@ -3750,6 +3819,14 @@ export type Database = {
       }
       is_chat_participant: {
         Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_community_admin: {
+        Args: { _community_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_community_member: {
+        Args: { _community_id: string; _user_id: string }
         Returns: boolean
       }
       is_gdpr_officer: { Args: { _user_id: string }; Returns: boolean }
@@ -3842,6 +3919,8 @@ export type Database = {
         | "compartiment_comunicare"
         | "medic_medicina_muncii"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
+      community_member_role: "admin" | "member"
+      community_visibility: "public" | "private"
       consultation_type:
         | "angajare"
         | "periodic"
@@ -4047,6 +4126,8 @@ export const Constants = {
         "medic_medicina_muncii",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
+      community_member_role: ["admin", "member"],
+      community_visibility: ["public", "private"],
       consultation_type: [
         "angajare",
         "periodic",
