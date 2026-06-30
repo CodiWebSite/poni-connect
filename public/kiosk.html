@@ -221,6 +221,32 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
 </div>
 
 <script>
+// ── Polyfills pentru Samsung Tizen / browsere TV vechi ──
+if (!String.prototype.padStart) {
+  String.prototype.padStart = function(targetLength, padString) {
+    targetLength = targetLength >> 0;
+    padString = String(typeof padString !== 'undefined' ? padString : ' ');
+    if (this.length >= targetLength) return String(this);
+    targetLength = targetLength - this.length;
+    if (targetLength > padString.length) {
+      padString += padString.repeat ? padString.repeat(targetLength / padString.length) : new Array(Math.ceil(targetLength / padString.length) + 1).join(padString);
+    }
+    return padString.slice(0, targetLength) + String(this);
+  };
+}
+if (!Array.prototype.find) {
+  Array.prototype.find = function(pred) {
+    for (var i = 0; i < this.length; i++) { if (pred(this[i], i, this)) return this[i]; }
+    return undefined;
+  };
+}
+if (!Array.prototype.includes) {
+  Array.prototype.includes = function(v) { return this.indexOf(v) !== -1; };
+}
+
+// ── Detectare Samsung TV (Tizen) — dezactivează service worker care strică videoul ──
+var IS_TIZEN_TV = /Tizen|SMART-TV|SmartTV|SamsungBrowser/i.test(navigator.userAgent);
+
 var SUPABASE_URL = 'https://erghywhqrxmwqptusbxd.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyZ2h5d2hxcnhtd3FwdHVzYnhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzkwMzMsImV4cCI6MjA4MDUxNTAzM30.K3sZj4KFFgfD0mGFJLKd3cSZFuQtAgVCiOkBeuP1u7Y';
 var DAYS_RO = ['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă'];
@@ -368,20 +394,24 @@ function playAnnouncementsScroll() {
   }, total));
 }
 
-// ── Service Worker pentru cache video ──
+// ── Service Worker pentru cache video ── (DEZACTIVAT pe Samsung TV — strică playback-ul HTML5 video)
 if ('serviceWorker' in navigator) {
   var inIframe = false;
   try { inIframe = window.self !== window.top; } catch (e) { inIframe = true; }
   var host = location.hostname;
   var isPreview = host.indexOf('id-preview--') !== -1 || host.indexOf('lovableproject.com') !== -1 || host.indexOf('lovable.app') !== -1;
-  if (!inIframe && !isPreview) {
+  if (!inIframe && !isPreview && !IS_TIZEN_TV) {
     navigator.serviceWorker.register('/kiosk-sw.js', { scope: '/' }).catch(function(err) {
       console.warn('[Kiosk SW] register failed', err);
     });
   } else {
+    // Pe Tizen / preview / iframe: dezînregistrează orice SW existent + curăță cache-ul video vechi
     navigator.serviceWorker.getRegistrations().then(function(regs) {
       regs.forEach(function(r) { r.unregister(); });
     });
+    if (window.caches && caches.keys) {
+      caches.keys().then(function(names){ names.forEach(function(n){ if (n.indexOf('kiosk-video') === 0) caches.delete(n); }); });
+    }
   }
 }
 
