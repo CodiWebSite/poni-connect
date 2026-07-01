@@ -2456,6 +2456,59 @@ export type Database = {
         }
         Relationships: []
       }
+      org_nodes: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          id: string
+          is_root: boolean
+          name: string
+          order_index: number
+          parent_id: string | null
+          position: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          id?: string
+          is_root?: boolean
+          name: string
+          order_index?: number
+          parent_id?: string | null
+          position?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          id?: string
+          is_root?: boolean
+          name?: string
+          order_index?: number
+          parent_id?: string | null
+          position?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "org_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pre_assigned_roles: {
         Row: {
           assigned_by: string | null
@@ -2604,9 +2657,11 @@ export type Database = {
           force_mfa_reenroll: boolean
           force_mfa_set_at: string | null
           full_name: string
+          hire_date: string | null
           id: string
           phone: string | null
           position: string | null
+          show_birthday_public: boolean
           updated_at: string
           user_id: string
         }
@@ -2619,9 +2674,11 @@ export type Database = {
           force_mfa_reenroll?: boolean
           force_mfa_set_at?: string | null
           full_name: string
+          hire_date?: string | null
           id?: string
           phone?: string | null
           position?: string | null
+          show_birthday_public?: boolean
           updated_at?: string
           user_id: string
         }
@@ -2634,9 +2691,11 @@ export type Database = {
           force_mfa_reenroll?: boolean
           force_mfa_set_at?: string | null
           full_name?: string
+          hire_date?: string | null
           id?: string
           phone?: string | null
           position?: string | null
+          show_birthday_public?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -3319,6 +3378,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      social_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
       }
       suggestion_comments: {
         Row: {
