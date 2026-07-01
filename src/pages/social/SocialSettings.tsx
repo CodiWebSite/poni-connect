@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SocialLayout from '@/components/layout/SocialLayout';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Info } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate, Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ToggleSetting {
@@ -16,23 +18,23 @@ interface ToggleSetting {
 
 const SETTINGS: ToggleSetting[] = [
   {
-    key: 'announcements_open',
+    key: 'allow_announcements_all',
     title: 'Permisiune generală de adăugare a anunțurilor',
     description:
       'Orice angajat va avea posibilitatea de a adăuga anunțuri la rubrica de anunțuri din Social.',
   },
   {
-    key: 'public_leave',
+    key: 'public_leave_calendar',
     title: 'Calendar public de concedii',
     description: 'Toți utilizatorii vor avea acces să vizualizeze calendarul public de concedii.',
   },
   {
-    key: 'public_remote',
+    key: 'public_remote_calendar',
     title: 'Calendar public de telemuncă',
     description: 'Toți utilizatorii vor avea acces să vizualizeze calendarul public de telemuncă.',
   },
   {
-    key: 'public_schedule',
+    key: 'public_work_schedule',
     title: 'Calendar public program de lucru',
     description: 'Toți utilizatorii vor avea acces să vizualizeze calendarul public de program de lucru.',
   },
@@ -40,14 +42,41 @@ const SETTINGS: ToggleSetting[] = [
 
 const SocialSettings = () => {
   const { canManageHR, isSuperAdmin, loading } = useUserRole();
+  const { user } = useAuth();
   const [values, setValues] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    (supabase.from('social_settings' as any) as any)
+      .select('key, value')
+      .then(({ data }: any) => {
+        const map: Record<string, boolean> = {};
+        (data || []).forEach((row: any) => {
+          map[row.key] = !!row.value?.enabled;
+        });
+        setValues(map);
+      });
+  }, []);
 
   if (loading) return null;
   if (!canManageHR && !isSuperAdmin) return <Navigate to="/social" replace />;
 
-  const handleToggle = (key: string, checked: boolean) => {
+  const handleToggle = async (key: string, checked: boolean) => {
     setValues((v) => ({ ...v, [key]: checked }));
-    toast.info('Persistarea setărilor va fi disponibilă într-o iterație viitoare');
+    setSaving(key);
+    const { error } = await (supabase.from('social_settings' as any) as any).upsert({
+      key,
+      value: { enabled: checked },
+      updated_by: user?.id,
+      updated_at: new Date().toISOString(),
+    });
+    setSaving(null);
+    if (error) {
+      toast.error('Eroare la salvare: ' + error.message);
+      setValues((v) => ({ ...v, [key]: !checked }));
+    } else {
+      toast.success('Setare salvată');
+    }
   };
 
   return (
@@ -80,6 +109,7 @@ const SocialSettings = () => {
             <p className="text-xs text-muted-foreground mb-4 flex-1">{s.description}</p>
             <Switch
               checked={!!values[s.key]}
+              disabled={saving === s.key}
               onCheckedChange={(c) => handleToggle(s.key, c)}
             />
           </Card>
