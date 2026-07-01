@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import SocialLayout from '@/components/layout/SocialLayout';
 import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface AnniversaryItem {
   id: string;
@@ -16,18 +20,21 @@ const monthNames = [
 ];
 
 const Birthdays = () => {
+  const { user } = useAuth();
   const now = new Date();
-  const month = now.getMonth() + 1; // 1-12
+  const month = now.getMonth() + 1;
   const year = now.getFullYear();
   const monthLabel = `${monthNames[now.getMonth()].charAt(0).toUpperCase() + monthNames[now.getMonth()].slice(1)} ${year}`;
 
   const [workAnniversaries, setWorkAnniversaries] = useState<AnniversaryItem[]>([]);
   const [birthdays, setBirthdays] = useState<AnniversaryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [optIn, setOptIn] = useState(false);
+  const [savingOpt, setSavingOpt] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      // Work anniversaries from employee_records.hire_date joined with profile name
+    (async () => {
+      // Work anniversaries
       const { data: records } = await supabase
         .from('employee_records')
         .select('id, user_id, hire_date')
@@ -40,7 +47,7 @@ const Birthdays = () => {
       });
 
       const userIds = monthRecords.map((r) => r.user_id).filter(Boolean) as string[];
-      let nameMap: Record<string, string> = {};
+      const nameMap: Record<string, string> = {};
       if (userIds.length > 0) {
         const { data: profs } = await supabase
           .from('profiles')
@@ -65,16 +72,66 @@ const Birthdays = () => {
 
       setWorkAnniversaries(works);
 
-      // Birthdays — opt-in pentru zile de naștere (va fi adăugat ulterior).
-      setBirthdays([]);
+      // Birthdays — only opt-in users
+      const { data: bday } = await (supabase.from('profiles') as any)
+        .select('id, full_name, birth_date, show_birthday_public, user_id')
+        .eq('show_birthday_public', true)
+        .not('birth_date', 'is', null);
+
+      const bdayList: AnniversaryItem[] = ((bday as any[]) || [])
+        .filter((p) => {
+          if (!p.birth_date) return false;
+          const d = new Date(p.birth_date);
+          return d.getMonth() + 1 === month;
+        })
+        .map((p) => {
+          const d = new Date(p.birth_date);
+          return { id: p.id, name: p.full_name || 'Coleg', day: d.getDate() };
+        })
+        .sort((a, b) => a.day - b.day);
+      setBirthdays(bdayList);
+
+      // Check current user opt-in
+      if (user) {
+        const { data: me } = await (supabase.from('profiles') as any)
+          .select('show_birthday_public')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        setOptIn(!!me?.show_birthday_public);
+      }
 
       setLoading(false);
-    };
-    fetchData();
-  }, [month, year]);
+    })();
+  }, [month, year, user]);
+
+  const toggleOptIn = async (checked: boolean) => {
+    if (!user) return;
+    setSavingOpt(true);
+    setOptIn(checked);
+    const { error } = await (supabase.from('profiles') as any)
+      .update({ show_birthday_public: checked })
+      .eq('user_id', user.id);
+    setSavingOpt(false);
+    if (error) {
+      toast.error(error.message);
+      setOptIn(!checked);
+    } else {
+      toast.success(checked ? 'Ziua ta va apărea în listă' : 'Ziua ta nu va mai apărea');
+    }
+  };
 
   return (
     <SocialLayout title="Aniversări" description="Zile de naștere și aniversări de muncă">
+      <Card className="rounded-2xl border-border p-5 mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <Label className="font-semibold text-base">Afișează ziua mea de naștere colegilor</Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            Colegii vor vedea numele tău în luna nașterii. Nu se afișează anul.
+          </p>
+        </div>
+        <Switch checked={optIn} disabled={savingOpt} onCheckedChange={toggleOptIn} />
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AnniversaryCard
           emoji="🎉"
@@ -108,15 +165,7 @@ interface AnniversaryCardProps {
   showYears?: boolean;
 }
 
-const AnniversaryCard = ({
-  emoji,
-  title,
-  subtitle,
-  items,
-  emptyText,
-  loading,
-  showYears,
-}: AnniversaryCardProps) => (
+const AnniversaryCard = ({ emoji, title, subtitle, items, emptyText, loading, showYears }: AnniversaryCardProps) => (
   <Card className="rounded-2xl border-border p-6 min-h-[400px]">
     <div className="mb-1">
       <h2 className="font-display font-bold text-xl flex items-center gap-2">
