@@ -171,8 +171,8 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       .from('leave_requests')
       .select('*')
       .eq('status', 'pending_department_head' as any);
-    const { data, error } = await baseQuery
-      .eq('is_demo', isDemo)
+    const filtered = isDemo ? baseQuery.eq('is_demo', true) : baseQuery.or('is_demo.eq.false,is_demo.is.null');
+    const { data, error } = await filtered
       .order('created_at', { ascending: true }) as { data: any[] | null; error: any };
 
 
