@@ -80,7 +80,7 @@ export function LeaveApprovalHistory({ refreshTrigger }: LeaveApprovalHistoryPro
       .select('*')
       .in('status', ['approved', 'rejected'] as any[]);
     
-    let query = (baseQuery as any).eq('is_demo', isDemo).order('dept_head_approved_at', { ascending: false, nullsFirst: false });
+    let query = (isDemo ? (baseQuery as any).eq('is_demo', true) : (baseQuery as any).or('is_demo.eq.false,is_demo.is.null')).order('dept_head_approved_at', { ascending: false, nullsFirst: false });
 
     if (!isSuperAdmin) {
       // Only show requests approved/rejected by this user
