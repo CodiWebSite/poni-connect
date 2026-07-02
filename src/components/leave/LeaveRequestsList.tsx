@@ -54,7 +54,7 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       .order('created_at', { ascending: false });
 
     const [{ data }, { data: recordData }] = await Promise.all([
-      (query as any).eq('is_demo', isDemo),
+      isDemo ? (query as any).eq('is_demo', true) : (query as any).or('is_demo.eq.false,is_demo.is.null'),
       supabase.from('employee_records').select('id').eq('user_id', user.id).maybeSingle(),
     ]);
 
