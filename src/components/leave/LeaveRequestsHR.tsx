@@ -114,11 +114,10 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const fetchAllRequests = async () => {
     setLoading(true);
 
-    const { data, error } = await (supabase
-      .from('leave_requests')
-      .select('*') as any)
-      .eq('is_demo', isDemo)
-      .order('created_at', { ascending: false }) as { data: any[] | null; error: any };
+    let query: any = (supabase.from('leave_requests').select('*') as any);
+    // În mod real (nu demo) includem și cererile vechi unde is_demo este NULL
+    query = isDemo ? query.eq('is_demo', true) : query.or('is_demo.eq.false,is_demo.is.null');
+    const { data, error } = await query.order('created_at', { ascending: false }) as { data: any[] | null; error: any };
 
     if (error) {
       console.error('Error fetching leave requests:', error);
