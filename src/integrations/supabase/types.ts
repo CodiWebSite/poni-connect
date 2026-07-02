@@ -3280,6 +3280,53 @@ export type Database = {
         }
         Relationships: []
       }
+      social_post_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number
+          id: string
+          kind: string
+          mime_type: string
+          post_id: string
+          storage_path: string
+          uploader_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number
+          id?: string
+          kind: string
+          mime_type: string
+          post_id: string
+          storage_path: string
+          uploader_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          id?: string
+          kind?: string
+          mime_type?: string
+          post_id?: string
+          storage_path?: string
+          uploader_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_post_attachments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_post_comments: {
         Row: {
           author_id: string
@@ -3316,16 +3363,19 @@ export type Database = {
         Row: {
           created_at: string
           post_id: string
+          reaction: Database["public"]["Enums"]["social_reaction_type"]
           user_id: string
         }
         Insert: {
           created_at?: string
           post_id: string
+          reaction?: Database["public"]["Enums"]["social_reaction_type"]
           user_id: string
         }
         Update: {
           created_at?: string
           post_id?: string
+          reaction?: Database["public"]["Enums"]["social_reaction_type"]
           user_id?: string
         }
         Relationships: [
@@ -4136,6 +4186,7 @@ export type Database = {
         | "approved"
         | "rejected"
       procurement_urgency: "normal" | "urgent" | "foarte_urgent"
+      social_reaction_type: "like" | "love" | "haha" | "wow" | "sad" | "angry"
       suggestion_priority: "low" | "medium" | "high"
       suggestion_status:
         | "new"
@@ -4347,6 +4398,7 @@ export const Constants = {
         "rejected",
       ],
       procurement_urgency: ["normal", "urgent", "foarte_urgent"],
+      social_reaction_type: ["like", "love", "haha", "wow", "sad", "angry"],
       suggestion_priority: ["low", "medium", "high"],
       suggestion_status: [
         "new",
