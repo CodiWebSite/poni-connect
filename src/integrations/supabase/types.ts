@@ -3280,6 +3280,35 @@ export type Database = {
         }
         Relationships: []
       }
+      social_comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          reaction: Database["public"]["Enums"]["social_reaction_type"]
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          reaction?: Database["public"]["Enums"]["social_reaction_type"]
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          reaction?: Database["public"]["Enums"]["social_reaction_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "social_post_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_post_attachments: {
         Row: {
           created_at: string
@@ -3333,23 +3362,36 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          parent_comment_id: string | null
           post_id: string
+          reaction_count: number
         }
         Insert: {
           author_id: string
           content: string
           created_at?: string
           id?: string
+          parent_comment_id?: string | null
           post_id: string
+          reaction_count?: number
         }
         Update: {
           author_id?: string
           content?: string
           created_at?: string
           id?: string
+          parent_comment_id?: string | null
           post_id?: string
+          reaction_count?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "social_post_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "social_post_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "social_post_comments_post_id_fkey"
             columns: ["post_id"]
