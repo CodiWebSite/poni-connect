@@ -4143,6 +4143,10 @@ export type Database = {
         Args: { _reason: string; _user_id: string }
         Returns: number
       }
+      social_setting_enabled: {
+        Args: { _default?: boolean; _key: string }
+        Returns: boolean
+      }
       storage_archive_department_match: {
         Args: { _name: string }
         Returns: boolean
