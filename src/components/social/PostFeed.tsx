@@ -16,6 +16,7 @@ import {
   FileText,
   Download,
   ThumbsUp,
+  Reply,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -53,7 +54,9 @@ interface CommentRow {
   id: string;
   post_id: string;
   author_id: string;
+  parent_comment_id: string | null;
   content: string;
+  reaction_count: number;
   created_at: string;
 }
 
@@ -405,6 +408,15 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint }: Props) => {
             currentUserId={user?.id ?? null}
             onReact={(r) => setReaction(p, r)}
             onDelete={() => deletePost(p.id)}
+            onCommentDelta={(delta) =>
+              setPosts((ps) =>
+                ps.map((post) =>
+                  post.id === p.id
+                    ? { ...post, comment_count: Math.max(0, post.comment_count + delta) }
+                    : post,
+                ),
+              )
+            }
           />
         ))
       )}
@@ -420,6 +432,7 @@ interface CardProps {
   currentUserId: string | null;
   onReact: (r: ReactionType | null) => void;
   onDelete: () => void;
+  onCommentDelta: (delta: number) => void;
 }
 
 const PostCard = ({
@@ -430,12 +443,17 @@ const PostCard = ({
   currentUserId,
   onReact,
   onDelete,
+  onCommentDelta,
 }: CardProps) => {
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [commentProfiles, setCommentProfiles] = useState<Record<string, ProfileMini>>({});
+  const [commentReactions, setCommentReactions] = useState<Record<string, ReactionType>>({});
+  const [replyingTo, setReplyingTo] = useState<CommentRow | null>(null);
   const [draft, setDraft] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const name = author?.full_name || 'Coleg';
   const initials = name.substring(0, 2).toUpperCase();
   const canDelete = currentUserId === post.author_id;
@@ -443,25 +461,45 @@ const PostCard = ({
 
   const loadComments = useCallback(async () => {
     setLoadingComments(true);
-    const { data } = await supabase
+    const { data, error } = await (supabase.from('social_post_comments' as any) as any)
       .from('social_post_comments')
-      .select('id, post_id, author_id, content, created_at')
+      .select('id, post_id, author_id, parent_comment_id, content, reaction_count, created_at')
       .eq('post_id', post.id)
       .order('created_at', { ascending: true });
+    if (error) {
+      toast.error(error.message);
+      setLoadingComments(false);
+      return;
+    }
     const rows = (data ?? []) as CommentRow[];
     setComments(rows);
     const ids = Array.from(new Set(rows.map((c) => c.author_id)));
+    const commentIds = rows.map((c) => c.id);
+    const [profsRes, reactsRes] = await Promise.all([
+      ids.length
+        ? supabase.from('profiles').select('user_id, full_name, avatar_url').in('user_id', ids)
+        : Promise.resolve({ data: [] as any[] }),
+      currentUserId && commentIds.length
+        ? (supabase.from('social_comment_reactions' as any) as any)
+            .select('comment_id, reaction')
+            .eq('user_id', currentUserId)
+            .in('comment_id', commentIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
     if (ids.length) {
-      const { data: profs } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, avatar_url')
-        .in('user_id', ids);
       const map: Record<string, ProfileMini> = {};
-      (profs ?? []).forEach((p: any) => (map[p.user_id] = p));
+      ((profsRes as any).data ?? []).forEach((p: any) => (map[p.user_id] = p));
       setCommentProfiles(map);
     }
+
+    const reactionMap: Record<string, ReactionType> = {};
+    ((reactsRes as any).data ?? []).forEach((r: any) => {
+      reactionMap[r.comment_id] = r.reaction as ReactionType;
+    });
+    setCommentReactions(reactionMap);
     setLoadingComments(false);
-  }, [post.id]);
+  }, [currentUserId, post.id]);
 
   const toggle = () => {
     const next = !showComments;
@@ -471,24 +509,93 @@ const PostCard = ({
 
   const submitComment = async () => {
     if (!currentUserId || !draft.trim()) return;
-    const { error } = await supabase.from('social_post_comments').insert({
+    setSubmittingComment(true);
+    const parentId = replyingTo?.id ?? null;
+    const { error } = await (supabase.from('social_post_comments' as any) as any).insert({
       post_id: post.id,
       author_id: currentUserId,
+      parent_comment_id: parentId,
       content: draft.trim(),
     });
+    setSubmittingComment(false);
     if (error) return toast.error(error.message);
     setDraft('');
+    setReplyingTo(null);
+    onCommentDelta(1);
     loadComments();
   };
 
   const deleteComment = async (id: string) => {
+    const deletedCount = 1 + comments.filter((c) => c.parent_comment_id === id).length;
     const { error } = await supabase.from('social_post_comments').delete().eq('id', id);
     if (error) return toast.error(error.message);
+    onCommentDelta(-deletedCount);
     loadComments();
+  };
+
+  const setCommentReaction = async (comment: CommentRow, reaction: ReactionType | null) => {
+    if (!currentUserId) return;
+    const current = commentReactions[comment.id];
+    setCommentReactions((m) => {
+      const next = { ...m };
+      if (reaction) next[comment.id] = reaction;
+      else delete next[comment.id];
+      return next;
+    });
+    setComments((cs) =>
+      cs.map((c) =>
+        c.id === comment.id
+          ? {
+              ...c,
+              reaction_count: Math.max(
+                0,
+                c.reaction_count + (reaction && !current ? 1 : !reaction && current ? -1 : 0),
+              ),
+            }
+          : c,
+      ),
+    );
+
+    let error: any = null;
+    if (reaction === null) {
+      const res = await (supabase.from('social_comment_reactions' as any) as any)
+        .delete()
+        .eq('comment_id', comment.id)
+        .eq('user_id', currentUserId);
+      error = res.error;
+    } else if (current) {
+      const res = await (supabase.from('social_comment_reactions' as any) as any)
+        .update({ reaction })
+        .eq('comment_id', comment.id)
+        .eq('user_id', currentUserId);
+      error = res.error;
+    } else {
+      const res = await (supabase.from('social_comment_reactions' as any) as any).insert({
+        comment_id: comment.id,
+        user_id: currentUserId,
+        reaction,
+      });
+      error = res.error;
+    }
+
+    if (error) {
+      toast.error(error.message);
+      loadComments();
+    }
+  };
+
+  const startReply = (comment: CommentRow) => {
+    setReplyingTo(comment.parent_comment_id ? comments.find((c) => c.id === comment.parent_comment_id) ?? comment : comment);
+    setTimeout(() => commentInputRef.current?.focus(), 0);
   };
 
   const images = attachments.filter((a) => a.kind === 'image' || a.kind === 'gif');
   const docs = attachments.filter((a) => a.kind === 'document');
+  const repliesByParent = comments.reduce<Record<string, CommentRow[]>>((acc, comment) => {
+    if (comment.parent_comment_id) (acc[comment.parent_comment_id] ||= []).push(comment);
+    return acc;
+  }, {});
+  const topLevelComments = comments.filter((comment) => !comment.parent_comment_id);
 
   return (
     <Card className="p-5 rounded-2xl border-border">
@@ -628,66 +735,191 @@ const PostCard = ({
         <div className="mt-3 pt-3 border-t border-border space-y-3">
           {loadingComments ? (
             <p className="text-xs text-muted-foreground">Se încarcă…</p>
+          ) : topLevelComments.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Nu există comentarii încă.</p>
           ) : (
-            comments.map((c) => {
-              const a = commentProfiles[c.author_id];
-              const nm = a?.full_name || 'Coleg';
-              const ini = nm.substring(0, 2).toUpperCase();
-              return (
-                <div key={c.id} className="flex items-start gap-2">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {a?.avatar_url ? (
-                      <img src={a.avatar_url} alt={nm} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[10px] font-semibold text-primary">{ini}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0 bg-muted/50 rounded-xl px-3 py-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold">{nm}</p>
-                      {c.author_id === currentUserId && (
-                        <button
-                          onClick={() => deleteComment(c.id)}
-                          className="text-[10px] text-muted-foreground hover:text-destructive"
-                        >
-                          Șterge
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-xs whitespace-pre-wrap leading-relaxed">{c.content}</p>
-                  </div>
-                </div>
-              );
-            })
+            topLevelComments.map((c) => (
+              <CommentItem
+                key={c.id}
+                comment={c}
+                profile={commentProfiles[c.author_id]}
+                currentUserId={currentUserId}
+                activeReaction={commentReactions[c.id] ?? null}
+                replies={repliesByParent[c.id] ?? []}
+                profiles={commentProfiles}
+                reactions={commentReactions}
+                onReact={setCommentReaction}
+                onReply={startReply}
+                onDelete={deleteComment}
+              />
+            ))
           )}
           {currentUserId && (
-            <div className="flex items-end gap-2">
-              <Textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="Scrie un comentariu…"
-                className="min-h-[40px] resize-none text-sm rounded-xl"
-                maxLength={2000}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    submitComment();
-                  }
-                }}
-              />
-              <Button
-                size="sm"
-                className="rounded-xl shrink-0"
-                disabled={!draft.trim()}
-                onClick={submitComment}
-              >
-                <Send className="w-3.5 h-3.5" />
-              </Button>
+            <div className="space-y-2">
+              {replyingTo && (
+                <div className="flex items-center justify-between gap-2 rounded-xl bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                  <span>
+                    Răspunzi lui {commentProfiles[replyingTo.author_id]?.full_name || 'Coleg'}
+                  </span>
+                  <button onClick={() => setReplyingTo(null)} className="hover:text-foreground">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              <div className="flex items-end gap-2">
+                <Textarea
+                  ref={commentInputRef}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder={replyingTo ? 'Scrie un răspuns…' : 'Scrie un comentariu…'}
+                  className="min-h-[40px] resize-none text-sm rounded-xl"
+                  maxLength={2000}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      submitComment();
+                    }
+                  }}
+                />
+                <Button
+                  size="sm"
+                  className="rounded-xl shrink-0"
+                  disabled={!draft.trim() || submittingComment}
+                  onClick={submitComment}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
           )}
         </div>
       )}
     </Card>
+  );
+};
+
+interface CommentItemProps {
+  comment: CommentRow;
+  profile?: ProfileMini;
+  currentUserId: string | null;
+  activeReaction: ReactionType | null;
+  replies: CommentRow[];
+  profiles: Record<string, ProfileMini>;
+  reactions: Record<string, ReactionType>;
+  onReact: (comment: CommentRow, reaction: ReactionType | null) => void;
+  onReply: (comment: CommentRow) => void;
+  onDelete: (id: string) => void;
+}
+
+const CommentItem = ({
+  comment,
+  profile,
+  currentUserId,
+  activeReaction,
+  replies,
+  profiles,
+  reactions,
+  onReact,
+  onReply,
+  onDelete,
+}: CommentItemProps) => {
+  const name = profile?.full_name || 'Coleg';
+  const initials = name.substring(0, 2).toUpperCase();
+  const reaction = activeReaction ? REACTIONS.find((r) => r.type === activeReaction) : null;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-start gap-2">
+        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[10px] font-semibold text-primary">{initials}</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="bg-muted/50 rounded-xl px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold">{name}</p>
+              {comment.author_id === currentUserId && (
+                <button
+                  onClick={() => onDelete(comment.id)}
+                  className="text-[10px] text-muted-foreground hover:text-destructive"
+                >
+                  Șterge
+                </button>
+              )}
+            </div>
+            <p className="text-xs whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+          </div>
+          <div className="flex items-center gap-2 px-1 pt-1 text-[11px] text-muted-foreground">
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className={cn('font-medium hover:text-foreground inline-flex items-center gap-1', reaction?.color)}
+                  onClick={(e) => {
+                    if (reaction) {
+                      e.preventDefault();
+                      onReact(comment, null);
+                    }
+                  }}
+                >
+                  {reaction ? <span>{reaction.emoji}</span> : <ThumbsUp className="w-3 h-3" />}
+                  <span>{reaction ? reaction.label : 'Reacționează'}</span>
+                  {comment.reaction_count > 0 && <span>· {comment.reaction_count}</span>}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="p-1 w-auto rounded-full" side="top" align="start">
+                <div className="flex items-center gap-0.5">
+                  {REACTIONS.map((r) => (
+                    <button
+                      key={r.type}
+                      onClick={() => onReact(comment, r.type)}
+                      title={r.label}
+                      className="text-xl p-1.5 hover:scale-125 transition-transform"
+                    >
+                      {r.emoji}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            {!comment.parent_comment_id && (
+              <button
+                onClick={() => onReply(comment)}
+                className="font-medium hover:text-foreground inline-flex items-center gap-1"
+              >
+                <Reply className="w-3 h-3" />
+                Răspunde
+              </button>
+            )}
+            <span>
+              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: ro })}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {replies.length > 0 && (
+        <div className="ml-9 space-y-2 border-l border-border pl-3">
+          {replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              profile={profiles[reply.author_id]}
+              currentUserId={currentUserId}
+              activeReaction={reactions[reply.id] ?? null}
+              replies={[]}
+              profiles={profiles}
+              reactions={reactions}
+              onReact={onReact}
+              onReply={onReply}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
