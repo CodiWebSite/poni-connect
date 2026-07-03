@@ -113,12 +113,20 @@ const CreateCommunityDialog = ({ open, onOpenChange, onCreated }: Props) => {
       if (error) throw error;
 
       const memberIds = Array.from(selected).filter((id) => id !== uid);
-      if (memberIds.length > 0) {
-        const rows = memberIds.map((user_id) => ({
+      const rows = [
+        {
+          community_id: community.id,
+          user_id: uid,
+          role: 'admin' as const,
+        },
+        ...memberIds.map((user_id) => ({
           community_id: community.id,
           user_id,
           role: 'member' as const,
-        }));
+        })),
+      ];
+
+      if (rows.length > 0) {
         const { error: mErr } = await supabase.from('community_members').insert(rows);
         if (mErr) console.warn('Adăugare membri eșuată:', mErr.message);
       }

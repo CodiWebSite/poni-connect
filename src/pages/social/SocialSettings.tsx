@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import SocialLayout from '@/components/layout/SocialLayout';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Info } from 'lucide-react';
+import { Bell, Info } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,7 +16,7 @@ interface ToggleSetting {
   description: string;
 }
 
-const SETTINGS: ToggleSetting[] = [
+const PLATFORM_SETTINGS: ToggleSetting[] = [
   {
     key: 'allow_announcements_all',
     title: 'Permisiune generală de adăugare a anunțurilor',
@@ -38,6 +38,13 @@ const SETTINGS: ToggleSetting[] = [
     title: 'Calendar public program de lucru',
     description: 'Toți utilizatorii vor avea acces să vizualizeze calendarul public de program de lucru.',
   },
+];
+
+const NOTIFICATION_SETTINGS: ToggleSetting[] = [
+  { key: 'social_notifications_post_comments', title: 'Notificări la comentarii pe postări', description: 'Autorul postării primește notificare când cineva comentează.' },
+  { key: 'social_notifications_comment_replies', title: 'Notificări la răspunsuri', description: 'Autorul comentariului primește notificare când cineva îi răspunde.' },
+  { key: 'social_notifications_post_reactions', title: 'Notificări la reacții pe postări', description: 'Autorul postării primește notificare când cineva reacționează.' },
+  { key: 'social_notifications_comment_reactions', title: 'Notificări la reacții pe comentarii', description: 'Autorul comentariului primește notificare când cineva reacționează.' },
 ];
 
 const SocialSettings = () => {
@@ -102,8 +109,9 @@ const SocialSettings = () => {
         </p>
       </Card>
 
+      <h3 className="font-display font-bold text-lg mb-3">Funcționalități</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        {SETTINGS.map((s) => (
+        {PLATFORM_SETTINGS.map((s) => (
           <Card key={s.key} className="rounded-2xl border-border p-5 flex flex-col">
             <h3 className="font-bold text-base mb-2 leading-tight">{s.title}</h3>
             <p className="text-xs text-muted-foreground mb-4 flex-1">{s.description}</p>
@@ -115,6 +123,22 @@ const SocialSettings = () => {
           </Card>
         ))}
       </div>
+
+      <Card className="rounded-2xl border-border p-5 mb-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Bell className="w-4 h-4 text-primary" />
+          <h3 className="font-display font-bold text-lg">Notificări feed</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {NOTIFICATION_SETTINGS.map((s) => (
+            <div key={s.key} className="rounded-2xl border border-border p-4 flex flex-col bg-background">
+              <h4 className="font-bold text-sm mb-2 leading-tight">{s.title}</h4>
+              <p className="text-xs text-muted-foreground mb-4 flex-1">{s.description}</p>
+              <Switch checked={values[s.key] !== false} disabled={saving === s.key} onCheckedChange={(c) => handleToggle(s.key, c)} />
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <Card className="rounded-2xl border-border p-5 max-w-sm">
         <h3 className="font-bold text-base mb-2">Permisiuni utilizatori în Intranet Social</h3>
