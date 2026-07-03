@@ -461,7 +461,7 @@ const PostCard = ({
 
   const loadComments = useCallback(async () => {
     setLoadingComments(true);
-    const { data, error } = await (supabase.from('social_post_comments' as any) as any)
+    const { data, error } = await supabase
       .from('social_post_comments')
       .select('id, post_id, author_id, parent_comment_id, content, reaction_count, created_at')
       .eq('post_id', post.id)
@@ -480,7 +480,8 @@ const PostCard = ({
         ? supabase.from('profiles').select('user_id, full_name, avatar_url').in('user_id', ids)
         : Promise.resolve({ data: [] as any[] }),
       currentUserId && commentIds.length
-        ? (supabase.from('social_comment_reactions' as any) as any)
+        ? supabase
+            .from('social_comment_reactions')
             .select('comment_id, reaction')
             .eq('user_id', currentUserId)
             .in('comment_id', commentIds)
@@ -511,7 +512,7 @@ const PostCard = ({
     if (!currentUserId || !draft.trim()) return;
     setSubmittingComment(true);
     const parentId = replyingTo?.id ?? null;
-    const { error } = await (supabase.from('social_post_comments' as any) as any).insert({
+    const { error } = await supabase.from('social_post_comments').insert({
       post_id: post.id,
       author_id: currentUserId,
       parent_comment_id: parentId,
@@ -558,19 +559,21 @@ const PostCard = ({
 
     let error: any = null;
     if (reaction === null) {
-      const res = await (supabase.from('social_comment_reactions' as any) as any)
+      const res = await supabase
+        .from('social_comment_reactions')
         .delete()
         .eq('comment_id', comment.id)
         .eq('user_id', currentUserId);
       error = res.error;
     } else if (current) {
-      const res = await (supabase.from('social_comment_reactions' as any) as any)
+      const res = await supabase
+        .from('social_comment_reactions')
         .update({ reaction })
         .eq('comment_id', comment.id)
         .eq('user_id', currentUserId);
       error = res.error;
     } else {
-      const res = await (supabase.from('social_comment_reactions' as any) as any).insert({
+      const res = await supabase.from('social_comment_reactions').insert({
         comment_id: comment.id,
         user_id: currentUserId,
         reaction,
