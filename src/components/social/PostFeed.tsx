@@ -511,7 +511,7 @@ const PostCard = ({
   const submitComment = async () => {
     if (!currentUserId || !draft.trim()) return;
     setSubmittingComment(true);
-    const parentId = replyingTo?.id ?? null;
+    const parentId = replyingTo?.parent_comment_id ?? replyingTo?.id ?? null;
     const { error } = await supabase.from('social_post_comments').insert({
       post_id: post.id,
       author_id: currentUserId,
@@ -588,7 +588,7 @@ const PostCard = ({
   };
 
   const startReply = (comment: CommentRow) => {
-    setReplyingTo(comment.parent_comment_id ? comments.find((c) => c.id === comment.parent_comment_id) ?? comment : comment);
+    setReplyingTo(comment);
     setTimeout(() => commentInputRef.current?.focus(), 0);
   };
 
@@ -887,15 +887,13 @@ const CommentItem = ({
                 </div>
               </PopoverContent>
             </Popover>
-            {!comment.parent_comment_id && (
-              <button
-                onClick={() => onReply(comment)}
-                className="font-medium hover:text-foreground inline-flex items-center gap-1"
-              >
-                <Reply className="w-3 h-3" />
-                Răspunde
-              </button>
-            )}
+            <button
+              onClick={() => onReply(comment)}
+              className="font-medium hover:text-foreground inline-flex items-center gap-1"
+            >
+              <Reply className="w-3 h-3" />
+              Răspunde
+            </button>
             <span>
               {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: ro })}
             </span>
