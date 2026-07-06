@@ -22,6 +22,7 @@ interface Community {
   created_by: string | null;
   member_count: number;
   is_member: boolean;
+  avatar_url: string | null;
 }
 
 const Communities = () => {
