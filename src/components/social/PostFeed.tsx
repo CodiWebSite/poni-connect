@@ -632,7 +632,7 @@ const PostCard = ({
       </div>
 
       {post.content && post.content !== '📎' && (
-        <p className="text-sm whitespace-pre-wrap leading-relaxed mb-3">{post.content}</p>
+        <RichText content={post.content} className="text-sm leading-relaxed mb-3 space-y-1" />
       )}
 
       {images.length > 0 && (
