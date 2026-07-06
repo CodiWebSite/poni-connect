@@ -253,8 +253,8 @@ const CommunityDetail = () => {
     if (!user) return;
     if (file.size > 5 * 1024 * 1024) return toast.error('Maxim 5MB');
     setUploadingAvatar(true);
-    const ext = file.name.split('.').pop() || 'jpg';
-    const path = `communities/${community.id}/avatar-${Date.now()}.${ext}`;
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${community.id}/avatar-${Date.now()}.${ext}`;
     const up = await supabase.storage.from(BUCKET).upload(path, file, {
       contentType: file.type,
       upsert: true,
@@ -263,10 +263,9 @@ const CommunityDetail = () => {
       setUploadingAvatar(false);
       return toast.error(up.error.message);
     }
-    const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
     const { error } = await supabase
       .from('communities')
-      .update({ avatar_url: pub.publicUrl })
+      .update({ avatar_url: path })
       .eq('id', community.id);
     setUploadingAvatar(false);
     if (error) return toast.error(error.message);
