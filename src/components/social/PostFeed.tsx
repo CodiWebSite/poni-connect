@@ -856,7 +856,7 @@ const CommentItem = ({
                 </button>
               )}
             </div>
-            <p className="text-xs whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+            <RichText content={comment.content} className="text-xs leading-relaxed" />
           </div>
           <div className="flex items-center gap-2 px-1 pt-1 text-[11px] text-muted-foreground">
             <Popover>
