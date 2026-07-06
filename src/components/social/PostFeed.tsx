@@ -296,12 +296,13 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint }: Props) => {
     <div className="space-y-4">
       {canPost && user && (
         <Card className="p-4 rounded-2xl border-border">
-          <Textarea
+          <RichTextComposer
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Ce vrei să împărtășești?"
-            className="min-h-[80px] resize-none border-0 focus-visible:ring-0 px-0"
-            maxLength={4000}
+            onChange={setDraft}
+            placeholder="Ce vrei să împărtășești? (Ctrl+Enter pentru publicare)"
+            maxLength={10000}
+            minRows={4}
+            onSubmitKey={submitPost}
           />
           {drafts.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
