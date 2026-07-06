@@ -286,8 +286,12 @@ const CommunityCard = ({ c, canManage, onDelete, onArchive, archivedView }: Card
         <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{c.description}</p>
       )}
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary">
-          {initials || 'C'}
+        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary overflow-hidden">
+          {c.avatar_url ? (
+            <img src={c.avatar_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            initials || 'C'
+          )}
         </div>
         <span className="text-xs text-muted-foreground">
           {c.member_count} {c.member_count === 1 ? 'membru' : 'membri'}
