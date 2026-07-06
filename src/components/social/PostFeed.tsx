@@ -21,6 +21,8 @@ import {
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import RichTextComposer from './RichTextComposer';
+import { RichText } from './RichText';
 import { cn } from '@/lib/utils';
 
 type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry';
