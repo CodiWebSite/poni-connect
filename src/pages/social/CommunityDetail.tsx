@@ -94,7 +94,15 @@ const CommunityDetail = () => {
       setLoading(false);
       return;
     }
-    setCommunity(c as Community);
+    let avatarDisplay: string | null = null;
+    if ((c as any).avatar_url) {
+      const path = (c as any).avatar_url as string;
+      const { data: signed } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUrl(path, 60 * 60 * 24);
+      avatarDisplay = signed?.signedUrl ?? null;
+    }
+    setCommunity({ ...(c as any), avatar_url: avatarDisplay } as Community);
 
     const { data: mems } = await supabase
       .from('community_members')
