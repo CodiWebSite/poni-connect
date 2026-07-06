@@ -661,6 +661,7 @@ export type Database = {
       }
       communities: {
         Row: {
+          avatar_url: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -672,6 +673,7 @@ export type Database = {
           visibility: Database["public"]["Enums"]["community_visibility"]
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -683,6 +685,7 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["community_visibility"]
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null

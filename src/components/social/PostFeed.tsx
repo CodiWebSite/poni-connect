@@ -21,6 +21,8 @@ import {
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import RichTextComposer from './RichTextComposer';
+import { RichText } from './RichText';
 import { cn } from '@/lib/utils';
 
 type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry';
@@ -294,12 +296,13 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint }: Props) => {
     <div className="space-y-4">
       {canPost && user && (
         <Card className="p-4 rounded-2xl border-border">
-          <Textarea
+          <RichTextComposer
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Ce vrei să împărtășești?"
-            className="min-h-[80px] resize-none border-0 focus-visible:ring-0 px-0"
-            maxLength={4000}
+            onChange={setDraft}
+            placeholder="Ce vrei să împărtășești? (Ctrl+Enter pentru publicare)"
+            maxLength={10000}
+            minRows={4}
+            onSubmitKey={submitPost}
           />
           {drafts.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
@@ -373,7 +376,7 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint }: Props) => {
                 <Paperclip className="w-4 h-4" />
                 <span className="hidden sm:inline">Document</span>
               </Button>
-              <span className="text-[11px] text-muted-foreground ml-2">{draft.length}/4000</span>
+              <span className="text-[11px] text-muted-foreground ml-2">{draft.length}/10000</span>
             </div>
             <Button
               size="sm"
@@ -629,7 +632,7 @@ const PostCard = ({
       </div>
 
       {post.content && post.content !== '📎' && (
-        <p className="text-sm whitespace-pre-wrap leading-relaxed mb-3">{post.content}</p>
+        <RichText content={post.content} className="text-sm leading-relaxed mb-3 space-y-1" />
       )}
 
       {images.length > 0 && (
@@ -853,7 +856,7 @@ const CommentItem = ({
                 </button>
               )}
             </div>
-            <p className="text-xs whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+            <RichText content={comment.content} className="text-xs leading-relaxed" />
           </div>
           <div className="flex items-center gap-2 px-1 pt-1 text-[11px] text-muted-foreground">
             <Popover>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import SocialLayout from '@/components/layout/SocialLayout';
 import { Card } from '@/components/ui/card';
@@ -11,14 +11,27 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
   ArrowLeft,
   Globe,
   Lock,
   UserPlus,
   Search,
   LogOut,
-  Trash2,
   X,
+  Camera,
+  Pencil,
+  Check,
+  MoreHorizontal,
+  ShieldCheck,
+  ShieldOff,
+  UserMinus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +46,7 @@ interface Community {
   description: string | null;
   visibility: 'public' | 'private';
   created_by: string | null;
+  avatar_url: string | null;
 }
 
 interface Member {
@@ -40,7 +54,6 @@ interface Member {
   role: 'admin' | 'member';
   full_name: string | null;
   avatar_url: string | null;
-  email?: string;
 }
 
 interface DirectoryUser {
@@ -48,6 +61,8 @@ interface DirectoryUser {
   full_name: string | null;
   avatar_url: string | null;
 }
+
+const BUCKET = 'community-avatars';
 
 const CommunityDetail = () => {
   const { slug } = useParams();
@@ -62,20 +77,32 @@ const CommunityDetail = () => {
   const [pickerQuery, setPickerQuery] = useState('');
   const [directory, setDirectory] = useState<DirectoryUser[]>([]);
   const [allProfiles, setAllProfiles] = useState<DirectoryUser[]>([]);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     if (!slug) return;
     setLoading(true);
     const { data: c } = await supabase
       .from('communities')
-      .select('id, name, slug, description, visibility, created_by')
+      .select('id, name, slug, description, visibility, created_by, avatar_url')
       .eq('slug', slug)
       .maybeSingle();
     if (!c) {
       setLoading(false);
       return;
     }
-    setCommunity(c as Community);
+    let avatarDisplay: string | null = null;
+    if ((c as any).avatar_url) {
+      const path = (c as any).avatar_url as string;
+      const { data: signed } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUrl(path, 60 * 60 * 24);
+      avatarDisplay = signed?.signedUrl ?? null;
+    }
+    setCommunity({ ...(c as any), avatar_url: avatarDisplay } as Community);
 
     const { data: mems } = await supabase
       .from('community_members')
@@ -106,7 +133,6 @@ const CommunityDetail = () => {
     load();
   }, [load]);
 
-  // Load all profiles once for the picker
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -176,6 +202,17 @@ const CommunityDetail = () => {
     load();
   };
 
+  const changeRole = async (uid: string, role: 'admin' | 'member') => {
+    const { error } = await supabase
+      .from('community_members')
+      .update({ role })
+      .eq('community_id', community.id)
+      .eq('user_id', uid);
+    if (error) return toast.error(error.message);
+    toast.success(role === 'admin' ? 'Promovat la admin' : 'Retras rolul de admin');
+    load();
+  };
+
   const joinCommunity = async () => {
     if (!user) return;
     const { error } = await supabase
@@ -199,11 +236,65 @@ const CommunityDetail = () => {
     load();
   };
 
+  const saveName = async () => {
+    const name = nameDraft.trim();
+    if (!name) return;
+    const { error } = await supabase
+      .from('communities')
+      .update({ name })
+      .eq('id', community.id);
+    if (error) return toast.error(error.message);
+    toast.success('Nume actualizat');
+    setEditingName(false);
+    load();
+  };
+
+  const uploadAvatar = async (file: File) => {
+    if (!user) return;
+    if (file.size > 5 * 1024 * 1024) return toast.error('Maxim 5MB');
+    setUploadingAvatar(true);
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${community.id}/avatar-${Date.now()}.${ext}`;
+    const up = await supabase.storage.from(BUCKET).upload(path, file, {
+      contentType: file.type,
+      upsert: true,
+    });
+    if (up.error) {
+      setUploadingAvatar(false);
+      return toast.error(up.error.message);
+    }
+    const { error } = await supabase
+      .from('communities')
+      .update({ avatar_url: path })
+      .eq('id', community.id);
+    setUploadingAvatar(false);
+    if (error) return toast.error(error.message);
+    toast.success('Poză actualizată');
+    load();
+  };
+
+  const removeAvatar = async () => {
+    const { error } = await supabase
+      .from('communities')
+      .update({ avatar_url: null })
+      .eq('id', community.id);
+    if (error) return toast.error(error.message);
+    toast.success('Poză eliminată');
+    load();
+  };
+
   const filteredMembers = members.filter((m) =>
     !memberSearch.trim()
       ? true
       : (m.full_name || '').toLowerCase().includes(memberSearch.toLowerCase()),
   );
+
+  const initials = community.name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <SocialLayout title={community.name} description="Comunitate">
@@ -216,10 +307,97 @@ const CommunityDetail = () => {
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-        {/* Main: feed */}
         <div>
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <h1 className="font-display font-bold text-2xl">{community.name}</h1>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="relative group">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {community.avatar_url ? (
+                    <img src={community.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-lg font-bold text-primary">{initials}</span>
+                  )}
+                </div>
+                {isAdmin && (
+                  <>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = '';
+                        if (f) uploadAvatar(f);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={uploadingAvatar}
+                      onClick={() => avatarInputRef.current?.click()}
+                      title="Schimbă poza"
+                      className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow hover:opacity-90"
+                    >
+                      <Camera className="w-3 h-3" />
+                    </button>
+                  </>
+                )}
+              </div>
+              {editingName && isAdmin ? (
+                <div className="flex items-center gap-1 flex-1 min-w-0">
+                  <Input
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    className="h-9 rounded-xl"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveName();
+                      if (e.key === 'Escape') setEditingName(false);
+                    }}
+                  />
+                  <Button size="icon" className="h-9 w-9 rounded-xl" onClick={saveName}>
+                    <Check className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-9 w-9 rounded-xl"
+                    onClick={() => setEditingName(false)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 min-w-0">
+                  <h1 className="font-display font-bold text-2xl truncate">{community.name}</h1>
+                  {isAdmin && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground"
+                      onClick={() => {
+                        setNameDraft(community.name);
+                        setEditingName(true);
+                      }}
+                      title="Editează numele"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  {isAdmin && community.avatar_url && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground"
+                      onClick={removeAvatar}
+                      title="Elimină poza"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               {!isMember && community.visibility === 'public' && (
                 <Button onClick={joinCommunity} className="rounded-xl" size="sm">
@@ -254,7 +432,6 @@ const CommunityDetail = () => {
           />
         </div>
 
-        {/* Right panel: about + members */}
         <div className="space-y-4">
           <Card className="p-5 rounded-2xl border-border">
             <h3 className="font-bold text-lg mb-3">Despre</h3>
@@ -374,14 +551,34 @@ const CommunityDetail = () => {
                     </div>
                   </div>
                   {isAdmin && m.user_id !== user?.id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeMember(m.user_id)}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
+                          <MoreHorizontal className="w-3.5 h-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {m.role === 'member' ? (
+                          <DropdownMenuItem onClick={() => changeRole(m.user_id, 'admin')}>
+                            <ShieldCheck className="w-3.5 h-3.5 mr-2" />
+                            Promovează la admin
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => changeRole(m.user_id, 'member')}>
+                            <ShieldOff className="w-3.5 h-3.5 mr-2" />
+                            Retrage admin
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => removeMember(m.user_id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <UserMinus className="w-3.5 h-3.5 mr-2" />
+                          Elimină din comunitate
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 </div>
               ))}
