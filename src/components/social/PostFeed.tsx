@@ -376,7 +376,7 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint }: Props) => {
                 <Paperclip className="w-4 h-4" />
                 <span className="hidden sm:inline">Document</span>
               </Button>
-              <span className="text-[11px] text-muted-foreground ml-2">{draft.length}/4000</span>
+              <span className="text-[11px] text-muted-foreground ml-2">{draft.length}/10000</span>
             </div>
             <Button
               size="sm"
