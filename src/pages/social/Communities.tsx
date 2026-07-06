@@ -43,7 +43,7 @@ const Communities = () => {
     const [communitiesRes, membershipsRes, countsRes] = await Promise.all([
       supabase
         .from('communities')
-        .select('id, name, slug, description, visibility, is_archived, created_by')
+        .select('id, name, slug, description, visibility, is_archived, created_by, avatar_url')
         .order('created_at', { ascending: false }),
       uid
         ? supabase.from('community_members').select('community_id').eq('user_id', uid)
@@ -61,6 +61,18 @@ const Communities = () => {
       countMap.set(r.community_id, (countMap.get(r.community_id) ?? 0) + 1);
     });
 
+    // Sign avatar URLs in bulk
+    const paths = (communities ?? [])
+      .map((c: any) => c.avatar_url)
+      .filter((p: string | null): p is string => !!p);
+    const signedMap = new Map<string, string>();
+    if (paths.length) {
+      const { data: signed } = await supabase.storage
+        .from('community-avatars')
+        .createSignedUrls(paths, 60 * 60 * 24);
+      (signed ?? []).forEach((r: any) => r.signedUrl && signedMap.set(r.path, r.signedUrl));
+    }
+
     setItems(
       (communities ?? []).map((c: any) => ({
         id: c.id,
@@ -72,6 +84,7 @@ const Communities = () => {
         created_by: c.created_by,
         member_count: countMap.get(c.id) ?? 0,
         is_member: memberSet.has(c.id),
+        avatar_url: c.avatar_url ? signedMap.get(c.avatar_url) ?? null : null,
       }))
     );
     setLoading(false);
