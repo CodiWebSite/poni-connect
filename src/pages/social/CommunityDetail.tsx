@@ -62,7 +62,7 @@ interface DirectoryUser {
   avatar_url: string | null;
 }
 
-const BUCKET = 'social-media';
+const BUCKET = 'community-avatars';
 
 const CommunityDetail = () => {
   const { slug } = useParams();
