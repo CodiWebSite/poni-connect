@@ -222,6 +222,7 @@ const CommunityDetail = () => {
     community.created_by === user?.id ||
     canManageHR ||
     isSuperAdmin;
+  const isModerator = isAdmin || myMembership?.role === 'moderator';
   const canPost = isMember || canManageHR || isSuperAdmin;
 
   const addMember = async (uid: string) => {
