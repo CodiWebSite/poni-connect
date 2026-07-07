@@ -572,7 +572,7 @@ const PostCard = ({
     setLoadingComments(true);
     const { data, error } = await supabase
       .from('social_post_comments')
-      .select('id, post_id, author_id, parent_comment_id, content, reaction_count, created_at')
+      .select('id, post_id, author_id, parent_comment_id, content, reaction_count, created_at, edited_at')
       .eq('post_id', post.id)
       .order('created_at', { ascending: true });
     if (error) {
