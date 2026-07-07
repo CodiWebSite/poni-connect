@@ -958,6 +958,7 @@ const PostCard = ({
                 onReact={setCommentReaction}
                 onReply={startReply}
                 onDelete={deleteComment}
+                onEdit={editComment}
               />
             ))
           )}
