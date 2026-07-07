@@ -68,6 +68,7 @@ interface CommentRow {
   content: string;
   reaction_count: number;
   created_at: string;
+  edited_at: string | null;
 }
 
 interface Attachment {
