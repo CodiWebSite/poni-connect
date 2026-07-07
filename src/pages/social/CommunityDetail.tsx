@@ -51,9 +51,18 @@ interface Community {
   avatar_url: string | null;
 }
 
+interface JoinRequest {
+  id: string;
+  user_id: string;
+  message: string | null;
+  created_at: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 interface Member {
   user_id: string;
-  role: 'admin' | 'member';
+  role: 'admin' | 'member' | 'moderator';
   full_name: string | null;
   avatar_url: string | null;
 }
