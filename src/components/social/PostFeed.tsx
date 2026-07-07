@@ -483,27 +483,41 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator =
           <p className="text-sm text-muted-foreground">{emptyHint || 'Nicio postare încă.'}</p>
         </Card>
       ) : (
-        posts.map((p) => (
-          <PostCard
-            key={p.id}
-            post={p}
-            author={profiles[p.author_id]}
-            myReaction={myReactions[p.id] ?? null}
-            attachments={attachments[p.id] ?? []}
-            currentUserId={user?.id ?? null}
-            onReact={(r) => setReaction(p, r)}
-            onDelete={() => deletePost(p.id)}
-            onCommentDelta={(delta) =>
-              setPosts((ps) =>
-                ps.map((post) =>
-                  post.id === p.id
-                    ? { ...post, comment_count: Math.max(0, post.comment_count + delta) }
-                    : post,
-                ),
-              )
-            }
-          />
-        ))
+        <>
+          {posts.map((p) => (
+            <PostCard
+              key={p.id}
+              post={p}
+              author={profiles[p.author_id]}
+              myReaction={myReactions[p.id] ?? null}
+              attachments={attachments[p.id] ?? []}
+              currentUserId={user?.id ?? null}
+              isBookmarked={bookmarks.has(p.id)}
+              isModerator={isModerator}
+              onReact={(r) => setReaction(p, r)}
+              onDelete={() => deletePost(p.id)}
+              onBookmark={() => toggleBookmark(p.id)}
+              onPin={() => togglePin(p)}
+              onEdit={(content) => editPost(p.id, content)}
+              onCommentDelta={(delta) =>
+                setPosts((ps) =>
+                  ps.map((post) =>
+                    post.id === p.id
+                      ? { ...post, comment_count: Math.max(0, post.comment_count + delta) }
+                      : post,
+                  ),
+                )
+              }
+            />
+          ))}
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" size="sm" className="rounded-xl" disabled={loadingMore} onClick={loadMore}>
+                {loadingMore ? 'Se încarcă…' : 'Încarcă mai multe'}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -515,8 +529,13 @@ interface CardProps {
   myReaction: ReactionType | null;
   attachments: Attachment[];
   currentUserId: string | null;
+  isBookmarked: boolean;
+  isModerator: boolean;
   onReact: (r: ReactionType | null) => void;
   onDelete: () => void;
+  onBookmark: () => void;
+  onPin: () => void;
+  onEdit: (content: string) => void;
   onCommentDelta: (delta: number) => void;
 }
 
@@ -526,8 +545,13 @@ const PostCard = ({
   myReaction,
   attachments,
   currentUserId,
+  isBookmarked,
+  isModerator,
   onReact,
   onDelete,
+  onBookmark,
+  onPin,
+  onEdit,
   onCommentDelta,
 }: CardProps) => {
   const [showComments, setShowComments] = useState(false);
