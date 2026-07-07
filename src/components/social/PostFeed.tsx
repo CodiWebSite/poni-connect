@@ -1017,6 +1017,7 @@ interface CommentItemProps {
   onReact: (comment: CommentRow, reaction: ReactionType | null) => void;
   onReply: (comment: CommentRow) => void;
   onDelete: (id: string) => void;
+  onEdit: (id: string, content: string) => void | Promise<void>;
 }
 
 const CommentItem = ({
@@ -1030,7 +1031,10 @@ const CommentItem = ({
   onReact,
   onReply,
   onDelete,
+  onEdit,
 }: CommentItemProps) => {
+  const [editing, setEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState('');
   const name = profile?.full_name || 'Coleg';
   const initials = name.substring(0, 2).toUpperCase();
   const reaction = activeReaction ? REACTIONS.find((r) => r.type === activeReaction) : null;
