@@ -86,6 +86,9 @@ const RichTextComposer = forwardRef<RichTextComposerHandle, Props>(function Rich
         <ToolbarBtn onClick={() => insert('\n• ')} title="Listă"><List className="w-3.5 h-3.5" /></ToolbarBtn>
         <ToolbarBtn onClick={() => insert('\n> ')} title="Citat"><Quote className="w-3.5 h-3.5" /></ToolbarBtn>
         <ToolbarBtn onClick={insertLink} title="Link"><LinkIcon className="w-3.5 h-3.5" /></ToolbarBtn>
+        <MentionPickerButton
+          onPick={(p) => insert(`@[${p.full_name || 'Coleg'}](user:${p.user_id}) `)}
+        />
         <div className="w-px h-4 bg-border mx-1" />
         <Popover>
           <PopoverTrigger asChild>
