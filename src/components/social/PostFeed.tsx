@@ -274,11 +274,59 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator =
       });
     }
 
+    // Store mentions (best-effort)
+    const mentionIds = extractMentionUserIds(draft);
+    if (mentionIds.length) {
+      await supabase.from('social_post_mentions').insert(
+        mentionIds.map((uid) => ({
+          post_id: postRow.id,
+          mentioned_user_id: uid,
+          mentioned_by: user.id,
+        })),
+      );
+    }
+
     setDraft('');
     setDrafts([]);
     setSubmitting(false);
     toast.success('Postare publicată');
     load();
+  };
+
+  const toggleBookmark = async (postId: string) => {
+    if (!user) return;
+    const has = bookmarks.has(postId);
+    setBookmarks((prev) => {
+      const next = new Set(prev);
+      has ? next.delete(postId) : next.add(postId);
+      return next;
+    });
+    if (has) {
+      await supabase.from('social_post_bookmarks').delete().eq('user_id', user.id).eq('post_id', postId);
+    } else {
+      await supabase.from('social_post_bookmarks').insert({ user_id: user.id, post_id: postId });
+      toast.success('Postare salvată');
+    }
+  };
+
+  const togglePin = async (post: PostRow) => {
+    const next = !post.is_pinned;
+    const { error } = await supabase
+      .from('social_posts')
+      .update({ is_pinned: next, pinned_at: next ? new Date().toISOString() : null, pinned_by: next ? user?.id : null })
+      .eq('id', post.id);
+    if (error) return toast.error(error.message);
+    toast.success(next ? 'Postare fixată' : 'Fixare eliminată');
+    load();
+  };
+
+  const editPost = async (id: string, content: string) => {
+    const { error } = await supabase
+      .from('social_posts')
+      .update({ content, edited_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) return toast.error(error.message);
+    setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, content, edited_at: new Date().toISOString() } : p)));
   };
 
   const setReaction = async (post: PostRow, reaction: ReactionType | null) => {
