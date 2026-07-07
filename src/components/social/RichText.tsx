@@ -7,6 +7,18 @@ import React from 'react';
  */
 
 const inlineTokens: { re: RegExp; render: (m: RegExpMatchArray, key: number) => React.ReactNode }[] = [
+  {
+    re: /@\[([^\]]+)\]\(user:([0-9a-fA-F-]{36})\)/,
+    render: (m, k) => (
+      <span
+        key={k}
+        className="text-primary font-medium bg-primary/10 rounded px-1 py-0.5"
+        data-user-id={m[2]}
+      >
+        @{m[1]}
+      </span>
+    ),
+  },
   { re: /\*\*(.+?)\*\*/, render: (m, k) => <strong key={k}>{renderInline(m[1], k * 100)}</strong> },
   { re: /__(.+?)__/, render: (m, k) => <u key={k}>{renderInline(m[1], k * 100)}</u> },
   { re: /\*(.+?)\*/, render: (m, k) => <em key={k}>{renderInline(m[1], k * 100)}</em> },
