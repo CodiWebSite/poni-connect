@@ -1,9 +1,9 @@
 import { useRef, forwardRef, useImperativeHandle } from 'react';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Bold, Italic, Underline, Smile, List, Quote, Link as LinkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import MentionPickerButton from './MentionPickerButton';
 
 const EMOJIS = [
   '😀','😁','😂','🤣','😊','😍','😘','😎','🤔','😮','😢','😡','👍','👎','🙏','👏','🎉','🔥','❤️','💯',
