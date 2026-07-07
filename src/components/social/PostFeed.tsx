@@ -92,7 +92,10 @@ interface Props {
   communityId?: string | null;
   canPost?: boolean;
   emptyHint?: string;
+  isModerator?: boolean;
 }
+
+const PAGE_SIZE = 20;
 
 const BUCKET = 'social-media';
 const MAX_FILE_MB = 15;
