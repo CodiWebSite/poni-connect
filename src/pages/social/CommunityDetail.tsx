@@ -493,6 +493,23 @@ const CommunityDetail = () => {
                   Alătură-te
                 </Button>
               )}
+              {!isMember && community.visibility === 'private' && !myJoinRequestId && (
+                <Button onClick={requestJoin} className="rounded-xl" size="sm">
+                  <UserPlus className="w-4 h-4 mr-1.5" />
+                  Solicită aderare
+                </Button>
+              )}
+              {!isMember && community.visibility === 'private' && myJoinRequestId && (
+                <Button
+                  onClick={cancelJoinRequest}
+                  variant="outline"
+                  className="rounded-xl"
+                  size="sm"
+                >
+                  <Clock className="w-4 h-4 mr-1.5" />
+                  Cerere trimisă · Anulează
+                </Button>
+              )}
               {isMember && !isAdmin && (
                 <Button
                   variant="ghost"
@@ -510,6 +527,7 @@ const CommunityDetail = () => {
           <PostFeed
             communityId={community.id}
             canPost={canPost}
+            isModerator={isModerator}
             emptyHint={
               canPost
                 ? 'Nicio postare încă. Începe conversația!'
