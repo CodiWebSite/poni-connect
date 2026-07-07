@@ -667,7 +667,9 @@ export type Database = {
           description: string | null
           id: string
           is_archived: boolean
+          long_description: string | null
           name: string
+          rules: string | null
           slug: string
           updated_at: string
           visibility: Database["public"]["Enums"]["community_visibility"]
@@ -679,7 +681,9 @@ export type Database = {
           description?: string | null
           id?: string
           is_archived?: boolean
+          long_description?: string | null
           name: string
+          rules?: string | null
           slug: string
           updated_at?: string
           visibility?: Database["public"]["Enums"]["community_visibility"]
@@ -691,12 +695,105 @@ export type Database = {
           description?: string | null
           id?: string
           is_archived?: boolean
+          long_description?: string | null
           name?: string
+          rules?: string | null
           slug?: string
           updated_at?: string
           visibility?: Database["public"]["Enums"]["community_visibility"]
         }
         Relationships: []
+      }
+      community_invitations: {
+        Row: {
+          community_id: string
+          created_at: string
+          id: string
+          invitee_id: string
+          inviter_id: string
+          message: string | null
+          responded_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          id?: string
+          invitee_id: string
+          inviter_id: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          id?: string
+          invitee_id?: string
+          inviter_id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_invitations_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_join_requests: {
+        Row: {
+          community_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_reason: string | null
+          id: string
+          message: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_reason?: string | null
+          id?: string
+          message?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_reason?: string | null
+          id?: string
+          message?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_join_requests_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       community_members: {
         Row: {
@@ -3359,11 +3456,38 @@ export type Database = {
           },
         ]
       }
+      social_post_bookmarks: {
+        Row: {
+          created_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_post_bookmarks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_post_comments: {
         Row: {
           author_id: string
           content: string
           created_at: string
+          edited_at: string | null
           id: string
           parent_comment_id: string | null
           post_id: string
@@ -3373,6 +3497,7 @@ export type Database = {
           author_id: string
           content: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           parent_comment_id?: string | null
           post_id: string
@@ -3382,6 +3507,7 @@ export type Database = {
           author_id?: string
           content?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           parent_comment_id?: string | null
           post_id?: string
@@ -3433,6 +3559,48 @@ export type Database = {
           },
         ]
       }
+      social_post_mentions: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          id: string
+          mentioned_by: string
+          mentioned_user_id: string
+          post_id: string | null
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          mentioned_by: string
+          mentioned_user_id: string
+          post_id?: string | null
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          mentioned_by?: string
+          mentioned_user_id?: string
+          post_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_post_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "social_post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_post_mentions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_posts: {
         Row: {
           author_id: string
@@ -3440,8 +3608,13 @@ export type Database = {
           community_id: string | null
           content: string
           created_at: string
+          edited_at: string | null
           id: string
+          is_pinned: boolean
           like_count: number
+          pinned_at: string | null
+          pinned_by: string | null
+          shared_from_post_id: string | null
           updated_at: string
         }
         Insert: {
@@ -3450,8 +3623,13 @@ export type Database = {
           community_id?: string | null
           content: string
           created_at?: string
+          edited_at?: string | null
           id?: string
+          is_pinned?: boolean
           like_count?: number
+          pinned_at?: string | null
+          pinned_by?: string | null
+          shared_from_post_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -3460,8 +3638,13 @@ export type Database = {
           community_id?: string | null
           content?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
+          is_pinned?: boolean
           like_count?: number
+          pinned_at?: string | null
+          pinned_by?: string | null
+          shared_from_post_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3470,6 +3653,13 @@ export type Database = {
             columns: ["community_id"]
             isOneToOne: false
             referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_posts_shared_from_post_id_fkey"
+            columns: ["shared_from_post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
             referencedColumns: ["id"]
           },
         ]
@@ -4103,6 +4293,10 @@ export type Database = {
         Args: { _community_id: string; _user_id: string }
         Returns: boolean
       }
+      is_community_moderator: {
+        Args: { _community_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_gdpr_officer: { Args: { _user_id: string }; Returns: boolean }
       is_ip_bypass_user: { Args: { _user_id: string }; Returns: boolean }
       is_leave_approver_for_epd: {
@@ -4197,7 +4391,7 @@ export type Database = {
         | "compartiment_comunicare"
         | "medic_medicina_muncii"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
-      community_member_role: "admin" | "member"
+      community_member_role: "admin" | "member" | "moderator"
       community_visibility: "public" | "private"
       consultation_type:
         | "angajare"
@@ -4405,7 +4599,7 @@ export const Constants = {
         "medic_medicina_muncii",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
-      community_member_role: ["admin", "member"],
+      community_member_role: ["admin", "member", "moderator"],
       community_visibility: ["public", "private"],
       consultation_type: [
         "angajare",
