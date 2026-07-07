@@ -621,18 +621,45 @@ const PostCard = ({
     if (!currentUserId || !draft.trim()) return;
     setSubmittingComment(true);
     const parentId = replyingTo?.parent_comment_id ?? replyingTo?.id ?? null;
-    const { error } = await supabase.from('social_post_comments').insert({
-      post_id: post.id,
-      author_id: currentUserId,
-      parent_comment_id: parentId,
-      content: draft.trim(),
-    });
+    const content = draft.trim();
+    const { data: inserted, error } = await supabase
+      .from('social_post_comments')
+      .insert({
+        post_id: post.id,
+        author_id: currentUserId,
+        parent_comment_id: parentId,
+        content,
+      })
+      .select('id')
+      .single();
     setSubmittingComment(false);
-    if (error) return toast.error(error.message);
+    if (error || !inserted) return toast.error(error?.message ?? 'Eroare');
+
+    const mentionIds = extractMentionUserIds(content);
+    if (mentionIds.length) {
+      await supabase.from('social_post_mentions').insert(
+        mentionIds.map((uid) => ({
+          post_id: post.id,
+          comment_id: inserted.id,
+          mentioned_user_id: uid,
+          mentioned_by: currentUserId,
+        })),
+      );
+    }
+
     setDraft('');
     setReplyingTo(null);
     onCommentDelta(1);
     loadComments();
+  };
+
+  const editComment = async (id: string, content: string) => {
+    const { error } = await supabase
+      .from('social_post_comments')
+      .update({ content, edited_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) return toast.error(error.message);
+    setComments((cs) => cs.map((c) => (c.id === id ? { ...c, content, edited_at: new Date().toISOString() } : c)));
   };
 
   const deleteComment = async (id: string) => {
