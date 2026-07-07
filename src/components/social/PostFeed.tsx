@@ -109,77 +109,99 @@ async function signAttachments(atts: Omit<Attachment, 'url'>[]): Promise<Attachm
   return atts.map((a) => ({ ...a, url: map.get(a.storage_path) || '' }));
 }
 
-const PostFeed = ({ communityId = null, canPost = true, emptyHint }: Props) => {
+const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator = false }: Props) => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileMini>>({});
   const [myReactions, setMyReactions] = useState<Record<string, ReactionType>>({});
+  const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const [attachments, setAttachments] = useState<Record<string, Attachment[]>>({});
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [draft, setDraft] = useState('');
   const [drafts, setDrafts] = useState<DraftFile[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const fetchPage = useCallback(async (offset: number): Promise<PostRow[]> => {
     let query = supabase
       .from('social_posts')
-      .select('id, author_id, community_id, content, like_count, comment_count, created_at')
+      .select('id, author_id, community_id, content, like_count, comment_count, created_at, edited_at, is_pinned')
+      .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(50);
+      .range(offset, offset + PAGE_SIZE - 1);
     if (communityId === null) query = query.is('community_id', null);
     else query = query.eq('community_id', communityId);
-
     const { data, error } = await query;
-    if (error) {
-      toast.error(error.message);
-      setLoading(false);
-      return;
-    }
-    const rows = (data ?? []) as PostRow[];
-    setPosts(rows);
+    if (error) { toast.error(error.message); return []; }
+    return (data ?? []) as PostRow[];
+  }, [communityId]);
 
+  const hydrate = useCallback(async (rows: PostRow[]) => {
     const postIds = rows.map((p) => p.id);
     const authorIds = Array.from(new Set(rows.map((p) => p.author_id)));
 
-    const [profRes, reactRes, attRes] = await Promise.all([
+    const [profRes, reactRes, attRes, bmRes] = await Promise.all([
       authorIds.length
         ? supabase.from('profiles').select('user_id, full_name, avatar_url').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
       user && postIds.length
-        ? supabase
-            .from('social_post_likes')
-            .select('post_id, reaction')
-            .eq('user_id', user.id)
-            .in('post_id', postIds)
+        ? supabase.from('social_post_likes').select('post_id, reaction').eq('user_id', user.id).in('post_id', postIds)
         : Promise.resolve({ data: [] as any[] }),
       postIds.length
-        ? supabase
-            .from('social_post_attachments')
-            .select('id, post_id, storage_path, mime_type, file_name, file_size, kind')
-            .in('post_id', postIds)
+        ? supabase.from('social_post_attachments')
+            .select('id, post_id, storage_path, mime_type, file_name, file_size, kind').in('post_id', postIds)
+        : Promise.resolve({ data: [] as any[] }),
+      user && postIds.length
+        ? supabase.from('social_post_bookmarks').select('post_id').eq('user_id', user.id).in('post_id', postIds)
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
-    const pmap: Record<string, ProfileMini> = {};
-    (profRes.data ?? []).forEach((p: any) => (pmap[p.user_id] = p));
-    setProfiles(pmap);
-
-    const rmap: Record<string, ReactionType> = {};
-    (reactRes.data ?? []).forEach((r: any) => (rmap[r.post_id] = r.reaction as ReactionType));
-    setMyReactions(rmap);
-
-    const signed = await signAttachments((attRes.data ?? []) as any[]);
-    const amap: Record<string, Attachment[]> = {};
-    signed.forEach((a) => {
-      (amap[a.post_id] ||= []).push(a);
+    setProfiles((prev) => {
+      const map = { ...prev };
+      (profRes.data ?? []).forEach((p: any) => (map[p.user_id] = p));
+      return map;
     });
-    setAttachments(amap);
+    setMyReactions((prev) => {
+      const map = { ...prev };
+      (reactRes.data ?? []).forEach((r: any) => (map[r.post_id] = r.reaction as ReactionType));
+      return map;
+    });
+    setBookmarks((prev) => {
+      const next = new Set(prev);
+      (bmRes.data ?? []).forEach((r: any) => next.add(r.post_id));
+      return next;
+    });
+    const signed = await signAttachments((attRes.data ?? []) as any[]);
+    setAttachments((prev) => {
+      const map = { ...prev };
+      signed.forEach((a) => { (map[a.post_id] ||= []).push(a); });
+      return map;
+    });
+  }, [user]);
 
+  const load = useCallback(async () => {
+    setLoading(true);
+    setBookmarks(new Set());
+    setAttachments({});
+    const rows = await fetchPage(0);
+    setPosts(rows);
+    setHasMore(rows.length === PAGE_SIZE);
+    await hydrate(rows);
     setLoading(false);
-  }, [communityId, user]);
+  }, [fetchPage, hydrate]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    const rows = await fetchPage(posts.length);
+    setPosts((prev) => [...prev, ...rows]);
+    setHasMore(rows.length === PAGE_SIZE);
+    await hydrate(rows);
+    setLoadingMore(false);
+  };
+
 
   useEffect(() => {
     load();
