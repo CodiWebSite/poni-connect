@@ -1125,6 +1125,7 @@ const CommentItem = ({
               onReact={onReact}
               onReply={onReply}
               onDelete={onDelete}
+              onEdit={onEdit}
             />
           ))}
         </div>
