@@ -52,6 +52,7 @@ import Birthdays from "./pages/social/Birthdays";
 import Colleagues from "./pages/social/Colleagues";
 import OrgChart from "./pages/social/OrgChart";
 import SocialSettings from "./pages/social/SocialSettings";
+import SavedPosts from "./pages/social/SavedPosts";
 
 const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
 const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
