@@ -740,7 +740,12 @@ const PostCard = ({
   const topLevelComments = comments.filter((comment) => !comment.parent_comment_id);
 
   return (
-    <Card className="p-5 rounded-2xl border-border">
+    <Card className={cn('p-5 rounded-2xl border-border', post.is_pinned && 'ring-1 ring-primary/30')}>
+      {post.is_pinned && (
+        <div className="flex items-center gap-1.5 text-[11px] text-primary font-medium mb-2">
+          <Pin className="w-3 h-3" /> Fixată
+        </div>
+      )}
       <div className="flex items-start gap-3 mb-3">
         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
           {author?.avatar_url ? (
@@ -753,8 +758,31 @@ const PostCard = ({
           <p className="text-sm font-semibold truncate">{name}</p>
           <p className="text-[11px] text-muted-foreground">
             {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ro })}
+            {post.edited_at && <span className="ml-1 italic">· editat</span>}
           </p>
         </div>
+        {isModerator && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
+            onClick={onPin}
+            title={post.is_pinned ? 'Elimină fixarea' : 'Fixează postarea'}
+          >
+            {post.is_pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+          </Button>
+        )}
+        {canEdit && !editing && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={() => { setEditDraft(post.content); setEditing(true); }}
+            title="Editează"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+        )}
         {canDelete && (
           <Button
             variant="ghost"
@@ -767,8 +795,32 @@ const PostCard = ({
         )}
       </div>
 
-      {post.content && post.content !== '📎' && (
-        <RichText content={post.content} className="text-sm leading-relaxed mb-3 space-y-1" />
+      {editing ? (
+        <div className="mb-3 space-y-2">
+          <Textarea
+            value={editDraft}
+            onChange={(e) => setEditDraft(e.target.value.slice(0, 10000))}
+            className="rounded-xl text-sm min-h-[100px]"
+            maxLength={10000}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setEditing(false)}>
+              Anulează
+            </Button>
+            <Button
+              size="sm"
+              className="rounded-xl"
+              disabled={!editDraft.trim()}
+              onClick={async () => { await onEdit(editDraft.trim()); setEditing(false); }}
+            >
+              <Check className="w-3.5 h-3.5 mr-1.5" /> Salvează
+            </Button>
+          </div>
+        </div>
+      ) : (
+        post.content && post.content !== '📎' && (
+          <RichText content={post.content} className="text-sm leading-relaxed mb-3 space-y-1" />
+        )
       )}
 
       {images.length > 0 && (
