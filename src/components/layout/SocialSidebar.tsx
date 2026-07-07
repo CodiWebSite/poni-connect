@@ -61,6 +61,7 @@ const SocialSidebar = () => {
     { icon: Network, label: 'Organigramă', path: '/social/organigrama' },
     { icon: PartyPopper, label: 'Activități', path: '/social/activitati' },
     { icon: MessageCircle, label: 'Mesagerie', path: '/social/chat' },
+    { icon: Bookmark, label: 'Salvate', path: '/social/salvate' },
     { icon: Archive, label: 'Arhivă online', path: '/social/arhiva' },
     { icon: ShieldCheck, label: 'Securitate Digitală', path: '/social/securitate' },
     ...(canManageHR || isSuperAdmin
