@@ -1053,16 +1053,49 @@ const CommentItem = ({
           <div className="bg-muted/50 rounded-xl px-3 py-2">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold">{name}</p>
-              {comment.author_id === currentUserId && (
-                <button
-                  onClick={() => onDelete(comment.id)}
-                  className="text-[10px] text-muted-foreground hover:text-destructive"
-                >
-                  Șterge
-                </button>
+              {comment.author_id === currentUserId && !editing && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { setEditDraft(comment.content); setEditing(true); }}
+                    className="text-[10px] text-muted-foreground hover:text-foreground"
+                  >
+                    Editează
+                  </button>
+                  <button
+                    onClick={() => onDelete(comment.id)}
+                    className="text-[10px] text-muted-foreground hover:text-destructive"
+                  >
+                    Șterge
+                  </button>
+                </div>
               )}
             </div>
-            <RichText content={comment.content} className="text-xs leading-relaxed" />
+            {editing ? (
+              <div className="mt-1 space-y-1.5">
+                <Textarea
+                  value={editDraft}
+                  onChange={(e) => setEditDraft(e.target.value.slice(0, 2000))}
+                  className="min-h-[60px] text-xs rounded-lg"
+                />
+                <div className="flex justify-end gap-1.5">
+                  <button
+                    onClick={() => setEditing(false)}
+                    className="text-[10px] px-2 py-1 rounded hover:bg-muted"
+                  >
+                    Anulează
+                  </button>
+                  <button
+                    onClick={async () => { await onEdit(comment.id, editDraft.trim()); setEditing(false); }}
+                    disabled={!editDraft.trim()}
+                    className="text-[10px] px-2 py-1 rounded bg-primary text-primary-foreground disabled:opacity-50"
+                  >
+                    Salvează
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <RichText content={comment.content} className="text-xs leading-relaxed" />
+            )}
           </div>
           <div className="flex items-center gap-2 px-1 pt-1 text-[11px] text-muted-foreground">
             <Popover>
@@ -1105,6 +1138,7 @@ const CommentItem = ({
             </button>
             <span>
               {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: ro })}
+              {comment.edited_at && <span className="ml-1 italic">· editat</span>}
             </span>
           </div>
         </div>
