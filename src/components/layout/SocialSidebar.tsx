@@ -14,6 +14,7 @@ import {
   Network,
   PartyPopper,
   MessageCircle,
+  Bookmark,
   Archive,
   ShieldCheck,
   Settings,
