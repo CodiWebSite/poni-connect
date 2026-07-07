@@ -50,6 +50,8 @@ interface PostRow {
   like_count: number;
   comment_count: number;
   created_at: string;
+  edited_at: string | null;
+  is_pinned: boolean;
 }
 
 interface ProfileMini {
