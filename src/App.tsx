@@ -289,6 +289,7 @@ const App = () => (
                 <Route path="/social/chat" element={<Chat />} />
                 <Route path="/social/arhiva" element={<Archive />} />
                 <Route path="/social/securitate" element={<SecurityQuiz />} />
+                <Route path="/social/salvate" element={<SavedPosts />} />
                 <Route path="/social/setari" element={<SocialSettings />} />
 
                 <Route path="*" element={<NotFound />} />
