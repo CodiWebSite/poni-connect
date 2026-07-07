@@ -17,6 +17,11 @@ import {
   Download,
   ThumbsUp,
   Reply,
+  Bookmark,
+  Pin,
+  PinOff,
+  Pencil,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -24,6 +29,7 @@ import { ro } from 'date-fns/locale';
 import RichTextComposer from './RichTextComposer';
 import { RichText } from './RichText';
 import { cn } from '@/lib/utils';
+import { extractMentionUserIds } from '@/lib/social-mentions';
 
 type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry';
 
