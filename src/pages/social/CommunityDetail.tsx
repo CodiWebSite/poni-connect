@@ -82,6 +82,8 @@ const CommunityDetail = () => {
 
   const [community, setCommunity] = useState<Community | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
+  const [myJoinRequestId, setMyJoinRequestId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [memberSearch, setMemberSearch] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -90,6 +92,8 @@ const CommunityDetail = () => {
   const [allProfiles, setAllProfiles] = useState<DirectoryUser[]>([]);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descDraft, setDescDraft] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
