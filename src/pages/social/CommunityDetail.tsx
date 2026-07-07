@@ -141,8 +141,38 @@ const CommunityDetail = () => {
         avatar_url: profMap.get(m.user_id)?.avatar_url ?? null,
       })),
     );
+    // Load join requests (only pending ones the current user can see per RLS)
+    const { data: jrs } = await supabase
+      .from('community_join_requests')
+      .select('id, user_id, message, created_at, status')
+      .eq('community_id', c.id)
+      .eq('status', 'pending');
+    const jrIds = (jrs ?? []).map((r: any) => r.user_id);
+    let jrProfs: any[] = [];
+    if (jrIds.length) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, avatar_url')
+        .in('user_id', jrIds);
+      jrProfs = data ?? [];
+    }
+    const jrProfMap = new Map(jrProfs.map((p) => [p.user_id, p]));
+    setJoinRequests(
+      (jrs ?? []).map((r: any) => ({
+        id: r.id,
+        user_id: r.user_id,
+        message: r.message,
+        created_at: r.created_at,
+        full_name: jrProfMap.get(r.user_id)?.full_name ?? null,
+        avatar_url: jrProfMap.get(r.user_id)?.avatar_url ?? null,
+      })),
+    );
+    setMyJoinRequestId(
+      (jrs ?? []).find((r: any) => r.user_id === user?.id)?.id ?? null,
+    );
+
     setLoading(false);
-  }, [slug]);
+  }, [slug, user?.id]);
 
   useEffect(() => {
     load();
