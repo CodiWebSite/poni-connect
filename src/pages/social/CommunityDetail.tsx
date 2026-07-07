@@ -32,7 +32,9 @@ import {
   ShieldCheck,
   ShieldOff,
   UserMinus,
+  Clock,
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -49,9 +51,18 @@ interface Community {
   avatar_url: string | null;
 }
 
+interface JoinRequest {
+  id: string;
+  user_id: string;
+  message: string | null;
+  created_at: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 interface Member {
   user_id: string;
-  role: 'admin' | 'member';
+  role: 'admin' | 'member' | 'moderator';
   full_name: string | null;
   avatar_url: string | null;
 }
@@ -71,6 +82,8 @@ const CommunityDetail = () => {
 
   const [community, setCommunity] = useState<Community | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
+  const [myJoinRequestId, setMyJoinRequestId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [memberSearch, setMemberSearch] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -79,6 +92,8 @@ const CommunityDetail = () => {
   const [allProfiles, setAllProfiles] = useState<DirectoryUser[]>([]);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descDraft, setDescDraft] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -126,8 +141,38 @@ const CommunityDetail = () => {
         avatar_url: profMap.get(m.user_id)?.avatar_url ?? null,
       })),
     );
+    // Load join requests (only pending ones the current user can see per RLS)
+    const { data: jrs } = await supabase
+      .from('community_join_requests')
+      .select('id, user_id, message, created_at, status')
+      .eq('community_id', c.id)
+      .eq('status', 'pending');
+    const jrIds = (jrs ?? []).map((r: any) => r.user_id);
+    let jrProfs: any[] = [];
+    if (jrIds.length) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, avatar_url')
+        .in('user_id', jrIds);
+      jrProfs = data ?? [];
+    }
+    const jrProfMap = new Map(jrProfs.map((p) => [p.user_id, p]));
+    setJoinRequests(
+      (jrs ?? []).map((r: any) => ({
+        id: r.id,
+        user_id: r.user_id,
+        message: r.message,
+        created_at: r.created_at,
+        full_name: jrProfMap.get(r.user_id)?.full_name ?? null,
+        avatar_url: jrProfMap.get(r.user_id)?.avatar_url ?? null,
+      })),
+    );
+    setMyJoinRequestId(
+      (jrs ?? []).find((r: any) => r.user_id === user?.id)?.id ?? null,
+    );
+
     setLoading(false);
-  }, [slug]);
+  }, [slug, user?.id]);
 
   useEffect(() => {
     load();
@@ -177,6 +222,7 @@ const CommunityDetail = () => {
     community.created_by === user?.id ||
     canManageHR ||
     isSuperAdmin;
+  const isModerator = isAdmin || myMembership?.role === 'moderator';
   const canPost = isMember || canManageHR || isSuperAdmin;
 
   const addMember = async (uid: string) => {
@@ -223,6 +269,37 @@ const CommunityDetail = () => {
     load();
   };
 
+  const requestJoin = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('community_join_requests')
+      .insert({ community_id: community.id, user_id: user.id, status: 'pending' });
+    if (error) return toast.error(error.message);
+    toast.success('Cerere trimisă. Admin-ii vor decide.');
+    load();
+  };
+
+  const cancelJoinRequest = async () => {
+    if (!myJoinRequestId) return;
+    const { error } = await supabase
+      .from('community_join_requests')
+      .update({ status: 'cancelled' })
+      .eq('id', myJoinRequestId);
+    if (error) return toast.error(error.message);
+    toast.success('Cerere anulată');
+    load();
+  };
+
+  const decideJoinRequest = async (id: string, decision: 'approved' | 'rejected') => {
+    const { error } = await supabase
+      .from('community_join_requests')
+      .update({ status: decision, decided_by: user?.id, decided_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) return toast.error(error.message);
+    toast.success(decision === 'approved' ? 'Cerere aprobată' : 'Cerere respinsă');
+    load();
+  };
+
   const leaveCommunity = async () => {
     if (!user) return;
     if (!confirm('Părăsești comunitatea?')) return;
@@ -246,6 +323,17 @@ const CommunityDetail = () => {
     if (error) return toast.error(error.message);
     toast.success('Nume actualizat');
     setEditingName(false);
+    load();
+  };
+
+  const saveDescription = async () => {
+    const { error } = await supabase
+      .from('communities')
+      .update({ description: descDraft.trim() || null })
+      .eq('id', community.id);
+    if (error) return toast.error(error.message);
+    toast.success('Descriere actualizată');
+    setEditingDesc(false);
     load();
   };
 
@@ -405,6 +493,23 @@ const CommunityDetail = () => {
                   Alătură-te
                 </Button>
               )}
+              {!isMember && community.visibility === 'private' && !myJoinRequestId && (
+                <Button onClick={requestJoin} className="rounded-xl" size="sm">
+                  <UserPlus className="w-4 h-4 mr-1.5" />
+                  Solicită aderare
+                </Button>
+              )}
+              {!isMember && community.visibility === 'private' && myJoinRequestId && (
+                <Button
+                  onClick={cancelJoinRequest}
+                  variant="outline"
+                  className="rounded-xl"
+                  size="sm"
+                >
+                  <Clock className="w-4 h-4 mr-1.5" />
+                  Cerere trimisă · Anulează
+                </Button>
+              )}
               {isMember && !isAdmin && (
                 <Button
                   variant="ghost"
@@ -422,6 +527,7 @@ const CommunityDetail = () => {
           <PostFeed
             communityId={community.id}
             canPost={canPost}
+            isModerator={isModerator}
             emptyHint={
               canPost
                 ? 'Nicio postare încă. Începe conversația!'
@@ -448,11 +554,77 @@ const CommunityDetail = () => {
                 )}
               </Badge>
             </div>
-            {community.description && (
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
-                {community.description}
-              </p>
+            {editingDesc ? (
+              <div className="space-y-2 mb-3">
+                <Textarea
+                  value={descDraft}
+                  onChange={(e) => setDescDraft(e.target.value.slice(0, 500))}
+                  className="text-xs rounded-xl min-h-[80px]"
+                  placeholder="Scurtă descriere a comunității"
+                />
+                <div className="flex justify-end gap-1.5">
+                  <Button size="sm" variant="ghost" className="rounded-lg h-7 text-xs" onClick={() => setEditingDesc(false)}>
+                    Anulează
+                  </Button>
+                  <Button size="sm" className="rounded-lg h-7 text-xs" onClick={saveDescription}>
+                    Salvează
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-3 flex items-start gap-1">
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
+                  {community.description || (isAdmin ? 'Fără descriere. Adaugă una.' : '')}
+                </p>
+                {isAdmin && (
+                  <button
+                    onClick={() => { setDescDraft(community.description || ''); setEditingDesc(true); }}
+                    className="text-muted-foreground hover:text-foreground"
+                    title="Editează descrierea"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             )}
+
+            {isAdmin && joinRequests.length > 0 && (
+              <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20">
+                <p className="font-semibold text-xs mb-2">Cereri de aderare ({joinRequests.length})</p>
+                <div className="space-y-2">
+                  {joinRequests.map((r) => (
+                    <div key={r.id} className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {r.avatar_url ? (
+                          <img src={r.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[10px] font-semibold text-primary">
+                            {(r.full_name || '?').substring(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs flex-1 truncate">{r.full_name || 'Coleg'}</p>
+                      <Button
+                        size="sm"
+                        className="h-6 px-2 text-[10px] rounded-md"
+                        onClick={() => decideJoinRequest(r.id, 'approved')}
+                      >
+                        Acceptă
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-[10px] rounded-md text-destructive"
+                        onClick={() => decideJoinRequest(r.id, 'rejected')}
+                      >
+                        Refuză
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
 
             <div className="flex items-center justify-between mb-3 mt-4">
               <p className="font-semibold text-sm">Membri ({members.length})</p>
