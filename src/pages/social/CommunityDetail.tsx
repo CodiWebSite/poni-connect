@@ -269,6 +269,37 @@ const CommunityDetail = () => {
     load();
   };
 
+  const requestJoin = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('community_join_requests')
+      .insert({ community_id: community.id, user_id: user.id, status: 'pending' });
+    if (error) return toast.error(error.message);
+    toast.success('Cerere trimisă. Admin-ii vor decide.');
+    load();
+  };
+
+  const cancelJoinRequest = async () => {
+    if (!myJoinRequestId) return;
+    const { error } = await supabase
+      .from('community_join_requests')
+      .update({ status: 'cancelled' })
+      .eq('id', myJoinRequestId);
+    if (error) return toast.error(error.message);
+    toast.success('Cerere anulată');
+    load();
+  };
+
+  const decideJoinRequest = async (id: string, decision: 'approved' | 'rejected') => {
+    const { error } = await supabase
+      .from('community_join_requests')
+      .update({ status: decision, decided_by: user?.id, decided_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) return toast.error(error.message);
+    toast.success(decision === 'approved' ? 'Cerere aprobată' : 'Cerere respinsă');
+    load();
+  };
+
   const leaveCommunity = async () => {
     if (!user) return;
     if (!confirm('Părăsești comunitatea?')) return;
@@ -292,6 +323,17 @@ const CommunityDetail = () => {
     if (error) return toast.error(error.message);
     toast.success('Nume actualizat');
     setEditingName(false);
+    load();
+  };
+
+  const saveDescription = async () => {
+    const { error } = await supabase
+      .from('communities')
+      .update({ description: descDraft.trim() || null })
+      .eq('id', community.id);
+    if (error) return toast.error(error.message);
+    toast.success('Descriere actualizată');
+    setEditingDesc(false);
     load();
   };
 
