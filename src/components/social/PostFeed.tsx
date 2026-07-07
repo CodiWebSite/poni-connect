@@ -661,7 +661,7 @@ const PostCard = ({
       .from('social_post_comments')
       .update({ content, edited_at: new Date().toISOString() })
       .eq('id', id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setComments((cs) => cs.map((c) => (c.id === id ? { ...c, content, edited_at: new Date().toISOString() } : c)));
   };
 
