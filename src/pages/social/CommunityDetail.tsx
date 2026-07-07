@@ -32,7 +32,9 @@ import {
   ShieldCheck,
   ShieldOff,
   UserMinus,
+  Clock,
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
