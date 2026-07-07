@@ -923,6 +923,19 @@ const PostCard = ({
           Comentează
           {post.comment_count > 0 && <span>· {post.comment_count}</span>}
         </Button>
+
+        <div className="flex-1" />
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onBookmark}
+          className={cn('rounded-xl gap-1.5', isBookmarked && 'text-primary')}
+          title={isBookmarked ? 'Elimină din salvate' : 'Salvează postarea'}
+        >
+          <Bookmark className={cn('w-4 h-4', isBookmarked && 'fill-current')} />
+          <span className="hidden sm:inline">{isBookmarked ? 'Salvat' : 'Salvează'}</span>
+        </Button>
       </div>
 
       {showComments && (
