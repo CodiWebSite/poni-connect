@@ -562,10 +562,13 @@ const PostCard = ({
   const [draft, setDraft] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState('');
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const name = author?.full_name || 'Coleg';
   const initials = name.substring(0, 2).toUpperCase();
   const canDelete = currentUserId === post.author_id;
+  const canEdit = currentUserId === post.author_id;
   const activeReaction = myReaction ? REACTIONS.find((r) => r.type === myReaction) : null;
 
   const loadComments = useCallback(async () => {
