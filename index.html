@@ -27,6 +27,37 @@
     <meta property="og:type" content="website" />
 
     <link rel="icon" type="image/png" href="/logo-icmpp.png" />
+
+    <!-- Emergency SW/cache kill-switch: runs once per browser after this deploy. -->
+    <!-- Fixes "white screen" caused by a stale service worker holding a broken cached bundle. -->
+    <script>
+      (function () {
+        try {
+          var KEY = 'icmpp_sw_reset_v20260709';
+          if (typeof window === 'undefined' || localStorage.getItem(KEY) === '1') return;
+          localStorage.setItem(KEY, '1');
+          var done = false;
+          var finish = function () {
+            if (done) return; done = true;
+            try { location.reload(); } catch (e) {}
+          };
+          setTimeout(finish, 3000);
+          var tasks = [];
+          if ('serviceWorker' in navigator) {
+            tasks.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(regs.map(function (r) { return r.unregister().catch(function(){}); }));
+            }).catch(function(){}));
+          }
+          if (typeof caches !== 'undefined' && caches.keys) {
+            tasks.push(caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k).catch(function(){}); }));
+            }).catch(function(){}));
+          }
+          if (tasks.length === 0) { done = true; return; }
+          Promise.all(tasks).then(finish).catch(finish);
+        } catch (e) { /* noop */ }
+      })();
+    </script>
   </head>
 
   <body>
