@@ -4316,6 +4316,15 @@ export type Database = {
       epd_same_department: { Args: { _epd_id: string }; Returns: boolean }
       generate_leave_request_number: { Args: never; Returns: string }
       generate_procurement_request_number: { Args: never; Returns: string }
+      get_leave_replacement_options: {
+        Args: { _employee_epd_id: string }
+        Returns: {
+          first_name: string
+          id: string
+          job_position: string
+          last_name: string
+        }[]
+      }
       get_meeting_default_recipients: { Args: never; Returns: string[] }
       get_user_department: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
