@@ -1821,6 +1821,59 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_replacement_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          employee_epd_id: string
+          id: string
+          replacement_epd_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          employee_epd_id: string
+          id?: string
+          replacement_epd_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          employee_epd_id?: string
+          id?: string
+          replacement_epd_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_replacement_overrides_employee_epd_id_fkey"
+            columns: ["employee_epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_replacement_overrides_employee_epd_id_fkey"
+            columns: ["employee_epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_replacement_overrides_replacement_epd_id_fkey"
+            columns: ["replacement_epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_replacement_overrides_replacement_epd_id_fkey"
+            columns: ["replacement_epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_requests: {
         Row: {
           approver_id: string | null
