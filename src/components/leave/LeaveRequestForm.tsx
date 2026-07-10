@@ -122,14 +122,40 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
           .eq('is_archived', false)
           .neq('id', pd.id);
 
+        // Fetch cross-department replacement overrides for this employee
+        const { data: overrides } = await supabase
+          .from('leave_replacement_overrides')
+          .select('replacement_epd_id')
+          .eq('employee_epd_id', pd.id);
+
+        const overrideIds = (overrides || []).map(o => o.replacement_epd_id);
+        let overrideColleagues: Array<{ id: string; first_name: string; last_name: string; position: string | null }> = [];
+        if (overrideIds.length > 0) {
+          const { data: extra } = await supabase
+            .from('employee_personal_data')
+            .select('id, first_name, last_name, position')
+            .in('id', overrideIds)
+            .eq('is_archived', false);
+          overrideColleagues = extra || [];
+        }
+
+        const merged = [...(deptColleagues || []), ...overrideColleagues];
+        const seen = new Set<string>();
+        const unique = merged.filter(c => {
+          if (seen.has(c.id)) return false;
+          seen.add(c.id);
+          return true;
+        });
+
         setColleagues(
-          (deptColleagues || []).map(c => ({
+          unique.map(c => ({
             id: c.id,
             name: `${c.last_name} ${c.first_name}`,
             position: c.position,
           }))
         );
       }
+
 
       // Fetch carryover & bonus
       const currentYear = new Date().getFullYear();
