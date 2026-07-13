@@ -21,6 +21,8 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = true
   [functions.test-email]
     verify_jwt = true
+  [functions.send-social-guide-email]
+    verify_jwt = false
   [functions.verify-turnstile]
     verify_jwt = false
   [functions.cleanup-audit-logs]
