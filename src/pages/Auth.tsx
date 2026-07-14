@@ -21,6 +21,17 @@ import { BiometricUnlockButton } from '@/components/native/BiometricUnlockButton
 
 const TURNSTILE_SITE_KEY = '0x4AAAAAACGNQ32sLxuYBXgD';
 
+const isTurnstileRequired = () => {
+  if (typeof window === 'undefined') return true;
+  const hostname = window.location.hostname;
+  return !(
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.lovable.app') ||
+    hostname.endsWith('.lovableproject.com')
+  );
+};
+
 const loginSchema = z.object({
   email: z.string().email('Adresă de email invalidă'),
   password: z.string().min(6, 'Parola trebuie să aibă cel puțin 6 caractere'),
@@ -92,6 +103,7 @@ const Auth = () => {
   const signupTurnstileRef = useRef<TurnstileInstance>(null);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const requiresTurnstile = isTurnstileRequired();
 
   useEffect(() => {
     if (user) {
@@ -131,13 +143,13 @@ const Auth = () => {
       }
     }
 
-    if (!loginToken) {
+    if (requiresTurnstile && !loginToken) {
       toast.error('Te rugăm să completezi verificarea CAPTCHA');
       setIsLoading(false);
       return;
     }
 
-    const isValid = await verifyTurnstile(loginToken);
+    const isValid = !requiresTurnstile || await verifyTurnstile(loginToken!);
     if (!isValid) {
       toast.error('Verificarea CAPTCHA a eșuat. Te rugăm să încerci din nou.');
       loginTurnstileRef.current?.reset();
@@ -180,13 +192,13 @@ const Auth = () => {
       }
     }
 
-    if (!signupToken) {
+    if (requiresTurnstile && !signupToken) {
       toast.error('Te rugăm să completezi verificarea CAPTCHA');
       setIsLoading(false);
       return;
     }
 
-    const isValid = await verifyTurnstile(signupToken);
+    const isValid = !requiresTurnstile || await verifyTurnstile(signupToken!);
     if (!isValid) {
       toast.error('Verificarea CAPTCHA a eșuat. Te rugăm să încerci din nou.');
       signupTurnstileRef.current?.reset();
@@ -452,40 +464,41 @@ const Auth = () => {
                     </button>
                   </div>
 
-                  <div className="flex flex-col items-center gap-3 rounded-lg overflow-hidden w-full [&>div]:max-w-full">
-
-                    <Turnstile
-                      ref={loginTurnstileRef}
-                      siteKey={TURNSTILE_SITE_KEY}
-                      onSuccess={(token) => { setLoginToken(token); setLoginCaptchaError(false); }}
-                      onError={() => {
-                        setLoginToken(null);
-                        setLoginCaptchaError(true);
-                      }}
-                      onExpire={() => setLoginToken(null)}
-                      options={{
-                        theme: 'auto',
-                      }}
-                    />
-                    {loginCaptchaError && (
-                      <div className="text-center space-y-2">
-                        <p className="text-sm text-destructive">
-                          Verificarea CAPTCHA nu a putut fi încărcată. Acest lucru se poate întâmpla în anumite browsere sau rețele.
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setLoginCaptchaError(false);
-                            loginTurnstileRef.current?.reset();
-                          }}
-                        >
-                          Reîncearcă CAPTCHA
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  {requiresTurnstile && (
+                    <div className="flex flex-col items-center gap-3 rounded-lg overflow-hidden w-full [&>div]:max-w-full">
+                      <Turnstile
+                        ref={loginTurnstileRef}
+                        siteKey={TURNSTILE_SITE_KEY}
+                        onSuccess={(token) => { setLoginToken(token); setLoginCaptchaError(false); }}
+                        onError={() => {
+                          setLoginToken(null);
+                          setLoginCaptchaError(true);
+                        }}
+                        onExpire={() => setLoginToken(null)}
+                        options={{
+                          theme: 'auto',
+                        }}
+                      />
+                      {loginCaptchaError && (
+                        <div className="text-center space-y-2">
+                          <p className="text-sm text-destructive">
+                            Verificarea CAPTCHA nu a putut fi încărcată. Acest lucru se poate întâmpla în anumite browsere sau rețele.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setLoginCaptchaError(false);
+                              loginTurnstileRef.current?.reset();
+                            }}
+                          >
+                            Reîncearcă CAPTCHA
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
                     {isLoading ? 'Se procesează...' : 'Autentificare'}
@@ -538,39 +551,41 @@ const Auth = () => {
                     />
                   </div>
 
-                  <div className="flex flex-col items-center gap-3 rounded-lg overflow-hidden w-full [&>div]:max-w-full">
-                    <Turnstile
-                      ref={signupTurnstileRef}
-                      siteKey={TURNSTILE_SITE_KEY}
-                      onSuccess={(token) => { setSignupToken(token); setSignupCaptchaError(false); }}
-                      onError={() => {
-                        setSignupToken(null);
-                        setSignupCaptchaError(true);
-                      }}
-                      onExpire={() => setSignupToken(null)}
-                      options={{
-                        theme: 'auto',
-                      }}
-                    />
-                    {signupCaptchaError && (
-                      <div className="text-center space-y-2">
-                        <p className="text-sm text-destructive">
-                          Verificarea CAPTCHA nu a putut fi încărcată. Încearcă să accesezi site-ul direct la <strong>intranet.icmpp.ro</strong> sau reîncearcă.
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSignupCaptchaError(false);
-                            signupTurnstileRef.current?.reset();
-                          }}
-                        >
-                          Reîncearcă CAPTCHA
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  {requiresTurnstile && (
+                    <div className="flex flex-col items-center gap-3 rounded-lg overflow-hidden w-full [&>div]:max-w-full">
+                      <Turnstile
+                        ref={signupTurnstileRef}
+                        siteKey={TURNSTILE_SITE_KEY}
+                        onSuccess={(token) => { setSignupToken(token); setSignupCaptchaError(false); }}
+                        onError={() => {
+                          setSignupToken(null);
+                          setSignupCaptchaError(true);
+                        }}
+                        onExpire={() => setSignupToken(null)}
+                        options={{
+                          theme: 'auto',
+                        }}
+                      />
+                      {signupCaptchaError && (
+                        <div className="text-center space-y-2">
+                          <p className="text-sm text-destructive">
+                            Verificarea CAPTCHA nu a putut fi încărcată. Încearcă să accesezi site-ul direct la <strong>intranet.icmpp.ro</strong> sau reîncearcă.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSignupCaptchaError(false);
+                              signupTurnstileRef.current?.reset();
+                            }}
+                          >
+                            Reîncearcă CAPTCHA
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
                     {isLoading ? 'Se procesează...' : 'Creare cont'}
