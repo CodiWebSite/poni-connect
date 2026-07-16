@@ -37,7 +37,8 @@ export function useUserRole() {
         'super_admin', 'hr', 'sef_srus', 'salarizare', 'sef',
         'director_institut', 'director_adjunct', 'secretar_stiintific',
         'bibliotecar', 'achizitii', 'contabilitate', 'oficiu_juridic',
-        'compartiment_comunicare', 'secretariat', 'medic_medicina_muncii', 'user'
+        'compartiment_comunicare', 'secretariat', 'medic_medicina_muncii',
+        'pensionar_colaborator', 'user'
       ];
 
       const assignedRoles = data
