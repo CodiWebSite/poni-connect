@@ -209,6 +209,7 @@ const HRManagement = () => {
                 <TabsTrigger value="reports" className="gap-1.5 text-xs px-2.5 py-1.5"><BarChart3 className="h-3.5 w-3.5" /><span className="hidden md:inline">Rapoarte</span></TabsTrigger>
                 <TabsTrigger value="certificates" className="gap-1.5 text-xs px-2.5 py-1.5"><Award className="h-3.5 w-3.5" /><span className="hidden md:inline">Adeverințe</span></TabsTrigger>
                 <TabsTrigger value="dossier" className="gap-1.5 text-xs px-2.5 py-1.5"><FolderOpen className="h-3.5 w-3.5" /><span className="hidden md:inline">Dosare</span></TabsTrigger>
+                <TabsTrigger value="pensionari" className="gap-1.5 text-xs px-2.5 py-1.5"><Award className="h-3.5 w-3.5" /><span className="hidden md:inline">Pensionari</span></TabsTrigger>
               </TabsList>
             </div>
           </div>
