@@ -57,7 +57,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { role, allRoles, isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
+  const { role, allRoles, isSuperAdmin, isRealSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
   const { isDesignatedApprover } = useIsApprover();
   const { canAccessPage } = usePageAccess();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
@@ -83,7 +83,7 @@ const Sidebar = () => {
 
   // Fetch pending counts for badges
   useEffect(() => {
-    if (!canManageHR && !isSuperAdmin && !isSef && !isSefSRUS && !isDesignatedApprover) return;
+    if (!canManageHR && !isSuperAdmin && !isRealSuperAdmin && !isSef && !isSefSRUS && !isDesignatedApprover) return;
     const fetchCounts = async () => {
       // Leave requests badge - filtered by department for non-super_admin
       if (canManageHR || isSef || isSefSRUS || isDesignatedApprover) {
@@ -154,7 +154,7 @@ const Sidebar = () => {
       }
 
       // Account requests badge - for super admin only
-      if (isSuperAdmin) {
+      if (isRealSuperAdmin) {
         const [{ count: accCount }, { count: hdCount }] = await Promise.all([
           supabase.from('account_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
           supabase.from('helpdesk_tickets' as any).select('id', { count: 'exact', head: true }).eq('status', 'open'),
@@ -164,7 +164,7 @@ const Sidebar = () => {
       }
     };
     fetchCounts();
-  }, [canManageHR, isSuperAdmin, isSef, isSefSRUS, isDesignatedApprover, user]);
+  }, [canManageHR, isSuperAdmin, isRealSuperAdmin, isSef, isSefSRUS, isDesignatedApprover, user]);
 
   // Fetch total unread chat messages count
   useEffect(() => {
