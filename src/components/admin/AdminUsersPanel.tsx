@@ -42,6 +42,7 @@ const roleLabels: Record<string, string> = {
   oficiu_juridic: 'Oficiu Juridic',
   compartiment_comunicare: 'Comunicare',
   medic_medicina_muncii: 'Medic Muncii',
+  pensionar_colaborator: 'Pensionar colaborator',
   user: 'Angajat',
 };
 
@@ -61,6 +62,7 @@ const roleBadgeColors: Record<string, string> = {
   oficiu_juridic: 'bg-slate-600 text-white',
   compartiment_comunicare: 'bg-fuchsia-600 text-white',
   medic_medicina_muncii: 'bg-pink-600 text-white',
+  pensionar_colaborator: 'bg-stone-500 text-white',
   user: 'bg-muted text-muted-foreground',
 };
 
