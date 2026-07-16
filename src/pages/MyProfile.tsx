@@ -119,6 +119,7 @@ const leaveStatusConfig: Record<string, { label: string; variant: 'default' | 's
 
 const roleLabels: Record<string, string> = {
   user: 'Angajat', super_admin: 'Super Administrator', hr: 'HR (SRUS)',
+  pensionar_colaborator: 'Pensionar colaborator',
 };
 
 const getDocIcon = (name: string) => {
