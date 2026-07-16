@@ -4452,6 +4452,7 @@ export type Database = {
         | "oficiu_juridic"
         | "compartiment_comunicare"
         | "medic_medicina_muncii"
+        | "pensionar_colaborator"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
       community_member_role: "admin" | "member" | "moderator"
       community_visibility: "public" | "private"
@@ -4659,6 +4660,7 @@ export const Constants = {
         "oficiu_juridic",
         "compartiment_comunicare",
         "medic_medicina_muncii",
+        "pensionar_colaborator",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
       community_member_role: ["admin", "member", "moderator"],

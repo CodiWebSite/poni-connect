@@ -30,6 +30,8 @@ import DocumentsExpirationsPanel from '@/components/hr/DocumentsExpirationsPanel
 import HRRequestsInbox from '@/components/hr/HRRequestsInbox';
 import HRNotificationsRules from '@/components/hr/HRNotificationsRules';
 
+import PensionariManager from '@/components/hr/PensionariManager';
+
 import {
   Users, LayoutDashboard, FileText, Upload, Calendar, UserCheck,
   RefreshCw, UserPlus, FilePlus2, FolderOpen, Shield, Bell,
@@ -207,6 +209,7 @@ const HRManagement = () => {
                 <TabsTrigger value="reports" className="gap-1.5 text-xs px-2.5 py-1.5"><BarChart3 className="h-3.5 w-3.5" /><span className="hidden md:inline">Rapoarte</span></TabsTrigger>
                 <TabsTrigger value="certificates" className="gap-1.5 text-xs px-2.5 py-1.5"><Award className="h-3.5 w-3.5" /><span className="hidden md:inline">Adeverințe</span></TabsTrigger>
                 <TabsTrigger value="dossier" className="gap-1.5 text-xs px-2.5 py-1.5"><FolderOpen className="h-3.5 w-3.5" /><span className="hidden md:inline">Dosare</span></TabsTrigger>
+                <TabsTrigger value="pensionari" className="gap-1.5 text-xs px-2.5 py-1.5"><Award className="h-3.5 w-3.5" /><span className="hidden md:inline">Pensionari</span></TabsTrigger>
               </TabsList>
             </div>
           </div>
@@ -254,6 +257,8 @@ const HRManagement = () => {
         <TabsContent value="certificates"><CertificateGenerator employees={employees.map(e => ({ id: e.id, first_name: e.first_name, last_name: e.last_name, cnp: e.cnp, full_name: e.full_name, email: e.email, department: e.department, position: e.position, grade: e.grade, employment_date: e.employment_date, contract_type: e.contract_type, total_leave_days: e.total_leave_days, used_leave_days: e.used_leave_days, hasAccount: e.hasAccount }))} /></TabsContent>
 
         <TabsContent value="dossier"><EmployeeDigitalDossier employees={employees.map(e => ({ id: e.id, first_name: e.first_name, last_name: e.last_name, cnp: e.cnp, full_name: e.full_name, email: e.email, department: e.department, position: e.position, employment_date: e.employment_date, hasAccount: e.hasAccount, employee_record_id: e.employee_record_id, user_id: e.user_id }))} /></TabsContent>
+
+        <TabsContent value="pensionari"><PensionariManager /></TabsContent>
       </Tabs>
     </MainLayout>
   );

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
 
-export type AppRole = 'user' | 'super_admin' | 'hr' | 'sef' | 'sef_srus' | 'director_institut' | 'director_adjunct' | 'secretar_stiintific' | 'bibliotecar' | 'salarizare' | 'achizitii' | 'contabilitate' | 'oficiu_juridic' | 'compartiment_comunicare' | 'secretariat' | 'medic_medicina_muncii';
+export type AppRole = 'user' | 'super_admin' | 'hr' | 'sef' | 'sef_srus' | 'director_institut' | 'director_adjunct' | 'secretar_stiintific' | 'bibliotecar' | 'salarizare' | 'achizitii' | 'contabilitate' | 'oficiu_juridic' | 'compartiment_comunicare' | 'secretariat' | 'medic_medicina_muncii' | 'pensionar_colaborator';
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -37,7 +37,8 @@ export function useUserRole() {
         'super_admin', 'hr', 'sef_srus', 'salarizare', 'sef',
         'director_institut', 'director_adjunct', 'secretar_stiintific',
         'bibliotecar', 'achizitii', 'contabilitate', 'oficiu_juridic',
-        'compartiment_comunicare', 'secretariat', 'medic_medicina_muncii', 'user'
+        'compartiment_comunicare', 'secretariat', 'medic_medicina_muncii',
+        'pensionar_colaborator', 'user'
       ];
 
       const assignedRoles = data
