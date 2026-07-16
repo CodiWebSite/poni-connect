@@ -30,6 +30,8 @@ import DocumentsExpirationsPanel from '@/components/hr/DocumentsExpirationsPanel
 import HRRequestsInbox from '@/components/hr/HRRequestsInbox';
 import HRNotificationsRules from '@/components/hr/HRNotificationsRules';
 
+import PensionariManager from '@/components/hr/PensionariManager';
+
 import {
   Users, LayoutDashboard, FileText, Upload, Calendar, UserCheck,
   RefreshCw, UserPlus, FilePlus2, FolderOpen, Shield, Bell,
