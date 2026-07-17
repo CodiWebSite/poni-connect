@@ -154,7 +154,10 @@ export default function DbHealthOverlay() {
             </Button>
 
             <p className="text-white/40 text-xs mt-6">
-              Dacă problema persistă, contactează administratorul: <a href="mailto:it@icmpp.ro" className="underline">it@icmpp.ro</a>
+              Dacă problema persistă, contactează administratorul:{' '}
+              <a href="mailto:admin@icmpp.ro" className="underline">admin@icmpp.ro</a>
+              {' '}sau{' '}
+              <a href="mailto:condrea.codrin@icmpp.ro" className="underline">condrea.codrin@icmpp.ro</a>
             </p>
           </>
         )}
