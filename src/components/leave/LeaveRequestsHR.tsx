@@ -112,10 +112,9 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const fetchAllRequests = async () => {
     setLoading(true);
 
-    // Centralizarea HR afișează mereu cererile reale, indiferent de modul Sandbox/Demo.
-    const query: any = (supabase.from('leave_requests').select('*') as any)
-      .or('is_demo.eq.false,is_demo.is.null');
-    const { data, error } = await query.order('created_at', { ascending: false }) as { data: any[] | null; error: any };
+    // Centralizarea HR folosește citirea optimizată din backend: verifică rolul HR o singură dată
+    // și evită evaluarea tuturor politicilor RLS pe fiecare rând, care cauza timeout.
+    const { data, error } = await (supabase.rpc('get_hr_leave_requests' as any) as any) as { data: any[] | null; error: any };
 
     if (error) {
       console.error('Error fetching leave requests:', error);
