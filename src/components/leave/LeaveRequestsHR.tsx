@@ -46,6 +46,8 @@ interface LeaveRequestRow {
   epd_id?: string;
   user_id: string;
   source_label?: string;
+  current_year_remaining_at_request?: number;
+  carryover_remaining_at_request?: number;
 }
 
 const statusLabels: Record<string, string> = {
@@ -133,7 +135,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       epdIds.length
         ? supabase
             .from('employee_personal_data')
-            .select('id, first_name, last_name, department, position, grade, employee_record_id')
+            .select('id, first_name, last_name, department, position, grade, employee_record_id, total_leave_days, used_leave_days')
             .in('id', epdIds)
         : Promise.resolve({ data: [] as any[] }),
       allApproverIds.length
@@ -150,7 +152,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
-    const epdMap: Record<string, { name: string; department: string; position: string; grade: string }> = {};
+    const epdMap: Record<string, { name: string; department: string; position: string; grade: string; total_leave_days: number; used_leave_days: number }> = {};
     const epdToRecordId: Record<string, string> = {};
     (epdRes.data || []).forEach((e: any) => {
       epdMap[e.id] = {
@@ -158,6 +160,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         department: e.department || '',
         position: e.position || '',
         grade: e.grade || '',
+        total_leave_days: e.total_leave_days ?? 0,
+        used_leave_days: e.used_leave_days ?? 0,
       };
       if (e.employee_record_id) epdToRecordId[e.id] = e.employee_record_id;
     });
@@ -208,6 +212,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     // - dacă aprobarea curentă tocmai a actualizat același report, o marcăm ca Report fără dublă scădere
     const approvedData = (data || []).filter((r: any) => r.status === 'approved' || r.status === 'pending_srus' || r.status === 'pending_department_head');
     const sourceLabels: Record<string, string> = {};
+    const requestBalances: Record<string, { currentYearRemaining: number; carryoverRemaining: number }> = {};
 
     // Group by epd_id
     const byEpd: Record<string, any[]> = {};
@@ -233,7 +238,16 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         const carryovers = carryoverMap[epdId] || [];
         const relevantCarryover = carryovers.find(c => c.to_year === year && c.from_year === year - 1);
 
-        let carryoverRemaining = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
+        const approvedTrackedDays = yearReqs
+          .filter(r => r.status === 'approved')
+          .reduce((sum, r) => sum + (Number(r.working_days) || 0), 0);
+        const carryoverInitial = Math.max(relevantCarryover?.initial_days ?? relevantCarryover?.remaining_days ?? 0, 0);
+        const carryoverFinal = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
+        const currentYearFinal = Math.max(0, (epdMap[epdId]?.total_leave_days ?? 0) - (epdMap[epdId]?.used_leave_days ?? 0));
+        const carryoverConsumed = Math.max(0, carryoverInitial - carryoverFinal);
+        const currentYearApprovedConsumed = Math.max(0, approvedTrackedDays - carryoverConsumed);
+        let carryoverRemaining = carryoverInitial;
+        let currentYearRemaining = currentYearFinal + currentYearApprovedConsumed;
 
         yearReqs.sort((a, b) => {
           const byStartDate = (a.start_date || '').localeCompare(b.start_date || '');
@@ -243,6 +257,10 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
         yearReqs.forEach(r => {
           const days = Number(r.working_days) || 0;
+          requestBalances[r.id] = {
+            currentYearRemaining,
+            carryoverRemaining,
+          };
           const requestUpdatedAt = r.updated_at ? new Date(r.updated_at).getTime() : 0;
           const carryoverUpdatedAt = relevantCarryover?.updated_at ? new Date(relevantCarryover.updated_at).getTime() : 0;
           const requestJustUpdatedCarryover = r.status === 'approved'
@@ -263,6 +281,13 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
             sourceLabels[r.id] = `Report ${year - 1} + Sold ${year}`;
             carryoverRemaining = 0;
           }
+
+          if ((r.status === 'approved' || r.status === 'pending_srus' || r.status === 'pending_department_head') && days > 0) {
+            const fromCarryover = Math.min(days, requestBalances[r.id].carryoverRemaining);
+            const fromCurrentYear = days - fromCarryover;
+            carryoverRemaining = Math.max(0, requestBalances[r.id].carryoverRemaining - fromCarryover);
+            currentYearRemaining = Math.max(0, requestBalances[r.id].currentYearRemaining - fromCurrentYear);
+          }
         });
       });
     });
@@ -279,6 +304,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         director_name: r.director_id ? approverMap[r.director_id] || '' : '',
         avatar_url: r.epd_id ? avatarMap[r.epd_id] || null : null,
         source_label: sourceLabels[r.id] || `Sold ${r.year}`,
+        current_year_remaining_at_request: requestBalances[r.id]?.currentYearRemaining,
+        carryover_remaining_at_request: requestBalances[r.id]?.carryoverRemaining,
       }))
     );
     setLoading(false);
@@ -342,6 +369,9 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         carryoverDays,
         carryoverInitialDays,
         carryoverFromYear,
+        leaveSourceLabel: request.source_label,
+        currentYearRemainingAtRequest: request.current_year_remaining_at_request,
+        carryoverRemainingAtRequest: request.carryover_remaining_at_request,
         srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
         srusSignature: (lrData as any)?.srus_signature || undefined,
         srusSignedAt: (lrData as any)?.srus_signed_at || undefined,
