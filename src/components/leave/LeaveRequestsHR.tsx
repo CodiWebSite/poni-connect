@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useDemoMode } from '@/contexts/DemoModeContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,7 +70,6 @@ interface LeaveRequestsHRProps {
 
 export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const { toast } = useToast();
-  const { isDemo } = useDemoMode();
   const [requests, setRequests] = useState<LeaveRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,9 +112,9 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   const fetchAllRequests = async () => {
     setLoading(true);
 
-    let query: any = (supabase.from('leave_requests').select('*') as any);
-    // În mod real (nu demo) includem și cererile vechi unde is_demo este NULL
-    query = isDemo ? query.eq('is_demo', true) : query.or('is_demo.eq.false,is_demo.is.null');
+    // Centralizarea HR afișează mereu cererile reale, indiferent de modul Sandbox/Demo.
+    const query: any = (supabase.from('leave_requests').select('*') as any)
+      .or('is_demo.eq.false,is_demo.is.null');
     const { data, error } = await query.order('created_at', { ascending: false }) as { data: any[] | null; error: any };
 
     if (error) {
@@ -423,8 +421,6 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
   };
 
   const deductLeaveDays = async (request: LeaveRequestRow) => {
-    // Skip deduction in demo mode to protect real balances
-    if (isDemo) return;
     if (!request.epd_id) return;
     const currentYear = new Date().getFullYear();
     let daysToDeduct = request.working_days;
