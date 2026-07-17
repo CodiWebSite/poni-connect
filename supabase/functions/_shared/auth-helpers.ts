@@ -75,9 +75,10 @@ export async function requireRole(
     .from("user_roles")
     .select("role")
     .eq("user_id", auth.userId)
+    .eq("role", requiredRole)
     .maybeSingle();
 
-  if (!roleData || roleData.role !== requiredRole) {
+  if (!roleData) {
     return {
       error: new Response(
         JSON.stringify({ error: "Nu ai permisiuni pentru această acțiune." }),

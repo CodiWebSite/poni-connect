@@ -37,9 +37,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check caller role
-    const { data: roleData } = await callerClient.from('user_roles').select('role').eq('user_id', caller.id).single();
-    if (!roleData || roleData.role !== 'super_admin') {
+    // Check caller role (user may have multiple roles — filter for super_admin specifically)
+    const { data: roleData } = await callerClient.from('user_roles').select('role').eq('user_id', caller.id).eq('role', 'super_admin').maybeSingle();
+    if (!roleData) {
       return new Response(JSON.stringify({ error: 'Doar Super Admin poate reseta 2FA.' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
