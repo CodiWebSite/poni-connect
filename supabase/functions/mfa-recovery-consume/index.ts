@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     const { data: factorsRes } = await admin.auth.admin.mfa.listFactors({ userId: user.id });
     const verified = (factorsRes?.factors ?? []).filter((f: any) => f.status === "verified");
     for (const f of verified) {
-      await admin.auth.admin.mfa.deleteFactor({ userId: user.id, factorId: f.id });
+      await admin.auth.admin.mfa.deleteFactor({ userId: user.id, id: f.id });
     }
 
     // Revoke all trusted devices

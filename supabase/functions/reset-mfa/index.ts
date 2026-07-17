@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     for (const factor of verifiedFactors) {
       const { error: unenrollError } = await adminClient.auth.admin.mfa.deleteFactor({
         userId,
-        factorId: factor.id,
+        id: factor.id,
       });
       if (unenrollError) {
         return new Response(JSON.stringify({ error: `Eroare la ștergerea factorului: ${unenrollError.message}` }), {
