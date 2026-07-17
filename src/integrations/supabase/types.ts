@@ -4316,6 +4316,49 @@ export type Database = {
       epd_same_department: { Args: { _epd_id: string }; Returns: boolean }
       generate_leave_request_number: { Args: never; Returns: string }
       generate_procurement_request_number: { Args: never; Returns: string }
+      get_hr_leave_requests: {
+        Args: never
+        Returns: {
+          approver_id: string | null
+          created_at: string
+          dept_head_approved_at: string | null
+          dept_head_id: string | null
+          dept_head_ip: string | null
+          dept_head_notes: string | null
+          dept_head_signature: string | null
+          director_approved_at: string | null
+          director_id: string | null
+          director_notes: string | null
+          employee_signature: string | null
+          employee_signed_at: string | null
+          end_date: string
+          epd_id: string | null
+          id: string
+          is_demo: boolean
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          replacement_name: string
+          replacement_position: string | null
+          request_number: string
+          srus_ip: string | null
+          srus_officer_name: string | null
+          srus_signature: string | null
+          srus_signed_at: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["leave_request_status"]
+          updated_at: string
+          user_id: string
+          working_days: number
+          year: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "leave_requests"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_leave_replacement_options: {
         Args: { _employee_epd_id: string }
         Returns: {
