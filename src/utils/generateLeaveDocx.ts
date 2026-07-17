@@ -140,23 +140,10 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const usedDays = usedLeaveDays ?? 0;
   const carryover = carryoverDays ?? 0;
 
-  // SRUS trebuie să arate soldul de report dinaintea cererii curente (nu soldul rămas după cerere și nici totalul anual inițial).
-  const carryoverBeforeRequest = carryover > 0 && workingDays > 0
-    ? carryover + workingDays
-    : carryover;
-
-  // Show pre-leave current-year balance (before this request was deducted)
-  let preLeaveCurrentUsed = usedDays;
-
-  if (carryover > 0 && workingDays > 0) {
-    // Request consumed carryover; current-year pool stays untouched
-    preLeaveCurrentUsed = usedDays;
-  } else {
-    // Request consumed current-year pool
-    preLeaveCurrentUsed = Math.max(0, usedDays - workingDays);
-  }
-
-  const remainingCurrentYear = totalCurrentYear - preLeaveCurrentUsed;
+  // Documentul trebuie să reflecte EXACT soldul rămas afișat în Gestiune HR
+  // (starea după deducerea cererii curente). FIFO: carryover se consumă primul.
+  const remainingCurrentYear = Math.max(0, totalCurrentYear - usedDays);
+  const carryoverBeforeRequest = carryover; // rămas după cerere (0 dacă a fost consumat integral)
   const totalSold = remainingCurrentYear + carryoverBeforeRequest;
 
   const periodText = formattedEndDate
