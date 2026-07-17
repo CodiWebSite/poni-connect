@@ -17,6 +17,7 @@ import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
 import { supabase } from "@/integrations/supabase/client";
 
 import IrisButton from "@/components/iris/IrisButton";
+import DbHealthOverlay from "@/components/system/DbHealthOverlay";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 
@@ -230,6 +231,7 @@ const App = () => (
           <Sonner />
           <GlobalChatNotifier />
           <ImpersonationBanner />
+          <DbHealthOverlay />
           <BrowserRouter>
             <MFAGuard>
             <IrisButton />
