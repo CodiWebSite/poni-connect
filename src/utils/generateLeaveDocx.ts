@@ -38,6 +38,10 @@ interface LeaveDocxParams {
   carryoverDays?: number;
   carryoverInitialDays?: number;
   carryoverFromYear?: number;
+  leaveSourceLabel?: string;
+  balanceTiming?: 'current' | 'before_request';
+  currentYearRemainingAtRequest?: number;
+  carryoverRemainingAtRequest?: number;
   srusOfficerName?: string;
   srusSignature?: string | null;
   srusSignedAt?: string | null;
@@ -107,19 +111,28 @@ const t = (text: string, opts: Partial<{ bold: boolean; italics: boolean; size: 
 const tab = () => new TextRun({ text: '\t', font: FONT });
 const empty = (after = 0) => new Paragraph({ spacing: { after }, children: [] });
 
+function extractSourceYear(sourceLabel?: string): number | undefined {
+  const match = sourceLabel?.match(/(?:Report|Sold)\s+(\d{4})/i);
+  return match ? Number(match[1]) : undefined;
+}
+
 export async function generateLeaveDocx(params: LeaveDocxParams) {
   const {
     employeeName, employeePosition, employeeGrade, department, workingDays, year, leaveSourceYear,
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
-    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverInitialDays, carryoverFromYear, srusOfficerName, srusSignature,
+    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverInitialDays, carryoverFromYear, leaveSourceLabel, balanceTiming,
+    currentYearRemainingAtRequest, carryoverRemainingAtRequest, srusOfficerName, srusSignature,
     srusSignedAt, srusIP,
     approvalDate, deptHeadSignature, deptHeadName, deptHeadIP, deptHeadSignedAt,
     directorName, directorApprovalDate,
   } = params;
 
-  // Determine which year to show: explicit leaveSourceYear, or derive from carryover info
-  const displayYear = leaveSourceYear || (carryoverDays && carryoverDays > 0 && carryoverFromYear ? carryoverFromYear : year);
+  const sourceYearFromLabel = extractSourceYear(leaveSourceLabel);
+  const effectiveLeaveSourceYear = leaveSourceYear || sourceYearFromLabel;
+
+  // Determine which year to show: explicit/source label, or derive from carryover info
+  const displayYear = effectiveLeaveSourceYear || (carryoverDays && carryoverDays > 0 && carryoverFromYear ? carryoverFromYear : year);
 
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = endDate ? formatDate(endDate) : '';
@@ -139,11 +152,41 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const totalCurrentYear = totalLeaveDays ?? 0;
   const usedDays = usedLeaveDays ?? 0;
   const carryover = carryoverDays ?? 0;
+  const requestDays = Math.max(0, workingDays || 0);
 
-  // Documentul trebuie să reflecte EXACT soldul rămas afișat în Gestiune HR
-  // (starea după deducerea cererii curente). FIFO: carryover se consumă primul.
-  const remainingCurrentYear = Math.max(0, totalCurrentYear - usedDays);
-  const carryoverBeforeRequest = carryover; // rămas după cerere (0 dacă a fost consumat integral)
+  // Documentul spune „La această dată”, deci soldul trebuie afișat ÎNAINTE de concediul curent.
+  // După aprobare baza de date are deja zilele scăzute; pentru document adăugăm înapoi doar cererea curentă.
+  let remainingCurrentYear = Math.max(0, totalCurrentYear - usedDays);
+  let carryoverBeforeRequest = Math.max(0, carryover);
+  const hasExplicitRequestBalance = currentYearRemainingAtRequest !== undefined || carryoverRemainingAtRequest !== undefined;
+
+  if (currentYearRemainingAtRequest !== undefined) {
+    remainingCurrentYear = Math.max(0, currentYearRemainingAtRequest);
+  }
+  if (carryoverRemainingAtRequest !== undefined) {
+    carryoverBeforeRequest = Math.max(0, carryoverRemainingAtRequest);
+  }
+
+  if (!hasExplicitRequestBalance && isApproved && balanceTiming !== 'before_request' && requestDays > 0) {
+    const source = leaveSourceLabel || '';
+    const isCarryoverSource = source.startsWith('Report') || (!!effectiveLeaveSourceYear && effectiveLeaveSourceYear !== year);
+    const isMixedSource = source.includes('+');
+
+    if (isMixedSource && source.includes('Report')) {
+      const maxCarryoverToRestore = Math.max(0, (carryoverInitialDays ?? carryoverBeforeRequest) - carryoverBeforeRequest);
+      const restoredCarryover = Math.min(requestDays, maxCarryoverToRestore);
+      carryoverBeforeRequest += restoredCarryover;
+      remainingCurrentYear += requestDays - restoredCarryover;
+    } else if (isCarryoverSource) {
+      carryoverBeforeRequest += requestDays;
+    } else if (source.startsWith('Sold') || effectiveLeaveSourceYear === year) {
+      remainingCurrentYear += requestDays;
+    } else if (carryoverFromYear && carryoverBeforeRequest === 0 && (carryoverInitialDays ?? 0) > 0) {
+      carryoverBeforeRequest += requestDays;
+    } else {
+      remainingCurrentYear += requestDays;
+    }
+  }
   const totalSold = remainingCurrentYear + carryoverBeforeRequest;
 
   const periodText = formattedEndDate
