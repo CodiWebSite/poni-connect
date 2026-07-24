@@ -1,7 +1,7 @@
 {
   "imports": {
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
-    "pdf-lib": "npm:@cantoo/pdf-lib@1.21.1",
+    "pdf-lib": "https://esm.sh/@cantoo/pdf-lib@2.5.0?bundle",
     "pdfjs-dist": "npm:pdfjs-dist@4.4.168/legacy/build/pdf.mjs"
   }
 }
