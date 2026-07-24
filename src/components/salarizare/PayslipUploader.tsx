@@ -97,6 +97,16 @@ export default function PayslipUploader() {
   const [slips, setSlips] = useState<Slip[]>([]);
   const [employees, setEmployees] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{
+    phase: 'idle' | 'uploading' | 'detecting' | 'processing' | 'done' | 'failed';
+    processed: number;
+    total: number;
+    startedAt: number;
+    elapsedMs: number;
+    message: string;
+  } | null>(null);
+  const pollRef = useRef<number | null>(null);
+  const tickRef = useRef<number | null>(null);
 
   const loadBatches = async () => {
     const { data } = await supabase
@@ -126,11 +136,65 @@ export default function PayslipUploader() {
         .order('last_name');
       if (data) setEmployees(data);
     })();
+    return () => {
+      if (pollRef.current) window.clearInterval(pollRef.current);
+      if (tickRef.current) window.clearInterval(tickRef.current);
+    };
   }, []);
+
+  const stopPolling = () => {
+    if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
+    if (tickRef.current) { window.clearInterval(tickRef.current); tickRef.current = null; }
+  };
 
   const upload = async () => {
     if (!file) { toast.error('Selectați un fișier PDF'); return; }
     setUploading(true);
+    const startedAt = Date.now();
+    setProgress({ phase: 'uploading', processed: 0, total: 0, startedAt, elapsedMs: 0, message: 'Se încarcă fișierul către server…' });
+
+    // Elapsed timer
+    tickRef.current = window.setInterval(() => {
+      setProgress(p => p ? { ...p, elapsedMs: Date.now() - p.startedAt } : p);
+    }, 500);
+
+    // Poll for the newly created batch and its progress
+    const { data: userRes } = await supabase.auth.getUser();
+    const uid = userRes.user?.id;
+    let trackedBatchId: string | null = null;
+
+    pollRef.current = window.setInterval(async () => {
+      try {
+        if (!trackedBatchId && uid) {
+          const { data: b } = await supabase
+            .from('payslip_batches')
+            .select('id, total_slips, status, created_at')
+            .eq('uploaded_by', uid)
+            .gte('created_at', new Date(startedAt - 5000).toISOString())
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (b?.id) {
+            trackedBatchId = b.id;
+            setProgress(p => p ? { ...p, phase: 'processing', total: (b as any).total_slips ?? 0, message: 'Se împarte și se criptează fluturașii…' } : p);
+          } else {
+            setProgress(p => p ? { ...p, phase: 'detecting', message: 'Se detectează fluturașii în PDF…' } : p);
+          }
+        } else if (trackedBatchId) {
+          const [{ count }, { data: b }] = await Promise.all([
+            supabase.from('payslips').select('*', { count: 'exact', head: true }).eq('batch_id', trackedBatchId),
+            supabase.from('payslip_batches').select('total_slips, status').eq('id', trackedBatchId).maybeSingle(),
+          ]);
+          setProgress(p => p ? {
+            ...p,
+            processed: count ?? p.processed,
+            total: (b as any)?.total_slips ?? p.total,
+            phase: (b as any)?.status === 'ready' ? 'done' : (b as any)?.status === 'failed' ? 'failed' : 'processing',
+          } : p);
+        }
+      } catch { /* ignore polling errors */ }
+    }, 1500);
+
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -141,6 +205,7 @@ export default function PayslipUploader() {
       });
       if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la procesarea lotului'));
       if (data?.error) throw new Error(data.error);
+      setProgress(p => p ? { ...p, phase: 'done', processed: (data.matched ?? 0) + (data.unmatched ?? 0), total: (data.matched ?? 0) + (data.unmatched ?? 0), message: 'Finalizat.' } : p);
       toast.success(`Procesat: ${data.matched} asociați / ${data.unmatched} de revizuit`);
       setFile(null);
       await loadBatches();
@@ -148,9 +213,12 @@ export default function PayslipUploader() {
         setOpenBatch(data.batch_id);
         await loadSlips(data.batch_id);
       }
+      window.setTimeout(() => setProgress(null), 3000);
     } catch (e) {
+      setProgress(p => p ? { ...p, phase: 'failed', message: (e as Error).message || 'Eroare' } : p);
       toast.error((e as Error).message || 'Eroare la procesare');
     } finally {
+      stopPolling();
       setUploading(false);
     }
   };
