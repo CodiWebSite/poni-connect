@@ -375,7 +375,7 @@ function addBalanceSummarySheet(
 const Salarizare = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isSalarizare, loading: roleLoading } = useUserRole();
+  const { isSalarizare, isSuperAdmin, loading: roleLoading } = useUserRole();
   const [exporting, setExporting] = useState<string | null>(null);
 
   useEffect(() => {
