@@ -265,13 +265,13 @@ function parseSlipCells(cells: TextCell[]): DetectedSlip[] {
   return slips;
 }
 
-// ---------- Encryption ----------
-// Generate the cropped PDF with official pdf-lib, then encrypt with an edge-compatible PDF encryptor.
-async function encryptSubsetToPdf(
+// ---------- PDF crop (plain, unencrypted) ----------
+// Preview stage: keep the per-employee slip unencrypted so admins can review it.
+// Encryption happens only at distribution time (payslip-batch-action -> distribute_batch).
+async function cropSubsetToPdf(
   srcDoc: PDFDocument,
   pageIndex: number,
   cropBox: CropBox,
-  userPassword: string,
 ): Promise<Uint8Array> {
   const newDoc = await PDFDocument.create();
   const width = cropBox.right - cropBox.left;
@@ -279,29 +279,9 @@ async function encryptSubsetToPdf(
   const embedded = await newDoc.embedPage(srcDoc.getPage(pageIndex), cropBox);
   const page = newDoc.addPage([width, height]);
   page.drawPage(embedded, { x: 0, y: 0, width, height });
-
-  const plainBytes = await newDoc.save();
-  const bytes = await encryptPDF(plainBytes, userPassword, {
-    ownerPassword: crypto.randomUUID().replace(/-/g, ""),
-    algorithm: "AES-256",
-    allowPrinting: true,
-    allowHighQualityPrint: true,
-    allowCopying: false,
-    allowModifying: false,
-    allowAnnotating: false,
-    allowFillingForms: false,
-    allowExtraction: false,
-    allowAssembly: false,
-  });
-
-  // Safety net: refuse to distribute a PDF that isn't actually encrypted.
-  // Encrypted PDFs contain an /Encrypt entry in the trailer dictionary.
-  const head = new TextDecoder("latin1").decode(bytes.subarray(0, Math.min(bytes.length, 200000)));
-  if (!/\/Encrypt\b/.test(head)) {
-    throw new Error("PDF-ul rezultat NU a fost criptat (lipsă /Encrypt).");
-  }
-  return bytes;
+  return await newDoc.save();
 }
+
 
 // ---------- Main handler ----------
 Deno.serve(async (req) => {
