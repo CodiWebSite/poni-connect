@@ -454,6 +454,7 @@ export default function PayslipUploader() {
                     <th className="text-left p-2">Nume detectat</th>
                     <th className="text-left p-2">Marcă</th>
                     <th className="text-left p-2">Status</th>
+                    <th className="text-left p-2">Previzualizare</th>
                     <th className="text-left p-2">Asociere</th>
                   </tr>
                 </thead>
@@ -470,6 +471,20 @@ export default function PayslipUploader() {
                             <Icon className="w-3 h-3 mr-1" /> {meta.label}
                           </Badge>
                           {s.match_notes && <div className="text-[10px] text-muted-foreground mt-1">{s.match_notes}</div>}
+                        </td>
+                        <td className="p-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={!s.file_path || previewing === s.id}
+                            onClick={() => previewSlip(s.id)}
+                          >
+                            {previewing === s.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <><Eye className="w-3.5 h-3.5 mr-1" /> Vezi</>
+                            )}
+                          </Button>
                         </td>
                         <td className="p-2">
                           {s.match_status === 'distributed' ? (
