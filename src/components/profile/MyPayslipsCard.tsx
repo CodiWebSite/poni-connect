@@ -44,6 +44,9 @@ export default function MyPayslipsCard() {
       .eq('status', 'open');
     setReportedIds(new Set((data ?? []).map((r: any) => r.payslip_id)));
   };
+
+  useEffect(() => {
+    (async () => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData?.user?.id;
       if (!uid) { setLoading(false); return; }
