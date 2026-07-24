@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
+    "pdf-lib": "npm:pdf-lib@1.17.1",
+    "pdf-encrypt": "npm:@pdfsmaller/pdf-encrypt@1.0.2",
+    "pdfjs-dist": "npm:pdfjs-dist@4.4.168/legacy/build/pdf.mjs"
+  }
+}
