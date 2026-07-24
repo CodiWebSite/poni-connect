@@ -4,6 +4,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { PDFDocument } from "pdf-lib";
+import { encryptPDF } from "pdf-encrypt";
 // @ts-ignore - pdfjs legacy build
 import * as pdfjs from "pdfjs-dist";
 
@@ -265,7 +266,7 @@ function parseSlipCells(cells: TextCell[]): DetectedSlip[] {
 }
 
 // ---------- Encryption ----------
-// pdf-lib fork @cantoo/pdf-lib supports save with encryption
+// Generate the cropped PDF with official pdf-lib, then encrypt with an edge-compatible PDF encryptor.
 async function encryptSubsetToPdf(
   srcDoc: PDFDocument,
   pageIndex: number,
@@ -279,21 +280,25 @@ async function encryptSubsetToPdf(
   const page = newDoc.addPage([width, height]);
   page.drawPage(embedded, { x: 0, y: 0, width, height });
 
-  // @ts-ignore - encryption options provided by @cantoo/pdf-lib fork
-  const bytes = await newDoc.save({
-    // @ts-ignore
-    userPassword,
-    // @ts-ignore
+  const plainBytes = await newDoc.save();
+  const bytes = await encryptPDF(plainBytes, userPassword, {
     ownerPassword: crypto.randomUUID().replace(/-/g, ""),
-    // @ts-ignore
-    permissions: { printing: "highResolution", copying: false, modifying: false },
+    algorithm: "AES-256",
+    allowPrinting: true,
+    allowHighQualityPrint: true,
+    allowCopying: false,
+    allowModifying: false,
+    allowAnnotating: false,
+    allowFillingForms: false,
+    allowExtraction: false,
+    allowAssembly: false,
   });
 
   // Safety net: refuse to distribute a PDF that isn't actually encrypted.
   // Encrypted PDFs contain an /Encrypt entry in the trailer dictionary.
   const head = new TextDecoder("latin1").decode(bytes.subarray(0, Math.min(bytes.length, 200000)));
   if (!/\/Encrypt\b/.test(head)) {
-    throw new Error("PDF-ul rezultat NU a fost criptat (lipsă /Encrypt). Verifică versiunea @cantoo/pdf-lib.");
+    throw new Error("PDF-ul rezultat NU a fost criptat (lipsă /Encrypt).");
   }
   return bytes;
 }
