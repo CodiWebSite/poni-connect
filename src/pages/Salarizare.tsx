@@ -531,9 +531,12 @@ const Salarizare = () => {
             Salarizare
           </h1>
           <p className="text-muted-foreground mt-1">
-            Export rapoarte concedii pentru departamentul de salarizare
+            Export rapoarte concedii și distribuție fluturași de salariu
           </p>
         </div>
+
+        <PayslipUploader />
+
 
         <div className="grid gap-4 md:grid-cols-3">
           {/* Luna precedentă */}
