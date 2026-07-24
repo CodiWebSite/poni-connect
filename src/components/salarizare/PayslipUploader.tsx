@@ -107,7 +107,7 @@ export default function PayslipUploader() {
       });
       if (error || !data?.url) throw new Error(error?.message || 'Nu am putut genera previzualizarea');
       window.open(data.url, '_blank', 'noopener,noreferrer');
-      toast.success('Previzualizare deschisă. Parola: ultimele 6 cifre din CNP-ul angajatului.');
+      toast.success('Previzualizare deschisă (necriptată — vizibilă doar pentru rolurile Salarizare / Super-admin).');
     } catch (e) {
       toast.error((e as Error).message || 'Eroare la previzualizare');
     } finally {
