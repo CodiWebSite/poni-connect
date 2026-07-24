@@ -1050,8 +1050,8 @@ const MyProfile = () => {
               </Card>
             )}
 
-            {/* Fluturașii mei — vizibil doar pentru whitelist-ul pilot */}
-            {isPayslipPilot && <MyPayslipsCard />}
+            {/* Fluturașii mei — cardul se autoascunde dacă utilizatorul nu are acces/fluturași */}
+            <MyPayslipsCard />
 
             {/* Documents — File cards with type icons */}
             <Card className="animate-fade-in" style={{ animationDelay: '250ms' }}>
