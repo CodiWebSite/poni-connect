@@ -288,6 +288,13 @@ async function encryptSubsetToPdf(
     // @ts-ignore
     permissions: { printing: "highResolution", copying: false, modifying: false },
   });
+
+  // Safety net: refuse to distribute a PDF that isn't actually encrypted.
+  // Encrypted PDFs contain an /Encrypt entry in the trailer dictionary.
+  const head = new TextDecoder("latin1").decode(bytes.subarray(0, Math.min(bytes.length, 200000)));
+  if (!/\/Encrypt\b/.test(head)) {
+    throw new Error("PDF-ul rezultat NU a fost criptat (lipsă /Encrypt). Verifică versiunea @cantoo/pdf-lib.");
+  }
   return bytes;
 }
 
