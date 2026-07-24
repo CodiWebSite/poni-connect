@@ -30,9 +30,20 @@ export default function MyPayslipsCard() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [reporting, setReporting] = useState<PayslipRow | null>(null);
+  const [reason, setReason] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    (async () => {
+  const loadReports = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const { data } = await supabase
+      .from('payslip_issue_reports')
+      .select('payslip_id')
+      .in('payslip_id', ids)
+      .eq('status', 'open');
+    setReportedIds(new Set((data ?? []).map((r: any) => r.payslip_id)));
+  };
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData?.user?.id;
       if (!uid) { setLoading(false); return; }
