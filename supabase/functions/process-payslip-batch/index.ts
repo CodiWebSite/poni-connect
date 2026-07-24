@@ -102,7 +102,9 @@ function itemsToLines(items: TextItemLite[]): string[] {
 
 async function extractSlipCells(pdfBytes: Uint8Array): Promise<TextCell[]> {
   const loadingTask = pdfjs.getDocument({
-    data: pdfBytes,
+    // pdfjs can transfer/detach the supplied buffer; keep the original bytes usable
+    // later by pdf-lib for the actual crop/encrypt step.
+    data: pdfBytes.slice(),
     useSystemFonts: true,
     disableFontFace: true,
   });
@@ -298,9 +300,12 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return jsonResp({ error: "Nu ești autentificat" }, 401);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !anonKey || !serviceKey) {
+      return jsonResp({ error: "Configurare backend incompletă" }, 500);
+    }
 
     const authClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -427,7 +432,28 @@ Deno.serve(async (req) => {
       // Encrypt only when we have a matched employee with a CNP
       let filePath: string | null = null;
       if (matched && (status === "matched" || status === "needs_confirm")) {
-        const emp = emps.find(e => e.id === matched)!;
+        const emp = emps.find(e => e.id === matched);
+        if (!emp) {
+          notes = (notes ? notes + " | " : "") + "Angajatul asociat nu mai există în registru";
+          status = "unmatched";
+          matched = null;
+        }
+        if (!emp) {
+          await admin.from("payslips").insert({
+            batch_id: batchId,
+            employee_epd_id: matched,
+            name_detected: slip.rawName,
+            name_normalized: slip.normalizedName,
+            marca_detected: slip.marca,
+            month, year,
+            file_path: null,
+            net_amount: slip.netAmount,
+            match_status: status,
+            match_notes: notes,
+          });
+          results.push({ name: slip.rawName, marca: slip.marca, status, employeeId: matched, notes });
+          continue;
+        }
         const cnp = (emp.cnp ?? "").replace(/\D/g, "");
         if (cnp.length >= 6) {
           const password = cnp.slice(-6);
