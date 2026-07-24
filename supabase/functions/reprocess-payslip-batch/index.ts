@@ -10,7 +10,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { PDFDocument } from "pdf-lib";
-import { encryptPDF } from "pdf-encrypt";
+// @ts-ignore - pdfjs legacy build
 // @ts-ignore - pdfjs legacy build
 import * as pdfjs from "pdfjs-dist";
 
@@ -178,8 +178,9 @@ function parseSlipCell(cell: TextCell): DetectedSlip | null {
   };
 }
 
-async function encryptSubsetToPdf(
-  srcDoc: PDFDocument, pageIndex: number, cropBox: CropBox, userPassword: string,
+// Stage-plain: crop only, no encryption (encryption happens at distribute time).
+async function cropSubsetToPdf(
+  srcDoc: PDFDocument, pageIndex: number, cropBox: CropBox,
 ): Promise<Uint8Array> {
   const newDoc = await PDFDocument.create();
   const width = cropBox.right - cropBox.left;
@@ -187,25 +188,9 @@ async function encryptSubsetToPdf(
   const embedded = await newDoc.embedPage(srcDoc.getPage(pageIndex), cropBox);
   const page = newDoc.addPage([width, height]);
   page.drawPage(embedded, { x: 0, y: 0, width, height });
-  const plainBytes = await newDoc.save();
-  const bytes = await encryptPDF(plainBytes, userPassword, {
-    ownerPassword: crypto.randomUUID().replace(/-/g, ""),
-    algorithm: "AES-256",
-    allowPrinting: true,
-    allowHighQualityPrint: true,
-    allowCopying: false,
-    allowModifying: false,
-    allowAnnotating: false,
-    allowFillingForms: false,
-    allowExtraction: false,
-    allowAssembly: false,
-  });
-  const head = new TextDecoder("latin1").decode(bytes.subarray(0, Math.min(bytes.length, 200000)));
-  if (!/\/Encrypt\b/.test(head)) {
-    throw new Error("PDF-ul rezultat NU a fost criptat (lipsă /Encrypt).");
-  }
-  return bytes;
+  return await newDoc.save();
 }
+
 
 // ---------- main ----------
 Deno.serve(async (req) => {
@@ -334,20 +319,20 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const password = cnp.slice(-6);
-        const encrypted = await encryptSubsetToPdf(srcDoc, match.pageIndex, match.cropBox, password);
+        const plain = await cropSubsetToPdf(srcDoc, match.pageIndex, match.cropBox);
         const path = `${year}/${String(month).padStart(2, "0")}/${slip.employee_epd_id}_${batchId}_${match.positionOnPage}_r.pdf`;
         const { error: upErr } = await admin.storage
           .from("payslips")
-          .upload(path, encrypted, { contentType: "application/pdf", upsert: true });
+          .upload(path, plain, { contentType: "application/pdf", upsert: true });
         if (upErr) throw new Error(upErr.message);
 
         const newStatus = slip.match_status === "unmatched" ? "needs_confirm" : slip.match_status;
         await admin.from("payslips").update({
           file_path: path,
           match_status: newStatus,
-          match_notes: "Re-procesat — fișier criptat re-generat",
+          match_notes: "Re-procesat — fișier re-generat (criptare la distribuție)",
         }).eq("id", slip.id);
+
 
         await admin.from("payslip_audit_log").insert({
           user_id: userId, payslip_id: slip.id, batch_id: batchId, action: "reprocess",

@@ -1,10 +1,11 @@
 // process-payslip-batch
-// Split a monthly payslip PDF into per-employee, password-encrypted PDFs.
-// Match employees by NAME (last_name + first_name), not by marca.
+// Split a monthly payslip PDF into per-employee slips (stored unencrypted for admin preview).
+// Encryption with CNP-based password happens at distribution time in payslip-batch-action.
+
 
 import { createClient } from "@supabase/supabase-js";
 import { PDFDocument } from "pdf-lib";
-import { encryptPDF } from "pdf-encrypt";
+// @ts-ignore - pdfjs legacy build
 // @ts-ignore - pdfjs legacy build
 import * as pdfjs from "pdfjs-dist";
 
@@ -265,13 +266,13 @@ function parseSlipCells(cells: TextCell[]): DetectedSlip[] {
   return slips;
 }
 
-// ---------- Encryption ----------
-// Generate the cropped PDF with official pdf-lib, then encrypt with an edge-compatible PDF encryptor.
-async function encryptSubsetToPdf(
+// ---------- PDF crop (plain, unencrypted) ----------
+// Preview stage: keep the per-employee slip unencrypted so admins can review it.
+// Encryption happens only at distribution time (payslip-batch-action -> distribute_batch).
+async function cropSubsetToPdf(
   srcDoc: PDFDocument,
   pageIndex: number,
   cropBox: CropBox,
-  userPassword: string,
 ): Promise<Uint8Array> {
   const newDoc = await PDFDocument.create();
   const width = cropBox.right - cropBox.left;
@@ -279,29 +280,9 @@ async function encryptSubsetToPdf(
   const embedded = await newDoc.embedPage(srcDoc.getPage(pageIndex), cropBox);
   const page = newDoc.addPage([width, height]);
   page.drawPage(embedded, { x: 0, y: 0, width, height });
-
-  const plainBytes = await newDoc.save();
-  const bytes = await encryptPDF(plainBytes, userPassword, {
-    ownerPassword: crypto.randomUUID().replace(/-/g, ""),
-    algorithm: "AES-256",
-    allowPrinting: true,
-    allowHighQualityPrint: true,
-    allowCopying: false,
-    allowModifying: false,
-    allowAnnotating: false,
-    allowFillingForms: false,
-    allowExtraction: false,
-    allowAssembly: false,
-  });
-
-  // Safety net: refuse to distribute a PDF that isn't actually encrypted.
-  // Encrypted PDFs contain an /Encrypt entry in the trailer dictionary.
-  const head = new TextDecoder("latin1").decode(bytes.subarray(0, Math.min(bytes.length, 200000)));
-  if (!/\/Encrypt\b/.test(head)) {
-    throw new Error("PDF-ul rezultat NU a fost criptat (lipsă /Encrypt).");
-  }
-  return bytes;
+  return await newDoc.save();
 }
+
 
 // ---------- Main handler ----------
 Deno.serve(async (req) => {
@@ -466,28 +447,30 @@ Deno.serve(async (req) => {
           results.push({ name: slip.rawName, marca: slip.marca, status, employeeId: matched, notes });
           continue;
         }
+        // Stage the plain (unencrypted) slip so admins can preview before distribution.
+        // The CNP is still validated so we know we can encrypt later at distribute time.
         const cnp = (emp.cnp ?? "").replace(/\D/g, "");
         if (cnp.length >= 6) {
-          const password = cnp.slice(-6);
           try {
-            const encrypted = await encryptSubsetToPdf(srcDoc, slip.pageIndex, slip.cropBox, password);
+            const plain = await cropSubsetToPdf(srcDoc, slip.pageIndex, slip.cropBox);
             const path = `${year}/${String(month).padStart(2, "0")}/${matched}_${batchId}_${slip.positionOnPage}.pdf`;
             const { error: upErr } = await admin.storage
               .from("payslips")
-              .upload(path, encrypted, { contentType: "application/pdf", upsert: true });
+              .upload(path, plain, { contentType: "application/pdf", upsert: true });
             if (upErr) {
               notes = (notes ? notes + " | " : "") + `Storage error: ${upErr.message}`;
             } else {
               filePath = path;
             }
           } catch (e) {
-            notes = (notes ? notes + " | " : "") + `Encrypt error: ${(e as Error).message}`;
+            notes = (notes ? notes + " | " : "") + `Crop error: ${(e as Error).message}`;
           }
         } else {
-          notes = (notes ? notes + " | " : "") + "CNP lipsă/prea scurt — nu se poate cripta";
+          notes = (notes ? notes + " | " : "") + "CNP lipsă/prea scurt — necesar pentru criptare la distribuție";
           status = "unmatched";
           matched = null;
         }
+
       }
 
       await admin.from("payslips").insert({
