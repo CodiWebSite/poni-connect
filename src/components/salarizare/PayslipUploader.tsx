@@ -342,6 +342,13 @@ export default function PayslipUploader() {
 
   return (
     <div className="space-y-4">
+      <input
+        ref={reprocessInputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={handleReprocessFile}
+      />
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
