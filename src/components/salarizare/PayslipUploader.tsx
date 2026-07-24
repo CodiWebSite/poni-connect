@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Send, Info } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Send, Info, Clock, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -48,6 +49,20 @@ const statusMeta: Record<string, { label: string; color: string; icon: any }> = 
   distributed: { label: 'Distribuit', color: 'bg-blue-500/15 text-blue-700 border-blue-500/30', icon: CheckCircle2 },
 };
 
+const batchStatusMeta: Record<string, { label: string; color: string; icon: any }> = {
+  processing: { label: 'În procesare', color: 'bg-amber-500/15 text-amber-700 border-amber-500/30', icon: Loader2 },
+  ready: { label: 'Procesat', color: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30', icon: CheckCircle2 },
+  distributed: { label: 'Distribuit', color: 'bg-blue-500/15 text-blue-700 border-blue-500/30', icon: Send },
+  failed: { label: 'Eșuat', color: 'bg-red-500/15 text-red-700 border-red-500/30', icon: XCircle },
+  pending: { label: 'În așteptare', color: 'bg-muted text-muted-foreground border-border', icon: Clock },
+};
+
+const formatElapsed = (ms: number) => {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
+};
+
 const getFunctionErrorMessage = async (error: unknown, fallback: string) => {
   const maybeError = error as { message?: string; context?: Response };
 
@@ -82,6 +97,16 @@ export default function PayslipUploader() {
   const [slips, setSlips] = useState<Slip[]>([]);
   const [employees, setEmployees] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{
+    phase: 'idle' | 'uploading' | 'detecting' | 'processing' | 'done' | 'failed';
+    processed: number;
+    total: number;
+    startedAt: number;
+    elapsedMs: number;
+    message: string;
+  } | null>(null);
+  const pollRef = useRef<number | null>(null);
+  const tickRef = useRef<number | null>(null);
 
   const loadBatches = async () => {
     const { data } = await supabase
@@ -111,11 +136,65 @@ export default function PayslipUploader() {
         .order('last_name');
       if (data) setEmployees(data);
     })();
+    return () => {
+      if (pollRef.current) window.clearInterval(pollRef.current);
+      if (tickRef.current) window.clearInterval(tickRef.current);
+    };
   }, []);
+
+  const stopPolling = () => {
+    if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
+    if (tickRef.current) { window.clearInterval(tickRef.current); tickRef.current = null; }
+  };
 
   const upload = async () => {
     if (!file) { toast.error('Selectați un fișier PDF'); return; }
     setUploading(true);
+    const startedAt = Date.now();
+    setProgress({ phase: 'uploading', processed: 0, total: 0, startedAt, elapsedMs: 0, message: 'Se încarcă fișierul către server…' });
+
+    // Elapsed timer
+    tickRef.current = window.setInterval(() => {
+      setProgress(p => p ? { ...p, elapsedMs: Date.now() - p.startedAt } : p);
+    }, 500);
+
+    // Poll for the newly created batch and its progress
+    const { data: userRes } = await supabase.auth.getUser();
+    const uid = userRes.user?.id;
+    let trackedBatchId: string | null = null;
+
+    pollRef.current = window.setInterval(async () => {
+      try {
+        if (!trackedBatchId && uid) {
+          const { data: b } = await supabase
+            .from('payslip_batches')
+            .select('id, total_slips, status, created_at')
+            .eq('uploaded_by', uid)
+            .gte('created_at', new Date(startedAt - 5000).toISOString())
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (b?.id) {
+            trackedBatchId = b.id;
+            setProgress(p => p ? { ...p, phase: 'processing', total: (b as any).total_slips ?? 0, message: 'Se împarte și se criptează fluturașii…' } : p);
+          } else {
+            setProgress(p => p ? { ...p, phase: 'detecting', message: 'Se detectează fluturașii în PDF…' } : p);
+          }
+        } else if (trackedBatchId) {
+          const [{ count }, { data: b }] = await Promise.all([
+            supabase.from('payslips').select('*', { count: 'exact', head: true }).eq('batch_id', trackedBatchId),
+            supabase.from('payslip_batches').select('total_slips, status').eq('id', trackedBatchId).maybeSingle(),
+          ]);
+          setProgress(p => p ? {
+            ...p,
+            processed: count ?? p.processed,
+            total: (b as any)?.total_slips ?? p.total,
+            phase: (b as any)?.status === 'ready' ? 'done' : (b as any)?.status === 'failed' ? 'failed' : 'processing',
+          } : p);
+        }
+      } catch { /* ignore polling errors */ }
+    }, 1500);
+
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -126,6 +205,7 @@ export default function PayslipUploader() {
       });
       if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la procesarea lotului'));
       if (data?.error) throw new Error(data.error);
+      setProgress(p => p ? { ...p, phase: 'done', processed: (data.matched ?? 0) + (data.unmatched ?? 0), total: (data.matched ?? 0) + (data.unmatched ?? 0), message: 'Finalizat.' } : p);
       toast.success(`Procesat: ${data.matched} asociați / ${data.unmatched} de revizuit`);
       setFile(null);
       await loadBatches();
@@ -133,9 +213,12 @@ export default function PayslipUploader() {
         setOpenBatch(data.batch_id);
         await loadSlips(data.batch_id);
       }
+      window.setTimeout(() => setProgress(null), 3000);
     } catch (e) {
+      setProgress(p => p ? { ...p, phase: 'failed', message: (e as Error).message || 'Eroare' } : p);
       toast.error((e as Error).message || 'Eroare la procesare');
     } finally {
+      stopPolling();
       setUploading(false);
     }
   };
@@ -252,6 +335,47 @@ export default function PayslipUploader() {
             {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
             Procesează lotul
           </Button>
+
+          {progress && (
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {progress.phase === 'done' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : progress.phase === 'failed' ? (
+                    <XCircle className="w-4 h-4 text-destructive" />
+                  ) : (
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  )}
+                  <span>
+                    {progress.phase === 'uploading' && 'Se încarcă fișierul…'}
+                    {progress.phase === 'detecting' && 'Se detectează fluturașii…'}
+                    {progress.phase === 'processing' && 'Se procesează fluturașii…'}
+                    {progress.phase === 'done' && 'Procesare finalizată'}
+                    {progress.phase === 'failed' && 'Procesare eșuată'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  {progress.total > 0 && (
+                    <span>{progress.processed} / {progress.total} fluturași</span>
+                  )}
+                  <span className="tabular-nums">⏱ {formatElapsed(progress.elapsedMs)}</span>
+                </div>
+              </div>
+              <Progress
+                value={
+                  progress.phase === 'done' ? 100
+                  : progress.phase === 'failed' ? 100
+                  : progress.total > 0 ? Math.min(99, Math.round((progress.processed / progress.total) * 100))
+                  : progress.phase === 'uploading' ? 15
+                  : progress.phase === 'detecting' ? 35
+                  : 55
+                }
+                className={progress.phase === 'failed' ? '[&>div]:bg-destructive' : ''}
+              />
+              <div className="text-[11px] text-muted-foreground">{progress.message}</div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -268,7 +392,11 @@ export default function PayslipUploader() {
             <div className="text-sm text-muted-foreground text-center py-8">Niciun lot încărcat încă.</div>
           ) : (
             <div className="space-y-2">
-              {batches.map(b => (
+              {batches.map(b => {
+                const bMeta = batchStatusMeta[b.status] ?? batchStatusMeta.pending;
+                const BIcon = bMeta.icon;
+                const pct = b.total_slips > 0 ? Math.round((b.matched_count / b.total_slips) * 100) : 0;
+                return (
                 <div key={b.id} className={`p-3 rounded-lg border transition-colors ${openBatch === b.id ? 'bg-accent/10 border-primary/40' : 'hover:bg-accent/5'}`}>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <button className="text-left flex-1 min-w-0" onClick={() => openBatchView(b.id)}>
@@ -282,7 +410,10 @@ export default function PayslipUploader() {
                       </div>
                     </button>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{b.status}</Badge>
+                      <Badge className={`${bMeta.color} border text-[11px] gap-1`}>
+                        <BIcon className={`w-3 h-3 ${b.status === 'processing' ? 'animate-spin' : ''}`} />
+                        {bMeta.label}
+                      </Badge>
                       {b.status !== 'distributed' && (
                         <Button size="sm" variant="secondary" disabled={busy === b.id} onClick={() => distribute(b.id)}>
                           <Send className="w-3.5 h-3.5 mr-1" /> Distribuie
@@ -293,8 +424,15 @@ export default function PayslipUploader() {
                       </Button>
                     </div>
                   </div>
+                  {b.total_slips > 0 && b.status !== 'processing' && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <Progress value={pct} className="h-1.5 flex-1" />
+                      <span className="text-[10px] text-muted-foreground tabular-nums w-10 text-right">{pct}%</span>
+                    </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
