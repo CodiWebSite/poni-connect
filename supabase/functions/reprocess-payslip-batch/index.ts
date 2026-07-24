@@ -319,20 +319,20 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const password = cnp.slice(-6);
-        const encrypted = await encryptSubsetToPdf(srcDoc, match.pageIndex, match.cropBox, password);
+        const plain = await cropSubsetToPdf(srcDoc, match.pageIndex, match.cropBox);
         const path = `${year}/${String(month).padStart(2, "0")}/${slip.employee_epd_id}_${batchId}_${match.positionOnPage}_r.pdf`;
         const { error: upErr } = await admin.storage
           .from("payslips")
-          .upload(path, encrypted, { contentType: "application/pdf", upsert: true });
+          .upload(path, plain, { contentType: "application/pdf", upsert: true });
         if (upErr) throw new Error(upErr.message);
 
         const newStatus = slip.match_status === "unmatched" ? "needs_confirm" : slip.match_status;
         await admin.from("payslips").update({
           file_path: path,
           match_status: newStatus,
-          match_notes: "Re-procesat — fișier criptat re-generat",
+          match_notes: "Re-procesat — fișier re-generat (criptare la distribuție)",
         }).eq("id", slip.id);
+
 
         await admin.from("payslip_audit_log").insert({
           user_id: userId, payslip_id: slip.id, batch_id: batchId, action: "reprocess",
