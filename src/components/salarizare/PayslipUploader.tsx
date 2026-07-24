@@ -48,6 +48,29 @@ const statusMeta: Record<string, { label: string; color: string; icon: any }> = 
   distributed: { label: 'Distribuit', color: 'bg-blue-500/15 text-blue-700 border-blue-500/30', icon: CheckCircle2 },
 };
 
+const getFunctionErrorMessage = async (error: unknown, fallback: string) => {
+  const maybeError = error as { message?: string; context?: Response };
+
+  if (maybeError.context instanceof Response) {
+    const response = maybeError.context.clone();
+    try {
+      const body = await response.json();
+      if (typeof body?.error === 'string') {
+        return typeof body.detail === 'string' ? `${body.error}: ${body.detail}` : body.error;
+      }
+    } catch {
+      try {
+        const text = await maybeError.context.clone().text();
+        if (text.trim()) return text.trim();
+      } catch {
+        // keep fallback below
+      }
+    }
+  }
+
+  return maybeError.message || fallback;
+};
+
 export default function PayslipUploader() {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() === 0 ? 12 : now.getMonth()));
@@ -101,7 +124,7 @@ export default function PayslipUploader() {
       const { data, error } = await supabase.functions.invoke('process-payslip-batch', {
         body: fd,
       });
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la procesarea lotului'));
       if (data?.error) throw new Error(data.error);
       toast.success(`Procesat: ${data.matched} asociați / ${data.unmatched} de revizuit`);
       setFile(null);
@@ -128,7 +151,7 @@ export default function PayslipUploader() {
       const { error } = await supabase.functions.invoke('payslip-batch-action', {
         body: { action: 'assign', payslip_id: slipId, employee_epd_id: epdId },
       });
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la asociere'));
       toast.success('Asociat. Re-procesați lotul pentru a cripta PDF-ul acestui angajat.');
       if (openBatch) await loadSlips(openBatch);
     } catch (e) {
@@ -144,7 +167,7 @@ export default function PayslipUploader() {
       const { data, error } = await supabase.functions.invoke('payslip-batch-action', {
         body: { action: 'distribute_batch', batch_id: batchId },
       });
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la distribuție'));
       if (data?.error) throw new Error(data.error);
       toast.success(`Distribuit către ${data.distributed} angajați (doar cei din whitelist pilot).`);
       await loadBatches();
@@ -163,7 +186,7 @@ export default function PayslipUploader() {
       const { error } = await supabase.functions.invoke('payslip-batch-action', {
         body: { action: 'delete_batch', batch_id: batchId },
       });
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la ștergere'));
       toast.success('Lot șters');
       setOpenBatch(null);
       setSlips([]);

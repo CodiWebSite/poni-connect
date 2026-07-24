@@ -55,44 +55,105 @@ function levenshtein(a: string, b: string): number {
 }
 
 // ---------- PDF text extraction ----------
-async function extractPagesText(pdfBytes: Uint8Array): Promise<string[]> {
+interface CropBox {
+  left: number;
+  bottom: number;
+  right: number;
+  top: number;
+}
+
+interface TextCell {
+  pageIndex: number;
+  positionOnPage: number;
+  text: string;
+  cropBox: CropBox;
+}
+
+interface TextItemLite {
+  str: string;
+  x: number;
+  y: number;
+}
+
+function itemsToLines(items: TextItemLite[]): string[] {
+  const sorted = [...items].sort((a, b) => {
+    if (Math.abs(a.y - b.y) > 2) return b.y - a.y;
+    return a.x - b.x;
+  });
+
+  const lines: string[] = [];
+  let currentY: number | null = null;
+  let currentLine: TextItemLite[] = [];
+
+  for (const item of sorted) {
+    if (currentY === null || Math.abs(item.y - currentY) < 3) {
+      currentLine.push(item);
+      currentY = item.y;
+    } else {
+      lines.push(currentLine.map((it) => it.str).join(" ").trim());
+      currentLine = [item];
+      currentY = item.y;
+    }
+  }
+
+  if (currentLine.length) lines.push(currentLine.map((it) => it.str).join(" ").trim());
+  return lines.filter(Boolean);
+}
+
+async function extractSlipCells(pdfBytes: Uint8Array): Promise<TextCell[]> {
   const loadingTask = pdfjs.getDocument({
-    data: pdfBytes,
+    // pdfjs can transfer/detach the supplied buffer; keep the original bytes usable
+    // later by pdf-lib for the actual crop/encrypt step.
+    data: pdfBytes.slice(),
     useSystemFonts: true,
     disableFontFace: true,
   });
   const doc = await loadingTask.promise;
-  const pages: string[] = [];
+  const cells: TextCell[] = [];
+
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
+    const viewport = page.getViewport({ scale: 1 });
+    const pageWidth = viewport.width;
+    const pageHeight = viewport.height;
+    const columnWidth = pageWidth / 4;
+    const rowHeight = pageHeight / 2;
     const content = await page.getTextContent();
-    // Group items by y position to preserve line structure
-    const items = (content.items as Array<{ str: string; transform: number[] }>).filter(it => it.str);
-    // Sort by descending y then ascending x
-    items.sort((a, b) => {
-      const ay = a.transform[5], by = b.transform[5];
-      if (Math.abs(ay - by) > 2) return by - ay;
-      return a.transform[4] - b.transform[4];
-    });
-    // Group into lines
-    const lines: string[] = [];
-    let currentY: number | null = null;
-    let currentLine: string[] = [];
-    for (const it of items) {
-      const y = it.transform[5];
-      if (currentY === null || Math.abs(y - currentY) < 3) {
-        currentLine.push(it.str);
-        currentY = y;
-      } else {
-        lines.push(currentLine.join(" ").trim());
-        currentLine = [it.str];
-        currentY = y;
-      }
+
+    const buckets: TextItemLite[][] = Array.from({ length: 8 }, () => []);
+    for (const item of content.items as Array<{ str: string; transform: number[] }>) {
+      const str = item.str?.trim();
+      if (!str) continue;
+
+      const x = Number(item.transform?.[4] ?? 0);
+      const y = Number(item.transform?.[5] ?? 0);
+      const col = Math.max(0, Math.min(3, Math.floor(x / columnWidth)));
+      const row = y >= rowHeight ? 0 : 1;
+      const index = row * 4 + col;
+      buckets[index].push({ str, x, y });
     }
-    if (currentLine.length) lines.push(currentLine.join(" ").trim());
-    pages.push(lines.filter(l => l.length).join("\n"));
+
+    for (let index = 0; index < buckets.length; index++) {
+      const lines = itemsToLines(buckets[index]);
+      if (!lines.some((line) => /^LUNA\s*:/i.test(line))) continue;
+
+      const row = Math.floor(index / 4);
+      const col = index % 4;
+      const left = col * columnWidth;
+      const right = col === 3 ? pageWidth : (col + 1) * columnWidth;
+      const bottom = row === 0 ? rowHeight : 0;
+      const top = row === 0 ? pageHeight : rowHeight;
+
+      cells.push({
+        pageIndex: i - 1,
+        positionOnPage: index,
+        text: lines.join("\n"),
+        cropBox: { left, bottom, right, top },
+      });
+    }
   }
-  return pages;
+
+  return cells;
 }
 
 // ---------- Slip detection per page ----------
@@ -101,6 +162,7 @@ async function extractPagesText(pdfBytes: Uint8Array): Promise<string[]> {
 interface DetectedSlip {
   pageIndex: number;      // 0-based
   positionOnPage: number; // 0..N-1 index within page
+  cropBox: CropBox;
   marca: string | null;
   rawName: string;
   normalizedName: string;
@@ -115,92 +177,89 @@ const MONTH_MAP: Record<string, number> = {
   "SEPTEMBRIE": 9, "OCTOMBRIE": 10, "NOIEMBRIE": 11, "DECEMBRIE": 12,
 };
 
-function parseSlipsOnPage(pageText: string, pageIndex: number): DetectedSlip[] {
-  // Split by "LUNA :" occurrences — each block is one slip
-  const lines = pageText.split("\n").map(l => l.trim()).filter(Boolean);
-  const slips: DetectedSlip[] = [];
-  let cursor = 0;
-  let posOnPage = 0;
-  while (cursor < lines.length) {
-    // find next "LUNA :"
-    const lunaIdx = lines.findIndex((l, i) => i >= cursor && /^LUNA\s*:/i.test(l));
-    if (lunaIdx === -1) break;
-    // find end: next "PRIMIT FLUTURASUL" or next "LUNA :"
-    const endIdx = (() => {
-      for (let i = lunaIdx + 1; i < lines.length; i++) {
-        if (/PRIMIT\s+FLUTURA/i.test(lines[i])) return i;
-        if (/^LUNA\s*:/i.test(lines[i])) return i - 1;
-      }
-      return lines.length - 1;
-    })();
-    const block = lines.slice(lunaIdx, endIdx + 1);
+function parseSlipCell(cell: TextCell): DetectedSlip | null {
+  const lines = cell.text.split("\n").map(l => l.trim()).filter(Boolean);
+  const lunaIdx = lines.findIndex((l) => /^LUNA\s*:/i.test(l));
+  if (lunaIdx === -1) return null;
 
-    // Extract month/year: "LUNA : 06.2026" or nearby header "ICMPP-Iunie 2026"
-    let month: number | null = null;
-    let year: number | null = null;
-    const lunaMatch = block[0].match(/LUNA\s*:\s*(\d{1,2})[.\/](\d{4})/i);
-    if (lunaMatch) {
-      month = parseInt(lunaMatch[1], 10);
-      year = parseInt(lunaMatch[2], 10);
+  const endIdx = (() => {
+    for (let i = lunaIdx + 1; i < lines.length; i++) {
+      if (/PRIMIT\s+FLUTURA/i.test(lines[i])) return i;
     }
-    // Look one line up for ICMPP header context
-    if (!month && lunaIdx > 0) {
-      const hdr = lines[lunaIdx - 1];
-      const hm = hdr.match(/ICMPP[- ]([A-ZĂÂÎȘȚa-zăâîșț]+)\s+(\d{4})/);
-      if (hm) {
-        const mName = normalizeName(hm[1]);
-        month = MONTH_MAP[mName] ?? null;
-        year = parseInt(hm[2], 10);
-      }
-    }
+    return lines.length - 1;
+  })();
+  const block = lines.slice(lunaIdx, endIdx + 1);
 
-    // Find name line: pattern "<marca> - <NAME>" where marca is optional digits
-    let marca: string | null = null;
-    let rawName = "";
-    for (let i = 1; i < block.length; i++) {
-      const m = block[i].match(/^(\d{3,7})?\s*-\s*(.+)$/);
-      if (m && m[2] && /[A-Za-zĂÂÎȘȚăâîșț]/.test(m[2])) {
-        // Skip lines that are clearly not names (contain digits/currency chars)
-        const candidate = m[2].trim();
-        if (/^[A-ZĂÂÎȘȚ][A-ZĂÂÎȘȚ\s\-]+$/.test(candidate)) {
-          marca = m[1] || null;
-          rawName = candidate;
-          // Some names span 2 lines (e.g. "BUZDUGAN CATALIN\nVALENTIN")
-          // Peek next line: if it's uppercase-only (no digits), append
-          if (i + 1 < block.length) {
-            const next = block[i + 1].trim();
-            if (/^[A-ZĂÂÎȘȚ][A-ZĂÂÎȘȚ\s\-]+$/.test(next) && next.length < 40 && !/LUNA|ICMPP|SERVICIUL|specialist|consilier|medic|tehnician|sef|documentarist|bibliotecar/i.test(next)) {
-              // Heuristic: only append if it's a single word (likely middle name)
-              if (!next.includes(" ") || next.split(" ").length <= 2) {
-                rawName = `${rawName} ${next}`;
-              }
+  // Extract month/year: "LUNA : 06.2026" or nearby header "ICMPP-Iunie 2026"
+  let month: number | null = null;
+  let year: number | null = null;
+  const lunaMatch = block[0].match(/LUNA\s*:\s*(\d{1,2})[.\/](\d{4})/i);
+  if (lunaMatch) {
+    month = parseInt(lunaMatch[1], 10);
+    year = parseInt(lunaMatch[2], 10);
+  }
+
+  if (!month && lunaIdx > 0) {
+    const hdr = lines[lunaIdx - 1];
+    const hm = hdr.match(/ICMPP[- ]([A-ZĂÂÎȘȚa-zăâîșț]+)\s+(\d{4})/);
+    if (hm) {
+      const mName = normalizeName(hm[1]);
+      month = MONTH_MAP[mName] ?? null;
+      year = parseInt(hm[2], 10);
+    }
+  }
+
+  // Find name line: pattern "<marca> - <NAME>" where marca is optional digits
+  let marca: string | null = null;
+  let rawName = "";
+  for (let i = 1; i < block.length; i++) {
+    const m = block[i].match(/^(\d{3,7})?\s*-\s*(.+)$/);
+    if (m && m[2] && /[A-Za-zĂÂÎȘȚăâîșț]/.test(m[2])) {
+      const candidate = m[2].trim();
+      if (/^[A-ZĂÂÎȘȚ][A-ZĂÂÎȘȚ\s\-]+$/.test(candidate)) {
+        marca = m[1] || null;
+        rawName = candidate;
+        // Some names span 2 lines (e.g. "BUZDUGAN CATALIN\nVALENTIN")
+        if (i + 1 < block.length) {
+          const next = block[i + 1].trim();
+          if (/^[A-ZĂÂÎȘȚ][A-ZĂÂÎȘȚ\s\-]+$/.test(next) && next.length < 40 && !/LUNA|ICMPP|SERVICIUL|specialist|consilier|medic|tehnician|sef|șef|documentarist|bibliotecar|refer|inspector/i.test(next)) {
+            if (!next.includes(" ") || next.split(" ").length <= 2) {
+              rawName = `${rawName} ${next}`;
             }
           }
-          break;
         }
+        break;
       }
     }
+  }
 
-    // Extract net (Salariu net) if present
-    let net: number | null = null;
-    for (const l of block) {
-      const m = l.match(/Salariu\s*net\s*(\d+)/i);
-      if (m) { net = parseInt(m[1], 10); break; }
-    }
+  // Extract net (Salariu net) if present
+  let net: number | null = null;
+  for (const line of block) {
+    const m = line.match(/Salariu\s*net\s*(\d+)/i);
+    if (m) { net = parseInt(m[1], 10); break; }
+  }
 
-    if (rawName) {
-      slips.push({
-        pageIndex,
-        positionOnPage: posOnPage++,
-        marca,
-        rawName,
-        normalizedName: normalizeName(rawName),
-        monthDetected: month,
-        yearDetected: year,
-        netAmount: net,
-      });
-    }
-    cursor = endIdx + 1;
+  if (!rawName) return null;
+
+  return {
+    pageIndex: cell.pageIndex,
+    positionOnPage: cell.positionOnPage,
+    cropBox: cell.cropBox,
+    marca,
+    rawName,
+    normalizedName: normalizeName(rawName),
+    monthDetected: month,
+    yearDetected: year,
+    netAmount: net,
+  };
+}
+
+function parseSlipCells(cells: TextCell[]): DetectedSlip[] {
+  const slips: DetectedSlip[] = [];
+  for (const cell of cells) {
+    const slip = parseSlipCell(cell);
+    if (slip) slips.push(slip);
   }
   return slips;
 }
@@ -209,12 +268,17 @@ function parseSlipsOnPage(pageText: string, pageIndex: number): DetectedSlip[] {
 // pdf-lib fork @cantoo/pdf-lib supports save with encryption
 async function encryptSubsetToPdf(
   srcDoc: PDFDocument,
-  pageIndices: number[],
+  pageIndex: number,
+  cropBox: CropBox,
   userPassword: string,
 ): Promise<Uint8Array> {
   const newDoc = await PDFDocument.create();
-  const copied = await newDoc.copyPages(srcDoc, pageIndices);
-  for (const p of copied) newDoc.addPage(p);
+  const width = cropBox.right - cropBox.left;
+  const height = cropBox.top - cropBox.bottom;
+  const embedded = await newDoc.embedPage(srcDoc.getPage(pageIndex), cropBox);
+  const page = newDoc.addPage([width, height]);
+  page.drawPage(embedded, { x: 0, y: 0, width, height });
+
   // @ts-ignore - encryption options provided by @cantoo/pdf-lib fork
   const bytes = await newDoc.save({
     // @ts-ignore
@@ -236,9 +300,12 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return jsonResp({ error: "Nu ești autentificat" }, 401);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !anonKey || !serviceKey) {
+      return jsonResp({ error: "Configurare backend incompletă" }, 500);
+    }
 
     const authClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -269,16 +336,13 @@ Deno.serve(async (req) => {
       return jsonResp({ error: "Lună/an invalid" }, 400);
 
     const buf = new Uint8Array(await file.arrayBuffer());
-    const pagesText = await extractPagesText(buf);
-
-    // Detect slips per page
-    const detected: DetectedSlip[] = [];
-    for (let i = 0; i < pagesText.length; i++) {
-      detected.push(...parseSlipsOnPage(pagesText[i], i));
-    }
+    const slipCells = await extractSlipCells(buf);
+    const detected = parseSlipCells(slipCells);
 
     if (detected.length === 0) {
-      return jsonResp({ error: "Nu s-au detectat fluturași în PDF" }, 422);
+      return jsonResp({
+        error: "Nu s-au detectat fluturași în PDF. Verificați că fișierul este PDF-ul centralizator generat de salarizare, cu blocuri LUNA și nume angajat.",
+      }, 422);
     }
 
     // Load all active employees
@@ -368,15 +432,34 @@ Deno.serve(async (req) => {
       // Encrypt only when we have a matched employee with a CNP
       let filePath: string | null = null;
       if (matched && (status === "matched" || status === "needs_confirm")) {
-        const emp = emps.find(e => e.id === matched)!;
+        const emp = emps.find(e => e.id === matched);
+        if (!emp) {
+          notes = (notes ? notes + " | " : "") + "Angajatul asociat nu mai există în registru";
+          status = "unmatched";
+          matched = null;
+        }
+        if (!emp) {
+          await admin.from("payslips").insert({
+            batch_id: batchId,
+            employee_epd_id: matched,
+            name_detected: slip.rawName,
+            name_normalized: slip.normalizedName,
+            marca_detected: slip.marca,
+            month, year,
+            file_path: null,
+            net_amount: slip.netAmount,
+            match_status: status,
+            match_notes: notes,
+          });
+          results.push({ name: slip.rawName, marca: slip.marca, status, employeeId: matched, notes });
+          continue;
+        }
         const cnp = (emp.cnp ?? "").replace(/\D/g, "");
         if (cnp.length >= 6) {
           const password = cnp.slice(-6);
           try {
-            // For now, one detected slip = its own page. If a slip spans multiple
-            // pages, we'd need cross-page tracking. Passing single page:
-            const encrypted = await encryptSubsetToPdf(srcDoc, [slip.pageIndex], password);
-            const path = `${year}/${String(month).padStart(2, "0")}/${matched}_${batchId}.pdf`;
+            const encrypted = await encryptSubsetToPdf(srcDoc, slip.pageIndex, slip.cropBox, password);
+            const path = `${year}/${String(month).padStart(2, "0")}/${matched}_${batchId}_${slip.positionOnPage}.pdf`;
             const { error: upErr } = await admin.storage
               .from("payslips")
               .upload(path, encrypted, { contentType: "application/pdf", upsert: true });
