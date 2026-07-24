@@ -2662,6 +2662,214 @@ export type Database = {
           },
         ]
       }
+      payslip_audit_log: {
+        Row: {
+          action: string
+          batch_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          ip: string | null
+          payslip_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          batch_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip?: string | null
+          payslip_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          batch_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip?: string | null
+          payslip_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslip_audit_log_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "payslip_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslip_audit_log_payslip_id_fkey"
+            columns: ["payslip_id"]
+            isOneToOne: false
+            referencedRelation: "payslips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payslip_batches: {
+        Row: {
+          created_at: string
+          distributed_at: string | null
+          id: string
+          matched_count: number
+          month: number
+          notes: string | null
+          original_file_path: string | null
+          original_filename: string
+          status: Database["public"]["Enums"]["payslip_batch_status"]
+          total_slips: number
+          unmatched_count: number
+          updated_at: string
+          uploaded_by: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          distributed_at?: string | null
+          id?: string
+          matched_count?: number
+          month: number
+          notes?: string | null
+          original_file_path?: string | null
+          original_filename: string
+          status?: Database["public"]["Enums"]["payslip_batch_status"]
+          total_slips?: number
+          unmatched_count?: number
+          updated_at?: string
+          uploaded_by: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          distributed_at?: string | null
+          id?: string
+          matched_count?: number
+          month?: number
+          notes?: string | null
+          original_file_path?: string | null
+          original_filename?: string
+          status?: Database["public"]["Enums"]["payslip_batch_status"]
+          total_slips?: number
+          unmatched_count?: number
+          updated_at?: string
+          uploaded_by?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      payslip_pilot_users: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          email: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      payslips: {
+        Row: {
+          batch_id: string
+          created_at: string
+          distributed_at: string | null
+          download_count: number
+          employee_epd_id: string | null
+          file_path: string | null
+          first_downloaded_at: string | null
+          id: string
+          marca_detected: string | null
+          match_notes: string | null
+          match_status: Database["public"]["Enums"]["payslip_match_status"]
+          month: number
+          name_detected: string
+          name_normalized: string
+          net_amount: number | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          distributed_at?: string | null
+          download_count?: number
+          employee_epd_id?: string | null
+          file_path?: string | null
+          first_downloaded_at?: string | null
+          id?: string
+          marca_detected?: string | null
+          match_notes?: string | null
+          match_status?: Database["public"]["Enums"]["payslip_match_status"]
+          month: number
+          name_detected: string
+          name_normalized: string
+          net_amount?: number | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          distributed_at?: string | null
+          download_count?: number
+          employee_epd_id?: string | null
+          file_path?: string | null
+          first_downloaded_at?: string | null
+          id?: string
+          marca_detected?: string | null
+          match_notes?: string | null
+          match_status?: Database["public"]["Enums"]["payslip_match_status"]
+          month?: number
+          name_detected?: string
+          name_normalized?: string
+          net_amount?: number | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslips_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "payslip_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslips_employee_epd_id_fkey"
+            columns: ["employee_epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslips_employee_epd_id_fkey"
+            columns: ["employee_epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pre_assigned_roles: {
         Row: {
           assigned_by: string | null
@@ -4412,6 +4620,7 @@ export type Database = {
         Args: { _request_id: string; _user_id: string }
         Returns: boolean
       }
+      is_payslip_pilot_user: { Args: { _user_id: string }; Returns: boolean }
       link_registry_entries: {
         Args: {
           _from_entry_id: string
@@ -4518,6 +4727,13 @@ export type Database = {
         | "rejected"
       medical_fitness_status: "apt" | "apt_conditionat" | "inapt" | "pending"
       meeting_status: "scheduled" | "cancelled" | "completed"
+      payslip_batch_status: "processing" | "ready" | "distributed" | "failed"
+      payslip_match_status:
+        | "matched"
+        | "needs_confirm"
+        | "unmatched"
+        | "duplicate_name"
+        | "distributed"
       procurement_category:
         | "consumabile_laborator"
         | "echipamente_it"
@@ -4729,6 +4945,14 @@ export const Constants = {
       ],
       medical_fitness_status: ["apt", "apt_conditionat", "inapt", "pending"],
       meeting_status: ["scheduled", "cancelled", "completed"],
+      payslip_batch_status: ["processing", "ready", "distributed", "failed"],
+      payslip_match_status: [
+        "matched",
+        "needs_confirm",
+        "unmatched",
+        "duplicate_name",
+        "distributed",
+      ],
       procurement_category: [
         "consumabile_laborator",
         "echipamente_it",

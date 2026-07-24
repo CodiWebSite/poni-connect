@@ -26,6 +26,8 @@ import { ro } from 'date-fns/locale';
 import { formatNumePrenume } from '@/utils/formatName';
 import { isHrRequestOwnedByUser, isLeaveRequestOwnedByUser } from '@/utils/leaveOwnership';
 import { getLeaveStyle } from '@/utils/leaveTypes';
+import { usePayslipPilot } from '@/hooks/usePayslipPilot';
+import MyPayslipsCard from '@/components/profile/MyPayslipsCard';
 
 interface Profile {
   full_name: string;
@@ -136,6 +138,7 @@ const getDocIcon = (name: string) => {
 const MyProfile = () => {
   const { user } = useAuth();
   const { role, canManageHR } = useUserRole();
+  const { isPilot: isPayslipPilot } = usePayslipPilot();
   const { isImpersonating, impersonatedUserEmail } = useImpersonation();
   const { toast } = useToast();
   
@@ -1047,8 +1050,12 @@ const MyProfile = () => {
               </Card>
             )}
 
+            {/* Fluturașii mei — vizibil doar pentru whitelist-ul pilot */}
+            {isPayslipPilot && <MyPayslipsCard />}
+
             {/* Documents — File cards with type icons */}
             <Card className="animate-fade-in" style={{ animationDelay: '250ms' }}>
+
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <FileText className="w-5 h-5 text-primary" />

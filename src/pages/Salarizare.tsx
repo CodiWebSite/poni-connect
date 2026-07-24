@@ -14,6 +14,7 @@ import { format, startOfMonth, endOfMonth, subMonths, eachDayOfInterval, isWeeke
 import { ro } from 'date-fns/locale';
 import { LEAVE_TYPES, LEAVE_TYPE_MAP } from '@/utils/leaveTypes';
 import { isPublicHoliday } from '@/utils/romanianHolidays';
+import PayslipUploader from '@/components/salarizare/PayslipUploader';
 
 const MONTH_NAMES_RO = [
   'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
@@ -531,9 +532,12 @@ const Salarizare = () => {
             Salarizare
           </h1>
           <p className="text-muted-foreground mt-1">
-            Export rapoarte concedii pentru departamentul de salarizare
+            Export rapoarte concedii și distribuție fluturași de salariu
           </p>
         </div>
+
+        <PayslipUploader />
+
 
         <div className="grid gap-4 md:grid-cols-3">
           {/* Luna precedentă */}
