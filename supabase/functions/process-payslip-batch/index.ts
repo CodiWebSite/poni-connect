@@ -282,7 +282,6 @@ async function encryptSubsetToPdf(
 
   const plainBytes = await newDoc.save();
   const bytes = await encryptPDF(plainBytes, userPassword, {
-    userPassword,
     ownerPassword: crypto.randomUUID().replace(/-/g, ""),
     algorithm: "AES-256",
     allowPrinting: true,
