@@ -27,6 +27,7 @@ export default function MyPayslipsCard() {
   const [rows, setRows] = useState<PayslipRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
@@ -34,32 +35,43 @@ export default function MyPayslipsCard() {
       const uid = userData?.user?.id;
       if (!uid) { setLoading(false); return; }
 
-      // Găsește epd_id-urile utilizatorului curent (via employee_records.user_id)
+      const { data: pilotFlag } = await supabase.rpc('is_payslip_pilot_user', { _user_id: uid });
+      const isPilot = pilotFlag === true;
+
       const { data: recs } = await supabase
         .from('employee_records')
         .select('id')
         .eq('user_id', uid);
       const recIds = (recs ?? []).map((r: any) => r.id);
-      if (recIds.length === 0) { setRows([]); setLoading(false); return; }
 
-      const { data: epds } = await supabase
-        .from('employee_personal_data')
-        .select('id')
-        .in('employee_record_id', recIds);
-      const epdIds = (epds ?? []).map((e: any) => e.id);
-      if (epdIds.length === 0) { setRows([]); setLoading(false); return; }
+      let epdIds: string[] = [];
+      if (recIds.length > 0) {
+        const { data: epds } = await supabase
+          .from('employee_personal_data')
+          .select('id')
+          .in('employee_record_id', recIds);
+        epdIds = (epds ?? []).map((e: any) => e.id);
+      }
 
-      const { data, error } = await supabase
-        .from('payslips')
-        .select('id, month, year, distributed_at, download_count, first_downloaded_at')
-        .in('employee_epd_id', epdIds)
-        .eq('match_status', 'distributed')
-        .order('year', { ascending: false })
-        .order('month', { ascending: false });
-      if (!error && data) setRows(data as PayslipRow[]);
+      let payslipRows: PayslipRow[] = [];
+      if (epdIds.length > 0) {
+        const { data } = await supabase
+          .from('payslips')
+          .select('id, month, year, distributed_at, download_count, first_downloaded_at')
+          .in('employee_epd_id', epdIds)
+          .eq('match_status', 'distributed')
+          .order('year', { ascending: false })
+          .order('month', { ascending: false });
+        payslipRows = (data ?? []) as PayslipRow[];
+      }
+
+      setRows(payslipRows);
+      setHasAccess(isPilot || payslipRows.length > 0);
       setLoading(false);
     })();
   }, []);
+
+  if (!loading && !hasAccess) return null;
 
   const download = async (id: string) => {
     setDownloading(id);
