@@ -424,8 +424,15 @@ export default function PayslipUploader() {
                       </Button>
                     </div>
                   </div>
+                  {b.total_slips > 0 && b.status !== 'processing' && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <Progress value={pct} className="h-1.5 flex-1" />
+                      <span className="text-[10px] text-muted-foreground tabular-nums w-10 text-right">{pct}%</span>
+                    </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
