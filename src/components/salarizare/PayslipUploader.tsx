@@ -392,7 +392,11 @@ export default function PayslipUploader() {
             <div className="text-sm text-muted-foreground text-center py-8">Niciun lot încărcat încă.</div>
           ) : (
             <div className="space-y-2">
-              {batches.map(b => (
+              {batches.map(b => {
+                const bMeta = batchStatusMeta[b.status] ?? batchStatusMeta.pending;
+                const BIcon = bMeta.icon;
+                const pct = b.total_slips > 0 ? Math.round((b.matched_count / b.total_slips) * 100) : 0;
+                return (
                 <div key={b.id} className={`p-3 rounded-lg border transition-colors ${openBatch === b.id ? 'bg-accent/10 border-primary/40' : 'hover:bg-accent/5'}`}>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <button className="text-left flex-1 min-w-0" onClick={() => openBatchView(b.id)}>
@@ -406,7 +410,10 @@ export default function PayslipUploader() {
                       </div>
                     </button>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{b.status}</Badge>
+                      <Badge className={`${bMeta.color} border text-[11px] gap-1`}>
+                        <BIcon className={`w-3 h-3 ${b.status === 'processing' ? 'animate-spin' : ''}`} />
+                        {bMeta.label}
+                      </Badge>
                       {b.status !== 'distributed' && (
                         <Button size="sm" variant="secondary" disabled={busy === b.id} onClick={() => distribute(b.id)}>
                           <Send className="w-3.5 h-3.5 mr-1" /> Distribuie
