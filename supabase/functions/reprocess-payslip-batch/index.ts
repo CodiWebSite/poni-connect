@@ -178,8 +178,9 @@ function parseSlipCell(cell: TextCell): DetectedSlip | null {
   };
 }
 
-async function encryptSubsetToPdf(
-  srcDoc: PDFDocument, pageIndex: number, cropBox: CropBox, userPassword: string,
+// Stage-plain: crop only, no encryption (encryption happens at distribute time).
+async function cropSubsetToPdf(
+  srcDoc: PDFDocument, pageIndex: number, cropBox: CropBox,
 ): Promise<Uint8Array> {
   const newDoc = await PDFDocument.create();
   const width = cropBox.right - cropBox.left;
@@ -187,25 +188,9 @@ async function encryptSubsetToPdf(
   const embedded = await newDoc.embedPage(srcDoc.getPage(pageIndex), cropBox);
   const page = newDoc.addPage([width, height]);
   page.drawPage(embedded, { x: 0, y: 0, width, height });
-  const plainBytes = await newDoc.save();
-  const bytes = await encryptPDF(plainBytes, userPassword, {
-    ownerPassword: crypto.randomUUID().replace(/-/g, ""),
-    algorithm: "AES-256",
-    allowPrinting: true,
-    allowHighQualityPrint: true,
-    allowCopying: false,
-    allowModifying: false,
-    allowAnnotating: false,
-    allowFillingForms: false,
-    allowExtraction: false,
-    allowAssembly: false,
-  });
-  const head = new TextDecoder("latin1").decode(bytes.subarray(0, Math.min(bytes.length, 200000)));
-  if (!/\/Encrypt\b/.test(head)) {
-    throw new Error("PDF-ul rezultat NU a fost criptat (lipsă /Encrypt).");
-  }
-  return bytes;
+  return await newDoc.save();
 }
+
 
 // ---------- main ----------
 Deno.serve(async (req) => {
