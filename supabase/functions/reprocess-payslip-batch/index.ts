@@ -328,22 +328,28 @@ Deno.serve(async (req) => {
 
       try {
         const plain = await cropSubsetToPdf(srcDoc, match.pageIndex, match.cropBox);
-        const path = `${year}/${String(month).padStart(2, "0")}/${slip.employee_epd_id}_${batchId}_${match.positionOnPage}_r.pdf`;
+        const suffix = mode === "restage_plain" ? "_plain" : "_r";
+        const path = `${year}/${String(month).padStart(2, "0")}/${slip.employee_epd_id}_${batchId}_${match.positionOnPage}${suffix}.pdf`;
         const { error: upErr } = await admin.storage
           .from("payslips")
           .upload(path, plain, { contentType: "application/pdf", upsert: true });
         if (upErr) throw new Error(upErr.message);
 
-        const newStatus = slip.match_status === "unmatched" ? "needs_confirm" : slip.match_status;
-        await admin.from("payslips").update({
-          file_path: path,
-          match_status: newStatus,
-          match_notes: "Re-procesat — fișier re-generat (criptare la distribuție)",
-        }).eq("id", slip.id);
+        const updatePatch: Record<string, unknown> = { file_path: path };
+        if (mode === "restage_plain") {
+          // Preserve legacy encrypted-in-place file as the distribution copy.
+          updatePatch.file_path_encrypted = slip.file_path;
+          updatePatch.match_notes = "Restaged plain preview — legacy encrypted file kept for owners";
+        } else {
+          updatePatch.match_status = slip.match_status === "unmatched" ? "needs_confirm" : slip.match_status;
+          updatePatch.match_notes = "Re-procesat — fișier re-generat (criptare la distribuție)";
+        }
+        await admin.from("payslips").update(updatePatch).eq("id", slip.id);
 
 
         await admin.from("payslip_audit_log").insert({
-          user_id: userId, payslip_id: slip.id, batch_id: batchId, action: "reprocess",
+          user_id: userId, payslip_id: slip.id, batch_id: batchId,
+          action: mode === "restage_plain" ? "restage_plain" : "reprocess",
         });
 
         reprocessed++;
