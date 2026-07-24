@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Send, Info, Clock, XCircle, Eye } from 'lucide-react';
+import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Send, Info, Clock, XCircle, Eye, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
