@@ -68,10 +68,65 @@ Deno.serve(async (req) => {
         s.file_path && s.employee_epd_id && (s.match_status === "matched" || s.match_status === "needs_confirm"),
       );
       if (eligible.length === 0) return jsonResp({ error: "Niciun fluturaș eligibil pentru distribuție" }, 422);
+
+      // Encrypt each staged plain PDF in place with the employee's last-6-CNP password.
+      const encryptFailures: Array<{ id: string; error: string }> = [];
+      const encryptedIds: string[] = [];
+      for (const s of eligible as any[]) {
+        try {
+          const { data: epd } = await admin
+            .from("employee_personal_data")
+            .select("cnp")
+            .eq("id", s.employee_epd_id)
+            .maybeSingle();
+          const cnp = ((epd?.cnp as string | null) ?? "").replace(/\D/g, "");
+          if (cnp.length < 6) throw new Error("CNP lipsă/prea scurt");
+          const password = cnp.slice(-6);
+
+          const { data: blob, error: dlErr } = await admin.storage
+            .from("payslips").download(s.file_path);
+          if (dlErr || !blob) throw new Error(dlErr?.message ?? "download failed");
+          const plainBytes = new Uint8Array(await blob.arrayBuffer());
+
+          // If already encrypted (e.g. re-distribute), skip.
+          const head = new TextDecoder("latin1").decode(plainBytes.subarray(0, Math.min(plainBytes.length, 200000)));
+          let outBytes = plainBytes;
+          if (!/\/Encrypt\b/.test(head)) {
+            outBytes = await encryptPDF(plainBytes, password, {
+              ownerPassword: crypto.randomUUID().replace(/-/g, ""),
+              algorithm: "AES-256",
+              allowPrinting: true,
+              allowHighQualityPrint: true,
+              allowCopying: false,
+              allowModifying: false,
+              allowAnnotating: false,
+              allowFillingForms: false,
+              allowExtraction: false,
+              allowAssembly: false,
+            });
+            const head2 = new TextDecoder("latin1").decode(outBytes.subarray(0, Math.min(outBytes.length, 200000)));
+            if (!/\/Encrypt\b/.test(head2)) throw new Error("Rezultat necriptat");
+            const { error: upErr } = await admin.storage
+              .from("payslips")
+              .upload(s.file_path, outBytes, { contentType: "application/pdf", upsert: true });
+            if (upErr) throw new Error(upErr.message);
+          }
+          encryptedIds.push(s.id);
+        } catch (e) {
+          encryptFailures.push({ id: s.id, error: (e as Error).message });
+        }
+      }
+
+      if (encryptedIds.length === 0) {
+        return jsonResp({ error: "Criptarea a eșuat pentru toți fluturașii", failures: encryptFailures }, 500);
+      }
+
       const now = new Date().toISOString();
-      const ids = eligible.map((s: any) => s.id);
-      await admin.from("payslips").update({ match_status: "distributed", distributed_at: now }).in("id", ids);
+      await admin.from("payslips").update({ match_status: "distributed", distributed_at: now }).in("id", encryptedIds);
       await admin.from("payslip_batches").update({ status: "distributed", distributed_at: now }).eq("id", batch_id);
+
+      const eligibleForNotify = (eligible as any[]).filter(s => encryptedIds.includes(s.id));
+
 
       // In-app notification for each pilot employee whose payslip was distributed
       // Look up user_id via employee_records + pilot check
