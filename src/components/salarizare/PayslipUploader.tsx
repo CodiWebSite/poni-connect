@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Send, Info, Clock, XCircle, Eye } from 'lucide-react';
+import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Send, Info, Clock, XCircle, Eye, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -298,11 +298,57 @@ export default function PayslipUploader() {
     }
   };
 
+  const reprocessInputRef = useRef<HTMLInputElement | null>(null);
+  const [reprocessBatchId, setReprocessBatchId] = useState<string | null>(null);
+
+  const triggerReprocess = (batchId: string) => {
+    setReprocessBatchId(batchId);
+    // Reset value so selecting the same filename re-fires onChange
+    if (reprocessInputRef.current) reprocessInputRef.current.value = '';
+    reprocessInputRef.current?.click();
+  };
+
+  const handleReprocessFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    const batchId = reprocessBatchId;
+    if (!f || !batchId) return;
+    setBusy(batchId);
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      fd.append('batch_id', batchId);
+      const { data, error } = await supabase.functions.invoke('reprocess-payslip-batch', { body: fd });
+      if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la re-procesare'));
+      if (data?.error) throw new Error(data.error);
+      const okCount = data?.reprocessed ?? 0;
+      const total = data?.total_pending ?? 0;
+      if (okCount === 0 && total === 0) {
+        toast.info(data?.message || 'Nimic de re-procesat — toți fluturașii au deja fișier.');
+      } else {
+        toast.success(`Re-procesat: ${okCount} / ${total} fluturași fără fișier.`);
+      }
+      await loadBatches();
+      if (openBatch === batchId) await loadSlips(batchId);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+      setReprocessBatchId(null);
+    }
+  };
+
   const currentBatch = batches.find(b => b.id === openBatch);
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
 
   return (
     <div className="space-y-4">
+      <input
+        ref={reprocessInputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={handleReprocessFile}
+      />
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -434,6 +480,22 @@ export default function PayslipUploader() {
                       {b.status !== 'distributed' && (
                         <Button size="sm" variant="secondary" disabled={busy === b.id} onClick={() => distribute(b.id)}>
                           <Send className="w-3.5 h-3.5 mr-1" /> Distribuie
+                        </Button>
+                      )}
+                      {b.unmatched_count > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy === b.id}
+                          onClick={() => triggerReprocess(b.id)}
+                          title="Re-încarcă PDF-ul centralizator pentru a genera doar fluturașii fără fișier"
+                        >
+                          {busy === b.id ? (
+                            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                          )}
+                          Re-procesează
                         </Button>
                       )}
                       <Button size="sm" variant="ghost" disabled={busy === b.id} onClick={() => deleteBatch(b.id)}>
