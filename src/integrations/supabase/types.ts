@@ -2796,6 +2796,7 @@ export type Database = {
           download_count: number
           employee_epd_id: string | null
           file_path: string | null
+          file_path_encrypted: string | null
           first_downloaded_at: string | null
           id: string
           marca_detected: string | null
@@ -2815,6 +2816,7 @@ export type Database = {
           download_count?: number
           employee_epd_id?: string | null
           file_path?: string | null
+          file_path_encrypted?: string | null
           first_downloaded_at?: string | null
           id?: string
           marca_detected?: string | null
@@ -2834,6 +2836,7 @@ export type Database = {
           download_count?: number
           employee_epd_id?: string | null
           file_path?: string | null
+          file_path_encrypted?: string | null
           first_downloaded_at?: string | null
           id?: string
           marca_detected?: string | null
