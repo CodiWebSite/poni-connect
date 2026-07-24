@@ -2764,6 +2764,53 @@ export type Database = {
         }
         Relationships: []
       }
+      payslip_issue_reports: {
+        Row: {
+          created_at: string
+          id: string
+          payslip_id: string
+          reason: string
+          reported_by: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payslip_id: string
+          reason: string
+          reported_by: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payslip_id?: string
+          reason?: string
+          reported_by?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslip_issue_reports_payslip_id_fkey"
+            columns: ["payslip_id"]
+            isOneToOne: false
+            referencedRelation: "payslips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payslip_pilot_users: {
         Row: {
           added_by: string | null
