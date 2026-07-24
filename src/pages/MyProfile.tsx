@@ -138,6 +138,7 @@ const getDocIcon = (name: string) => {
 const MyProfile = () => {
   const { user } = useAuth();
   const { role, canManageHR } = useUserRole();
+  const { isPilot: isPayslipPilot } = usePayslipPilot();
   const { isImpersonating, impersonatedUserEmail } = useImpersonation();
   const { toast } = useToast();
   
