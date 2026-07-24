@@ -36,7 +36,10 @@ export default function MyPayslipsCard() {
       if (!uid) { setLoading(false); return; }
 
       const { data: pilotFlag } = await supabase.rpc('is_payslip_pilot_user', { _user_id: uid });
-      const isPilot = pilotFlag === true;
+      const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', uid);
+      const roleSet = new Set((roles ?? []).map((r: any) => r.role));
+      const roleBypass = roleSet.has('super_admin') || roleSet.has('salarizare');
+      const isPilot = pilotFlag === true || roleBypass;
 
       const { data: recs } = await supabase
         .from('employee_records')
