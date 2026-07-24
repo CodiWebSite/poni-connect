@@ -69,9 +69,11 @@ Deno.serve(async (req) => {
       );
       if (eligible.length === 0) return jsonResp({ error: "Niciun fluturaș eligibil pentru distribuție" }, 422);
 
-      // Encrypt each staged plain PDF in place with the employee's last-6-CNP password.
+      // Encrypt each staged plain PDF into a SEPARATE encrypted path so admins keep
+      // the plain preview and employees receive the encrypted copy.
       const encryptFailures: Array<{ id: string; error: string }> = [];
       const encryptedIds: string[] = [];
+      const encryptedPaths: Record<string, string> = {};
       for (const s of eligible as any[]) {
         try {
           const { data: epd } = await admin
@@ -88,29 +90,27 @@ Deno.serve(async (req) => {
           if (dlErr || !blob) throw new Error(dlErr?.message ?? "download failed");
           const plainBytes = new Uint8Array(await blob.arrayBuffer());
 
-          // If already encrypted (e.g. re-distribute), skip.
-          const head = new TextDecoder("latin1").decode(plainBytes.subarray(0, Math.min(plainBytes.length, 200000)));
-          let outBytes = plainBytes;
-          if (!/\/Encrypt\b/.test(head)) {
-            outBytes = await encryptPDF(plainBytes, password, {
-              ownerPassword: crypto.randomUUID().replace(/-/g, ""),
-              algorithm: "AES-256",
-              allowPrinting: true,
-              allowHighQualityPrint: true,
-              allowCopying: false,
-              allowModifying: false,
-              allowAnnotating: false,
-              allowFillingForms: false,
-              allowExtraction: false,
-              allowAssembly: false,
-            });
-            const head2 = new TextDecoder("latin1").decode(outBytes.subarray(0, Math.min(outBytes.length, 200000)));
-            if (!/\/Encrypt\b/.test(head2)) throw new Error("Rezultat necriptat");
-            const { error: upErr } = await admin.storage
-              .from("payslips")
-              .upload(s.file_path, outBytes, { contentType: "application/pdf", upsert: true });
-            if (upErr) throw new Error(upErr.message);
-          }
+          const encPath = s.file_path.replace(/\.pdf$/i, "") + ".enc.pdf";
+          const outBytes = await encryptPDF(plainBytes, password, {
+            ownerPassword: crypto.randomUUID().replace(/-/g, ""),
+            algorithm: "AES-256",
+            allowPrinting: true,
+            allowHighQualityPrint: true,
+            allowCopying: false,
+            allowModifying: false,
+            allowAnnotating: false,
+            allowFillingForms: false,
+            allowExtraction: false,
+            allowAssembly: false,
+          });
+          const head2 = new TextDecoder("latin1").decode(outBytes.subarray(0, Math.min(outBytes.length, 200000)));
+          if (!/\/Encrypt\b/.test(head2)) throw new Error("Rezultat necriptat");
+          const { error: upErr } = await admin.storage
+            .from("payslips")
+            .upload(encPath, outBytes, { contentType: "application/pdf", upsert: true });
+          if (upErr) throw new Error(upErr.message);
+
+          encryptedPaths[s.id] = encPath;
           encryptedIds.push(s.id);
         } catch (e) {
           encryptFailures.push({ id: s.id, error: (e as Error).message });
@@ -122,7 +122,14 @@ Deno.serve(async (req) => {
       }
 
       const now = new Date().toISOString();
-      await admin.from("payslips").update({ match_status: "distributed", distributed_at: now }).in("id", encryptedIds);
+      // Persist encrypted path per slip
+      for (const id of encryptedIds) {
+        await admin.from("payslips").update({
+          match_status: "distributed",
+          distributed_at: now,
+          file_path_encrypted: encryptedPaths[id],
+        }).eq("id", id);
+      }
       await admin.from("payslip_batches").update({ status: "distributed", distributed_at: now }).eq("id", batch_id);
 
       const eligibleForNotify = (eligible as any[]).filter(s => encryptedIds.includes(s.id));
