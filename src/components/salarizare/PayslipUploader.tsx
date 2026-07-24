@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Send, Info, Clock, XCircle } from 'lucide-react';
+import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Send, Info, Clock, XCircle, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -97,6 +97,23 @@ export default function PayslipUploader() {
   const [slips, setSlips] = useState<Slip[]>([]);
   const [employees, setEmployees] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<string | null>(null);
+
+  const previewSlip = async (payslip_id: string) => {
+    setPreviewing(payslip_id);
+    try {
+      const { data, error } = await supabase.functions.invoke('payslip-download', {
+        body: { payslip_id },
+      });
+      if (error || !data?.url) throw new Error(error?.message || 'Nu am putut genera previzualizarea');
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+      toast.success('Previzualizare deschisă. Parola: ultimele 6 cifre din CNP-ul angajatului.');
+    } catch (e) {
+      toast.error((e as Error).message || 'Eroare la previzualizare');
+    } finally {
+      setPreviewing(null);
+    }
+  };
   const [progress, setProgress] = useState<{
     phase: 'idle' | 'uploading' | 'detecting' | 'processing' | 'done' | 'failed';
     processed: number;
@@ -454,6 +471,7 @@ export default function PayslipUploader() {
                     <th className="text-left p-2">Nume detectat</th>
                     <th className="text-left p-2">Marcă</th>
                     <th className="text-left p-2">Status</th>
+                    <th className="text-left p-2">Previzualizare</th>
                     <th className="text-left p-2">Asociere</th>
                   </tr>
                 </thead>
@@ -470,6 +488,20 @@ export default function PayslipUploader() {
                             <Icon className="w-3 h-3 mr-1" /> {meta.label}
                           </Badge>
                           {s.match_notes && <div className="text-[10px] text-muted-foreground mt-1">{s.match_notes}</div>}
+                        </td>
+                        <td className="p-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={!s.file_path || previewing === s.id}
+                            onClick={() => previewSlip(s.id)}
+                          >
+                            {previewing === s.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <><Eye className="w-3.5 h-3.5 mr-1" /> Vezi</>
+                            )}
+                          </Button>
                         </td>
                         <td className="p-2">
                           {s.match_status === 'distributed' ? (
