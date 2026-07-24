@@ -97,6 +97,23 @@ export default function PayslipUploader() {
   const [slips, setSlips] = useState<Slip[]>([]);
   const [employees, setEmployees] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<string | null>(null);
+
+  const previewSlip = async (payslip_id: string) => {
+    setPreviewing(payslip_id);
+    try {
+      const { data, error } = await supabase.functions.invoke('payslip-download', {
+        body: { payslip_id },
+      });
+      if (error || !data?.url) throw new Error(error?.message || 'Nu am putut genera previzualizarea');
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+      toast.success('Previzualizare deschisă. Parola: ultimele 6 cifre din CNP-ul angajatului.');
+    } catch (e) {
+      toast.error((e as Error).message || 'Eroare la previzualizare');
+    } finally {
+      setPreviewing(null);
+    }
+  };
   const [progress, setProgress] = useState<{
     phase: 'idle' | 'uploading' | 'detecting' | 'processing' | 'done' | 'failed';
     processed: number;
