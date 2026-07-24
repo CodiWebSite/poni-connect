@@ -125,12 +125,6 @@ Deno.serve(async (req) => {
       return jsonResp({ ok: true });
     }
 
-    if (action === "add_pilot" || action === "remove_pilot") {
-      if (!roleSet.has("super_admin")) return jsonResp({ error: "Doar super_admin" }, 403);
-      const email = String((await Promise.resolve(0), (arguments as any))) // placeholder; real value below
-      return jsonResp({ error: "Use payslip-pilot function" }, 400);
-    }
-
     return jsonResp({ error: "Acțiune necunoscută" }, 400);
   } catch (e) {
     console.error("payslip-batch-action error", e);
