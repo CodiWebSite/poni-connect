@@ -494,7 +494,7 @@ export default function PayslipUploader() {
                           size="sm"
                           variant="outline"
                           disabled={busy === b.id}
-                          onClick={() => triggerReprocess(b.id)}
+                          onClick={() => triggerReprocess(b.id, 'missing')}
                           title="Re-încarcă PDF-ul centralizator pentru a genera doar fluturașii fără fișier"
                         >
                           {busy === b.id ? (
@@ -503,6 +503,22 @@ export default function PayslipUploader() {
                             <RefreshCw className="w-3.5 h-3.5 mr-1" />
                           )}
                           Re-procesează
+                        </Button>
+                      )}
+                      {b.status === 'distributed' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy === b.id}
+                          onClick={() => triggerReprocess(b.id, 'restage_plain')}
+                          title="Regenerează previzualizarea necriptată pentru loturile vechi distribuite (fișierul criptat rămâne pentru angajați)"
+                        >
+                          {busy === b.id ? (
+                            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5 mr-1" />
+                          )}
+                          Restagează preview
                         </Button>
                       )}
                       <Button size="sm" variant="ghost" disabled={busy === b.id} onClick={() => deleteBatch(b.id)}>
