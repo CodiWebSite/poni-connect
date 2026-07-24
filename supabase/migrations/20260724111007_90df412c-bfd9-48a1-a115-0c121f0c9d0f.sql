@@ -1,0 +1,1 @@
+ALTER TABLE public.payslips ADD COLUMN IF NOT EXISTS file_path_encrypted TEXT;
