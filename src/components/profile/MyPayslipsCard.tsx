@@ -30,9 +30,30 @@ export default function MyPayslipsCard() {
 
   useEffect(() => {
     (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id;
+      if (!uid) { setLoading(false); return; }
+
+      // Găsește epd_id-urile utilizatorului curent (via employee_records.user_id)
+      const { data: recs } = await supabase
+        .from('employee_records')
+        .select('id')
+        .eq('user_id', uid);
+      const recIds = (recs ?? []).map((r: any) => r.id);
+      if (recIds.length === 0) { setRows([]); setLoading(false); return; }
+
+      const { data: epds } = await supabase
+        .from('employee_personal_data')
+        .select('id')
+        .in('employee_record_id', recIds);
+      const epdIds = (epds ?? []).map((e: any) => e.id);
+      if (epdIds.length === 0) { setRows([]); setLoading(false); return; }
+
       const { data, error } = await supabase
         .from('payslips')
         .select('id, month, year, distributed_at, download_count, first_downloaded_at')
+        .in('employee_epd_id', epdIds)
+        .eq('match_status', 'distributed')
         .order('year', { ascending: false })
         .order('month', { ascending: false });
       if (!error && data) setRows(data as PayslipRow[]);
