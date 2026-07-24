@@ -540,6 +540,8 @@ const Salarizare = () => {
 
         <PayslipUploader />
 
+        <PayslipIssueReports />
+
         {isSuperAdmin && <PayslipAuditLog />}
 
 
