@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Banknote, Download, Info, KeyRound, Loader2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertTriangle, Banknote, CheckCircle2, Download, Info, KeyRound, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -28,6 +30,20 @@ export default function MyPayslipsCard() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [reporting, setReporting] = useState<PayslipRow | null>(null);
+  const [reason, setReason] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
+
+  const loadReports = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const { data } = await supabase
+      .from('payslip_issue_reports')
+      .select('payslip_id')
+      .in('payslip_id', ids)
+      .eq('status', 'open');
+    setReportedIds(new Set((data ?? []).map((r: any) => r.payslip_id)));
+  };
 
   useEffect(() => {
     (async () => {
@@ -71,6 +87,7 @@ export default function MyPayslipsCard() {
       setRows(payslipRows);
       setHasAccess(isPilot || payslipRows.length > 0);
       setLoading(false);
+      loadReports(payslipRows.map(r => r.id));
     })();
   }, []);
 
@@ -95,6 +112,28 @@ export default function MyPayslipsCard() {
     }
   };
 
+  const submitReport = async () => {
+    if (!reporting) return;
+    const trimmed = reason.trim();
+    if (trimmed.length < 10) {
+      toast.error('Vă rugăm descrieți problema (minim 10 caractere)');
+      return;
+    }
+    setSubmittingReport(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const { error } = await supabase.from('payslip_issue_reports').insert({
+      payslip_id: reporting.id,
+      reported_by: userData?.user?.id,
+      reason: trimmed,
+    });
+    setSubmittingReport(false);
+    if (error) { toast.error('Nu am putut trimite sesizarea'); return; }
+    toast.success('Sesizare trimisă către Salarizare. Vă vor contacta cât de curând.');
+    setReportedIds(prev => new Set(prev).add(reporting.id));
+    setReporting(null);
+    setReason('');
+  };
+
   return (
     <Card className="animate-fade-in border-accent/30" style={{ animationDelay: '180ms' }}>
       <CardHeader className="pb-3">
@@ -116,6 +155,8 @@ export default function MyPayslipsCard() {
           <KeyRound className="w-4 h-4" />
           <AlertDescription className="text-xs">
             Fișierul PDF este protejat cu parolă. <strong>Parola = ultimele 6 cifre din CNP-ul dvs.</strong> Introduceți-o când vă deschide cititorul PDF fișierul.
+            <br />
+            <span className="text-muted-foreground">Dacă fluturașul nu vă corespunde (date greșite, alt angajat, sume incorecte), apăsați <strong>„Semnalează problemă"</strong> și Salarizarea va înlocui documentul.</span>
           </AlertDescription>
         </Alert>
 
@@ -130,32 +171,87 @@ export default function MyPayslipsCard() {
           </div>
         ) : (
           <div className="space-y-2">
-            {rows.map((r) => (
-              <div key={r.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
-                <div className="min-w-0">
-                  <div className="font-medium text-sm">{MONTH_NAMES_RO[r.month - 1]} {r.year}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {r.distributed_at ? `Distribuit ${format(new Date(r.distributed_at), 'd MMM yyyy', { locale: ro })}` : 'În pregătire'}
-                    {r.download_count > 0 && ` • Descărcat de ${r.download_count} ori`}
+            {rows.map((r) => {
+              const isReported = reportedIds.has(r.id);
+              return (
+                <div key={r.id} className={`p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors ${isReported ? 'border-amber-500/50 bg-amber-500/5' : ''}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium text-sm flex items-center gap-2">
+                        {MONTH_NAMES_RO[r.month - 1]} {r.year}
+                        {isReported && (
+                          <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-700">
+                            <AlertTriangle className="w-3 h-3 mr-1" /> În verificare
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {r.distributed_at ? `Distribuit ${format(new Date(r.distributed_at), 'd MMM yyyy', { locale: ro })}` : 'În pregătire'}
+                        {r.download_count > 0 && ` • Descărcat de ${r.download_count} ori`}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-amber-700 hover:text-amber-800 hover:bg-amber-500/10"
+                        disabled={isReported}
+                        onClick={() => { setReporting(r); setReason(''); }}
+                        title="Semnalează că fluturașul nu îmi corespunde"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
+                        {isReported ? 'Semnalat' : 'Semnalează'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={downloading === r.id || !r.distributed_at}
+                        onClick={() => download(r.id)}
+                      >
+                        {downloading === r.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <><Download className="w-3.5 h-3.5 mr-1.5" /> Descarcă</>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled={downloading === r.id || !r.distributed_at}
-                  onClick={() => download(r.id)}
-                >
-                  {downloading === r.id ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <><Download className="w-3.5 h-3.5 mr-1.5" /> Descarcă</>
-                  )}
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
+
+      <Dialog open={!!reporting} onOpenChange={(o) => { if (!o) { setReporting(null); setReason(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
+              Semnalează un fluturaș incorect
+            </DialogTitle>
+            <DialogDescription>
+              {reporting && (
+                <>Fluturaș: <strong>{MONTH_NAMES_RO[reporting.month - 1]} {reporting.year}</strong>. Descrieți cât mai clar ce nu corespunde (nume, sumă, spor lipsă etc.). Salarizarea va încărca varianta corectă.</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Ex: Suma netă este greșită / fluturașul este pe alt coleg / lipsește sporul XYZ..."
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={5}
+            maxLength={1000}
+          />
+          <div className="text-[11px] text-muted-foreground text-right">{reason.length}/1000</div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReporting(null)}>Anulează</Button>
+            <Button onClick={submitReport} disabled={submittingReport}>
+              {submittingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1.5" /> Trimite sesizarea</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
