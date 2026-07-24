@@ -475,6 +475,22 @@ export default function PayslipUploader() {
                           <Send className="w-3.5 h-3.5 mr-1" /> Distribuie
                         </Button>
                       )}
+                      {b.unmatched_count > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy === b.id}
+                          onClick={() => triggerReprocess(b.id)}
+                          title="Re-încarcă PDF-ul centralizator pentru a genera doar fluturașii fără fișier"
+                        >
+                          {busy === b.id ? (
+                            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                          )}
+                          Re-procesează
+                        </Button>
+                      )}
                       <Button size="sm" variant="ghost" disabled={busy === b.id} onClick={() => deleteBatch(b.id)}>
                         <Trash2 className="w-3.5 h-3.5 text-destructive" />
                       </Button>
