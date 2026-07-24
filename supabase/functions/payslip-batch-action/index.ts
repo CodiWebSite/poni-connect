@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
 
       // In-app notification for each pilot employee whose payslip was distributed
       // Look up user_id via employee_records + pilot check
-      for (const s of eligible) {
+      for (const s of eligibleForNotify) {
         const { data: epd } = await admin
           .from("employee_personal_data")
           .select("employee_record_id, first_name, last_name")
@@ -164,10 +164,12 @@ Deno.serve(async (req) => {
       }
 
       await admin.from("payslip_audit_log").insert({
-        user_id: userId, batch_id, action: "distribute", details: { count: eligible.length },
+        user_id: userId, batch_id, action: "distribute",
+        details: { count: encryptedIds.length, failures: encryptFailures },
       });
-      return jsonResp({ ok: true, distributed: eligible.length });
+      return jsonResp({ ok: true, distributed: encryptedIds.length, failures: encryptFailures });
     }
+
 
     if (action === "delete_batch") {
       if (!batch_id) return jsonResp({ error: "batch_id" }, 400);
