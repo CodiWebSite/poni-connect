@@ -10,7 +10,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { PDFDocument } from "pdf-lib";
-import { encryptPDF } from "pdf-encrypt";
+// @ts-ignore - pdfjs legacy build
 // @ts-ignore - pdfjs legacy build
 import * as pdfjs from "pdfjs-dist";
 
