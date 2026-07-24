@@ -446,28 +446,30 @@ Deno.serve(async (req) => {
           results.push({ name: slip.rawName, marca: slip.marca, status, employeeId: matched, notes });
           continue;
         }
+        // Stage the plain (unencrypted) slip so admins can preview before distribution.
+        // The CNP is still validated so we know we can encrypt later at distribute time.
         const cnp = (emp.cnp ?? "").replace(/\D/g, "");
         if (cnp.length >= 6) {
-          const password = cnp.slice(-6);
           try {
-            const encrypted = await encryptSubsetToPdf(srcDoc, slip.pageIndex, slip.cropBox, password);
+            const plain = await cropSubsetToPdf(srcDoc, slip.pageIndex, slip.cropBox);
             const path = `${year}/${String(month).padStart(2, "0")}/${matched}_${batchId}_${slip.positionOnPage}.pdf`;
             const { error: upErr } = await admin.storage
               .from("payslips")
-              .upload(path, encrypted, { contentType: "application/pdf", upsert: true });
+              .upload(path, plain, { contentType: "application/pdf", upsert: true });
             if (upErr) {
               notes = (notes ? notes + " | " : "") + `Storage error: ${upErr.message}`;
             } else {
               filePath = path;
             }
           } catch (e) {
-            notes = (notes ? notes + " | " : "") + `Encrypt error: ${(e as Error).message}`;
+            notes = (notes ? notes + " | " : "") + `Crop error: ${(e as Error).message}`;
           }
         } else {
-          notes = (notes ? notes + " | " : "") + "CNP lipsă/prea scurt — nu se poate cripta";
+          notes = (notes ? notes + " | " : "") + "CNP lipsă/prea scurt — necesar pentru criptare la distribuție";
           status = "unmatched";
           matched = null;
         }
+
       }
 
       await admin.from("payslips").insert({
