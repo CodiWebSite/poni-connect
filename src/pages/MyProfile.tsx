@@ -26,6 +26,8 @@ import { ro } from 'date-fns/locale';
 import { formatNumePrenume } from '@/utils/formatName';
 import { isHrRequestOwnedByUser, isLeaveRequestOwnedByUser } from '@/utils/leaveOwnership';
 import { getLeaveStyle } from '@/utils/leaveTypes';
+import { usePayslipPilot } from '@/hooks/usePayslipPilot';
+import MyPayslipsCard from '@/components/profile/MyPayslipsCard';
 
 interface Profile {
   full_name: string;
