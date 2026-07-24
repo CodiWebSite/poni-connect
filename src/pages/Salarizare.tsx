@@ -15,6 +15,7 @@ import { ro } from 'date-fns/locale';
 import { LEAVE_TYPES, LEAVE_TYPE_MAP } from '@/utils/leaveTypes';
 import { isPublicHoliday } from '@/utils/romanianHolidays';
 import PayslipUploader from '@/components/salarizare/PayslipUploader';
+import PayslipAuditLog from '@/components/salarizare/PayslipAuditLog';
 
 const MONTH_NAMES_RO = [
   'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
