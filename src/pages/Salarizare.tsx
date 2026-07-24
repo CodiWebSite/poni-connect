@@ -15,6 +15,7 @@ import { ro } from 'date-fns/locale';
 import { LEAVE_TYPES, LEAVE_TYPE_MAP } from '@/utils/leaveTypes';
 import { isPublicHoliday } from '@/utils/romanianHolidays';
 import PayslipUploader from '@/components/salarizare/PayslipUploader';
+import PayslipAuditLog from '@/components/salarizare/PayslipAuditLog';
 
 const MONTH_NAMES_RO = [
   'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
@@ -374,7 +375,7 @@ function addBalanceSummarySheet(
 const Salarizare = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isSalarizare, loading: roleLoading } = useUserRole();
+  const { isSalarizare, isSuperAdmin, loading: roleLoading } = useUserRole();
   const [exporting, setExporting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -537,6 +538,10 @@ const Salarizare = () => {
         </div>
 
         <PayslipUploader />
+
+        {isSuperAdmin && <PayslipAuditLog />}
+
+
 
 
         <div className="grid gap-4 md:grid-cols-3">

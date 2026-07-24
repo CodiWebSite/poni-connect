@@ -223,26 +223,34 @@ Deno.serve(async (req) => {
     const form = await req.formData();
     const file = form.get("file") as File | null;
     const batchId = String(form.get("batch_id") ?? "");
+    const mode = String(form.get("mode") ?? "missing"); // 'missing' | 'restage_plain'
     if (!file) return jsonResp({ error: "Fișierul PDF lipsește" }, 400);
     if (!batchId) return jsonResp({ error: "batch_id lipsă" }, 400);
 
-    // Load batch + slips that still need a file
+    // Load batch + slips to process
     const { data: batch } = await admin
       .from("payslip_batches").select("id, month, year, status").eq("id", batchId).maybeSingle();
     if (!batch) return jsonResp({ error: "Lotul nu există" }, 404);
     const { month, year } = batch as { month: number; year: number };
 
-    const { data: pendingSlips } = await admin
+    let pendingQuery = admin
       .from("payslips")
-      .select("id, employee_epd_id, name_normalized, name_detected, match_status")
-      .eq("batch_id", batchId)
-      .is("file_path", null);
+      .select("id, employee_epd_id, name_normalized, name_detected, match_status, file_path, file_path_encrypted")
+      .eq("batch_id", batchId);
+    if (mode === "restage_plain") {
+      // Legacy: file exists but was encrypted in-place (no separate plain copy).
+      pendingQuery = pendingQuery.not("file_path", "is", null).is("file_path_encrypted", null);
+    } else {
+      pendingQuery = pendingQuery.is("file_path", null);
+    }
+    const { data: pendingSlips } = await pendingQuery;
     const pending = (pendingSlips ?? []) as Array<{
-      id: string; employee_epd_id: string | null; name_normalized: string; name_detected: string; match_status: string;
+      id: string; employee_epd_id: string | null; name_normalized: string; name_detected: string;
+      match_status: string; file_path: string | null; file_path_encrypted: string | null;
     }>;
 
     if (pending.length === 0) {
-      return jsonResp({ ok: true, reprocessed: 0, message: "Toți fluturașii din lot au deja fișier — nimic de re-procesat." });
+      return jsonResp({ ok: true, reprocessed: 0, message: "Nimic de re-procesat pentru modul selectat." });
     }
 
     // Employees for CNP lookup
@@ -320,22 +328,28 @@ Deno.serve(async (req) => {
 
       try {
         const plain = await cropSubsetToPdf(srcDoc, match.pageIndex, match.cropBox);
-        const path = `${year}/${String(month).padStart(2, "0")}/${slip.employee_epd_id}_${batchId}_${match.positionOnPage}_r.pdf`;
+        const suffix = mode === "restage_plain" ? "_plain" : "_r";
+        const path = `${year}/${String(month).padStart(2, "0")}/${slip.employee_epd_id}_${batchId}_${match.positionOnPage}${suffix}.pdf`;
         const { error: upErr } = await admin.storage
           .from("payslips")
           .upload(path, plain, { contentType: "application/pdf", upsert: true });
         if (upErr) throw new Error(upErr.message);
 
-        const newStatus = slip.match_status === "unmatched" ? "needs_confirm" : slip.match_status;
-        await admin.from("payslips").update({
-          file_path: path,
-          match_status: newStatus,
-          match_notes: "Re-procesat — fișier re-generat (criptare la distribuție)",
-        }).eq("id", slip.id);
+        const updatePatch: Record<string, unknown> = { file_path: path };
+        if (mode === "restage_plain") {
+          // Preserve legacy encrypted-in-place file as the distribution copy.
+          updatePatch.file_path_encrypted = slip.file_path;
+          updatePatch.match_notes = "Restaged plain preview — legacy encrypted file kept for owners";
+        } else {
+          updatePatch.match_status = slip.match_status === "unmatched" ? "needs_confirm" : slip.match_status;
+          updatePatch.match_notes = "Re-procesat — fișier re-generat (criptare la distribuție)";
+        }
+        await admin.from("payslips").update(updatePatch).eq("id", slip.id);
 
 
         await admin.from("payslip_audit_log").insert({
-          user_id: userId, payslip_id: slip.id, batch_id: batchId, action: "reprocess",
+          user_id: userId, payslip_id: slip.id, batch_id: batchId,
+          action: mode === "restage_plain" ? "restage_plain" : "reprocess",
         });
 
         reprocessed++;

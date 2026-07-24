@@ -107,7 +107,7 @@ export default function PayslipUploader() {
       });
       if (error || !data?.url) throw new Error(error?.message || 'Nu am putut genera previzualizarea');
       window.open(data.url, '_blank', 'noopener,noreferrer');
-      toast.success('Previzualizare deschisă. Parola: ultimele 6 cifre din CNP-ul angajatului.');
+      toast.success('Previzualizare deschisă (necriptată — vizibilă doar pentru rolurile Salarizare / Super-admin).');
     } catch (e) {
       toast.error((e as Error).message || 'Eroare la previzualizare');
     } finally {
@@ -300,9 +300,11 @@ export default function PayslipUploader() {
 
   const reprocessInputRef = useRef<HTMLInputElement | null>(null);
   const [reprocessBatchId, setReprocessBatchId] = useState<string | null>(null);
+  const [reprocessMode, setReprocessMode] = useState<'missing' | 'restage_plain'>('missing');
 
-  const triggerReprocess = (batchId: string) => {
+  const triggerReprocess = (batchId: string, mode: 'missing' | 'restage_plain' = 'missing') => {
     setReprocessBatchId(batchId);
+    setReprocessMode(mode);
     // Reset value so selecting the same filename re-fires onChange
     if (reprocessInputRef.current) reprocessInputRef.current.value = '';
     reprocessInputRef.current?.click();
@@ -311,19 +313,23 @@ export default function PayslipUploader() {
   const handleReprocessFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     const batchId = reprocessBatchId;
+    const mode = reprocessMode;
     if (!f || !batchId) return;
     setBusy(batchId);
     try {
       const fd = new FormData();
       fd.append('file', f);
       fd.append('batch_id', batchId);
+      fd.append('mode', mode);
       const { data, error } = await supabase.functions.invoke('reprocess-payslip-batch', { body: fd });
       if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la re-procesare'));
       if (data?.error) throw new Error(data.error);
       const okCount = data?.reprocessed ?? 0;
-      const total = data?.total_pending ?? 0;
-      if (okCount === 0 && total === 0) {
-        toast.info(data?.message || 'Nimic de re-procesat — toți fluturașii au deja fișier.');
+      const total = data?.total_pending ?? okCount;
+      if (okCount === 0) {
+        toast.info(data?.message || 'Nimic de re-procesat.');
+      } else if (mode === 'restage_plain') {
+        toast.success(`Restagat pentru previzualizare: ${okCount} fluturași.`);
       } else {
         toast.success(`Re-procesat: ${okCount} / ${total} fluturași fără fișier.`);
       }
@@ -334,6 +340,7 @@ export default function PayslipUploader() {
     } finally {
       setBusy(null);
       setReprocessBatchId(null);
+      setReprocessMode('missing');
     }
   };
 
@@ -487,7 +494,7 @@ export default function PayslipUploader() {
                           size="sm"
                           variant="outline"
                           disabled={busy === b.id}
-                          onClick={() => triggerReprocess(b.id)}
+                          onClick={() => triggerReprocess(b.id, 'missing')}
                           title="Re-încarcă PDF-ul centralizator pentru a genera doar fluturașii fără fișier"
                         >
                           {busy === b.id ? (
@@ -496,6 +503,22 @@ export default function PayslipUploader() {
                             <RefreshCw className="w-3.5 h-3.5 mr-1" />
                           )}
                           Re-procesează
+                        </Button>
+                      )}
+                      {b.status === 'distributed' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy === b.id}
+                          onClick={() => triggerReprocess(b.id, 'restage_plain')}
+                          title="Regenerează previzualizarea necriptată pentru loturile vechi distribuite (fișierul criptat rămâne pentru angajați)"
+                        >
+                          {busy === b.id ? (
+                            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5 mr-1" />
+                          )}
+                          Restagează preview
                         </Button>
                       )}
                       <Button size="sm" variant="ghost" disabled={busy === b.id} onClick={() => deleteBatch(b.id)}>
