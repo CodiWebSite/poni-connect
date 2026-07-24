@@ -539,6 +539,10 @@ const Salarizare = () => {
 
         <PayslipUploader />
 
+        {isSuperAdmin && <PayslipAuditLog />}
+
+
+
 
         <div className="grid gap-4 md:grid-cols-3">
           {/* Luna precedentă */}
