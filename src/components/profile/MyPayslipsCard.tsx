@@ -87,6 +87,7 @@ export default function MyPayslipsCard() {
       setRows(payslipRows);
       setHasAccess(isPilot || payslipRows.length > 0);
       setLoading(false);
+      loadReports(payslipRows.map(r => r.id));
     })();
   }, []);
 
