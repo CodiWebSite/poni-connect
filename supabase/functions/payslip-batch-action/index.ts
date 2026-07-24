@@ -1,5 +1,8 @@
 // Admin actions on payslip batches: manual match, distribute, delete slip.
+// distribute_batch encrypts each staged (plain) PDF with the employee's last-6-CNP password.
 import { createClient } from "@supabase/supabase-js";
+import { encryptPDF } from "pdf-encrypt";
+
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
