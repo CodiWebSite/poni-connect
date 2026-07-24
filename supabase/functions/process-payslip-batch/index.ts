@@ -1,6 +1,7 @@
 // process-payslip-batch
-// Split a monthly payslip PDF into per-employee, password-encrypted PDFs.
-// Match employees by NAME (last_name + first_name), not by marca.
+// Split a monthly payslip PDF into per-employee slips (stored unencrypted for admin preview).
+// Encryption with CNP-based password happens at distribution time in payslip-batch-action.
+
 
 import { createClient } from "@supabase/supabase-js";
 import { PDFDocument } from "pdf-lib";
