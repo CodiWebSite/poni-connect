@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     // Load payslip
     const { data: payslip } = await admin
       .from("payslips")
-      .select("id, employee_epd_id, file_path, match_status, month, year")
+      .select("id, employee_epd_id, file_path, file_path_encrypted, match_status, month, year, first_downloaded_at, download_count")
       .eq("id", payslip_id)
       .maybeSingle();
     if (!payslip || !payslip.file_path) return jsonResp({ error: "Fluturaș inexistent" }, 404);
@@ -53,6 +53,9 @@ Deno.serve(async (req) => {
     const isAdmin = roleSet.has("super_admin") || roleSet.has("salarizare");
 
     let action = "download";
+    // Admins get the plain preview (file_path); owners get the encrypted copy when distributed.
+    let pathToServe: string = payslip.file_path as string;
+
     if (!isAdmin) {
       // Must be pilot AND own the payslip AND status = distributed
       const { data: pilot } = await admin
@@ -77,6 +80,10 @@ Deno.serve(async (req) => {
         .eq("id", epd.employee_record_id)
         .maybeSingle();
       if (rec?.user_id !== userId) return jsonResp({ error: "Nu ești proprietarul" }, 403);
+
+      // Serve the encrypted copy to owners. Fall back to file_path only if legacy
+      // (older distributions before the split path was introduced encrypted file_path in place).
+      pathToServe = (payslip.file_path_encrypted as string | null) ?? (payslip.file_path as string);
     } else {
       action = "admin_view";
     }
@@ -84,7 +91,7 @@ Deno.serve(async (req) => {
     // Signed URL, TTL 60s
     const { data: signed, error: sErr } = await admin.storage
       .from("payslips")
-      .createSignedUrl(payslip.file_path, 60);
+      .createSignedUrl(pathToServe, 60);
     if (sErr || !signed) return jsonResp({ error: "Eroare URL semnat", detail: sErr?.message }, 500);
 
     // Update stats + audit
