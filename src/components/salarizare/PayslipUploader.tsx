@@ -335,6 +335,47 @@ export default function PayslipUploader() {
             {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
             Procesează lotul
           </Button>
+
+          {progress && (
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {progress.phase === 'done' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : progress.phase === 'failed' ? (
+                    <XCircle className="w-4 h-4 text-destructive" />
+                  ) : (
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  )}
+                  <span>
+                    {progress.phase === 'uploading' && 'Se încarcă fișierul…'}
+                    {progress.phase === 'detecting' && 'Se detectează fluturașii…'}
+                    {progress.phase === 'processing' && 'Se procesează fluturașii…'}
+                    {progress.phase === 'done' && 'Procesare finalizată'}
+                    {progress.phase === 'failed' && 'Procesare eșuată'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  {progress.total > 0 && (
+                    <span>{progress.processed} / {progress.total} fluturași</span>
+                  )}
+                  <span className="tabular-nums">⏱ {formatElapsed(progress.elapsedMs)}</span>
+                </div>
+              </div>
+              <Progress
+                value={
+                  progress.phase === 'done' ? 100
+                  : progress.phase === 'failed' ? 100
+                  : progress.total > 0 ? Math.min(99, Math.round((progress.processed / progress.total) * 100))
+                  : progress.phase === 'uploading' ? 15
+                  : progress.phase === 'detecting' ? 35
+                  : 55
+                }
+                className={progress.phase === 'failed' ? '[&>div]:bg-destructive' : ''}
+              />
+              <div className="text-[11px] text-muted-foreground">{progress.message}</div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
