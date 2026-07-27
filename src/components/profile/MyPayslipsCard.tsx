@@ -142,7 +142,7 @@ export default function MyPayslipsCard() {
               Istoric lună-cu-lună al fluturașilor de salariu, disponibili în format PDF criptat.
             </CardDescription>
           </div>
-          <Badge variant="outline" className="text-[10px]">Fază pilot</Badge>
+          <Badge variant="outline" className="text-[10px]">Live</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
