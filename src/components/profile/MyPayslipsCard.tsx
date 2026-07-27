@@ -51,12 +51,6 @@ export default function MyPayslipsCard() {
       const uid = userData?.user?.id;
       if (!uid) { setLoading(false); return; }
 
-      const { data: pilotFlag } = await supabase.rpc('is_payslip_pilot_user', { _user_id: uid });
-      const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', uid);
-      const roleSet = new Set((roles ?? []).map((r: any) => r.role));
-      const roleBypass = roleSet.has('super_admin') || roleSet.has('salarizare');
-      const isPilot = pilotFlag === true || roleBypass;
-
       const { data: recs } = await supabase
         .from('employee_records')
         .select('id')
@@ -85,7 +79,8 @@ export default function MyPayslipsCard() {
       }
 
       setRows(payslipRows);
-      setHasAccess(isPilot || payslipRows.length > 0);
+      // Live pentru toți angajații: cardul apare dacă utilizatorul are un dosar de angajat
+      setHasAccess(recIds.length > 0);
       setLoading(false);
       loadReports(payslipRows.map(r => r.id));
     })();
