@@ -15,6 +15,7 @@ import AdoptionTrendChart from './AdoptionTrendChart';
 import ChangelogWidget from './ChangelogWidget';
 import DashboardAnnouncements from './DashboardAnnouncements';
 import RoomBookingsWidget from './RoomBookingsWidget';
+import PayslipDownloadsCard from './PayslipDownloadsCard';
 import {
   Users, ShieldCheck, ScrollText, Settings, Activity, UserPlus,
   TicketCheck, FileWarning, UserX, Inbox, Database, HeartPulse,
