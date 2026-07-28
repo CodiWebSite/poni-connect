@@ -381,7 +381,7 @@ export default function PayslipUploader() {
               Încărcare fluturași lunari
             </CardTitle>
             <CardDescription>
-              Încărcați PDF-ul centralizator. Sistemul îl împarte per angajat, criptează cu ultimele 6 cifre din CNP și afișează raportul de asociere.
+              Încărcați PDF-ul centralizator. Sistemul îl împarte per angajat, afișează raportul de asociere și criptează fișierele la distribuție.
             </CardDescription>
           </div>
           <PayslipGuide variant="button" />
@@ -390,7 +390,7 @@ export default function PayslipUploader() {
           <Alert className="border-amber-500/40 bg-amber-500/5">
             <Info className="w-4 h-4" />
             <AlertDescription className="text-xs">
-              <strong>Fază pilot închisă.</strong> Fluturașii distribuiți sunt vizibili doar pentru angajații din whitelist-ul de test. Pentru restul angajaților, fișierele rămân criptate în sistem, dar tab-ul „Fluturașii mei" nu apare în profilul lor.
+              <strong>Modul live.</strong> După distribuție, fiecare angajat autentificat își vede fluturașul în „Profilul meu → Fluturașii mei”. Previzualizarea necriptată rămâne disponibilă doar pentru Salarizare și Super Admin.
             </AlertDescription>
           </Alert>
 
