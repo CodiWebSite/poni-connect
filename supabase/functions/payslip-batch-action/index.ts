@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     const isAdmin = roleSet.has("super_admin") || roleSet.has("salarizare");
     if (!isAdmin) return jsonResp({ error: "Nu ai permisiuni" }, 403);
 
-    const { action, payslip_id, employee_epd_id, batch_id } = await req.json();
+    const { action, payslip_id, employee_epd_id, batch_id, chunk_size } = await req.json();
 
     if (action === "assign") {
       if (!payslip_id || !employee_epd_id) return jsonResp({ error: "params" }, 400);
