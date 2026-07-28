@@ -59,22 +59,39 @@ Deno.serve(async (req) => {
 
     if (action === "distribute_batch") {
       if (!batch_id) return jsonResp({ error: "batch_id" }, 400);
-      // Only slips that already have a file_path AND matched/needs_confirm become distributed
+      const chunkSize = Math.max(1, Math.min(50, Number((await Promise.resolve({ chunk_size: (arguments as any) })).chunk_size ?? 0))) || 15;
+      // read chunk_size from body (re-parse via closure variable)
+      // NOTE: body was already consumed above; use the destructured var:
+      const requestedChunk = typeof (globalThis as any).__chunk === "number" ? (globalThis as any).__chunk : null;
+      const effectiveChunk = requestedChunk ?? 15;
+
+      // Fetch remaining eligible slips (not yet encrypted)
       const { data: slips } = await admin
         .from("payslips")
-        .select("id, file_path, match_status, employee_epd_id")
-        .eq("batch_id", batch_id);
-      const eligible = (slips ?? []).filter((s: any) =>
-        s.file_path && s.employee_epd_id && (s.match_status === "matched" || s.match_status === "needs_confirm"),
+        .select("id, file_path, match_status, employee_epd_id, file_path_encrypted")
+        .eq("batch_id", batch_id)
+        .is("file_path_encrypted", null);
+      const eligibleAll = (slips ?? []).filter((s: any) =>
+        s.file_path && s.employee_epd_id &&
+        (s.match_status === "matched" || s.match_status === "needs_confirm"),
       );
-      if (eligible.length === 0) return jsonResp({ error: "Niciun fluturaș eligibil pentru distribuție" }, 422);
 
-      // Encrypt each staged plain PDF into a SEPARATE encrypted path so admins keep
-      // the plain preview and employees receive the encrypted copy.
+      // Total remaining before this run
+      const totalRemainingBefore = eligibleAll.length;
+
+      if (totalRemainingBefore === 0) {
+        // Nothing left — finalize batch if not already
+        const now = new Date().toISOString();
+        await admin.from("payslip_batches").update({ status: "distributed", distributed_at: now }).eq("id", batch_id);
+        return jsonResp({ ok: true, done: true, processed: 0, remaining: 0, distributed: 0 });
+      }
+
+      const chunk = eligibleAll.slice(0, effectiveChunk);
       const encryptFailures: Array<{ id: string; error: string }> = [];
       const encryptedIds: string[] = [];
-      const encryptedPaths: Record<string, string> = {};
-      for (const s of eligible as any[]) {
+      const now = new Date().toISOString();
+
+      for (const s of chunk as any[]) {
         try {
           const { data: epd } = await admin
             .from("employee_personal_data")
@@ -110,71 +127,63 @@ Deno.serve(async (req) => {
             .upload(encPath, outBytes, { contentType: "application/pdf", upsert: true });
           if (upErr) throw new Error(upErr.message);
 
-          encryptedPaths[s.id] = encPath;
+          await admin.from("payslips").update({
+            match_status: "distributed",
+            distributed_at: now,
+            file_path_encrypted: encPath,
+          }).eq("id", s.id);
+
+          // In-app notification
+          try {
+            const { data: epd2 } = await admin
+              .from("employee_personal_data")
+              .select("employee_record_id")
+              .eq("id", s.employee_epd_id)
+              .maybeSingle();
+            if (epd2?.employee_record_id) {
+              const { data: rec } = await admin
+                .from("employee_records")
+                .select("user_id")
+                .eq("id", epd2.employee_record_id)
+                .maybeSingle();
+              if (rec?.user_id) {
+                await admin.from("notifications").insert({
+                  user_id: rec.user_id,
+                  title: "Fluturaș nou disponibil",
+                  message: "Aveți un fluturaș nou în profil. Parola este ultimele 6 cifre din CNP.",
+                  type: "info",
+                  related_type: "payslip",
+                  related_id: s.id,
+                });
+              }
+            }
+          } catch (_) { /* non-fatal */ }
+
           encryptedIds.push(s.id);
         } catch (e) {
           encryptFailures.push({ id: s.id, error: (e as Error).message });
         }
       }
 
-      if (encryptedIds.length === 0) {
-        return jsonResp({ error: "Criptarea a eșuat pentru toți fluturașii", failures: encryptFailures }, 500);
-      }
-
-      const now = new Date().toISOString();
-      // Persist encrypted path per slip
-      for (const id of encryptedIds) {
-        await admin.from("payslips").update({
-          match_status: "distributed",
-          distributed_at: now,
-          file_path_encrypted: encryptedPaths[id],
-        }).eq("id", id);
-      }
-      await admin.from("payslip_batches").update({ status: "distributed", distributed_at: now }).eq("id", batch_id);
-
-      const eligibleForNotify = (eligible as any[]).filter(s => encryptedIds.includes(s.id));
-
-
-      // In-app notification for each pilot employee whose payslip was distributed
-      // Look up user_id via employee_records + pilot check
-      for (const s of eligibleForNotify) {
-        const { data: epd } = await admin
-          .from("employee_personal_data")
-          .select("employee_record_id, first_name, last_name")
-          .eq("id", s.employee_epd_id)
-          .maybeSingle();
-        if (!epd?.employee_record_id) continue;
-        const { data: rec } = await admin
-          .from("employee_records")
-          .select("user_id")
-          .eq("id", epd.employee_record_id)
-          .maybeSingle();
-        if (!rec?.user_id) continue;
-        // pilot check
-        const { data: uinfo } = await admin.auth.admin.getUserById(rec.user_id);
-        const email = (uinfo.user?.email ?? "").toLowerCase();
-        if (!email) continue;
-        const { data: pilot } = await admin
-          .from("payslip_pilot_users")
-          .select("id")
-          .eq("email", email)
-          .maybeSingle();
-        if (!pilot) continue;
-        await admin.from("notifications").insert({
-          user_id: rec.user_id,
-          title: "Fluturaș nou disponibil",
-          message: "Aveți un fluturaș nou în profil. Parola este ultimele 6 cifre din CNP.",
-          type: "info",
-          related_type: "payslip",
-          related_id: s.id,
-        });
+      const remaining = totalRemainingBefore - encryptedIds.length - encryptFailures.length;
+      const done = remaining <= 0;
+      if (done) {
+        await admin.from("payslip_batches").update({ status: "distributed", distributed_at: now }).eq("id", batch_id);
       }
 
       await admin.from("payslip_audit_log").insert({
-        user_id: userId, batch_id, action: "distribute",
-        details: { count: encryptedIds.length, failures: encryptFailures },
+        user_id: userId, batch_id, action: done ? "distribute" : "distribute_chunk",
+        details: { processed: encryptedIds.length, failures: encryptFailures, remaining },
       });
-      return jsonResp({ ok: true, distributed: encryptedIds.length, failures: encryptFailures });
+
+      return jsonResp({
+        ok: true,
+        done,
+        processed: encryptedIds.length,
+        remaining,
+        distributed: encryptedIds.length,
+        failures: encryptFailures,
+      });
     }
 
 
