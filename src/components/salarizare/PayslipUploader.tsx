@@ -264,12 +264,28 @@ export default function PayslipUploader() {
   const distribute = async (batchId: string) => {
     setBusy(batchId);
     try {
-      const { data, error } = await supabase.functions.invoke('payslip-batch-action', {
-        body: { action: 'distribute_batch', batch_id: batchId },
-      });
-      if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la distribuție'));
-      if (data?.error) throw new Error(data.error);
-      toast.success(`Distribuit către ${data.distributed} angajați (doar cei din whitelist pilot).`);
+      let totalDistributed = 0;
+      const allFailures: Array<{ id: string; error: string }> = [];
+      let safety = 200;
+      while (safety-- > 0) {
+        const { data, error } = await supabase.functions.invoke('payslip-batch-action', {
+          body: { action: 'distribute_batch', batch_id: batchId, chunk_size: 12 },
+        });
+        if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la distribuție'));
+        if (data?.error) throw new Error(data.error);
+        totalDistributed += Number(data?.distributed ?? 0);
+        if (Array.isArray(data?.failures)) allFailures.push(...data.failures);
+        if (data?.remaining && data.remaining > 0) {
+          toast.info(`Distribuție în curs… (${totalDistributed} procesați, ${data.remaining} rămași)`);
+          continue;
+        }
+        break;
+      }
+      if (totalDistributed === 0 && allFailures.length === 0) {
+        toast.warning('Niciun fluturaș eligibil pentru distribuție.');
+      } else {
+        toast.success(`Distribuit către ${totalDistributed} angajați.${allFailures.length ? ` ${allFailures.length} eșecuri.` : ''}`);
+      }
       await loadBatches();
       await loadSlips(batchId);
     } catch (e) {
