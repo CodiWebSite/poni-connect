@@ -233,12 +233,12 @@ const AnalyticsWidget = () => {
         </div>
 
         <Tabs defaultValue="modules" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="modules" className="text-xs">Module</TabsTrigger>
-            <TabsTrigger value="daily" className="text-xs">Zilnic</TabsTrigger>
-            <TabsTrigger value="actions" className="text-xs">Acțiuni</TabsTrigger>
-            <TabsTrigger value="top-users" className="text-xs">Top utilizatori</TabsTrigger>
-            <TabsTrigger value="departments" className="text-xs">Departamente</TabsTrigger>
+          <TabsList className="w-full h-auto flex flex-wrap gap-1 p-1">
+            <TabsTrigger value="modules" className="text-xs flex-1 min-w-[80px]">Module</TabsTrigger>
+            <TabsTrigger value="daily" className="text-xs flex-1 min-w-[80px]">Zilnic</TabsTrigger>
+            <TabsTrigger value="actions" className="text-xs flex-1 min-w-[80px]">Acțiuni</TabsTrigger>
+            <TabsTrigger value="top-users" className="text-xs flex-1 min-w-[110px]">Top utilizatori</TabsTrigger>
+            <TabsTrigger value="departments" className="text-xs flex-1 min-w-[110px]">Departamente</TabsTrigger>
           </TabsList>
 
           {/* Module stats */}
