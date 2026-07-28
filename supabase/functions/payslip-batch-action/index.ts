@@ -59,11 +59,7 @@ Deno.serve(async (req) => {
 
     if (action === "distribute_batch") {
       if (!batch_id) return jsonResp({ error: "batch_id" }, 400);
-      const chunkSize = Math.max(1, Math.min(50, Number((await Promise.resolve({ chunk_size: (arguments as any) })).chunk_size ?? 0))) || 15;
-      // read chunk_size from body (re-parse via closure variable)
-      // NOTE: body was already consumed above; use the destructured var:
-      const requestedChunk = typeof (globalThis as any).__chunk === "number" ? (globalThis as any).__chunk : null;
-      const effectiveChunk = requestedChunk ?? 15;
+      const effectiveChunk = Math.max(1, Math.min(50, Number(chunk_size) || 15));
 
       // Fetch remaining eligible slips (not yet encrypted)
       const { data: slips } = await admin
