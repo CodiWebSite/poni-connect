@@ -11,6 +11,7 @@ import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Se
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import PayslipGuide from '@/components/salarizare/PayslipGuide';
 
 const MONTH_NAMES_RO = [
   'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
@@ -373,20 +374,23 @@ export default function PayslipUploader() {
         onChange={handleReprocessFile}
       />
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Upload className="w-5 h-5" />
-            Încărcare fluturași lunari
-          </CardTitle>
-          <CardDescription>
-            Încărcați PDF-ul centralizator. Sistemul îl împarte per angajat, criptează cu ultimele 6 cifre din CNP și afișează raportul de asociere.
-          </CardDescription>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Încărcare fluturași lunari
+            </CardTitle>
+            <CardDescription>
+              Încărcați PDF-ul centralizator. Sistemul îl împarte per angajat, afișează raportul de asociere și criptează fișierele la distribuție.
+            </CardDescription>
+          </div>
+          <PayslipGuide variant="button" />
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert className="border-amber-500/40 bg-amber-500/5">
             <Info className="w-4 h-4" />
             <AlertDescription className="text-xs">
-              <strong>Fază pilot închisă.</strong> Fluturașii distribuiți sunt vizibili doar pentru angajații din whitelist-ul de test. Pentru restul angajaților, fișierele rămân criptate în sistem, dar tab-ul „Fluturașii mei" nu apare în profilul lor.
+              <strong>Modul live.</strong> După distribuție, fiecare angajat autentificat își vede fluturașul în „Profilul meu → Fluturașii mei”. Previzualizarea necriptată rămâne disponibilă doar pentru Salarizare și Super Admin.
             </AlertDescription>
           </Alert>
 

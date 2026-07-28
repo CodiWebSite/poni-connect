@@ -155,31 +155,44 @@ const rules = [
   'Toate acțiunile (upload, previzualizare, distribuție, descărcare) sunt înregistrate în audit log.',
 ];
 
-export default function PayslipGuide() {
+interface PayslipGuideProps {
+  variant?: 'card' | 'button';
+}
+
+export default function PayslipGuide({ variant = 'card' }: PayslipGuideProps) {
   const [open, setOpen] = useState(false);
+
+  const trigger = variant === 'button' ? (
+    <Button onClick={() => setOpen(true)} variant="outline" className="shrink-0">
+      <BookOpen className="w-4 h-4 mr-2" />
+      Ghid pas cu pas
+    </Button>
+  ) : (
+    <Card className="border-primary/30 bg-primary/5">
+      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+        <div>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-primary" />
+            Ghid distribuție fluturași
+          </CardTitle>
+          <CardDescription>
+            Pași pas cu pas pentru rolurile <strong>Salarizare</strong> și <strong>Super Admin</strong>.
+          </CardDescription>
+        </div>
+        <Button onClick={() => setOpen(true)} variant="default">
+          Deschide ghidul
+        </Button>
+      </CardHeader>
+      <CardContent className="text-sm text-muted-foreground">
+        De la <em>upload PDF centralizator</em> până la <em>distribuție criptată</em> și gestionarea
+        sesizărilor — parcurge ghidul înainte de prima distribuție.
+      </CardContent>
+    </Card>
+  );
 
   return (
     <>
-      <Card className="border-primary/30 bg-primary/5">
-        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-          <div>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              Ghid distribuție fluturași
-            </CardTitle>
-            <CardDescription>
-              Pași pas cu pas pentru rolurile <strong>Salarizare</strong> și <strong>Super Admin</strong>.
-            </CardDescription>
-          </div>
-          <Button onClick={() => setOpen(true)} variant="default">
-            Deschide ghidul
-          </Button>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          De la <em>upload PDF centralizator</em> până la <em>distribuție criptată</em> și gestionarea
-          sesizărilor — parcurge ghidul înainte de prima distribuție.
-        </CardContent>
-      </Card>
+      {trigger}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
