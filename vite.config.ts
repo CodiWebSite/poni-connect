@@ -21,11 +21,26 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ["logo-icmpp.png", "favicon.ico"],
       workbox: {
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        navigateFallback: null,
         navigateFallbackDenylist: [/^\/~oauth/, /^\/kiosk/],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Exclude HTML from precache so navigations always go network-first.
+        globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // Always try network first for page navigations so a fresh
+            // deploy is picked up on the next soft refresh — no CTRL+SHIFT+R.
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-navigations",
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 },
+            },
+          },
+        ],
       },
       manifest: {
         name: "ICMPP Intranet",
