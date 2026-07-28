@@ -199,7 +199,7 @@ const AuthLoginLog = () => {
         )}
 
         <Tabs defaultValue="log" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="w-full h-auto flex flex-wrap gap-1 p-1">
             <TabsTrigger value="log" className="text-xs">Jurnal</TabsTrigger>
             <TabsTrigger value="top-users" className="text-xs">Top Utilizatori</TabsTrigger>
             <TabsTrigger value="top-ips" className="text-xs">Top IP-uri</TabsTrigger>

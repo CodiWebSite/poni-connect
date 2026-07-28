@@ -420,7 +420,7 @@ export const PersonalDataEditor = ({
             {/* Core Data */}
             <div className="space-y-4">
               <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Date de bază</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Nume *</Label>
                   <Input 
@@ -436,7 +436,7 @@ export const PersonalDataEditor = ({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Email {!noEmail && '*'}</Label>
                   <Input 
@@ -478,7 +478,7 @@ export const PersonalDataEditor = ({
             {/* Employment Data */}
             <div className="space-y-4">
               <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Date angajare</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Departament</Label>
                   <Input 
@@ -504,7 +504,7 @@ export const PersonalDataEditor = ({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Data Angajării</Label>
                   <Input 
@@ -531,7 +531,7 @@ export const PersonalDataEditor = ({
               </div>
               {/* Current year (2026) leave */}
               <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide pt-2">Sold Concediu {new Date().getFullYear()}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Zile Cuvenite {new Date().getFullYear()}</Label>
                   <Input 
@@ -560,7 +560,7 @@ export const PersonalDataEditor = ({
 
               {/* Previous year (2025) carryover */}
               <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide pt-2">Sold Reportat {new Date().getFullYear() - 1}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Zile Reportate din {new Date().getFullYear() - 1}</Label>
                   <Input 
@@ -603,7 +603,7 @@ export const PersonalDataEditor = ({
             {/* ID Card Section */}
             <div className="space-y-4">
               <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Carte de Identitate</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Serie CI</Label>
                   <Input 
@@ -620,7 +620,7 @@ export const PersonalDataEditor = ({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Eliberat de</Label>
                   <Input 
@@ -637,7 +637,7 @@ export const PersonalDataEditor = ({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Data Expirare CI</Label>
                   <Input 
@@ -705,7 +705,7 @@ export const PersonalDataEditor = ({
             {/* Address Section */}
             <div className="space-y-4">
               <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Adresă</h4>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="col-span-2 space-y-2">
                   <Label>Stradă</Label>
                   <Input 
@@ -721,7 +721,7 @@ export const PersonalDataEditor = ({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Bloc</Label>
                   <Input 
@@ -744,7 +744,7 @@ export const PersonalDataEditor = ({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Oraș/Comună</Label>
                   <Input 
