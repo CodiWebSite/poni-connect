@@ -71,7 +71,25 @@ const MobileNav = () => {
     navigate('/auth');
   };
 
-  const mainItems: { icon: any; label: string; path: string; external?: boolean }[] = [
+  const isSocial = location.pathname.startsWith('/social');
+
+  const socialItems: { icon: any; label: string; path: string; external?: boolean }[] = [
+    { icon: Home, label: 'Feed-ul tău', path: '/social' },
+    { icon: MessageSquare, label: 'Comunități', path: '/social/comunitati' },
+    { icon: Megaphone, label: 'Anunțuri', path: '/social/anunturi' },
+    { icon: Heart, label: 'Aniversări', path: '/social/aniversari' },
+    { icon: Briefcase, label: 'Colegi de muncă', path: '/social/colegi' },
+    { icon: Network, label: 'Organigramă', path: '/social/organigrama' },
+    { icon: PartyPopper, label: 'Activități', path: '/social/activitati' },
+    { icon: MessageCircle, label: 'Mesagerie', path: '/social/chat' },
+    { icon: Bookmark, label: 'Salvate', path: '/social/salvate' },
+    { icon: Archive, label: 'Arhivă online', path: '/social/arhiva' },
+    { icon: ShieldCheck, label: 'Securitate Digitală', path: '/social/securitate' },
+    ...((canManageHR || isSuperAdmin) ? [{ icon: Settings, label: 'Setări', path: '/social/setari' }] : []),
+    { icon: ArrowLeft, label: 'Înapoi la Core HR', path: '/' },
+  ];
+
+  const coreMainItems: { icon: any; label: string; path: string; external?: boolean }[] = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
@@ -90,6 +108,8 @@ const MobileNav = () => {
     { icon: HelpCircle, label: 'Ghid Platformă', path: '/ghid' },
     { icon: Download, label: 'Instalează App', path: '/install' },
   ];
+
+  const mainItems = isSocial ? socialItems : coreMainItems;
 
   const managementItems = [
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
