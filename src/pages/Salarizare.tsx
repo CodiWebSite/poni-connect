@@ -539,6 +539,8 @@ const Salarizare = () => {
           </p>
         </div>
 
+        <PayslipGuide />
+
         <PayslipUploader />
 
         <PayslipIssueReports />
