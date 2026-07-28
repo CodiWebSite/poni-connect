@@ -33,6 +33,13 @@ import {
   CreditCard,
   Archive,
   Activity,
+  MessageSquare,
+  Heart,
+  Briefcase,
+  Network,
+  Bookmark,
+  ShieldCheck,
+  ArrowLeft,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
