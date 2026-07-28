@@ -17,6 +17,7 @@ import { isPublicHoliday } from '@/utils/romanianHolidays';
 import PayslipUploader from '@/components/salarizare/PayslipUploader';
 import PayslipAuditLog from '@/components/salarizare/PayslipAuditLog';
 import PayslipIssueReports from '@/components/salarizare/PayslipIssueReports';
+import PayslipGuide from '@/components/salarizare/PayslipGuide';
 
 const MONTH_NAMES_RO = [
   'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
