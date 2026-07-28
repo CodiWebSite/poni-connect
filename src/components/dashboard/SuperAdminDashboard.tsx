@@ -110,6 +110,10 @@ const SuperAdminDashboard = () => {
         <OnlineUsersWidget />
       </div>
 
+      <div className="mt-4">
+        <PayslipDownloadsCard />
+      </div>
+
       {/* Analytics */}
       <div className="mt-4">
         <AnalyticsWidget />
