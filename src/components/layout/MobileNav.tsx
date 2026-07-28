@@ -191,22 +191,26 @@ const MobileNav = () => {
         <nav className="flex-1 p-3 overflow-y-auto max-h-[calc(100vh-220px)]">
           {/* Main section */}
           <p className="px-3 mb-2 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">
-            Meniu Principal
+            {isSocial ? 'Hub Social' : 'Meniu Principal'}
           </p>
           <div className="space-y-1">
             {mainItems.map(renderNavItem)}
           </div>
 
-          {/* Separator */}
-          <div className="my-3 border-t border-sidebar-border/50" />
+          {!isSocial && (
+            <>
+              {/* Separator */}
+              <div className="my-3 border-t border-sidebar-border/50" />
 
-          {/* Management section */}
-          <p className="px-3 mb-2 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">
-            Administrare
-          </p>
-          <div className="space-y-1">
-            {managementItems.map(renderNavItem)}
-          </div>
+              {/* Management section */}
+              <p className="px-3 mb-2 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">
+                Administrare
+              </p>
+              <div className="space-y-1">
+                {managementItems.map(renderNavItem)}
+              </div>
+            </>
+          )}
         </nav>
 
         <div className="p-3 border-t border-sidebar-border absolute bottom-0 left-0 right-0 bg-sidebar">
