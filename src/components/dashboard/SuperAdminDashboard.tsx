@@ -15,6 +15,7 @@ import AdoptionTrendChart from './AdoptionTrendChart';
 import ChangelogWidget from './ChangelogWidget';
 import DashboardAnnouncements from './DashboardAnnouncements';
 import RoomBookingsWidget from './RoomBookingsWidget';
+import PayslipDownloadsCard from './PayslipDownloadsCard';
 import {
   Users, ShieldCheck, ScrollText, Settings, Activity, UserPlus,
   TicketCheck, FileWarning, UserX, Inbox, Database, HeartPulse,
@@ -107,6 +108,10 @@ const SuperAdminDashboard = () => {
         <StatCard title="Angajați Activi" value={stats.employees} icon={Users} iconClassName="from-primary to-info" />
         <ActivationChart />
         <OnlineUsersWidget />
+      </div>
+
+      <div className="mt-4">
+        <PayslipDownloadsCard />
       </div>
 
       {/* Analytics */}
