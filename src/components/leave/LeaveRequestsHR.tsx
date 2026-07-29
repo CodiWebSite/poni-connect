@@ -221,15 +221,15 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         .filter(c => c.to_year === requestYear && c.remaining_days > 0)
         .sort((a, b) => a.from_year - b.from_year);
       const carryoverRemaining = relevantCarryovers.reduce((sum, c) => sum + Math.max(0, c.remaining_days), 0);
-      const firstCarryoverYear = relevantCarryovers[0]?.from_year;
+      const hasRelevantCarryover = relevantCarryovers.length > 0;
       const days = Number(r.working_days) || 0;
 
       requestBalances[r.id] = { currentYearRemaining, carryoverRemaining };
 
-      if (days > 0 && carryoverRemaining > 0 && firstCarryoverYear) {
+      if (days > 0 && carryoverRemaining > 0 && hasRelevantCarryover) {
         sourceLabels[r.id] = carryoverRemaining >= days
-          ? `Report ${firstCarryoverYear}`
-          : `Report ${firstCarryoverYear} + Sold ${requestYear}`;
+          ? `Report ${requestYear}`
+          : `Report ${requestYear} + Sold ${requestYear}`;
       } else {
         sourceLabels[r.id] = `Sold ${requestYear}`;
       }
@@ -274,14 +274,14 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
         const { data: carryoverData } = await supabase
           .from('leave_carryover')
-          .select('remaining_days, initial_days, from_year')
+          .select('remaining_days, initial_days, from_year, to_year')
           .eq('employee_personal_data_id', request.epd_id)
           .eq('to_year', request.year)
           .maybeSingle();
         if (carryoverData) {
           carryoverDays = carryoverData.remaining_days;
           carryoverInitialDays = carryoverData.initial_days;
-          carryoverFromYear = carryoverData.from_year;
+          carryoverFromYear = carryoverData.to_year;
         }
       }
 
