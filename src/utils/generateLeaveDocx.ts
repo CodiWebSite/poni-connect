@@ -152,41 +152,13 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const totalCurrentYear = totalLeaveDays ?? 0;
   const usedDays = usedLeaveDays ?? 0;
   const carryover = carryoverDays ?? 0;
-  const requestDays = Math.max(0, workingDays || 0);
 
-  // Documentul spune „La această dată”, deci soldul trebuie afișat ÎNAINTE de concediul curent.
-  // După aprobare baza de date are deja zilele scăzute; pentru document adăugăm înapoi doar cererea curentă.
-  let remainingCurrentYear = Math.max(0, totalCurrentYear - usedDays);
-  let carryoverBeforeRequest = Math.max(0, carryover);
-  const hasExplicitRequestBalance = currentYearRemainingAtRequest !== undefined || carryoverRemainingAtRequest !== undefined;
-
-  if (currentYearRemainingAtRequest !== undefined) {
-    remainingCurrentYear = Math.max(0, currentYearRemainingAtRequest);
-  }
-  if (carryoverRemainingAtRequest !== undefined) {
-    carryoverBeforeRequest = Math.max(0, carryoverRemainingAtRequest);
-  }
-
-  if (!hasExplicitRequestBalance && isApproved && balanceTiming !== 'before_request' && requestDays > 0) {
-    const source = leaveSourceLabel || '';
-    const isCarryoverSource = source.startsWith('Report') || (!!effectiveLeaveSourceYear && effectiveLeaveSourceYear !== year);
-    const isMixedSource = source.includes('+');
-
-    if (isMixedSource && source.includes('Report')) {
-      const maxCarryoverToRestore = Math.max(0, (carryoverInitialDays ?? carryoverBeforeRequest) - carryoverBeforeRequest);
-      const restoredCarryover = Math.min(requestDays, maxCarryoverToRestore);
-      carryoverBeforeRequest += restoredCarryover;
-      remainingCurrentYear += requestDays - restoredCarryover;
-    } else if (isCarryoverSource) {
-      carryoverBeforeRequest += requestDays;
-    } else if (source.startsWith('Sold') || effectiveLeaveSourceYear === year) {
-      remainingCurrentYear += requestDays;
-    } else if (carryoverFromYear && carryoverBeforeRequest === 0 && (carryoverInitialDays ?? 0) > 0) {
-      carryoverBeforeRequest += requestDays;
-    } else {
-      remainingCurrentYear += requestDays;
-    }
-  }
+  // Sursa de adevăr = aceleași valori live ca în Gestiune HR:
+  //   remaining current year = employee_personal_data.total_leave_days - used_leave_days
+  //   carryover              = leave_carryover.remaining_days (from_year=year-1, to_year=year)
+  // Documentul spune „La această dată" — deci reflectă soldul curent, după toate scăderile.
+  const remainingCurrentYear = Math.max(0, totalCurrentYear - usedDays);
+  const carryoverBeforeRequest = Math.max(0, carryover);
   const totalSold = remainingCurrentYear + carryoverBeforeRequest;
 
   const periodText = formattedEndDate
