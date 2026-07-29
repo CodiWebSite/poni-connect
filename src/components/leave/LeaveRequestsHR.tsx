@@ -102,7 +102,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       setRecalcDoneAt(new Date());
       toast({
         title: 'Sursă recalculată',
-        description: 'Etichetele FIFO au fost reconstruite din remaining_days curent.',
+      description: 'Etichetele au fost realiniate cu soldul curent din Gestiune HR.',
       });
     } catch (e: any) {
       toast({ title: 'Eroare la recalculare', description: e?.message || 'Necunoscut', variant: 'destructive' });
@@ -207,89 +207,32 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       }
     }
 
-    // FIFO simulation per employee:
-    // - pornim din remaining_days curent, fiindcă acesta include consumurile istorice/importate
-    // - dacă aprobarea curentă tocmai a actualizat același report, o marcăm ca Report fără dublă scădere
-    const approvedData = (data || []).filter((r: any) => r.status === 'approved' || r.status === 'pending_srus' || r.status === 'pending_department_head');
+    // Sursa afișată în Centralizare trebuie să urmeze starea LIVE din Gestiune HR.
+    // Nu reconstruim istoric FIFO din cererile existente, deoarece soldurile importate/manuale
+    // pot consuma reportul fără să existe o cerere online corespunzătoare.
     const sourceLabels: Record<string, string> = {};
     const requestBalances: Record<string, { currentYearRemaining: number; carryoverRemaining: number }> = {};
 
-    // Group by epd_id
-    const byEpd: Record<string, any[]> = {};
-    approvedData.forEach((r: any) => {
-      if (!r.epd_id) return;
-      if (!byEpd[r.epd_id]) byEpd[r.epd_id] = [];
-      byEpd[r.epd_id].push(r);
-    });
+    rows.forEach((r: any) => {
+      const epdId = r.epd_id;
+      const requestYear = Number(r.year) || (r.start_date ? new Date(r.start_date).getFullYear() : new Date().getFullYear());
+      const currentYearRemaining = Math.max(0, (epdMap[epdId]?.total_leave_days ?? 0) - (epdMap[epdId]?.used_leave_days ?? 0));
+      const relevantCarryovers = (carryoverMap[epdId] || [])
+        .filter(c => c.to_year === requestYear && c.remaining_days > 0)
+        .sort((a, b) => a.from_year - b.from_year);
+      const carryoverRemaining = relevantCarryovers.reduce((sum, c) => sum + Math.max(0, c.remaining_days), 0);
+      const hasRelevantCarryover = relevantCarryovers.length > 0;
+      const days = Number(r.working_days) || 0;
 
-    Object.entries(byEpd).forEach(([epdId, reqs]) => {
-      // Sort by start_date chronologically
-      reqs.sort((a, b) => a.start_date.localeCompare(b.start_date));
-      
-      // Group by year
-      const byYear: Record<number, any[]> = {};
-      reqs.forEach(r => {
-        if (!byYear[r.year]) byYear[r.year] = [];
-        byYear[r.year].push(r);
-      });
+      requestBalances[r.id] = { currentYearRemaining, carryoverRemaining };
 
-      Object.entries(byYear).forEach(([yearStr, yearReqs]) => {
-        const year = Number(yearStr);
-        const carryovers = carryoverMap[epdId] || [];
-        const relevantCarryover = carryovers.find(c => c.to_year === year && c.from_year === year - 1);
-
-        const approvedTrackedDays = yearReqs
-          .filter(r => r.status === 'approved')
-          .reduce((sum, r) => sum + (Number(r.working_days) || 0), 0);
-        const carryoverInitial = Math.max(relevantCarryover?.initial_days ?? relevantCarryover?.remaining_days ?? 0, 0);
-        const carryoverFinal = Math.max(relevantCarryover?.remaining_days ?? 0, 0);
-        const currentYearFinal = Math.max(0, (epdMap[epdId]?.total_leave_days ?? 0) - (epdMap[epdId]?.used_leave_days ?? 0));
-        const carryoverConsumed = Math.max(0, carryoverInitial - carryoverFinal);
-        const currentYearApprovedConsumed = Math.max(0, approvedTrackedDays - carryoverConsumed);
-        let carryoverRemaining = carryoverInitial;
-        let currentYearRemaining = currentYearFinal + currentYearApprovedConsumed;
-
-        yearReqs.sort((a, b) => {
-          const byStartDate = (a.start_date || '').localeCompare(b.start_date || '');
-          if (byStartDate !== 0) return byStartDate;
-          return (a.created_at || '').localeCompare(b.created_at || '');
-        });
-
-        yearReqs.forEach(r => {
-          const days = Number(r.working_days) || 0;
-          requestBalances[r.id] = {
-            currentYearRemaining,
-            carryoverRemaining,
-          };
-          const requestUpdatedAt = r.updated_at ? new Date(r.updated_at).getTime() : 0;
-          const carryoverUpdatedAt = relevantCarryover?.updated_at ? new Date(relevantCarryover.updated_at).getTime() : 0;
-          const requestJustUpdatedCarryover = r.status === 'approved'
-            && carryoverRemaining <= 0
-            && (relevantCarryover?.remaining_days ?? 0) > 0
-            && requestUpdatedAt > 0
-            && carryoverUpdatedAt > 0
-            && Math.abs(carryoverUpdatedAt - requestUpdatedAt) <= 10000;
-
-          if (requestJustUpdatedCarryover && days > 0) {
-            sourceLabels[r.id] = `Report ${year - 1}`;
-          } else if (carryoverRemaining <= 0 || days <= 0) {
-            sourceLabels[r.id] = `Sold ${year}`;
-          } else if (carryoverRemaining >= days) {
-            sourceLabels[r.id] = `Report ${year - 1}`;
-            carryoverRemaining -= days;
-          } else {
-            sourceLabels[r.id] = `Report ${year - 1} + Sold ${year}`;
-            carryoverRemaining = 0;
-          }
-
-          if ((r.status === 'approved' || r.status === 'pending_srus' || r.status === 'pending_department_head') && days > 0) {
-            const fromCarryover = Math.min(days, requestBalances[r.id].carryoverRemaining);
-            const fromCurrentYear = days - fromCarryover;
-            carryoverRemaining = Math.max(0, requestBalances[r.id].carryoverRemaining - fromCarryover);
-            currentYearRemaining = Math.max(0, requestBalances[r.id].currentYearRemaining - fromCurrentYear);
-          }
-        });
-      });
+      if (days > 0 && carryoverRemaining > 0 && hasRelevantCarryover) {
+        sourceLabels[r.id] = carryoverRemaining >= days
+          ? `Report ${requestYear}`
+          : `Report ${requestYear} + Sold ${requestYear}`;
+      } else {
+        sourceLabels[r.id] = `Sold ${requestYear}`;
+      }
     });
 
     setRequests(
@@ -331,14 +274,14 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
         const { data: carryoverData } = await supabase
           .from('leave_carryover')
-          .select('remaining_days, initial_days, from_year')
+          .select('remaining_days, initial_days, from_year, to_year')
           .eq('employee_personal_data_id', request.epd_id)
           .eq('to_year', request.year)
           .maybeSingle();
         if (carryoverData) {
           carryoverDays = carryoverData.remaining_days;
           carryoverInitialDays = carryoverData.initial_days;
-          carryoverFromYear = carryoverData.from_year;
+          carryoverFromYear = carryoverData.to_year;
         }
       }
 
@@ -664,11 +607,11 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                              <TooltipTrigger asChild>
                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-300 text-emerald-700 dark:border-emerald-600 dark:text-emerald-400 gap-1">
                                  <Sparkles className="w-2.5 h-2.5" />
-                                 FIFO recalculat
+                                  Sold realiniat
                                </Badge>
                              </TooltipTrigger>
                              <TooltipContent>
-                                <p className="text-xs">Reconstrucție FIFO din <code>remaining_days</code> curent.</p>
+                                 <p className="text-xs">Sursă aliniată cu soldul curent din Gestiune HR.</p>
                                <p className="text-[10px] text-muted-foreground mt-1">
                                  Ultima recalculare: {format(recalcDoneAt, 'dd.MM.yyyy HH:mm:ss', { locale: ro })}
                                </p>

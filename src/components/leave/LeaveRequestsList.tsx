@@ -103,14 +103,14 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
     if (request.epd_id) {
       const { data: carryoverData } = await supabase
         .from('leave_carryover')
-        .select('remaining_days, initial_days, from_year')
+        .select('remaining_days, initial_days, from_year, to_year')
         .eq('employee_personal_data_id', request.epd_id)
         .eq('to_year', request.year)
         .maybeSingle();
       if (carryoverData) {
         carryoverDays = carryoverData.remaining_days;
         carryoverInitialDays = carryoverData.initial_days;
-        carryoverFromYear = carryoverData.from_year;
+        carryoverFromYear = carryoverData.to_year;
       }
     }
 
