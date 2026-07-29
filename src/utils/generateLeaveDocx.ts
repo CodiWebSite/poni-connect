@@ -229,6 +229,8 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const srusIndent = convertMillimetersToTwip(75);
   const S = 20;
 
+  const hasCarryover = carryoverBeforeRequest > 0 && !!carryoverFromYear;
+
   const srusSection: Paragraph[] = [
     new Paragraph({
       spacing: { after: 50 },
@@ -249,29 +251,25 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
       children: [
         t('are dreptul la ', { size: S }),
         t(`${totalSold}`, { bold: true, size: S }),
-        t(' zile concediu de odihnă, din care', { size: S }),
+        t(hasCarryover ? ' zile concediu de odihnă, din care' : ` zile concediu de odihnă aferente anului ${year}.`, { size: S }),
       ],
     }),
-    new Paragraph({
-      spacing: { after: 50 },
-      indent: { left: srusIndent },
-      children: [
-        t(`${remainingCurrentYear}`, { bold: true, size: S }),
-        t(' zile rămase aferente anului ', { size: S }),
-        t(`${year}`, { bold: true, size: S }),
-        t(' și ', { size: S }),
-        t(`${carryoverBeforeRequest}`, { bold: true, size: S }),
-        t(' zile rămase aferente anului', { size: S }),
-      ],
-    }),
-    new Paragraph({
-      spacing: { after: 100 },
-      indent: { left: srusIndent },
-      children: [
-        t(carryoverFromYear ? `${carryoverFromYear}` : '_______', { bold: !!carryoverFromYear, size: S }),
-        t('.', { size: S }),
-      ],
-    }),
+    ...(hasCarryover ? [
+      new Paragraph({
+        spacing: { after: 100 },
+        indent: { left: srusIndent },
+        children: [
+          t(`${remainingCurrentYear}`, { bold: true, size: S }),
+          t(' zile rămase aferente anului ', { size: S }),
+          t(`${year}`, { bold: true, size: S }),
+          t(' și ', { size: S }),
+          t(`${carryoverBeforeRequest}`, { bold: true, size: S }),
+          t(' zile rămase aferente anului ', { size: S }),
+          t(`${carryoverFromYear}`, { bold: true, size: S }),
+          t('.', { size: S }),
+        ],
+      }),
+    ] : []),
   ];
 
   const srusSignatureTable = new Table({
