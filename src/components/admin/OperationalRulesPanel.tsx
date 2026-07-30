@@ -54,6 +54,10 @@ const OperationalRulesPanel = () => {
         <TabsContent value="notifications">
           <NotificationRulesEditor />
         </TabsContent>
+        <TabsContent value="replacements">
+          <LeaveReplacementOverridesEditor />
+        </TabsContent>
+
       </Tabs>
     </div>
   );
