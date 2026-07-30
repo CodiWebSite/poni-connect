@@ -126,13 +126,41 @@ export default function PayslipUploader() {
   const pollRef = useRef<number | null>(null);
   const tickRef = useRef<number | null>(null);
 
+  const loadBatchStats = async (ids: string[]) => {
+    if (!ids.length) { setBatchStats({}); return; }
+    const stats: Record<string, { ok: number; review: number; total: number }> = {};
+    ids.forEach(id => { stats[id] = { ok: 0, review: 0, total: 0 }; });
+    const page = 1000;
+    for (let from = 0; ; from += page) {
+      const { data, error } = await supabase
+        .from('payslips')
+        .select('batch_id, match_status, employee_epd_id')
+        .in('batch_id', ids)
+        .range(from, from + page - 1);
+      if (error || !data) break;
+      data.forEach((s: any) => {
+        const st = stats[s.batch_id];
+        if (!st) return;
+        st.total += 1;
+        const resolved = !!s.employee_epd_id &&
+          ['matched', 'needs_confirm', 'distributed'].includes(s.match_status);
+        if (resolved) st.ok += 1; else st.review += 1;
+      });
+      if (data.length < page) break;
+    }
+    setBatchStats(stats);
+  };
+
   const loadBatches = async () => {
     const { data } = await supabase
       .from('payslip_batches')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(24);
-    if (data) setBatches(data as Batch[]);
+    if (data) {
+      setBatches(data as Batch[]);
+      await loadBatchStats((data as Batch[]).map(b => b.id));
+    }
   };
 
   const loadSlips = async (batchId: string) => {
