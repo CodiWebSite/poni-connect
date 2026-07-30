@@ -1,10 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, GitBranch, Route, Bell, Tag } from 'lucide-react';
+import { Shield, GitBranch, Route, Bell, Tag, UserCheck } from 'lucide-react';
 import AccessMatrixEditor from './AccessMatrixEditor';
 import ApprovalWorkflowEditor from './ApprovalWorkflowEditor';
 import RequestRoutingEditor from './RequestRoutingEditor';
 import NotificationRulesEditor from './NotificationRulesEditor';
 import CustomRolesManager from './CustomRolesManager';
+import LeaveReplacementOverridesEditor from './LeaveReplacementOverridesEditor';
 
 const OperationalRulesPanel = () => {
   return (
@@ -31,7 +32,12 @@ const OperationalRulesPanel = () => {
             <Bell className="w-3.5 h-3.5" />
             Notificări
           </TabsTrigger>
+          <TabsTrigger value="replacements" className="text-xs gap-1.5">
+            <UserCheck className="w-3.5 h-3.5" />
+            Înlocuitori Concediu
+          </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="roles">
           <CustomRolesManager />
@@ -48,6 +54,10 @@ const OperationalRulesPanel = () => {
         <TabsContent value="notifications">
           <NotificationRulesEditor />
         </TabsContent>
+        <TabsContent value="replacements">
+          <LeaveReplacementOverridesEditor />
+        </TabsContent>
+
       </Tabs>
     </div>
   );
