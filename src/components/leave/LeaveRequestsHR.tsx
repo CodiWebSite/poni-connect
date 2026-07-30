@@ -50,6 +50,14 @@ interface LeaveRequestRow {
   carryover_remaining_at_request?: number;
 }
 
+type DeductionEvent = {
+  epdId: string;
+  year: number;
+  days: number;
+  at: number;
+  requestId?: string;
+};
+
 const statusLabels: Record<string, string> = {
   draft: 'Ciornă',
   pending_department_head: 'Așteptare Șef Comp.',
@@ -130,8 +138,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     const directorIds = [...new Set(rows.map(r => r.director_id).filter(Boolean))] as string[];
     const allApproverIds = [...new Set([...deptHeadIds, ...directorIds])];
 
-    // Phase 1: fetch EPD (with employee_record_id), approver profiles and carryovers IN PARALLEL
-    const [epdRes, approverRes, carryoverRes] = await Promise.all([
+    // Phase 1: fetch EPD (with employee_record_id), approver profiles, carryovers and manual CO entries IN PARALLEL
+    const [epdRes, approverRes, carryoverRes, hrReqRes] = await Promise.all([
       epdIds.length
         ? supabase
             .from('employee_personal_data')
@@ -149,6 +157,13 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
             .from('leave_carryover')
             .select('employee_personal_data_id, from_year, to_year, initial_days, remaining_days, updated_at')
             .in('employee_personal_data_id', epdIds)
+        : Promise.resolve({ data: [] as any[] }),
+      epdIds.length
+        ? supabase
+            .from('hr_requests')
+            .select('created_at, details')
+            .eq('request_type', 'concediu')
+            .eq('status', 'approved')
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
@@ -207,9 +222,55 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       }
     }
 
+    const toTimestamp = (value: string | null | undefined) => {
+      if (!value) return 0;
+      const parsed = new Date(value).getTime();
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const restoreBalance = (currentLive: number, carryLive: number, totalCurrentYear: number, daysToRestore: number) => {
+      let currentBefore = currentLive;
+      let carryBefore = carryLive;
+      let restore = Math.max(0, daysToRestore);
+      const roomInCurrentYear = Math.max(0, totalCurrentYear - currentBefore);
+      const restoreToCurrent = Math.min(restore, roomInCurrentYear);
+      currentBefore += restoreToCurrent;
+      restore -= restoreToCurrent;
+      if (restore > 0) carryBefore += restore;
+      return { currentBefore, carryBefore };
+    };
+
+    const deductionEvents: DeductionEvent[] = [];
+    rows.forEach((r: any) => {
+      if (r.status !== 'approved' || !r.epd_id) return;
+      const eventYear = Number(r.year) || (r.start_date ? new Date(r.start_date).getFullYear() : new Date().getFullYear());
+      deductionEvents.push({
+        epdId: r.epd_id,
+        year: eventYear,
+        days: Number(r.working_days) || 0,
+        at: toTimestamp(r.srus_signed_at || r.updated_at || r.created_at),
+        requestId: r.id,
+      });
+    });
+
+    const epdIdSet = new Set(epdIds);
+    (hrReqRes.data || []).forEach((hr: any) => {
+      const details = hr.details || {};
+      const epdId = details.epd_id;
+      if (!epdId || !epdIdSet.has(epdId) || details.leaveType !== 'co') return;
+      const yearFromStart = details.startDate ? new Date(details.startDate).getFullYear() : new Date().getFullYear();
+      deductionEvents.push({
+        epdId,
+        year: Number(details.year) || yearFromStart,
+        days: Number(details.numberOfDays) || 0,
+        at: toTimestamp(details.registeredAt || hr.created_at),
+      });
+    });
+
     // Sursa afișată în Centralizare trebuie să redea soldul de DINAINTEA fiecărei cereri.
     // Pornim din soldul live din Gestiune HR (după scădere) și inversăm FIFO: completăm întâi
     // anul curent până la dreptul total, apoi diferența revine în reportul anului anterior.
+    // Pentru cererile vechi readăugăm și cererile aprobate ulterior, altfel istoricul iese greșit.
     const sourceLabels: Record<string, string> = {};
     const requestBalances: Record<string, { currentYearRemaining: number; carryoverRemaining: number; carryoverFromYear?: number; carryoverInitialDays?: number }> = {};
 
@@ -226,21 +287,18 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       const carryoverFromYear = relevantCarryovers[0]?.from_year;
       const days = Number(r.working_days) || 0;
       const alreadyDeducted = r.status === 'approved';
-      let currentYearRemaining = currentYearRemainingLive;
-      let carryoverRemaining = carryoverRemainingLive;
-
-      if (alreadyDeducted && days > 0) {
-        let restore = days;
-        if (carryoverRemainingLive > 0) {
-          carryoverRemaining += restore;
-        } else {
-          const roomInCurrentYear = Math.max(0, totalCurrentYear - currentYearRemaining);
-          const restoreToCurrent = Math.min(restore, roomInCurrentYear);
-          currentYearRemaining += restoreToCurrent;
-          restore -= restoreToCurrent;
-          if (restore > 0) carryoverRemaining += restore;
-        }
-      }
+      const requestDeductedAt = toTimestamp((r as any).srus_signed_at || (r as any).updated_at || r.created_at);
+      const daysToRestore = alreadyDeducted
+        ? deductionEvents
+            .filter(event => event.epdId === epdId && event.year === requestYear && event.at >= requestDeductedAt)
+            .reduce((sum, event) => sum + Math.max(0, event.days), 0)
+        : 0;
+      const { currentBefore: currentYearRemaining, carryBefore: carryoverRemaining } = restoreBalance(
+        currentYearRemainingLive,
+        carryoverRemainingLive,
+        totalCurrentYear,
+        daysToRestore
+      );
 
       requestBalances[r.id] = { currentYearRemaining, carryoverRemaining, carryoverFromYear, carryoverInitialDays };
 
