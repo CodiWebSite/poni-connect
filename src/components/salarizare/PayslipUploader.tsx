@@ -94,6 +94,7 @@ export default function PayslipUploader() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [batchStats, setBatchStats] = useState<Record<string, { ok: number; review: number; total: number }>>({});
   const [openBatch, setOpenBatch] = useState<string | null>(null);
   const [slips, setSlips] = useState<Slip[]>([]);
   const [employees, setEmployees] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
