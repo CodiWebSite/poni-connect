@@ -33,6 +33,9 @@ const MyTeam = () => {
 
   const isDeptHead = isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover;
 
+  const getRemainingDays = (member: TeamMember) =>
+    Math.max(0, member.total_leave_days - member.used_leave_days) + member.bonus_days + member.carryover_remaining;
+
   useEffect(() => {
     if (!user || roleLoading || approverLoading || !isDeptHead) return;
     fetchTeam();
@@ -178,11 +181,7 @@ const MyTeam = () => {
               <Card>
                 <CardContent className="pt-5 pb-4 text-center">
                   <p className="text-3xl font-bold text-primary">
-                    {members.reduce((sum, m) => {
-                      const total = m.total_leave_days + m.bonus_days + m.carryover_remaining;
-                      const remaining = total - m.used_leave_days;
-                      return sum + Math.max(0, remaining);
-                    }, 0)}
+                    {members.reduce((sum, m) => sum + getRemainingDays(m), 0)}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Zile disponibile total</p>
                 </CardContent>
@@ -190,10 +189,7 @@ const MyTeam = () => {
               <Card>
                 <CardContent className="pt-5 pb-4 text-center">
                   <p className="text-3xl font-bold text-primary">
-                    {members.filter(m => {
-                      const total = m.total_leave_days + m.bonus_days + m.carryover_remaining;
-                      return (total - m.used_leave_days) <= 3 && total > 0;
-                    }).length}
+                    {members.filter(m => getRemainingDays(m) <= 3 && (m.total_leave_days + m.bonus_days + m.carryover_remaining) > 0).length}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Solduri critice (≤3 zile)</p>
                 </CardContent>
@@ -212,8 +208,8 @@ const MyTeam = () => {
                 <div className="space-y-3">
                   {members.map(member => {
                     const totalAvailable = member.total_leave_days + member.bonus_days + member.carryover_remaining;
-                    const remaining = Math.max(0, totalAvailable - member.used_leave_days);
-                    const usedPercent = totalAvailable > 0 ? Math.min(100, (member.used_leave_days / totalAvailable) * 100) : 0;
+                    const remaining = getRemainingDays(member);
+                    const usedPercent = member.total_leave_days > 0 ? Math.min(100, (member.used_leave_days / member.total_leave_days) * 100) : 0;
                     const isCritical = remaining <= 3 && totalAvailable > 0;
                     const initials = `${member.last_name[0] || ''}${member.first_name[0] || ''}`.toUpperCase();
 
