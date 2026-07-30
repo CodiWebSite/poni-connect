@@ -96,7 +96,8 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       .eq('id', request.epd_id)
       .maybeSingle();
 
-    // Get carryover data
+    // Get carryover data, including consumed report. The DOCX needs the year of the report
+    // even when remaining_days is already 0, so it can reconstruct the balance before the request.
     let carryoverDays = 0;
     let carryoverInitialDays = 0;
     let carryoverFromYear: number | undefined;
@@ -106,23 +107,64 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
         .select('remaining_days, initial_days, from_year, to_year')
         .eq('employee_personal_data_id', request.epd_id)
         .eq('to_year', request.year)
-        .gt('remaining_days', 0)
-        .order('from_year', { ascending: true })
-        .limit(1);
-      const activeCarryover = carryoverData?.[0];
-      if (activeCarryover) {
-        carryoverDays = activeCarryover.remaining_days;
-        carryoverInitialDays = activeCarryover.initial_days;
-        carryoverFromYear = activeCarryover.from_year;
+        .order('from_year', { ascending: true });
+      const relevantCarryovers = (carryoverData || []).filter((c: any) =>
+        Math.max(0, c.initial_days || 0) > 0 || Math.max(0, c.remaining_days || 0) > 0
+      );
+      if (relevantCarryovers.length > 0) {
+        carryoverDays = relevantCarryovers.reduce((sum: number, c: any) => sum + Math.max(0, c.remaining_days || 0), 0);
+        carryoverInitialDays = relevantCarryovers.reduce((sum: number, c: any) => sum + Math.max(0, c.initial_days || 0), 0);
+        carryoverFromYear = relevantCarryovers[0].from_year;
       }
     }
 
     // Fetch full leave request data (signatures, approver info)
     const { data: lrData } = await supabase
       .from('leave_requests')
-      .select('srus_officer_name, srus_signature, srus_signed_at, dept_head_signature, dept_head_id, director_id, dept_head_approved_at')
+      .select('srus_officer_name, srus_signature, srus_signed_at, dept_head_signature, dept_head_id, director_id, dept_head_approved_at, updated_at')
       .eq('id', request.id)
       .maybeSingle();
+
+    const toTimestamp = (value: string | null | undefined) => {
+      if (!value) return 0;
+      const parsed = new Date(value).getTime();
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const restoreBalance = (currentLive: number, carryLive: number, totalCurrentYear: number, daysToRestore: number) => {
+      let currentBefore = currentLive;
+      let carryBefore = carryLive;
+      let restore = Math.max(0, daysToRestore);
+      const roomInCurrentYear = Math.max(0, totalCurrentYear - currentBefore);
+      const restoreToCurrent = Math.min(restore, roomInCurrentYear);
+      currentBefore += restoreToCurrent;
+      restore -= restoreToCurrent;
+      if (restore > 0) carryBefore += restore;
+      return { currentBefore, carryBefore };
+    };
+
+    let currentYearRemainingAtRequest: number | undefined;
+    let carryoverRemainingAtRequest: number | undefined;
+    const totalCurrentYear = epd?.total_leave_days ?? 0;
+    const currentYearRemainingLive = Math.max(0, totalCurrentYear - (epd?.used_leave_days ?? 0));
+    const requestDeductedAt = toTimestamp((lrData as any)?.srus_signed_at || (lrData as any)?.updated_at || request.updated_at || request.created_at);
+
+    if (request.status === 'approved' && request.epd_id) {
+      const { data: approvedRequests } = await supabase
+        .from('leave_requests')
+        .select('id, working_days, year, status, srus_signed_at, updated_at, created_at')
+        .eq('epd_id', request.epd_id)
+        .eq('year', request.year)
+        .eq('status', 'approved' as any);
+
+      const daysToRestore = (approvedRequests || [])
+        .filter((r: any) => toTimestamp(r.srus_signed_at || r.updated_at || r.created_at) >= requestDeductedAt)
+        .reduce((sum: number, r: any) => sum + Math.max(0, Number(r.working_days) || 0), 0);
+
+      const restored = restoreBalance(currentYearRemainingLive, carryoverDays, totalCurrentYear, daysToRestore);
+      currentYearRemainingAtRequest = restored.currentBefore;
+      carryoverRemainingAtRequest = restored.carryBefore;
+    }
 
     // Get dept head and director names
     let deptHeadName: string | undefined;
@@ -153,7 +195,7 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       requestDate: format(parseISO(request.created_at), 'dd.MM.yyyy'),
       requestNumber: request.request_number,
       isApproved: request.status === 'approved',
-      alreadyDeducted: request.status === 'approved',
+      alreadyDeducted: currentYearRemainingAtRequest === undefined && request.status === 'approved',
 
       employeeSignature: request.employee_signature,
       totalLeaveDays: epd?.total_leave_days ?? 0,
@@ -161,6 +203,8 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       carryoverDays,
       carryoverInitialDays,
       carryoverFromYear,
+      currentYearRemainingAtRequest,
+      carryoverRemainingAtRequest,
       srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
       srusSignature: (lrData as any)?.srus_signature || undefined,
       approvalDate: lrData?.dept_head_approved_at ? format(parseISO(lrData.dept_head_approved_at), 'dd.MM.yyyy') : undefined,

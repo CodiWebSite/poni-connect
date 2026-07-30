@@ -119,7 +119,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     employeeName, employeePosition, employeeGrade, department, workingDays, year,
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
-    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear,
+    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverInitialDays, carryoverFromYear,
     currentYearRemainingAtRequest, carryoverRemainingAtRequest, alreadyDeducted, srusOfficerName, srusSignature,
     srusSignedAt, srusIP,
     approvalDate, deptHeadSignature, deptHeadName, deptHeadIP, deptHeadSignedAt,
@@ -144,7 +144,8 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const totalCurrentYear = totalLeaveDays ?? 0;
   const usedDays = usedLeaveDays ?? 0;
 
-  // Soldul LIVE din Gestiune HR (după eventuala scădere a acestei cereri)
+  // Soldul primit din Gestiune HR. Pentru cererile deja aprobate poate fi soldul de după scădere,
+  // caz în care reconstruim mai jos soldul de ÎNAINTE de cerere.
   const remainingCurrentYearLive = Math.max(
     0,
     currentYearRemainingAtRequest ?? (totalCurrentYear - usedDays)
@@ -155,17 +156,29 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   );
 
   // În document trebuie afișat soldul de ÎNAINTE de a se lua această cerere.
-  // Dacă zilele au fost deja scăzute (cerere aprobată), le adăugăm înapoi
-  // respectând ordinea FIFO din Gestiune HR (întâi report, apoi anul curent).
+  // La scădere, Gestiune HR consumă FIFO: întâi reportul, apoi anul curent.
+  // La reconstrucția inversă pornim de la soldul de după cerere: completăm întâi anul curent
+  // până la capacitatea lui, iar diferența revine în report. Exemplu: după cerere rămân
+  // 29 zile 2026 și 0 report, cererea a avut 15 zile, dreptul 2026 este 35 => înainte era
+  // 35 zile 2026 și 9 zile report 2025, nu 44 zile aferente anului 2026.
   const daysToRestore = alreadyDeducted ? (workingDays || 0) : 0;
   let remainingCurrentYear = remainingCurrentYearLive;
   let carryoverBeforeRequest = carryoverLive;
   if (daysToRestore > 0) {
+    let remainingToRestore = daysToRestore;
     if (carryoverLive > 0) {
-      // reportul nu a fost epuizat => toate zilele au venit din report
-      carryoverBeforeRequest = carryoverLive + daysToRestore;
+      // Reportul încă există după cerere => cererea a consumat numai din report.
+      carryoverBeforeRequest = carryoverLive + remainingToRestore;
     } else {
-      remainingCurrentYear = remainingCurrentYearLive + daysToRestore;
+      const currentYearCapacity = Math.max(totalCurrentYear, remainingCurrentYearLive);
+      const currentRoom = Math.max(0, currentYearCapacity - remainingCurrentYear);
+      const restoreToCurrent = Math.min(remainingToRestore, currentRoom);
+      remainingCurrentYear += restoreToCurrent;
+      remainingToRestore -= restoreToCurrent;
+
+      if (remainingToRestore > 0) {
+        carryoverBeforeRequest += remainingToRestore;
+      }
     }
   }
 
@@ -173,11 +186,15 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
 
   // Din ce an s-au luat efectiv zilele cererii (întâi report, apoi anul curent)
   const takenFromCarryover = Math.min(workingDays, carryoverBeforeRequest);
+  const takenFromCurrentYear = Math.max(0, workingDays - takenFromCarryover);
+  const requestSpansCarryoverAndCurrent = takenFromCarryover > 0 && takenFromCurrentYear > 0 && !!carryoverFromYear;
 
   // Anul menționat la „zile de concediu de odihnă aferente anului ..."
-  const displayYear = (takenFromCarryover > 0 && carryoverFromYear)
-    ? carryoverFromYear
-    : year;
+  const displayYear = requestSpansCarryoverAndCurrent
+    ? `${carryoverFromYear} și ${year}`
+    : ((takenFromCarryover > 0 && carryoverFromYear)
+      ? `${carryoverFromYear}`
+      : `${year}`);
 
 
   const periodText = formattedEndDate
@@ -458,8 +475,8 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
           spacing: { after: 80, line: 300 },
           indent: { left: convertMillimetersToTwip(15) },
           children: [
-            t('anului '),
-            t(`${displayYear}`, { bold: true, underline: { type: UnderlineType.SINGLE } }),
+            t(requestSpansCarryoverAndCurrent ? 'anilor ' : 'anului '),
+            t(displayYear, { bold: true, underline: { type: UnderlineType.SINGLE } }),
             t(', începând cu data de '),
             t(periodText, { bold: true, underline: { type: UnderlineType.SINGLE } }),
             t('.'),

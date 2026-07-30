@@ -50,6 +50,14 @@ interface LeaveRequestRow {
   carryover_remaining_at_request?: number;
 }
 
+type DeductionEvent = {
+  epdId: string;
+  year: number;
+  days: number;
+  at: number;
+  requestId?: string;
+};
+
 const statusLabels: Record<string, string> = {
   draft: 'Ciornă',
   pending_department_head: 'Așteptare Șef Comp.',
@@ -130,8 +138,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     const directorIds = [...new Set(rows.map(r => r.director_id).filter(Boolean))] as string[];
     const allApproverIds = [...new Set([...deptHeadIds, ...directorIds])];
 
-    // Phase 1: fetch EPD (with employee_record_id), approver profiles and carryovers IN PARALLEL
-    const [epdRes, approverRes, carryoverRes] = await Promise.all([
+    // Phase 1: fetch EPD (with employee_record_id), approver profiles, carryovers and manual CO entries IN PARALLEL
+    const [epdRes, approverRes, carryoverRes, hrReqRes] = await Promise.all([
       epdIds.length
         ? supabase
             .from('employee_personal_data')
@@ -149,6 +157,13 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
             .from('leave_carryover')
             .select('employee_personal_data_id, from_year, to_year, initial_days, remaining_days, updated_at')
             .in('employee_personal_data_id', epdIds)
+        : Promise.resolve({ data: [] as any[] }),
+      epdIds.length
+        ? supabase
+            .from('hr_requests')
+            .select('created_at, details')
+            .eq('request_type', 'concediu')
+            .eq('status', 'approved')
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
@@ -207,31 +222,90 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       }
     }
 
-    // Sursa afișată în Centralizare trebuie să urmeze starea LIVE din Gestiune HR.
-    // Nu reconstruim istoric FIFO din cererile existente, deoarece soldurile importate/manuale
-    // pot consuma reportul fără să existe o cerere online corespunzătoare.
-    // Regula principală: remaining_days este adevărul. Dacă reportul este 0, nu afișăm Report.
+    const toTimestamp = (value: string | null | undefined) => {
+      if (!value) return 0;
+      const parsed = new Date(value).getTime();
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const restoreBalance = (currentLive: number, carryLive: number, totalCurrentYear: number, daysToRestore: number) => {
+      let currentBefore = currentLive;
+      let carryBefore = carryLive;
+      let restore = Math.max(0, daysToRestore);
+      const roomInCurrentYear = Math.max(0, totalCurrentYear - currentBefore);
+      const restoreToCurrent = Math.min(restore, roomInCurrentYear);
+      currentBefore += restoreToCurrent;
+      restore -= restoreToCurrent;
+      if (restore > 0) carryBefore += restore;
+      return { currentBefore, carryBefore };
+    };
+
+    const deductionEvents: DeductionEvent[] = [];
+    rows.forEach((r: any) => {
+      if (r.status !== 'approved' || !r.epd_id) return;
+      const eventYear = Number(r.year) || (r.start_date ? new Date(r.start_date).getFullYear() : new Date().getFullYear());
+      deductionEvents.push({
+        epdId: r.epd_id,
+        year: eventYear,
+        days: Number(r.working_days) || 0,
+        at: toTimestamp(r.srus_signed_at || r.updated_at || r.created_at),
+        requestId: r.id,
+      });
+    });
+
+    const epdIdSet = new Set(epdIds);
+    (hrReqRes.data || []).forEach((hr: any) => {
+      const details = hr.details || {};
+      const epdId = details.epd_id;
+      if (!epdId || !epdIdSet.has(epdId) || details.leaveType !== 'co') return;
+      const yearFromStart = details.startDate ? new Date(details.startDate).getFullYear() : new Date().getFullYear();
+      deductionEvents.push({
+        epdId,
+        year: Number(details.year) || yearFromStart,
+        days: Number(details.numberOfDays) || 0,
+        at: toTimestamp(details.registeredAt || hr.created_at),
+      });
+    });
+
+    // Sursa afișată în Centralizare trebuie să redea soldul de DINAINTEA fiecărei cereri.
+    // Pornim din soldul live din Gestiune HR (după scădere) și inversăm FIFO: completăm întâi
+    // anul curent până la dreptul total, apoi diferența revine în reportul anului anterior.
+    // Pentru cererile vechi readăugăm și cererile aprobate ulterior, altfel istoricul iese greșit.
     const sourceLabels: Record<string, string> = {};
-    const requestBalances: Record<string, { currentYearRemaining: number; carryoverRemaining: number }> = {};
+    const requestBalances: Record<string, { currentYearRemaining: number; carryoverRemaining: number; carryoverFromYear?: number; carryoverInitialDays?: number }> = {};
 
     rows.forEach((r: any) => {
       const epdId = r.epd_id;
       const requestYear = Number(r.year) || (r.start_date ? new Date(r.start_date).getFullYear() : new Date().getFullYear());
-      const currentYearRemaining = Math.max(0, (epdMap[epdId]?.total_leave_days ?? 0) - (epdMap[epdId]?.used_leave_days ?? 0));
+      const totalCurrentYear = Math.max(0, epdMap[epdId]?.total_leave_days ?? 0);
+      const currentYearRemainingLive = Math.max(0, totalCurrentYear - (epdMap[epdId]?.used_leave_days ?? 0));
       const relevantCarryovers = (carryoverMap[epdId] || [])
-        .filter(c => c.to_year === requestYear && Math.max(0, c.remaining_days || 0) > 0)
+        .filter(c => c.to_year === requestYear && (Math.max(0, c.initial_days || 0) > 0 || Math.max(0, c.remaining_days || 0) > 0))
         .sort((a, b) => a.from_year - b.from_year);
-      const carryoverRemaining = relevantCarryovers.reduce((sum, c) => sum + Math.max(0, c.remaining_days), 0);
-      const hasRelevantCarryover = relevantCarryovers.length > 0;
+      const carryoverRemainingLive = relevantCarryovers.reduce((sum, c) => sum + Math.max(0, c.remaining_days), 0);
+      const carryoverInitialDays = relevantCarryovers.reduce((sum, c) => sum + Math.max(0, c.initial_days), 0);
+      const carryoverFromYear = relevantCarryovers[0]?.from_year;
       const days = Number(r.working_days) || 0;
+      const alreadyDeducted = r.status === 'approved';
+      const requestDeductedAt = toTimestamp((r as any).srus_signed_at || (r as any).updated_at || r.created_at);
+      const daysToRestore = alreadyDeducted
+        ? deductionEvents
+            .filter(event => event.epdId === epdId && event.year === requestYear && event.at >= requestDeductedAt)
+            .reduce((sum, event) => sum + Math.max(0, event.days), 0)
+        : 0;
+      const { currentBefore: currentYearRemaining, carryBefore: carryoverRemaining } = restoreBalance(
+        currentYearRemainingLive,
+        carryoverRemainingLive,
+        totalCurrentYear,
+        daysToRestore
+      );
 
-      requestBalances[r.id] = { currentYearRemaining, carryoverRemaining };
+      requestBalances[r.id] = { currentYearRemaining, carryoverRemaining, carryoverFromYear, carryoverInitialDays };
 
-      if (days > 0 && carryoverRemaining > 0 && hasRelevantCarryover) {
-        const reportYear = relevantCarryovers[0].from_year;
+      if (days > 0 && carryoverRemaining > 0 && carryoverFromYear) {
         sourceLabels[r.id] = carryoverRemaining >= days
-          ? `Report ${reportYear}`
-          : `Report ${reportYear} + Sold ${requestYear}`;
+          ? `Report ${carryoverFromYear}`
+          : `Report ${carryoverFromYear} + Sold ${requestYear}`;
       } else {
         sourceLabels[r.id] = `Sold ${requestYear}`;
       }
@@ -279,14 +353,14 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           .select('remaining_days, initial_days, from_year, to_year')
           .eq('employee_personal_data_id', request.epd_id)
           .eq('to_year', request.year)
-          .gt('remaining_days', 0)
-          .order('from_year', { ascending: true })
-          .limit(1);
-        const activeCarryover = carryoverData?.[0];
-        if (activeCarryover) {
-          carryoverDays = activeCarryover.remaining_days;
-          carryoverInitialDays = activeCarryover.initial_days;
-          carryoverFromYear = activeCarryover.from_year;
+          .order('from_year', { ascending: true });
+        const relevantCarryovers = (carryoverData || []).filter((c: any) =>
+          Math.max(0, c.initial_days || 0) > 0 || Math.max(0, c.remaining_days || 0) > 0
+        );
+        if (relevantCarryovers.length > 0) {
+          carryoverDays = relevantCarryovers.reduce((sum: number, c: any) => sum + Math.max(0, c.remaining_days || 0), 0);
+          carryoverInitialDays = relevantCarryovers.reduce((sum: number, c: any) => sum + Math.max(0, c.initial_days || 0), 0);
+          carryoverFromYear = relevantCarryovers[0].from_year;
         }
       }
 
@@ -320,7 +394,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         leaveSourceLabel: request.source_label,
         currentYearRemainingAtRequest: request.current_year_remaining_at_request,
         carryoverRemainingAtRequest: request.carryover_remaining_at_request,
-        alreadyDeducted: request.status === 'approved',
+        alreadyDeducted: false,
 
         srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
         srusSignature: (lrData as any)?.srus_signature || undefined,
