@@ -12,7 +12,7 @@ import DashboardAnnouncements from './DashboardAnnouncements';
 import ActivityHistory from './ActivityHistory';
 import PersonalLeaveWidget from './PersonalLeaveWidget';
 import ChangelogWidget from './ChangelogWidget';
-import InstallAppBanner from './InstallAppBanner';
+
 import RoomBookingsWidget from './RoomBookingsWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
