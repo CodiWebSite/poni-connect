@@ -91,6 +91,9 @@ export default {
         'glow': 'var(--shadow-glow)',
         'card': 'var(--shadow-card)',
         'card-hover': 'var(--shadow-card-hover)',
+        'flat': 'var(--elevation-flat)',
+        'raised': 'var(--elevation-raised)',
+        'overlay': 'var(--elevation-overlay)',
       },
       keyframes: {
         "accordion-down": {
