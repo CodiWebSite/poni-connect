@@ -227,9 +227,10 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       requestBalances[r.id] = { currentYearRemaining, carryoverRemaining };
 
       if (days > 0 && carryoverRemaining > 0 && hasRelevantCarryover) {
+        const reportYear = relevantCarryovers[0].from_year;
         sourceLabels[r.id] = carryoverRemaining >= days
-          ? `Report ${requestYear}`
-          : `Report ${requestYear} + Sold ${requestYear}`;
+          ? `Report ${reportYear}`
+          : `Report ${reportYear} + Sold ${requestYear}`;
       } else {
         sourceLabels[r.id] = `Sold ${requestYear}`;
       }
@@ -281,7 +282,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         if (carryoverData) {
           carryoverDays = carryoverData.remaining_days;
           carryoverInitialDays = carryoverData.initial_days;
-          carryoverFromYear = carryoverData.to_year;
+          carryoverFromYear = carryoverData.from_year;
         }
       }
 

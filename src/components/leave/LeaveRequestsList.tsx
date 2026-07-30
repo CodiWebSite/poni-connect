@@ -110,7 +110,7 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       if (carryoverData) {
         carryoverDays = carryoverData.remaining_days;
         carryoverInitialDays = carryoverData.initial_days;
-        carryoverFromYear = carryoverData.to_year;
+        carryoverFromYear = carryoverData.from_year;
       }
     }
 
