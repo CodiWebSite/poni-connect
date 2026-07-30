@@ -141,26 +141,41 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const totalCurrentYear = totalLeaveDays ?? 0;
   const usedDays = usedLeaveDays ?? 0;
 
-  // Documentul trebuie să reflecte strict soldul LIVE din Gestiune HR.
-  // Dacă reportul are remaining_days = 0, nu îl reintroducem din initial_days/used_days
-  // și ignorăm orice etichetă veche care ar indica Report 2025.
-  const remainingCurrentYear = Math.max(
+  // Soldul LIVE din Gestiune HR (după eventuala scădere a acestei cereri)
+  const remainingCurrentYearLive = Math.max(
     0,
     currentYearRemainingAtRequest ?? (totalCurrentYear - usedDays)
   );
-  const carryoverBeforeRequest = Math.max(
+  const carryoverLive = Math.max(
     0,
     carryoverRemainingAtRequest ?? carryoverDays ?? 0
   );
+
+  // În document trebuie afișat soldul de ÎNAINTE de a se lua această cerere.
+  // Dacă zilele au fost deja scăzute (cerere aprobată), le adăugăm înapoi
+  // respectând ordinea FIFO din Gestiune HR (întâi report, apoi anul curent).
+  const daysToRestore = alreadyDeducted ? (workingDays || 0) : 0;
+  let remainingCurrentYear = remainingCurrentYearLive;
+  let carryoverBeforeRequest = carryoverLive;
+  if (daysToRestore > 0) {
+    if (carryoverLive > 0) {
+      // reportul nu a fost epuizat => toate zilele au venit din report
+      carryoverBeforeRequest = carryoverLive + daysToRestore;
+    } else {
+      remainingCurrentYear = remainingCurrentYearLive + daysToRestore;
+    }
+  }
+
   const totalSold = remainingCurrentYear + carryoverBeforeRequest;
 
-  // Din ce an s-au luat efectiv zilele cererii
+  // Din ce an s-au luat efectiv zilele cererii (întâi report, apoi anul curent)
   const takenFromCarryover = Math.min(workingDays, carryoverBeforeRequest);
 
   // Anul menționat la „zile de concediu de odihnă aferente anului ..."
   const displayYear = (takenFromCarryover > 0 && carryoverFromYear)
     ? carryoverFromYear
     : year;
+
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
