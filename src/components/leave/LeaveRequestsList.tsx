@@ -153,6 +153,8 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       requestDate: format(parseISO(request.created_at), 'dd.MM.yyyy'),
       requestNumber: request.request_number,
       isApproved: request.status === 'approved',
+      alreadyDeducted: request.status === 'approved',
+
       employeeSignature: request.employee_signature,
       totalLeaveDays: epd?.total_leave_days ?? 0,
       usedLeaveDays: epd?.used_leave_days ?? 0,
