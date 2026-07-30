@@ -113,10 +113,10 @@ const empty = (after = 0) => new Paragraph({ spacing: { after }, children: [] })
 
 export async function generateLeaveDocx(params: LeaveDocxParams) {
   const {
-    employeeName, employeePosition, employeeGrade, department, workingDays, year, leaveSourceYear,
+    employeeName, employeePosition, employeeGrade, department, workingDays, year,
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
-    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverInitialDays, carryoverFromYear, leaveSourceLabel, balanceTiming,
+    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear,
     currentYearRemainingAtRequest, carryoverRemainingAtRequest, srusOfficerName, srusSignature,
     srusSignedAt, srusIP,
     approvalDate, deptHeadSignature, deptHeadName, deptHeadIP, deptHeadSignedAt,
