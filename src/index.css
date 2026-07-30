@@ -83,48 +83,67 @@
   }
 
   .dark {
-    --background: 222 32% 7%;
-    --foreground: 215 20% 95%;
+    /* Purpose-designed dark theme (WCAG AA on text + badges) */
+    --background: 222 28% 8%;
+    --foreground: 214 20% 96%;
 
-    --card: 222 30% 11%;
-    --card-foreground: 215 20% 95%;
+    --card: 222 24% 12%;
+    --card-foreground: 214 20% 96%;
 
-    --popover: 222 30% 11%;
-    --popover-foreground: 215 20% 95%;
+    --popover: 222 24% 13%;
+    --popover-foreground: 214 20% 96%;
 
-    --primary: 217 78% 56%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 214 88% 64%;
+    --primary-foreground: 222 40% 10%;
 
-    --secondary: 222 22% 16%;
-    --secondary-foreground: 215 18% 88%;
+    --secondary: 222 18% 18%;
+    --secondary-foreground: 214 18% 92%;
 
-    --muted: 222 22% 14%;
-    --muted-foreground: 215 12% 58%;
+    --muted: 222 18% 16%;
+    --muted-foreground: 215 14% 70%;
 
-    --accent: 172 55% 46%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 172 58% 52%;
+    --accent-foreground: 222 40% 10%;
 
-    --destructive: 0 62% 48%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 222 40% 10%;
 
-    --border: 222 22% 18%;
-    --input: 222 22% 18%;
-    --ring: 217 78% 56%;
+    --border: 222 16% 22%;
+    --input: 222 16% 24%;
+    --ring: 214 88% 64%;
 
-    --glass-bg: 222 30% 11% / 0.7;
-    --glass-border: 222 22% 20% / 0.6;
+    --success: 152 55% 52%;
+    --success-foreground: 222 40% 10%;
+    --warning: 38 92% 62%;
+    --warning-foreground: 222 40% 10%;
+    --info: 205 80% 64%;
+    --info-foreground: 222 40% 10%;
 
-    --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.2), 0 4px 16px hsl(0 0% 0% / 0.15);
-    --shadow-card-hover: 0 4px 8px hsl(0 0% 0% / 0.25), 0 8px 24px hsl(0 0% 0% / 0.2);
+    --glass-bg: 222 24% 12% / 0.72;
+    --glass-border: 222 16% 24% / 0.7;
 
-    --sidebar-background: 222 32% 5%;
-    --sidebar-foreground: 215 20% 95%;
-    --sidebar-primary: 217 78% 56%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 28% 14%;
-    --sidebar-accent-foreground: 215 20% 95%;
-    --sidebar-border: 222 22% 14%;
-    --sidebar-ring: 217 78% 56%;
+    --gradient-card: linear-gradient(180deg, hsl(222 24% 13%), hsl(222 24% 11%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(222 30% 6%), hsl(222 26% 8%));
+
+    --elevation-flat: 0 1px 2px hsl(0 0% 0% / 0.4);
+    --elevation-raised: 0 1px 2px hsl(0 0% 0% / 0.4), 0 6px 16px -6px hsl(0 0% 0% / 0.5);
+    --elevation-overlay: 0 2px 4px hsl(0 0% 0% / 0.4), 0 16px 40px -12px hsl(0 0% 0% / 0.6);
+
+    --shadow-sm: var(--elevation-flat);
+    --shadow-md: var(--elevation-raised);
+    --shadow-lg: var(--elevation-overlay);
+    --shadow-glow: 0 0 24px hsl(214 88% 64% / 0.2);
+    --shadow-card: var(--elevation-flat);
+    --shadow-card-hover: var(--elevation-raised);
+
+    --sidebar-background: 222 30% 6%;
+    --sidebar-foreground: 214 20% 94%;
+    --sidebar-primary: 214 88% 64%;
+    --sidebar-primary-foreground: 222 40% 10%;
+    --sidebar-accent: 222 22% 14%;
+    --sidebar-accent-foreground: 214 20% 94%;
+    --sidebar-border: 222 18% 16%;
+    --sidebar-ring: 214 88% 64%;
   }
 }
 
@@ -133,13 +152,35 @@
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+  html {
+    -webkit-text-size-adjust: 100%;
   }
 
-  h1, h2, h3 {
-    font-family: 'Playfair Display', serif;
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv05', 'ss01';
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+
+  /* Numeric alignment across tables, balances and statistics */
+  table, .tabular, [data-slot="table"] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
