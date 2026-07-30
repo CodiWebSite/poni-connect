@@ -14,8 +14,13 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Playfair Display', 'serif'],
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        'display-lg': ['2.5rem', { lineHeight: '1.05', letterSpacing: '-0.03em', fontWeight: '700' }],
+        'display': ['2rem', { lineHeight: '1.1', letterSpacing: '-0.025em', fontWeight: '700' }],
+        'caption': ['0.75rem', { lineHeight: '1rem', letterSpacing: '0.01em' }],
       },
       colors: {
         border: "hsl(var(--border))",
