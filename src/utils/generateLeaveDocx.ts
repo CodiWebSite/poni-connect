@@ -266,7 +266,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const srusIndent = convertMillimetersToTwip(75);
   const S = 20;
 
-  const hasCarryover = !!carryoverFromYear && (carryoverBeforeRequest > 0 || (carryoverInitialDays ?? 0) > 0 || (carryoverDays ?? 0) > 0);
+  const hasCarryover = carryoverBeforeRequest > 0 && !!carryoverFromYear;
 
   const srusSection: Paragraph[] = [
     new Paragraph({
@@ -288,7 +288,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
       children: [
         t('are dreptul la ', { size: S }),
         t(`${totalSold}`, { bold: true, size: S }),
-            t(hasCarryover ? ' zile concediu de odihnă, din care' : ` zile concediu de odihnă aferente anului ${year}.`, { size: S }),
+        t(hasCarryover ? ' zile concediu de odihnă, din care' : ` zile concediu de odihnă aferente anului ${year}.`, { size: S }),
       ],
     }),
     ...(hasCarryover ? [
