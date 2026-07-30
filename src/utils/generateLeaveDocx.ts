@@ -131,9 +131,6 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const sourceYearFromLabel = extractSourceYear(leaveSourceLabel);
   const effectiveLeaveSourceYear = leaveSourceYear || sourceYearFromLabel;
 
-  // Determine which year to show: explicit/source label, or derive from carryover info
-  const displayYear = effectiveLeaveSourceYear || (carryoverDays && carryoverDays > 0 && carryoverFromYear ? carryoverFromYear : year);
-
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = endDate ? formatDate(endDate) : '';
 
@@ -151,19 +148,33 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
 
   const totalCurrentYear = totalLeaveDays ?? 0;
   const usedDays = usedLeaveDays ?? 0;
-  const carryover = carryoverDays ?? 0;
+  const carryover = Math.max(0, carryoverDays ?? 0);
 
-  // Sursa de adevăr = aceleași valori live ca în Gestiune HR:
-  //   remaining current year = employee_personal_data.total_leave_days - used_leave_days
-  //   carryover              = leave_carryover.remaining_days (from_year=year-1, to_year=year)
-  // Documentul spune „La această dată" — deci reflectă soldul curent, după toate scăderile.
-  const remainingCurrentYear = Math.max(0, totalCurrentYear - usedDays);
-  const carryoverBeforeRequest = Math.max(0, carryover);
+  // „Propunem să aprobați" trebuie să arate soldul DE DINAINTE de cererea curentă.
+  // Dacă cererea e deja aprobată (zilele scăzute), le adăugăm înapoi la sursele din care s-au luat:
+  // întâi report (FIFO), apoi soldul anului curent.
+  const carryoverConsumed = Math.max(0, (carryoverInitialDays ?? 0) - carryover);
+  const restoreToCarryover = isApproved ? Math.min(workingDays, carryoverConsumed) : 0;
+  const restoreToCurrent = isApproved ? Math.max(0, workingDays - restoreToCarryover) : 0;
+
+  const remainingCurrentYear = Math.max(0, totalCurrentYear - usedDays) + restoreToCurrent;
+  const carryoverBeforeRequest = carryover + restoreToCarryover;
   const totalSold = remainingCurrentYear + carryoverBeforeRequest;
+
+  // Din ce an s-au luat efectiv zilele cererii
+  const takenFromCarryover = isApproved
+    ? restoreToCarryover
+    : Math.min(workingDays, carryoverBeforeRequest);
+
+  // Anul menționat la „zile de concediu de odihnă aferente anului ..."
+  const displayYear = (takenFromCarryover > 0 && carryoverFromYear)
+    ? carryoverFromYear
+    : (effectiveLeaveSourceYear || year);
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`
     : formattedStartDate;
+
 
   // ════════════════════════════════════════════════════
   // Left column: Aprobat, Șef compartiment, signature, date
