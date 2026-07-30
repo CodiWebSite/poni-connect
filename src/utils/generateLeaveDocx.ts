@@ -111,11 +111,6 @@ const t = (text: string, opts: Partial<{ bold: boolean; italics: boolean; size: 
 const tab = () => new TextRun({ text: '\t', font: FONT });
 const empty = (after = 0) => new Paragraph({ spacing: { after }, children: [] });
 
-function extractSourceYear(sourceLabel?: string): number | undefined {
-  const match = sourceLabel?.match(/(?:Report|Sold)\s+(\d{4})/i);
-  return match ? Number(match[1]) : undefined;
-}
-
 export async function generateLeaveDocx(params: LeaveDocxParams) {
   const {
     employeeName, employeePosition, employeeGrade, department, workingDays, year, leaveSourceYear,
@@ -127,9 +122,6 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
     approvalDate, deptHeadSignature, deptHeadName, deptHeadIP, deptHeadSignedAt,
     directorName, directorApprovalDate,
   } = params;
-
-  const sourceYearFromLabel = extractSourceYear(leaveSourceLabel);
-  const requestedSourceYear = leaveSourceYear || sourceYearFromLabel;
 
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = endDate ? formatDate(endDate) : '';
