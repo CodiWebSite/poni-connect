@@ -1,4 +1,6 @@
 import { registerSW } from "virtual:pwa-register";
+import { toast } from "sonner";
+import { restoreFormSnapshot, saveFormSnapshot } from "./formStateSnapshot";
 
 /**
  * Guarded service-worker registration with aggressive update checks.
@@ -53,6 +55,13 @@ async function unregisterAppSw() {
 
 export function initPwa() {
   if (typeof window === "undefined") return;
+  // Restore any form data saved right before an automatic post-deploy reload.
+  restoreFormSnapshot(() =>
+    toast.info("Aplicația a fost actualizată", {
+      description: "Datele completate în formular au fost restaurate.",
+    }),
+  );
+
   if (!("serviceWorker" in navigator)) return;
 
   const params = new URLSearchParams(window.location.search);
@@ -72,6 +81,8 @@ export function initPwa() {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (reloaded) return;
     reloaded = true;
+    // Persist in-progress form data before the automatic refresh.
+    saveFormSnapshot();
     window.location.reload();
   });
 
