@@ -219,7 +219,9 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
     }
   };
 
-  const availableDays = (employeeData?.total_leave_days ?? 0) + carryoverDays + bonusDays - (employeeData?.used_leave_days ?? 0);
+  const requestYear = startDate ? parseInt(startDate.slice(0, 4), 10) : new Date().getFullYear();
+  const currentYearBalance = Math.max(0, (employeeData?.total_leave_days ?? 0) - (employeeData?.used_leave_days ?? 0));
+  const availableDays = currentYearBalance + carryoverDays + bonusDays;
 
   // Calculate how days would be deducted: 2025 carryover first, then 2026
   const deductionBreakdown = (() => {
@@ -308,7 +310,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       start_date: startDate,
       end_date: endDate,
       working_days: workingDays,
-      year: new Date().getFullYear(),
+      year: requestYear,
       replacement_name: selectedColleague?.name || '',
       replacement_position: selectedColleague?.position || '',
       status: 'pending_department_head' as any,
@@ -521,13 +523,13 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               {availableDays} zile
             </p>
             <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
-              <p>• {employeeData.total_leave_days} cuvenite {new Date().getFullYear()} − {employeeData.used_leave_days} utilizate = <strong>{employeeData.total_leave_days - employeeData.used_leave_days}</strong></p>
-              {carryoverDays > 0 && <p>• {carryoverDays} zile report {new Date().getFullYear() - 1}</p>}
+              <p>• {employeeData.total_leave_days} cuvenite {requestYear} − {employeeData.used_leave_days} utilizate = <strong>{currentYearBalance}</strong></p>
+              {carryoverDays > 0 && <p>• {carryoverDays} zile report {requestYear - 1}</p>}
               {bonusDays > 0 && <p>• {bonusDays} zile Sold+ (suplimentar)</p>}
             </div>
             {carryoverDays > 0 && (
               <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                ⚠ Se consumă mai întâi soldul din {new Date().getFullYear() - 1} ({carryoverDays} zile disponibile)
+                ⚠ Se consumă mai întâi soldul din {requestYear - 1} ({carryoverDays} zile disponibile)
               </p>
             )}
           </div>
@@ -640,8 +642,8 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
             </p>
             {carryoverDays > 0 && workingDays > 0 && (
               <p className="text-xs text-muted-foreground">
-                Se vor consuma: <strong>{deductionBreakdown.from2025} zile din soldul 2025</strong>
-                {deductionBreakdown.from2026 > 0 && <> și <strong>{deductionBreakdown.from2026} zile din soldul 2026</strong></>}
+                Se vor consuma: <strong>{deductionBreakdown.from2025} zile din report {requestYear - 1}</strong>
+                {deductionBreakdown.from2026 > 0 && <> și <strong>{deductionBreakdown.from2026} zile din soldul {requestYear}</strong></>}
               </p>
             )}
           </div>
