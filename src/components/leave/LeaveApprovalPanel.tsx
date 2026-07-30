@@ -438,7 +438,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const deductLeaveDays = async (request: LeaveRequest) => {
     // Skip deduction in demo mode to protect real balances
     if (isDemo) return;
-    const currentYear = new Date().getFullYear();
+    const currentYear = Number(request.year) || (request.start_date ? new Date(request.start_date).getFullYear() : new Date().getFullYear());
     let daysToDeduct = request.working_days;
 
     const { data: carryovers } = await supabase

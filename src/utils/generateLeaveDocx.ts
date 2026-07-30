@@ -111,25 +111,17 @@ const t = (text: string, opts: Partial<{ bold: boolean; italics: boolean; size: 
 const tab = () => new TextRun({ text: '\t', font: FONT });
 const empty = (after = 0) => new Paragraph({ spacing: { after }, children: [] });
 
-function extractSourceYear(sourceLabel?: string): number | undefined {
-  const match = sourceLabel?.match(/(?:Report|Sold)\s+(\d{4})/i);
-  return match ? Number(match[1]) : undefined;
-}
-
 export async function generateLeaveDocx(params: LeaveDocxParams) {
   const {
-    employeeName, employeePosition, employeeGrade, department, workingDays, year, leaveSourceYear,
+    employeeName, employeePosition, employeeGrade, department, workingDays, year,
     startDate, endDate, replacementName, replacementPosition,
     requestDate, requestNumber, isApproved, employeeSignature,
-    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverInitialDays, carryoverFromYear, leaveSourceLabel, balanceTiming,
+    totalLeaveDays, usedLeaveDays, carryoverDays, carryoverFromYear,
     currentYearRemainingAtRequest, carryoverRemainingAtRequest, srusOfficerName, srusSignature,
     srusSignedAt, srusIP,
     approvalDate, deptHeadSignature, deptHeadName, deptHeadIP, deptHeadSignedAt,
     directorName, directorApprovalDate,
   } = params;
-
-  const sourceYearFromLabel = extractSourceYear(leaveSourceLabel);
-  const effectiveLeaveSourceYear = leaveSourceYear || sourceYearFromLabel;
 
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = endDate ? formatDate(endDate) : '';
@@ -148,13 +140,18 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
 
   const totalCurrentYear = totalLeaveDays ?? 0;
   const usedDays = usedLeaveDays ?? 0;
-  const carryover = Math.max(0, carryoverDays ?? 0);
 
-  // Documentul trebuie să reflecte soldul LIVE din Gestiune HR.
-  // Nu reconstruim reportul din initial_days, pentru că importurile/ajustările manuale pot consuma
-  // reportul fără ca cererea curentă să fi luat efectiv zile din acel an.
-  const remainingCurrentYear = Math.max(0, totalCurrentYear - usedDays);
-  const carryoverBeforeRequest = carryover;
+  // Documentul trebuie să reflecte strict soldul LIVE din Gestiune HR.
+  // Dacă reportul are remaining_days = 0, nu îl reintroducem din initial_days/used_days
+  // și ignorăm orice etichetă veche care ar indica Report 2025.
+  const remainingCurrentYear = Math.max(
+    0,
+    currentYearRemainingAtRequest ?? (totalCurrentYear - usedDays)
+  );
+  const carryoverBeforeRequest = Math.max(
+    0,
+    carryoverRemainingAtRequest ?? carryoverDays ?? 0
+  );
   const totalSold = remainingCurrentYear + carryoverBeforeRequest;
 
   // Din ce an s-au luat efectiv zilele cererii
@@ -163,7 +160,7 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   // Anul menționat la „zile de concediu de odihnă aferente anului ..."
   const displayYear = (takenFromCarryover > 0 && carryoverFromYear)
     ? carryoverFromYear
-    : (effectiveLeaveSourceYear || year);
+    : year;
 
   const periodText = formattedEndDate
     ? `${formattedStartDate} - ${formattedEndDate}`

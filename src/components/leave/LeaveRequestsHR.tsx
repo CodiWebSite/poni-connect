@@ -210,6 +210,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     // Sursa afișată în Centralizare trebuie să urmeze starea LIVE din Gestiune HR.
     // Nu reconstruim istoric FIFO din cererile existente, deoarece soldurile importate/manuale
     // pot consuma reportul fără să existe o cerere online corespunzătoare.
+    // Regula principală: remaining_days este adevărul. Dacă reportul este 0, nu afișăm Report.
     const sourceLabels: Record<string, string> = {};
     const requestBalances: Record<string, { currentYearRemaining: number; carryoverRemaining: number }> = {};
 
@@ -218,7 +219,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       const requestYear = Number(r.year) || (r.start_date ? new Date(r.start_date).getFullYear() : new Date().getFullYear());
       const currentYearRemaining = Math.max(0, (epdMap[epdId]?.total_leave_days ?? 0) - (epdMap[epdId]?.used_leave_days ?? 0));
       const relevantCarryovers = (carryoverMap[epdId] || [])
-        .filter(c => c.to_year === requestYear && c.remaining_days > 0)
+        .filter(c => c.to_year === requestYear && Math.max(0, c.remaining_days || 0) > 0)
         .sort((a, b) => a.from_year - b.from_year);
       const carryoverRemaining = relevantCarryovers.reduce((sum, c) => sum + Math.max(0, c.remaining_days), 0);
       const hasRelevantCarryover = relevantCarryovers.length > 0;
@@ -398,7 +399,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
   const deductLeaveDays = async (request: LeaveRequestRow) => {
     if (!request.epd_id) return;
-    const currentYear = new Date().getFullYear();
+    const currentYear = Number(request.year) || (request.start_date ? new Date(request.start_date).getFullYear() : new Date().getFullYear());
     let daysToDeduct = request.working_days;
 
     const { data: carryovers } = await supabase

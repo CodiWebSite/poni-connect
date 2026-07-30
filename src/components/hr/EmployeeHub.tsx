@@ -152,7 +152,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
   ])].sort();
 
   const employeesWithAccounts = employees.filter(e => e.hasAccount);
-  const remainingLeave = (emp: EmployeeWithData) => emp.total_leave_days + (emp.carryoverDays || 0) + (emp.bonusDays || 0) - emp.used_leave_days;
+  const remainingLeave = (emp: EmployeeWithData) => Math.max(0, emp.total_leave_days - emp.used_leave_days) + (emp.carryoverDays || 0) + (emp.bonusDays || 0);
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const filteredEmployees = employees.filter(e => {
