@@ -95,25 +95,21 @@ const EmployeeDashboard = () => {
 
   return (
     <MainLayout title="Dashboard" description="Panoul tău personal">
-      <InstallAppBanner />
-      <DashboardAlertsBanner />
-      <MFARecommendationBanner />
+      <DashboardBanners />
       <DashboardGreeting subtitle="Iată un rezumat al situației tale." />
 
-      {/* Room Bookings — prominent placement */}
+      {/* Quick Actions */}
       <div className="mt-4">
-        <RoomBookingsWidget />
+        <SectionTitle>Acțiuni Rapide</SectionTitle>
+        <QuickActionsGrid actions={quickActions} columns={4} />
       </div>
 
-      {/* Announcements */}
-      <div className="mt-4">
-        <DashboardAnnouncements />
-      </div>
+      <BentoGrid className="mt-4">
+        <BentoMain>
+          <RoomBookingsWidget />
+          <DashboardAnnouncements />
 
-      {/* My Requests + Leave */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-        <div className="lg:col-span-2">
-          <Card>
+          <Card className="surface-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Inbox className="w-4 h-4 text-primary" />
@@ -125,21 +121,23 @@ const EmployeeDashboard = () => {
               {loading ? (
                 <div className="space-y-2">{[1, 2, 3].map(i => <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />)}</div>
               ) : myRequests.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-6 text-muted-foreground">
-                  <CheckCircle2 className="w-8 h-8 text-success/60" />
-                  <p className="text-sm">Nicio cerere recentă</p>
-                </div>
+                <EmptyState
+                  compact
+                  icon={CheckCircle2}
+                  title="Nicio cerere recentă"
+                  description="Cererile tale de concediu sau adeverințe vor apărea aici."
+                />
               ) : (
                 <ScrollArea className={myRequests.length > 4 ? 'h-[200px]' : undefined}>
                   <div className="space-y-2">
                     {myRequests.map(req => (
-                      <div key={req.id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg border border-border/60 hover:bg-muted/30 transition-colors">
+                      <div key={req.id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg border border-border/60 hover:bg-muted/40 transition-colors">
                         <FileText className="w-4 h-4 text-primary shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium">{getRequestLabel(req.type)}</p>
                           <p className="text-xs text-muted-foreground">{format(new Date(req.createdAt), 'd MMM yyyy', { locale: ro })}</p>
                         </div>
-                        {getStatusBadge(req.status)}
+                        <StatusBadge status={req.status} />
                       </div>
                     ))}
                   </div>
@@ -147,21 +145,15 @@ const EmployeeDashboard = () => {
               )}
             </CardContent>
           </Card>
-        </div>
-        <PersonalLeaveWidget />
-      </div>
 
-      {/* Quick Actions */}
-      <div className="mt-4">
-        <h3 className="text-sm font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Acțiuni Rapide</h3>
-        <QuickActionsGrid actions={quickActions} columns={4} />
-      </div>
+          <ActivityHistory />
+        </BentoMain>
 
-      {/* Activity + Changelog */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-        <ActivityHistory />
-        <ChangelogWidget />
-      </div>
+        <BentoSide>
+          <PersonalLeaveWidget />
+          <ChangelogWidget />
+        </BentoSide>
+      </BentoGrid>
     </MainLayout>
   );
 };
