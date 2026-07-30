@@ -60,55 +60,61 @@ const Header = ({ title, description }: HeaderProps) => {
 
   return (
     <>
-    <header className="sticky top-0 z-40 bg-background/60 backdrop-blur-xl border-b border-border/40 px-3 md:px-6 py-2 md:py-2.5">
+    <header className="sticky top-0 z-40 bg-background/75 backdrop-blur-xl border-b border-border px-3 md:px-6 py-2 md:py-2.5">
       <div className="flex items-center justify-between gap-2 md:gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
           {/* Mobile menu button */}
           <MobileNav />
-          
+
           <div className="min-w-0">
-            <h1 className="text-base md:text-2xl font-display font-bold text-foreground truncate">{title}</h1>
-            {/* Breadcrumb */}
-            {currentRoute !== '/' && breadcrumbLabel && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 hidden sm:flex">
-                <Link to="/" className="hover:text-foreground transition-colors">Dashboard</Link>
-                <ChevronRight className="w-3 h-3" />
-                <span className="text-foreground/70">{breadcrumbLabel}</span>
-              </div>
-            )}
+            <div className="flex items-baseline gap-2 min-w-0">
+              <h1 className="text-base md:text-xl font-display font-semibold text-foreground truncate tracking-tight">{title}</h1>
+              {currentRoute !== '/' && breadcrumbLabel && (
+                <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                  <ChevronRight className="w-3 h-3" />
+                  <Link to="/" className="hover:text-foreground transition-colors">Dashboard</Link>
+                  <ChevronRight className="w-3 h-3" />
+                  <span className="text-foreground/70">{breadcrumbLabel}</span>
+                </div>
+              )}
+            </div>
             {description && currentRoute === '/' && (
               <p className="text-xs md:text-sm text-muted-foreground mt-0.5 hidden sm:block">{description}</p>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-1.5 md:gap-2">
           <GlobalSearch />
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="h-8 w-8 md:h-9 md:w-9 transition-transform duration-300 hover:rotate-180"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </Button>
+          {/* Grouped icon actions */}
+          <div className="flex items-center gap-0.5 rounded-lg border border-border/70 bg-secondary/40 p-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              aria-label="Comută tema"
+              className="h-8 w-8 rounded-md transition-transform duration-300 hover:rotate-180"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </Button>
 
-          <HubSwitcher />
+            <HubSwitcher />
 
-          <NotificationBell />
+            <NotificationBell />
+          </div>
 
-          <div className="hidden sm:flex items-center gap-3 pl-2 md:pl-4 border-l border-border">
+          <div className="hidden sm:flex items-center gap-2.5 pl-1.5 md:pl-3 border-l border-border">
             {/* Avatar with gradient ring */}
             <div className="rounded-full p-[2px] bg-gradient-to-br from-primary to-accent">
-              <Avatar className="w-8 h-8 md:w-9 md:h-9 border-2 border-background">
+              <Avatar className="w-8 h-8 border-2 border-background">
                 <AvatarImage src={avatarUrl || ''} />
-                <AvatarFallback className="bg-primary/10 text-primary text-xs md:text-sm font-medium">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                   {user?.email ? getInitials(user.email) : 'U'}
                 </AvatarFallback>
               </Avatar>
             </div>
-            <div className="hidden lg:block">
+            <div className="hidden lg:block leading-tight">
               <p className="text-sm font-medium truncate max-w-[150px]">{displayName || user?.email}</p>
             </div>
           </div>
@@ -116,10 +122,10 @@ const Header = ({ title, description }: HeaderProps) => {
       </div>
     </header>
     {isDemo && (
-      <div className="sticky top-[53px] z-[39] bg-amber-500/90 backdrop-blur-sm text-amber-950 px-4 py-2 flex items-center justify-center gap-3 text-sm font-medium">
+      <div className="sticky top-[53px] z-[39] bg-warning/90 backdrop-blur-sm text-warning-foreground px-4 py-2 flex items-center justify-center gap-3 text-sm font-medium">
         <FlaskConical className="w-4 h-4" />
         <span>MOD DEMO ACTIV — Acțiunile nu afectează datele reale</span>
-        <Button variant="ghost" size="sm" onClick={toggleDemo} className="h-6 px-2 text-amber-950 hover:bg-amber-600/30">
+        <Button variant="ghost" size="sm" onClick={toggleDemo} className="h-6 px-2 text-warning-foreground hover:bg-warning-foreground/15">
           <X className="w-3 h-3 mr-1" />
           Dezactivează
         </Button>
