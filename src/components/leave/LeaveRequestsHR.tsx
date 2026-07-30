@@ -320,6 +320,8 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         leaveSourceLabel: request.source_label,
         currentYearRemainingAtRequest: request.current_year_remaining_at_request,
         carryoverRemainingAtRequest: request.carryover_remaining_at_request,
+        alreadyDeducted: request.status === 'approved',
+
         srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
         srusSignature: (lrData as any)?.srus_signature || undefined,
         srusSignedAt: (lrData as any)?.srus_signed_at || undefined,
