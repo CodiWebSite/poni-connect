@@ -1,10 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, GitBranch, Route, Bell, Tag } from 'lucide-react';
+import { Shield, GitBranch, Route, Bell, Tag, UserCheck } from 'lucide-react';
 import AccessMatrixEditor from './AccessMatrixEditor';
 import ApprovalWorkflowEditor from './ApprovalWorkflowEditor';
 import RequestRoutingEditor from './RequestRoutingEditor';
 import NotificationRulesEditor from './NotificationRulesEditor';
 import CustomRolesManager from './CustomRolesManager';
+import LeaveReplacementOverridesEditor from './LeaveReplacementOverridesEditor';
 
 const OperationalRulesPanel = () => {
   return (
