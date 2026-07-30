@@ -150,21 +150,15 @@ export async function generateLeaveDocx(params: LeaveDocxParams) {
   const usedDays = usedLeaveDays ?? 0;
   const carryover = Math.max(0, carryoverDays ?? 0);
 
-  // „Propunem să aprobați" trebuie să arate soldul DE DINAINTE de cererea curentă.
-  // Dacă cererea e deja aprobată (zilele scăzute), le adăugăm înapoi la sursele din care s-au luat:
-  // întâi report (FIFO), apoi soldul anului curent.
-  const carryoverConsumed = Math.max(0, (carryoverInitialDays ?? 0) - carryover);
-  const restoreToCarryover = isApproved ? Math.min(workingDays, carryoverConsumed) : 0;
-  const restoreToCurrent = isApproved ? Math.max(0, workingDays - restoreToCarryover) : 0;
-
-  const remainingCurrentYear = Math.max(0, totalCurrentYear - usedDays) + restoreToCurrent;
-  const carryoverBeforeRequest = carryover + restoreToCarryover;
+  // Documentul trebuie să reflecte soldul LIVE din Gestiune HR.
+  // Nu reconstruim reportul din initial_days, pentru că importurile/ajustările manuale pot consuma
+  // reportul fără ca cererea curentă să fi luat efectiv zile din acel an.
+  const remainingCurrentYear = Math.max(0, totalCurrentYear - usedDays);
+  const carryoverBeforeRequest = carryover;
   const totalSold = remainingCurrentYear + carryoverBeforeRequest;
 
   // Din ce an s-au luat efectiv zilele cererii
-  const takenFromCarryover = isApproved
-    ? restoreToCarryover
-    : Math.min(workingDays, carryoverBeforeRequest);
+  const takenFromCarryover = Math.min(workingDays, carryoverBeforeRequest);
 
   // Anul menționat la „zile de concediu de odihnă aferente anului ..."
   const displayYear = (takenFromCarryover > 0 && carryoverFromYear)
