@@ -42,6 +42,9 @@ interface LeaveDocxParams {
   balanceTiming?: 'current' | 'before_request';
   currentYearRemainingAtRequest?: number;
   carryoverRemainingAtRequest?: number;
+  /** true dacă zilele acestei cereri au fost deja scăzute din soldul din Gestiune HR */
+  alreadyDeducted?: boolean;
+
   srusOfficerName?: string;
   srusSignature?: string | null;
   srusSignedAt?: string | null;
