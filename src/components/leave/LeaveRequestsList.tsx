@@ -106,11 +106,14 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
         .select('remaining_days, initial_days, from_year, to_year')
         .eq('employee_personal_data_id', request.epd_id)
         .eq('to_year', request.year)
-        .maybeSingle();
-      if (carryoverData) {
-        carryoverDays = carryoverData.remaining_days;
-        carryoverInitialDays = carryoverData.initial_days;
-        carryoverFromYear = carryoverData.from_year;
+        .gt('remaining_days', 0)
+        .order('from_year', { ascending: true })
+        .limit(1);
+      const activeCarryover = carryoverData?.[0];
+      if (activeCarryover) {
+        carryoverDays = activeCarryover.remaining_days;
+        carryoverInitialDays = activeCarryover.initial_days;
+        carryoverFromYear = activeCarryover.from_year;
       }
     }
 
