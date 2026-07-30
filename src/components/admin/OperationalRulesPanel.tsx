@@ -32,7 +32,12 @@ const OperationalRulesPanel = () => {
             <Bell className="w-3.5 h-3.5" />
             Notificări
           </TabsTrigger>
+          <TabsTrigger value="replacements" className="text-xs gap-1.5">
+            <UserCheck className="w-3.5 h-3.5" />
+            Înlocuitori Concediu
+          </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="roles">
           <CustomRolesManager />
