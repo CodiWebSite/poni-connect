@@ -94,6 +94,7 @@ export default function PayslipUploader() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [batchStats, setBatchStats] = useState<Record<string, { ok: number; review: number; total: number }>>({});
   const [openBatch, setOpenBatch] = useState<string | null>(null);
   const [slips, setSlips] = useState<Slip[]>([]);
   const [employees, setEmployees] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
@@ -126,13 +127,41 @@ export default function PayslipUploader() {
   const pollRef = useRef<number | null>(null);
   const tickRef = useRef<number | null>(null);
 
+  const loadBatchStats = async (ids: string[]) => {
+    if (!ids.length) { setBatchStats({}); return; }
+    const stats: Record<string, { ok: number; review: number; total: number }> = {};
+    ids.forEach(id => { stats[id] = { ok: 0, review: 0, total: 0 }; });
+    const page = 1000;
+    for (let from = 0; ; from += page) {
+      const { data, error } = await supabase
+        .from('payslips')
+        .select('batch_id, match_status, employee_epd_id')
+        .in('batch_id', ids)
+        .range(from, from + page - 1);
+      if (error || !data) break;
+      data.forEach((s: any) => {
+        const st = stats[s.batch_id];
+        if (!st) return;
+        st.total += 1;
+        const resolved = !!s.employee_epd_id &&
+          ['matched', 'needs_confirm', 'distributed'].includes(s.match_status);
+        if (resolved) st.ok += 1; else st.review += 1;
+      });
+      if (data.length < page) break;
+    }
+    setBatchStats(stats);
+  };
+
   const loadBatches = async () => {
     const { data } = await supabase
       .from('payslip_batches')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(24);
-    if (data) setBatches(data as Batch[]);
+    if (data) {
+      setBatches(data as Batch[]);
+      await loadBatchStats((data as Batch[]).map(b => b.id));
+    }
   };
 
   const loadSlips = async (batchId: string) => {
@@ -485,18 +514,22 @@ export default function PayslipUploader() {
               {batches.map(b => {
                 const bMeta = batchStatusMeta[b.status] ?? batchStatusMeta.pending;
                 const BIcon = bMeta.icon;
-                const pct = b.total_slips > 0 ? Math.round((b.matched_count / b.total_slips) * 100) : 0;
+                const st = batchStats[b.id];
+                const okCount = st ? st.ok : b.matched_count;
+                const reviewCount = st ? st.review : b.unmatched_count;
+                const totalCount = st?.total || b.total_slips;
+                const pct = totalCount > 0 ? Math.round((okCount / totalCount) * 100) : 0;
                 return (
                 <div key={b.id} className={`p-3 rounded-lg border transition-colors ${openBatch === b.id ? 'bg-accent/10 border-primary/40' : 'hover:bg-accent/5'}`}>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <button className="text-left flex-1 min-w-0" onClick={() => openBatchView(b.id)}>
                       <div className="font-medium text-sm">
-                        {MONTH_NAMES_RO[b.month - 1]} {b.year} — {b.total_slips} fluturași
+                        {MONTH_NAMES_RO[b.month - 1]} {b.year} — {totalCount} fluturași
                       </div>
                       <div className="text-[11px] text-muted-foreground">
                         {b.original_filename} • {format(new Date(b.created_at), 'd MMM HH:mm', { locale: ro })} •{' '}
-                        <span className="text-emerald-600">{b.matched_count} ok</span> /{' '}
-                        <span className="text-amber-600">{b.unmatched_count} de revizuit</span>
+                        <span className="text-emerald-600">{okCount} ok</span> /{' '}
+                        <span className={reviewCount > 0 ? 'text-amber-600' : 'text-muted-foreground'}>{reviewCount} de revizuit</span>
                       </div>
                     </button>
                     <div className="flex items-center gap-2">
@@ -509,7 +542,7 @@ export default function PayslipUploader() {
                           <Send className="w-3.5 h-3.5 mr-1" /> Distribuie
                         </Button>
                       )}
-                      {b.unmatched_count > 0 && (
+                      {reviewCount > 0 && (
                         <Button
                           size="sm"
                           variant="outline"
