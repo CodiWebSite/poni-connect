@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import MainLayout from '@/components/layout/MainLayout';
-import DashboardAlertsBanner from './DashboardAlertsBanner';
-import MFARecommendationBanner from './MFARecommendationBanner';
+import DashboardBanners from './DashboardBanners';
 import DashboardGreeting from './DashboardGreeting';
 import QuickActionsGrid, { QuickAction } from './QuickActionsGrid';
 import PendingActionsWidget, { PendingAction } from './PendingActionsWidget';
@@ -97,8 +96,7 @@ const SefDepartmentDashboard = () => {
 
   return (
     <MainLayout title="Dashboard" description="Panou șef departament">
-      <DashboardAlertsBanner />
-      <MFARecommendationBanner />
+      <DashboardBanners />
       <DashboardGreeting subtitle="Panou de lucru conducere" />
 
       {/* Room Bookings — prominent placement */}
