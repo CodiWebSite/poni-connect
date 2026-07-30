@@ -79,6 +79,10 @@ const Admin = () => {
               <Megaphone className="w-4 h-4" />
               <span className="hidden sm:inline">Broadcast</span>
             </TabsTrigger>
+            <TabsTrigger value="operational-rules" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+              <Settings2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Reguli operaționale</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
