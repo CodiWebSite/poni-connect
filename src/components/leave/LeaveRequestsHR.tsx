@@ -207,31 +207,47 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
       }
     }
 
-    // Sursa afișată în Centralizare trebuie să urmeze starea LIVE din Gestiune HR.
-    // Nu reconstruim istoric FIFO din cererile existente, deoarece soldurile importate/manuale
-    // pot consuma reportul fără să existe o cerere online corespunzătoare.
-    // Regula principală: remaining_days este adevărul. Dacă reportul este 0, nu afișăm Report.
+    // Sursa afișată în Centralizare trebuie să redea soldul de DINAINTEA fiecărei cereri.
+    // Pornim din soldul live din Gestiune HR (după scădere) și inversăm FIFO: completăm întâi
+    // anul curent până la dreptul total, apoi diferența revine în reportul anului anterior.
     const sourceLabels: Record<string, string> = {};
-    const requestBalances: Record<string, { currentYearRemaining: number; carryoverRemaining: number }> = {};
+    const requestBalances: Record<string, { currentYearRemaining: number; carryoverRemaining: number; carryoverFromYear?: number; carryoverInitialDays?: number }> = {};
 
     rows.forEach((r: any) => {
       const epdId = r.epd_id;
       const requestYear = Number(r.year) || (r.start_date ? new Date(r.start_date).getFullYear() : new Date().getFullYear());
-      const currentYearRemaining = Math.max(0, (epdMap[epdId]?.total_leave_days ?? 0) - (epdMap[epdId]?.used_leave_days ?? 0));
+      const totalCurrentYear = Math.max(0, epdMap[epdId]?.total_leave_days ?? 0);
+      const currentYearRemainingLive = Math.max(0, totalCurrentYear - (epdMap[epdId]?.used_leave_days ?? 0));
       const relevantCarryovers = (carryoverMap[epdId] || [])
-        .filter(c => c.to_year === requestYear && Math.max(0, c.remaining_days || 0) > 0)
+        .filter(c => c.to_year === requestYear && (Math.max(0, c.initial_days || 0) > 0 || Math.max(0, c.remaining_days || 0) > 0))
         .sort((a, b) => a.from_year - b.from_year);
-      const carryoverRemaining = relevantCarryovers.reduce((sum, c) => sum + Math.max(0, c.remaining_days), 0);
-      const hasRelevantCarryover = relevantCarryovers.length > 0;
+      const carryoverRemainingLive = relevantCarryovers.reduce((sum, c) => sum + Math.max(0, c.remaining_days), 0);
+      const carryoverInitialDays = relevantCarryovers.reduce((sum, c) => sum + Math.max(0, c.initial_days), 0);
+      const carryoverFromYear = relevantCarryovers[0]?.from_year;
       const days = Number(r.working_days) || 0;
+      const alreadyDeducted = r.status === 'approved';
+      let currentYearRemaining = currentYearRemainingLive;
+      let carryoverRemaining = carryoverRemainingLive;
 
-      requestBalances[r.id] = { currentYearRemaining, carryoverRemaining };
+      if (alreadyDeducted && days > 0) {
+        let restore = days;
+        if (carryoverRemainingLive > 0) {
+          carryoverRemaining += restore;
+        } else {
+          const roomInCurrentYear = Math.max(0, totalCurrentYear - currentYearRemaining);
+          const restoreToCurrent = Math.min(restore, roomInCurrentYear);
+          currentYearRemaining += restoreToCurrent;
+          restore -= restoreToCurrent;
+          if (restore > 0) carryoverRemaining += restore;
+        }
+      }
 
-      if (days > 0 && carryoverRemaining > 0 && hasRelevantCarryover) {
-        const reportYear = relevantCarryovers[0].from_year;
+      requestBalances[r.id] = { currentYearRemaining, carryoverRemaining, carryoverFromYear, carryoverInitialDays };
+
+      if (days > 0 && carryoverRemaining > 0 && carryoverFromYear) {
         sourceLabels[r.id] = carryoverRemaining >= days
-          ? `Report ${reportYear}`
-          : `Report ${reportYear} + Sold ${requestYear}`;
+          ? `Report ${carryoverFromYear}`
+          : `Report ${carryoverFromYear} + Sold ${requestYear}`;
       } else {
         sourceLabels[r.id] = `Sold ${requestYear}`;
       }
@@ -279,14 +295,14 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
           .select('remaining_days, initial_days, from_year, to_year')
           .eq('employee_personal_data_id', request.epd_id)
           .eq('to_year', request.year)
-          .gt('remaining_days', 0)
-          .order('from_year', { ascending: true })
-          .limit(1);
-        const activeCarryover = carryoverData?.[0];
-        if (activeCarryover) {
-          carryoverDays = activeCarryover.remaining_days;
-          carryoverInitialDays = activeCarryover.initial_days;
-          carryoverFromYear = activeCarryover.from_year;
+          .order('from_year', { ascending: true });
+        const relevantCarryovers = (carryoverData || []).filter((c: any) =>
+          Math.max(0, c.initial_days || 0) > 0 || Math.max(0, c.remaining_days || 0) > 0
+        );
+        if (relevantCarryovers.length > 0) {
+          carryoverDays = relevantCarryovers.reduce((sum: number, c: any) => sum + Math.max(0, c.remaining_days || 0), 0);
+          carryoverInitialDays = relevantCarryovers.reduce((sum: number, c: any) => sum + Math.max(0, c.initial_days || 0), 0);
+          carryoverFromYear = relevantCarryovers[0].from_year;
         }
       }
 
@@ -320,7 +336,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         leaveSourceLabel: request.source_label,
         currentYearRemainingAtRequest: request.current_year_remaining_at_request,
         carryoverRemainingAtRequest: request.carryover_remaining_at_request,
-        alreadyDeducted: request.status === 'approved',
+        alreadyDeducted: false,
 
         srusOfficerName: (lrData as any)?.srus_officer_name || undefined,
         srusSignature: (lrData as any)?.srus_signature || undefined,

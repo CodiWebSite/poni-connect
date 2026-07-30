@@ -96,7 +96,8 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
       .eq('id', request.epd_id)
       .maybeSingle();
 
-    // Get carryover data
+    // Get carryover data, including consumed report. The DOCX needs the year of the report
+    // even when remaining_days is already 0, so it can reconstruct the balance before the request.
     let carryoverDays = 0;
     let carryoverInitialDays = 0;
     let carryoverFromYear: number | undefined;
@@ -106,14 +107,14 @@ export function LeaveRequestsList({ refreshTrigger }: LeaveRequestsListProps) {
         .select('remaining_days, initial_days, from_year, to_year')
         .eq('employee_personal_data_id', request.epd_id)
         .eq('to_year', request.year)
-        .gt('remaining_days', 0)
-        .order('from_year', { ascending: true })
-        .limit(1);
-      const activeCarryover = carryoverData?.[0];
-      if (activeCarryover) {
-        carryoverDays = activeCarryover.remaining_days;
-        carryoverInitialDays = activeCarryover.initial_days;
-        carryoverFromYear = activeCarryover.from_year;
+        .order('from_year', { ascending: true });
+      const relevantCarryovers = (carryoverData || []).filter((c: any) =>
+        Math.max(0, c.initial_days || 0) > 0 || Math.max(0, c.remaining_days || 0) > 0
+      );
+      if (relevantCarryovers.length > 0) {
+        carryoverDays = relevantCarryovers.reduce((sum: number, c: any) => sum + Math.max(0, c.remaining_days || 0), 0);
+        carryoverInitialDays = relevantCarryovers.reduce((sum: number, c: any) => sum + Math.max(0, c.initial_days || 0), 0);
+        carryoverFromYear = relevantCarryovers[0].from_year;
       }
     }
 
