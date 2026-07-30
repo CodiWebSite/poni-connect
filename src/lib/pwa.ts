@@ -1,4 +1,6 @@
 import { registerSW } from "virtual:pwa-register";
+import { toast } from "sonner";
+import { restoreFormSnapshot, saveFormSnapshot } from "./formStateSnapshot";
 
 /**
  * Guarded service-worker registration with aggressive update checks.
@@ -72,6 +74,8 @@ export function initPwa() {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (reloaded) return;
     reloaded = true;
+    // Persist in-progress form data before the automatic refresh.
+    saveFormSnapshot();
     window.location.reload();
   });
 
