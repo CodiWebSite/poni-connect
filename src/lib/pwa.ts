@@ -55,6 +55,13 @@ async function unregisterAppSw() {
 
 export function initPwa() {
   if (typeof window === "undefined") return;
+  // Restore any form data saved right before an automatic post-deploy reload.
+  restoreFormSnapshot(() =>
+    toast.info("Aplicația a fost actualizată", {
+      description: "Datele completate în formular au fost restaurate.",
+    }),
+  );
+
   if (!("serviceWorker" in navigator)) return;
 
   const params = new URLSearchParams(window.location.search);
