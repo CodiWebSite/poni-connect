@@ -80,11 +80,6 @@ const EmployeeDashboard = () => {
     return map[type] || 'Cerere HR';
   };
 
-  const getStatusBadge = (status: string) => {
-    if (status === 'approved') return <Badge className="bg-success/10 text-success border-success/20 text-[10px]"><CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />Aprobat</Badge>;
-    if (status === 'rejected') return <Badge variant="destructive" className="text-[10px]"><XCircle className="w-2.5 h-2.5 mr-0.5" />Respins</Badge>;
-    return <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/20 text-[10px]"><Clock className="w-2.5 h-2.5 mr-0.5" />În așteptare</Badge>;
-  };
 
   const pendingCount = myRequests.filter(r => !['approved', 'rejected'].includes(r.status)).length;
 
