@@ -18,6 +18,8 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: null,
+      devOptions: { enabled: false },
       includeAssets: ["logo-icmpp.png", "favicon.ico"],
       workbox: {
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
