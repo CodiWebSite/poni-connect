@@ -67,7 +67,7 @@ export const PersonalDataEditor = ({
   const [ciFile, setCiFile] = useState<File | null>(null);
   const [uploadingCi, setUploadingCi] = useState(false);
   const [noEmail, setNoEmail] = useState(false);
-  const [carryover2025, setCarryover2025] = useState({ id: '', initial_days: 0, used_days: 0 });
+  const [carryover2025, setCarryover2025] = useState({ id: '', initial_days: 0, used_days: 0, remaining_days: 0 });
   const [form, setForm] = useState({
     email: '',
     first_name: '',
@@ -157,9 +157,14 @@ export const PersonalDataEditor = ({
         .maybeSingle();
 
       if (carryData) {
-        setCarryover2025({ id: carryData.id, initial_days: carryData.initial_days, used_days: carryData.used_days });
+        setCarryover2025({
+          id: carryData.id,
+          initial_days: carryData.initial_days,
+          used_days: carryData.used_days,
+          remaining_days: Math.max(0, carryData.remaining_days ?? 0),
+        });
       } else {
-        setCarryover2025({ id: '', initial_days: 0, used_days: 0 });
+        setCarryover2025({ id: '', initial_days: 0, used_days: 0, remaining_days: 0 });
       }
     } else if (error) {
       console.error('Error fetching personal data:', error);
@@ -348,7 +353,7 @@ export const PersonalDataEditor = ({
           .update({
             initial_days: carryover2025.initial_days,
             used_days: carryover2025.used_days,
-            remaining_days: carryover2025.initial_days - carryover2025.used_days,
+            remaining_days: Math.max(0, carryover2025.remaining_days),
           })
           .eq('id', carryover2025.id);
       } else if (carryover2025.initial_days > 0) {
@@ -360,7 +365,7 @@ export const PersonalDataEditor = ({
             to_year: currentYear,
             initial_days: carryover2025.initial_days,
             used_days: carryover2025.used_days,
-            remaining_days: carryover2025.initial_days - carryover2025.used_days,
+            remaining_days: Math.max(0, carryover2025.remaining_days),
             created_by: user?.id,
           })
           .select('id')
@@ -566,7 +571,14 @@ export const PersonalDataEditor = ({
                   <Input 
                     type="number"
                     value={carryover2025.initial_days}
-                    onChange={(e) => setCarryover2025(prev => ({ ...prev, initial_days: parseInt(e.target.value) || 0 }))}
+                    onChange={(e) => {
+                      const initialDays = parseInt(e.target.value) || 0;
+                      setCarryover2025(prev => ({
+                        ...prev,
+                        initial_days: initialDays,
+                        remaining_days: Math.max(0, initialDays - prev.used_days),
+                      }));
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -574,7 +586,14 @@ export const PersonalDataEditor = ({
                   <Input 
                     type="number"
                     value={carryover2025.used_days}
-                    onChange={(e) => setCarryover2025(prev => ({ ...prev, used_days: parseInt(e.target.value) || 0 }))}
+                    onChange={(e) => {
+                      const usedDays = parseInt(e.target.value) || 0;
+                      setCarryover2025(prev => ({
+                        ...prev,
+                        used_days: usedDays,
+                        remaining_days: Math.max(0, prev.initial_days - usedDays),
+                      }));
+                    }}
                   />
                 </div>
               </div>
@@ -582,7 +601,7 @@ export const PersonalDataEditor = ({
                 <p className="text-sm">
                   <span className="text-muted-foreground">Disponibile din {new Date().getFullYear() - 1}: </span>
                   <span className="font-bold text-amber-600 dark:text-amber-400">
-                    {carryover2025.initial_days - carryover2025.used_days}
+                    {Math.max(0, carryover2025.remaining_days)}
                   </span>
                 </p>
               </div>
@@ -592,7 +611,7 @@ export const PersonalDataEditor = ({
                 <p className="text-sm font-medium">
                   <span className="text-muted-foreground">Sold Total Disponibil: </span>
                   <span className="font-bold text-primary text-base">
-                    {(form.total_leave_days - form.used_leave_days) + (carryover2025.initial_days - carryover2025.used_days)} zile
+                    {Math.max(0, form.total_leave_days - form.used_leave_days) + Math.max(0, carryover2025.remaining_days)} zile
                   </span>
                 </p>
               </div>
