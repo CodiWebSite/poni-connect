@@ -2715,6 +2715,8 @@ export type Database = {
       }
       payslip_batches: {
         Row: {
+          car_attached_count: number
+          car_filename: string | null
           created_at: string
           distributed_at: string | null
           id: string
@@ -2731,6 +2733,8 @@ export type Database = {
           year: number
         }
         Insert: {
+          car_attached_count?: number
+          car_filename?: string | null
           created_at?: string
           distributed_at?: string | null
           id?: string
@@ -2747,6 +2751,8 @@ export type Database = {
           year: number
         }
         Update: {
+          car_attached_count?: number
+          car_filename?: string | null
           created_at?: string
           distributed_at?: string | null
           id?: string
@@ -2838,6 +2844,7 @@ export type Database = {
       payslips: {
         Row: {
           batch_id: string
+          car_attached: boolean
           created_at: string
           distributed_at: string | null
           download_count: number
@@ -2858,6 +2865,7 @@ export type Database = {
         }
         Insert: {
           batch_id: string
+          car_attached?: boolean
           created_at?: string
           distributed_at?: string | null
           download_count?: number
@@ -2878,6 +2886,7 @@ export type Database = {
         }
         Update: {
           batch_id?: string
+          car_attached?: boolean
           created_at?: string
           distributed_at?: string | null
           download_count?: number

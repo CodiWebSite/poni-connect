@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Send, Info, Clock, XCircle, Eye, RefreshCw } from 'lucide-react';
+import { Upload, Loader2, Users, CheckCircle2, AlertCircle, Trash2, FileText, Send, Info, Clock, XCircle, Eye, RefreshCw, Paperclip } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -29,6 +29,9 @@ interface Batch {
   status: string;
   distributed_at: string | null;
   created_at: string;
+  car_filename?: string | null;
+  car_attached_count?: number | null;
+
 }
 
 interface Slip {
@@ -390,6 +393,42 @@ export default function PayslipUploader() {
     }
   };
 
+  // ---- CAR slip attachment (appended under the payslip in the same document) ----
+  const carInputRef = useRef<HTMLInputElement | null>(null);
+  const [carBatchId, setCarBatchId] = useState<string | null>(null);
+
+  const triggerCarUpload = (batchId: string) => {
+    setCarBatchId(batchId);
+    if (carInputRef.current) carInputRef.current.value = '';
+    carInputRef.current?.click();
+  };
+
+  const handleCarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    const batchId = carBatchId;
+    if (!f || !batchId) return;
+    setBusy(batchId);
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      fd.append('batch_id', batchId);
+      const { data, error } = await supabase.functions.invoke('attach-car-batch', { body: fd });
+      if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la atașarea fluturașilor CAR'));
+      if (data?.error) throw new Error(data.error);
+      toast.success(
+        `CAR atașat pentru ${data.attached} angajați (detectați: ${data.detected}). ` +
+        `Redistribuiți lotul pentru ca angajații să primească documentul complet.`,
+      );
+      await loadBatches();
+      if (openBatch === batchId) await loadSlips(batchId);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+      setCarBatchId(null);
+    }
+  };
+
   const currentBatch = batches.find(b => b.id === openBatch);
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
 
@@ -402,6 +441,14 @@ export default function PayslipUploader() {
         className="hidden"
         onChange={handleReprocessFile}
       />
+      <input
+        ref={carInputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={handleCarFile}
+      />
+
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
@@ -530,6 +577,10 @@ export default function PayslipUploader() {
                         {b.original_filename} • {format(new Date(b.created_at), 'd MMM HH:mm', { locale: ro })} •{' '}
                         <span className="text-emerald-600">{okCount} ok</span> /{' '}
                         <span className={reviewCount > 0 ? 'text-amber-600' : 'text-muted-foreground'}>{reviewCount} de revizuit</span>
+                        {!!b.car_attached_count && (
+                          <> • <span className="text-primary">CAR atașat: {b.car_attached_count}</span></>
+                        )}
+
                       </div>
                     </button>
                     <div className="flex items-center gap-2">
@@ -558,6 +609,21 @@ export default function PayslipUploader() {
                           Re-procesează
                         </Button>
                       )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy === b.id}
+                        onClick={() => triggerCarUpload(b.id)}
+                        title="Încarcă PDF-ul centralizator CAR — fluturașul CAR se adaugă dedesubtul fluturașului de salariu, în același document"
+                      >
+                        {busy === b.id ? (
+                          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                        ) : (
+                          <Paperclip className="w-3.5 h-3.5 mr-1" />
+                        )}
+                        {b.car_attached_count ? 'Reîncarcă CAR' : 'Atașează CAR'}
+                      </Button>
+
                       {b.status === 'distributed' && (
                         <Button
                           size="sm"
