@@ -127,8 +127,19 @@ export default function PayslipUploader() {
     elapsedMs: number;
     message: string;
   } | null>(null);
+  const [distProgress, setDistProgress] = useState<{
+    batchId: string;
+    done: number;
+    total: number;
+    startedAt: number;
+    elapsedMs: number;
+    phase: 'running' | 'done' | 'failed';
+    message: string;
+  } | null>(null);
   const pollRef = useRef<number | null>(null);
   const tickRef = useRef<number | null>(null);
+  const distTickRef = useRef<number | null>(null);
+
 
   const loadBatchStats = async (ids: string[]) => {
     if (!ids.length) { setBatchStats({}); return; }
@@ -296,6 +307,12 @@ export default function PayslipUploader() {
 
   const distribute = async (batchId: string) => {
     setBusy(batchId);
+    const startedAt = Date.now();
+    setDistProgress({ batchId, done: 0, total: 0, startedAt, elapsedMs: 0, phase: 'running', message: 'Se pregătește distribuția…' });
+    if (distTickRef.current) window.clearInterval(distTickRef.current);
+    distTickRef.current = window.setInterval(() => {
+      setDistProgress(p => (p && p.phase === 'running' ? { ...p, elapsedMs: Date.now() - p.startedAt } : p));
+    }, 500);
     try {
       let totalDistributed = 0;
       const allFailures: Array<{ id: string; error: string }> = [];
@@ -315,16 +332,23 @@ export default function PayslipUploader() {
           // Reîncercare pentru căderi temporare ale funcției (worker restart / timeout)
           transientRetries++;
           if (transientRetries > 5) throw chunkErr;
-          toast.info(`Reîncerc distribuția… (${totalDistributed} procesați)`);
+          setDistProgress(p => (p ? { ...p, message: `Reîncerc distribuția… (încercarea ${transientRetries}/5)` } : p));
           await new Promise((r) => setTimeout(r, 1500 * transientRetries));
           continue;
         }
         totalDistributed += Number(data?.distributed ?? 0);
         if (Array.isArray(data?.failures)) allFailures.push(...data.failures);
-        if (data?.remaining && data.remaining > 0) {
-          toast.info(`Distribuție în curs… (${totalDistributed} procesați, ${data.remaining} rămași)`);
-          continue;
-        }
+        const remaining = Number(data?.remaining ?? 0);
+        setDistProgress(p => (p ? {
+          ...p,
+          done: totalDistributed,
+          total: Math.max(p.total, totalDistributed + Math.max(remaining, 0)),
+          elapsedMs: Date.now() - p.startedAt,
+          message: remaining > 0
+            ? `Se criptează și se distribuie… ${remaining} rămași`
+            : 'Se finalizează…',
+        } : p));
+        if (remaining > 0) continue;
         break;
       }
 
@@ -333,14 +357,18 @@ export default function PayslipUploader() {
       } else {
         toast.success(`Distribuit către ${totalDistributed} angajați.${allFailures.length ? ` ${allFailures.length} eșecuri.` : ''}`);
       }
+      setDistProgress(p => (p ? { ...p, phase: 'done', done: totalDistributed, total: Math.max(p.total, totalDistributed), elapsedMs: Date.now() - p.startedAt, message: `Fluturașii sunt din nou disponibili în „Fluturașii mei”.${allFailures.length ? ` ${allFailures.length} eșecuri.` : ''}` } : p));
       await loadBatches();
       await loadSlips(batchId);
     } catch (e) {
       toast.error((e as Error).message);
+      setDistProgress(p => (p ? { ...p, phase: 'failed', elapsedMs: Date.now() - p.startedAt, message: (e as Error).message } : p));
     } finally {
+      if (distTickRef.current) { window.clearInterval(distTickRef.current); distTickRef.current = null; }
       setBusy(null);
     }
   };
+
 
   const deleteBatch = async (batchId: string) => {
     if (!confirm('Ștergeți lotul complet? Această acțiune elimină și fișierele criptate.')) return;
@@ -574,6 +602,40 @@ export default function PayslipUploader() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {distProgress && (() => {
+            const pct = distProgress.phase === 'done' ? 100
+              : distProgress.total > 0 ? Math.min(99, Math.round((distProgress.done / distProgress.total) * 100))
+              : 5;
+            const rate = distProgress.done > 0 ? distProgress.elapsedMs / distProgress.done : 0;
+            const remaining = Math.max(distProgress.total - distProgress.done, 0);
+            const etaMs = rate > 0 ? rate * remaining : 0;
+            return (
+              <div className="mb-4 rounded-lg border bg-muted/30 p-4 space-y-2">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {distProgress.phase === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      : distProgress.phase === 'failed' ? <XCircle className="w-4 h-4 text-destructive" />
+                      : <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+                    <span>
+                      {distProgress.phase === 'running' && 'Distribuție în curs…'}
+                      {distProgress.phase === 'done' && 'Distribuție finalizată'}
+                      {distProgress.phase === 'failed' && 'Distribuție eșuată'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    {distProgress.total > 0 && <span className="tabular-nums">{distProgress.done} / {distProgress.total} • {pct}%</span>}
+                    <span className="tabular-nums">⏱ {formatElapsed(distProgress.elapsedMs)}</span>
+                    {distProgress.phase === 'running' && etaMs > 0 && (
+                      <span className="tabular-nums">ETA ~{formatElapsed(etaMs)}</span>
+                    )}
+                  </div>
+                </div>
+                <Progress value={pct} className={distProgress.phase === 'failed' ? '[&>div]:bg-destructive' : ''} />
+                <div className="text-[11px] text-muted-foreground">{distProgress.message}</div>
+              </div>
+            );
+          })()}
+
           {batches.length === 0 ? (
             <div className="text-sm text-muted-foreground text-center py-8">Niciun lot încărcat încă.</div>
           ) : (
