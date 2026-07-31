@@ -296,6 +296,12 @@ export default function PayslipUploader() {
 
   const distribute = async (batchId: string) => {
     setBusy(batchId);
+    const startedAt = Date.now();
+    setDistProgress({ batchId, done: 0, total: 0, startedAt, elapsedMs: 0, phase: 'running', message: 'Se pregătește distribuția…' });
+    if (distTickRef.current) window.clearInterval(distTickRef.current);
+    distTickRef.current = window.setInterval(() => {
+      setDistProgress(p => (p && p.phase === 'running' ? { ...p, elapsedMs: Date.now() - p.startedAt } : p));
+    }, 500);
     try {
       let totalDistributed = 0;
       const allFailures: Array<{ id: string; error: string }> = [];
@@ -315,16 +321,23 @@ export default function PayslipUploader() {
           // Reîncercare pentru căderi temporare ale funcției (worker restart / timeout)
           transientRetries++;
           if (transientRetries > 5) throw chunkErr;
-          toast.info(`Reîncerc distribuția… (${totalDistributed} procesați)`);
+          setDistProgress(p => (p ? { ...p, message: `Reîncerc distribuția… (încercarea ${transientRetries}/5)` } : p));
           await new Promise((r) => setTimeout(r, 1500 * transientRetries));
           continue;
         }
         totalDistributed += Number(data?.distributed ?? 0);
         if (Array.isArray(data?.failures)) allFailures.push(...data.failures);
-        if (data?.remaining && data.remaining > 0) {
-          toast.info(`Distribuție în curs… (${totalDistributed} procesați, ${data.remaining} rămași)`);
-          continue;
-        }
+        const remaining = Number(data?.remaining ?? 0);
+        setDistProgress(p => (p ? {
+          ...p,
+          done: totalDistributed,
+          total: Math.max(p.total, totalDistributed + Math.max(remaining, 0)),
+          elapsedMs: Date.now() - p.startedAt,
+          message: remaining > 0
+            ? `Se criptează și se distribuie… ${remaining} rămași`
+            : 'Se finalizează…',
+        } : p));
+        if (remaining > 0) continue;
         break;
       }
 
@@ -333,14 +346,18 @@ export default function PayslipUploader() {
       } else {
         toast.success(`Distribuit către ${totalDistributed} angajați.${allFailures.length ? ` ${allFailures.length} eșecuri.` : ''}`);
       }
+      setDistProgress(p => (p ? { ...p, phase: 'done', done: totalDistributed, total: Math.max(p.total, totalDistributed), elapsedMs: Date.now() - p.startedAt, message: `Fluturașii sunt din nou disponibili în „Fluturașii mei”.${allFailures.length ? ` ${allFailures.length} eșecuri.` : ''}` } : p));
       await loadBatches();
       await loadSlips(batchId);
     } catch (e) {
       toast.error((e as Error).message);
+      setDistProgress(p => (p ? { ...p, phase: 'failed', elapsedMs: Date.now() - p.startedAt, message: (e as Error).message } : p));
     } finally {
+      if (distTickRef.current) { window.clearInterval(distTickRef.current); distTickRef.current = null; }
       setBusy(null);
     }
   };
+
 
   const deleteBatch = async (batchId: string) => {
     if (!confirm('Ștergeți lotul complet? Această acțiune elimină și fișierele criptate.')) return;
