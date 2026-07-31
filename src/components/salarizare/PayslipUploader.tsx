@@ -551,7 +551,11 @@ export default function PayslipUploader() {
             <FileText className="w-5 h-5" />
             Loturi procesate
           </CardTitle>
-          <CardDescription>Ultimele loturi lunare. Faceți clic pe un lot pentru detalii.</CardDescription>
+          <CardDescription>
+            Ultimele loturi lunare. Faceți clic pe un lot pentru detalii. Pentru fluturașii CAR, folosiți butonul
+            <span className="inline-flex items-center gap-1 mx-1 font-medium text-foreground"><Paperclip className="w-3 h-3" />Atașează CAR</span>
+            de pe rândul lotului dorit și încărcați PDF-ul centralizator CAR.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {batches.length === 0 ? (
