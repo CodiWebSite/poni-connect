@@ -602,6 +602,40 @@ export default function PayslipUploader() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {distProgress && (() => {
+            const pct = distProgress.phase === 'done' ? 100
+              : distProgress.total > 0 ? Math.min(99, Math.round((distProgress.done / distProgress.total) * 100))
+              : 5;
+            const rate = distProgress.done > 0 ? distProgress.elapsedMs / distProgress.done : 0;
+            const remaining = Math.max(distProgress.total - distProgress.done, 0);
+            const etaMs = rate > 0 ? rate * remaining : 0;
+            return (
+              <div className="mb-4 rounded-lg border bg-muted/30 p-4 space-y-2">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {distProgress.phase === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      : distProgress.phase === 'failed' ? <XCircle className="w-4 h-4 text-destructive" />
+                      : <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+                    <span>
+                      {distProgress.phase === 'running' && 'Distribuție în curs…'}
+                      {distProgress.phase === 'done' && 'Distribuție finalizată'}
+                      {distProgress.phase === 'failed' && 'Distribuție eșuată'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    {distProgress.total > 0 && <span className="tabular-nums">{distProgress.done} / {distProgress.total} • {pct}%</span>}
+                    <span className="tabular-nums">⏱ {formatElapsed(distProgress.elapsedMs)}</span>
+                    {distProgress.phase === 'running' && etaMs > 0 && (
+                      <span className="tabular-nums">ETA ~{formatElapsed(etaMs)}</span>
+                    )}
+                  </div>
+                </div>
+                <Progress value={pct} className={distProgress.phase === 'failed' ? '[&>div]:bg-destructive' : ''} />
+                <div className="text-[11px] text-muted-foreground">{distProgress.message}</div>
+              </div>
+            );
+          })()}
+
           {batches.length === 0 ? (
             <div className="text-sm text-muted-foreground text-center py-8">Niciun lot încărcat încă.</div>
           ) : (
