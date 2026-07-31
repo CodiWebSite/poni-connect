@@ -416,8 +416,10 @@ export default function PayslipUploader() {
       if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la atașarea fluturașilor CAR'));
       if (data?.error) throw new Error(data.error);
       toast.success(
-        `CAR atașat pentru ${data.attached} angajați (detectați: ${data.detected}). ` +
+        `CAR: ${data.cards_found ?? '?'} fluturași găsiți în PDF, ${data.detected} identificați, ${data.attached} atașați. ` +
+        (data.unresolved_names?.length ? `Neidentificați: ${data.unresolved_names.slice(0, 5).join(', ')}${data.unresolved_names.length > 5 ? '…' : ''}. ` : '') +
         `Redistribuiți lotul pentru ca angajații să primească documentul complet.`,
+        { duration: 12000 },
       );
       await loadBatches();
       if (openBatch === batchId) await loadSlips(batchId);
