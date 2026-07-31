@@ -299,13 +299,26 @@ export default function PayslipUploader() {
     try {
       let totalDistributed = 0;
       const allFailures: Array<{ id: string; error: string }> = [];
-      let safety = 200;
+      let safety = 300;
+      let transientRetries = 0;
       while (safety-- > 0) {
-        const { data, error } = await supabase.functions.invoke('payslip-batch-action', {
-          body: { action: 'distribute_batch', batch_id: batchId, chunk_size: 12 },
-        });
-        if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la distribuție'));
-        if (data?.error) throw new Error(data.error);
+        let data: any = null;
+        try {
+          const res = await supabase.functions.invoke('payslip-batch-action', {
+            body: { action: 'distribute_batch', batch_id: batchId, chunk_size: 5 },
+          });
+          if (res.error) throw new Error(await getFunctionErrorMessage(res.error, 'Eroare la distribuție'));
+          if (res.data?.error) throw new Error(res.data.error);
+          data = res.data;
+          transientRetries = 0;
+        } catch (chunkErr) {
+          // Reîncercare pentru căderi temporare ale funcției (worker restart / timeout)
+          transientRetries++;
+          if (transientRetries > 5) throw chunkErr;
+          toast.info(`Reîncerc distribuția… (${totalDistributed} procesați)`);
+          await new Promise((r) => setTimeout(r, 1500 * transientRetries));
+          continue;
+        }
         totalDistributed += Number(data?.distributed ?? 0);
         if (Array.isArray(data?.failures)) allFailures.push(...data.failures);
         if (data?.remaining && data.remaining > 0) {
@@ -314,6 +327,7 @@ export default function PayslipUploader() {
         }
         break;
       }
+
       if (totalDistributed === 0 && allFailures.length === 0) {
         toast.warning('Niciun fluturaș eligibil pentru distribuție.');
       } else {
