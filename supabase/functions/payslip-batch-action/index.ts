@@ -104,18 +104,24 @@ Deno.serve(async (req) => {
           const plainBytes = new Uint8Array(await blob.arrayBuffer());
 
           const encPath = s.file_path.replace(/\.pdf$/i, "") + ".enc.pdf";
-          const outBytes = await encryptPDF(plainBytes, password, {
-            ownerPassword: crypto.randomUUID().replace(/-/g, ""),
-            algorithm: "AES-256",
-            allowPrinting: true,
-            allowHighQualityPrint: true,
-            allowCopying: false,
-            allowModifying: false,
-            allowAnnotating: false,
-            allowFillingForms: false,
-            allowExtraction: false,
-            allowAssembly: false,
-          });
+          const outBytes = await Promise.race([
+            encryptPDF(plainBytes, password, {
+              ownerPassword: crypto.randomUUID().replace(/-/g, ""),
+              algorithm: "AES-256",
+              allowPrinting: true,
+              allowHighQualityPrint: true,
+              allowCopying: false,
+              allowModifying: false,
+              allowAnnotating: false,
+              allowFillingForms: false,
+              allowExtraction: false,
+              allowAssembly: false,
+            }),
+            new Promise<never>((_, rej) =>
+              setTimeout(() => rej(new Error("Timeout criptare (20s)")), 20000)
+            ),
+          ]) as Uint8Array;
+
           const head2 = new TextDecoder("latin1").decode(outBytes.subarray(0, Math.min(outBytes.length, 200000)));
           if (!/\/Encrypt\b/.test(head2)) throw new Error("Rezultat necriptat");
           const { error: upErr } = await admin.storage
