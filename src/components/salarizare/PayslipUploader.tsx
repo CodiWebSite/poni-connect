@@ -390,6 +390,42 @@ export default function PayslipUploader() {
     }
   };
 
+  // ---- CAR slip attachment (appended under the payslip in the same document) ----
+  const carInputRef = useRef<HTMLInputElement | null>(null);
+  const [carBatchId, setCarBatchId] = useState<string | null>(null);
+
+  const triggerCarUpload = (batchId: string) => {
+    setCarBatchId(batchId);
+    if (carInputRef.current) carInputRef.current.value = '';
+    carInputRef.current?.click();
+  };
+
+  const handleCarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    const batchId = carBatchId;
+    if (!f || !batchId) return;
+    setBusy(batchId);
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      fd.append('batch_id', batchId);
+      const { data, error } = await supabase.functions.invoke('attach-car-batch', { body: fd });
+      if (error) throw new Error(await getFunctionErrorMessage(error, 'Eroare la atașarea fluturașilor CAR'));
+      if (data?.error) throw new Error(data.error);
+      toast.success(
+        `CAR atașat pentru ${data.attached} angajați (detectați: ${data.detected}). ` +
+        `Redistribuiți lotul pentru ca angajații să primească documentul complet.`,
+      );
+      await loadBatches();
+      if (openBatch === batchId) await loadSlips(batchId);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+      setCarBatchId(null);
+    }
+  };
+
   const currentBatch = batches.find(b => b.id === openBatch);
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
 
@@ -402,6 +438,14 @@ export default function PayslipUploader() {
         className="hidden"
         onChange={handleReprocessFile}
       />
+      <input
+        ref={carInputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={handleCarFile}
+      />
+
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
