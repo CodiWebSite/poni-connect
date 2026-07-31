@@ -57,34 +57,31 @@ Deno.serve(async (req) => {
     let pathToServe: string = payslip.file_path as string;
 
     if (!isAdmin) {
-      // Must be pilot AND own the payslip AND status = distributed
-      const { data: pilot } = await admin
-        .from("payslip_pilot_users")
-        .select("id")
-        .eq("email", userEmail)
-        .maybeSingle();
-      if (!pilot) return jsonResp({ error: "Nu ai acces (pilot închis)" }, 403);
-
       if (payslip.match_status !== "distributed") return jsonResp({ error: "Fluturașul nu este încă distribuit" }, 403);
 
-      // Ownership via employee_records.user_id
+      // Ownership: via employee_records.user_id OR matching email on personal data
       const { data: epd } = await admin
         .from("employee_personal_data")
-        .select("id, employee_record_id")
+        .select("id, employee_record_id, email")
         .eq("id", payslip.employee_epd_id)
         .maybeSingle();
-      if (!epd?.employee_record_id) return jsonResp({ error: "Nu ești proprietarul" }, 403);
-      const { data: rec } = await admin
-        .from("employee_records")
-        .select("user_id")
-        .eq("id", epd.employee_record_id)
-        .maybeSingle();
-      if (rec?.user_id !== userId) return jsonResp({ error: "Nu ești proprietarul" }, 403);
+      if (!epd) return jsonResp({ error: "Nu ești proprietarul" }, 403);
 
-      // Serve the encrypted copy to owners. Fall back to file_path only if legacy
-      // (older distributions before the split path was introduced encrypted file_path in place).
+      let isOwner = false;
+      if (epd.employee_record_id) {
+        const { data: rec } = await admin
+          .from("employee_records")
+          .select("user_id")
+          .eq("id", epd.employee_record_id)
+          .maybeSingle();
+        if (rec?.user_id && rec.user_id === userId) isOwner = true;
+      }
+      if (!isOwner && epd.email && (epd.email as string).toLowerCase() === userEmail) isOwner = true;
+      if (!isOwner) return jsonResp({ error: "Nu ești proprietarul acestui fluturaș" }, 403);
+
       pathToServe = (payslip.file_path_encrypted as string | null) ?? (payslip.file_path as string);
     } else {
+
       action = "admin_view";
     }
 
