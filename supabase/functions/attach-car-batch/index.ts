@@ -1,10 +1,13 @@
 // attach-car-batch
 // Takes the monthly CAR (Casa de Ajutor Reciproc) centralizer PDF and appends each
 // employee's CAR slip UNDER their existing payslip, inside the SAME single-page PDF.
-// Layout of the CAR PDF is auto-detected (grid of cells) and cells are matched to
-// employees by name, exactly like the payslip flow.
+//
+// Detection is anchor-based (not a fixed grid): every CAR card starts with the
+// "C.A.R." header, so we cluster those anchors into columns/rows, assign every text
+// item to the card whose anchor sits above-left of it, and crop exactly that card.
+// Works for any number of cards per page and for rotated pages (/Rotate 90 etc.).
 import { createClient } from "@supabase/supabase-js";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, degrees } from "pdf-lib";
 // @ts-ignore - pdfjs legacy build
 import * as pdfjs from "pdfjs-dist";
 
@@ -34,111 +37,149 @@ function normalizeName(s: string): string {
     .trim();
 }
 
-interface CropBox { left: number; bottom: number; right: number; top: number }
-interface Item { str: string; x: number; y: number }
-
-// Candidate grid layouts [cols, rows] tried on each page of the CAR PDF.
-const LAYOUTS: Array<[number, number]> = [
-  [1, 1], [2, 1], [1, 2], [2, 2], [3, 1], [3, 2], [4, 1], [4, 2], [2, 3], [2, 4], [1, 3], [1, 4],
-];
-
-interface PageData {
-  pageIndex: number;
-  width: number;
-  height: number;
-  items: Item[];
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp: number[] = new Array(n + 1);
+  for (let j = 0; j <= n; j++) dp[j] = j;
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const tmp = dp[j];
+      dp[j] = a[i - 1] === b[j - 1] ? prev : Math.min(prev + 1, dp[j] + 1, dp[j - 1] + 1);
+      prev = tmp;
+    }
+  }
+  return dp[n];
 }
 
-async function readPages(pdfBytes: Uint8Array): Promise<PageData[]> {
+interface CropBox { left: number; bottom: number; right: number; top: number }
+interface Item { str: string; w: number; h: number; u: number; v: number }
+
+// Map PDF user-space coords to "display" coords (u = horizontal, v = vertical, up)
+function toDisp(rot: number, x: number, y: number) {
+  if (rot === 90) return { u: y, v: -x };
+  if (rot === 180) return { u: -x, v: -y };
+  if (rot === 270) return { u: -y, v: x };
+  return { u: x, v: y };
+}
+function toUser(rot: number, u0: number, u1: number, v0: number, v1: number): CropBox {
+  if (rot === 90) return { left: -v1, right: -v0, bottom: u0, top: u1 };
+  if (rot === 180) return { left: -u1, right: -u0, bottom: -v1, top: -v0 };
+  if (rot === 270) return { left: v0, right: v1, bottom: -u1, top: -u0 };
+  return { left: u0, right: u1, bottom: v0, top: v1 };
+}
+
+function cluster(vals: number[], tol: number): number[] {
+  const s = [...vals].sort((a, b) => a - b);
+  const out: number[] = [];
+  for (const v of s) if (!out.length || v - out[out.length - 1] > tol) out.push(v);
+  return out;
+}
+function median(a: number[]): number {
+  if (!a.length) return 0;
+  const s = [...a].sort((x, y) => x - y);
+  return s[Math.floor(s.length / 2)];
+}
+
+interface DetectedCar {
+  pageIndex: number;
+  rotation: number;
+  cropBox: CropBox;
+  marca: string | null;
+  rawName: string;
+  normalizedName: string;
+}
+
+const JUNK = /ESA21|CONSALT|^BG\d{3,}/i;
+
+async function detectCarCards(pdfBytes: Uint8Array): Promise<DetectedCar[]> {
   const doc = await pdfjs.getDocument({
     data: pdfBytes.slice(),
     useSystemFonts: true,
     disableFontFace: true,
   }).promise;
 
-  const pages: PageData[] = [];
-  for (let i = 1; i <= doc.numPages; i++) {
-    const page = await doc.getPage(i);
-    const viewport = page.getViewport({ scale: 1 });
+  const out: DetectedCar[] = [];
+
+  for (let p = 1; p <= doc.numPages; p++) {
+    const page = await doc.getPage(p);
+    const rot = Number(page.rotate ?? 0);
+    const [vx0, vy0, vx1, vy1] = page.view as number[];
+    const corners = [[vx0, vy0], [vx1, vy0], [vx0, vy1], [vx1, vy1]].map(([x, y]) => toDisp(rot, x, y));
+    const pageU: [number, number] = [Math.min(...corners.map(c => c.u)), Math.max(...corners.map(c => c.u))];
+    const pageV: [number, number] = [Math.min(...corners.map(c => c.v)), Math.max(...corners.map(c => c.v))];
+
     const content = await page.getTextContent();
     const items: Item[] = [];
-    for (const it of content.items as Array<{ str: string; transform: number[] }>) {
+    for (const it of content.items as Array<{ str: string; width?: number; height?: number; transform: number[] }>) {
       const str = it.str?.trim();
-      if (!str) continue;
-      items.push({ str, x: Number(it.transform?.[4] ?? 0), y: Number(it.transform?.[5] ?? 0) });
+      if (!str || JUNK.test(str)) continue;
+      const d = toDisp(rot, Number(it.transform?.[4] ?? 0), Number(it.transform?.[5] ?? 0));
+      items.push({ str, w: Number(it.width ?? 0), h: Number(it.height ?? 8), u: d.u, v: d.v });
     }
-    pages.push({ pageIndex: i - 1, width: viewport.width, height: viewport.height, items });
-  }
-  return pages;
-}
 
-interface DetectedCar {
-  pageIndex: number;
-  cropBox: CropBox;
-  epdId: string;
-  rawText: string;
-}
+    const anchors = items.filter(i => /C\.A\.R\./i.test(i.str));
+    if (!anchors.length) continue;
 
-function cellsForLayout(page: PageData, cols: number, rows: number) {
-  const cw = page.width / cols;
-  const rh = page.height / rows;
-  const cells: Array<{ cropBox: CropBox; text: string }> = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const left = c * cw;
-      const right = c === cols - 1 ? page.width : (c + 1) * cw;
-      // rows counted from top of the page (y is measured from the bottom)
-      const top = page.height - r * rh;
-      const bottom = r === rows - 1 ? 0 : page.height - (r + 1) * rh;
-      const inside = page.items.filter(
-        (it) => it.x >= left && it.x < right && it.y >= bottom && it.y < top,
-      );
-      if (!inside.length) { cells.push({ cropBox: { left, bottom, right, top }, text: "" }); continue; }
-      inside.sort((a, b) => (Math.abs(a.y - b.y) > 2 ? b.y - a.y : a.x - b.x));
-      cells.push({
-        cropBox: { left, bottom, right, top },
-        text: normalizeName(inside.map((it) => it.str).join(" ")),
+    const us = cluster(anchors.map(a => a.u), 20);                 // left → right
+    const vs = cluster(anchors.map(a => a.v), 20).reverse();       // top → bottom
+    const pitchU = us.length > 1 ? median(us.slice(1).map((u, i) => u - us[i])) : pageU[1] - us[0];
+    const pitchV = vs.length > 1 ? median(vs.slice(1).map((v, i) => vs[i] - v)) : vs[0] - pageV[0];
+
+    // Assign each item to the card whose anchor is above-left of it
+    const buckets = new Map<string, Item[]>();
+    for (const it of items) {
+      let ci = -1;
+      for (let i = 0; i < us.length; i++) if (it.u >= us[i] - 10) ci = i;
+      let ri = -1;
+      for (let i = 0; i < vs.length; i++) if (it.v <= vs[i] + 12) ri = i;
+      if (ci < 0 || ri < 0) continue;
+      const k = `${ci}|${ri}`;
+      if (!buckets.has(k)) buckets.set(k, []);
+      buckets.get(k)!.push(it);
+    }
+
+    for (const [k, its] of buckets) {
+      const [ci, ri] = k.split("|").map(Number);
+      const text = its
+        .slice()
+        .sort((a, b) => (Math.abs(a.v - b.v) > 2 ? b.v - a.v : a.u - b.u))
+        .map(i => i.str)
+        .join(" ");
+      if (!/C\.A\.R\./i.test(text)) continue;
+
+      // "<marca> <NUME PRENUME> ... Imprumut"
+      const m = text.match(/(\d{4,7})\s+([A-ZĂÂÎȘȚ][A-ZĂÂÎȘȚ\-. ]{3,60}?)\s+Imprumut/);
+      if (!m) continue;
+
+      const minU = Math.min(us[ci], ...its.map(i => i.u));
+      const maxU = Math.max(...its.map(i => i.u + i.w));
+      const minV = Math.min(...its.map(i => i.v));
+      const maxV = Math.max(...its.map(i => i.v + i.h));
+      const nextU = us[ci + 1] !== undefined ? us[ci + 1] + 2 : pageU[1];
+      const nextV = vs[ri + 1] !== undefined ? vs[ri + 1] + 14 : pageV[0];
+
+      const cu0 = Math.max(minU - 8, pageU[0]);
+      const cu1 = Math.min(maxU + 8, nextU, us[ci] + pitchU, pageU[1]);
+      const cv1 = Math.min(maxV + 6, pageV[1]);
+      const cv0 = Math.max(minV - 8, nextV, cv1 - pitchV, pageV[0]);
+      if (cu1 - cu0 < 40 || cv1 - cv0 < 30) continue;
+
+      const rawName = m[2].trim();
+      out.push({
+        pageIndex: p - 1,
+        rotation: ((rot % 360) + 360) % 360,
+        cropBox: toUser(rot, cu0, cu1, cv0, cv1),
+        marca: m[1] ?? null,
+        rawName,
+        normalizedName: normalizeName(rawName),
       });
     }
   }
-  return cells;
-}
 
-// Returns the employee ids whose full name appears in the given normalized text.
-function matchEmployees(text: string, nameIndex: Array<{ id: string; keys: string[] }>): string[] {
-  if (!text) return [];
-  const hits = new Set<string>();
-  for (const emp of nameIndex) {
-    if (emp.keys.some((k) => k.length >= 8 && text.includes(k))) hits.add(emp.id);
-  }
-  return [...hits];
-}
-
-function detectCarSlips(
-  pages: PageData[],
-  nameIndex: Array<{ id: string; keys: string[] }>,
-): DetectedCar[] {
-  const out: DetectedCar[] = [];
-  for (const page of pages) {
-    let best: { score: number; cells: Array<{ cropBox: CropBox; text: string; epdId: string }> } | null = null;
-    for (const [cols, rows] of LAYOUTS) {
-      const cells = cellsForLayout(page, cols, rows);
-      const resolved: Array<{ cropBox: CropBox; text: string; epdId: string }> = [];
-      let penalty = 0;
-      for (const cell of cells) {
-        const hits = matchEmployees(cell.text, nameIndex);
-        if (hits.length === 1) resolved.push({ ...cell, epdId: hits[0] });
-        else if (hits.length > 1) penalty += 1;
-      }
-      const score = resolved.length - penalty * 2;
-      if (!best || score > best.score) best = { score, cells: resolved };
-    }
-    if (best && best.score > 0) {
-      for (const c of best.cells) {
-        out.push({ pageIndex: page.pageIndex, cropBox: c.cropBox, epdId: c.epdId, rawText: c.text.slice(0, 200) });
-      }
-    }
-  }
   return out;
 }
 
@@ -146,8 +187,7 @@ function detectCarSlips(
 async function stackPayslipAndCar(
   payslipBytes: Uint8Array,
   carDoc: PDFDocument,
-  pageIndex: number,
-  cropBox: CropBox,
+  car: DetectedCar,
 ): Promise<Uint8Array> {
   const out = await PDFDocument.create();
   const payslipDoc = await PDFDocument.load(payslipBytes, { ignoreEncryption: true });
@@ -157,9 +197,14 @@ async function stackPayslipAndCar(
   const topW = topPage.getWidth();
   const topH = topPage.getHeight();
 
-  const carW = cropBox.right - cropBox.left;
-  const carH = cropBox.top - cropBox.bottom;
-  const carEmbedded = await out.embedPage(carDoc.getPage(pageIndex), cropBox);
+  const boxW = car.cropBox.right - car.cropBox.left;
+  const boxH = car.cropBox.top - car.cropBox.bottom;
+  const carEmbedded = await out.embedPage(carDoc.getPage(car.pageIndex), car.cropBox);
+
+  // Upright dimensions after compensating the source page rotation
+  const rotated = car.rotation === 90 || car.rotation === 270;
+  const carW = rotated ? boxH : boxW;
+  const carH = rotated ? boxW : boxH;
 
   const gap = 12;
   const width = Math.max(topW, carW);
@@ -167,7 +212,17 @@ async function stackPayslipAndCar(
   const page = out.addPage([width, height]);
 
   page.drawPage(topEmbedded, { x: (width - topW) / 2, y: gap + carH, width: topW, height: topH });
-  page.drawPage(carEmbedded, { x: (width - carW) / 2, y: 0, width: carW, height: carH });
+
+  const ox = (width - carW) / 2;
+  if (car.rotation === 90) {
+    page.drawPage(carEmbedded, { x: ox, y: carH, width: boxW, height: boxH, rotate: degrees(-90) });
+  } else if (car.rotation === 270) {
+    page.drawPage(carEmbedded, { x: ox + carW, y: 0, width: boxW, height: boxH, rotate: degrees(90) });
+  } else if (car.rotation === 180) {
+    page.drawPage(carEmbedded, { x: ox + carW, y: carH, width: boxW, height: boxH, rotate: degrees(180) });
+  } else {
+    page.drawPage(carEmbedded, { x: ox, y: 0, width: boxW, height: boxH });
+  }
 
   return await out.save();
 }
@@ -214,31 +269,54 @@ Deno.serve(async (req) => {
       .from("employee_personal_data")
       .select("id, first_name, last_name")
       .eq("is_archived", false);
-    const nameIndex = (employees ?? []).map((e: any) => ({
-      id: e.id as string,
-      keys: [
+    const emps = (employees ?? []) as Array<{ id: string; first_name: string; last_name: string }>;
+
+    const byName = new Map<string, string[]>();
+    for (const e of emps) {
+      for (const key of [
         normalizeName(`${e.last_name} ${e.first_name}`),
         normalizeName(`${e.first_name} ${e.last_name}`),
-      ].filter(Boolean),
-    }));
+      ]) {
+        if (!key) continue;
+        if (!byName.has(key)) byName.set(key, []);
+        byName.get(key)!.push(e.id);
+      }
+    }
+    const allKeys = [...byName.keys()];
 
     const buf = new Uint8Array(await file.arrayBuffer());
-    const pages = await readPages(buf);
-    const detected = detectCarSlips(pages, nameIndex);
+    const detected = await detectCarCards(buf);
 
     if (detected.length === 0) {
       return jsonResp({
-        error: "Nu s-au detectat fluturași CAR în PDF. Verificați că fișierul conține numele angajaților (Nume Prenume) în text selectabil.",
+        error: "Nu s-au detectat fluturași CAR în PDF. Verificați că fișierul conține numele angajaților în text selectabil.",
       }, 422);
     }
 
-    // Keep only the first detection per employee
+    // Resolve each detected card to an employee
     const byEmployee = new Map<string, DetectedCar>();
-    for (const d of detected) if (!byEmployee.has(d.epdId)) byEmployee.set(d.epdId, d);
+    const unresolved: string[] = [];
+    for (const card of detected) {
+      let ids = byName.get(card.normalizedName);
+      if (!ids || ids.length !== 1) {
+        // fuzzy fallback (diacritics/typos in the CAR export)
+        let best: { key: string; d: number } | null = null;
+        for (const key of allKeys) {
+          if (Math.abs(key.length - card.normalizedName.length) > 3) continue;
+          const d = levenshtein(key, card.normalizedName);
+          if (!best || d < best.d) best = { key, d };
+        }
+        if (best && best.d <= 2) ids = byName.get(best.key);
+      }
+      if (ids && ids.length === 1) {
+        if (!byEmployee.has(ids[0])) byEmployee.set(ids[0], card);
+      } else {
+        unresolved.push(card.rawName);
+      }
+    }
 
     const carDoc = await PDFDocument.load(buf, { ignoreEncryption: true });
 
-    // Existing payslips of this batch that have a staged plain file
     const { data: slips } = await admin
       .from("payslips")
       .select("id, employee_epd_id, file_path, file_path_encrypted, car_attached")
@@ -257,18 +335,14 @@ Deno.serve(async (req) => {
         const { data: blob, error: dlErr } = await admin.storage.from("payslips").download(s.file_path);
         if (dlErr || !blob) throw new Error(dlErr?.message ?? "download failed");
         const plain = new Uint8Array(await blob.arrayBuffer());
-        const merged = await stackPayslipAndCar(plain, carDoc, car.pageIndex, car.cropBox);
+        const merged = await stackPayslipAndCar(plain, carDoc, car);
 
         const { error: upErr } = await admin.storage
           .from("payslips")
           .upload(s.file_path, merged, { contentType: "application/pdf", upsert: true });
         if (upErr) throw new Error(upErr.message);
 
-        // The distributed (encrypted) copy is now stale — drop it so the next
-        // distribution re-encrypts the merged document.
-        if (s.file_path_encrypted) {
-          encryptedCleanup.push(s.file_path_encrypted);
-        }
+        if (s.file_path_encrypted) encryptedCleanup.push(s.file_path_encrypted);
 
         await admin.from("payslips").update({
           car_attached: true,
@@ -297,7 +371,9 @@ Deno.serve(async (req) => {
       batch_id: batchId,
       action: "attach_car",
       details: {
-        detected: byEmployee.size,
+        cards_found: detected.length,
+        matched_employees: byEmployee.size,
+        unresolved_names: unresolved.slice(0, 50),
         attached,
         without_car: notFound.length,
         failures,
@@ -307,9 +383,11 @@ Deno.serve(async (req) => {
 
     return jsonResp({
       ok: true,
+      cards_found: detected.length,
       detected: byEmployee.size,
       attached,
       without_car: notFound.length,
+      unresolved_names: unresolved.slice(0, 50),
       failures,
     });
   } catch (e) {
