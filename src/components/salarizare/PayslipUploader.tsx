@@ -577,6 +577,10 @@ export default function PayslipUploader() {
                         {b.original_filename} • {format(new Date(b.created_at), 'd MMM HH:mm', { locale: ro })} •{' '}
                         <span className="text-emerald-600">{okCount} ok</span> /{' '}
                         <span className={reviewCount > 0 ? 'text-amber-600' : 'text-muted-foreground'}>{reviewCount} de revizuit</span>
+                        {!!b.car_attached_count && (
+                          <> • <span className="text-primary">CAR atașat: {b.car_attached_count}</span></>
+                        )}
+
                       </div>
                     </button>
                     <div className="flex items-center gap-2">
