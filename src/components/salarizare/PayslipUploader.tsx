@@ -127,8 +127,19 @@ export default function PayslipUploader() {
     elapsedMs: number;
     message: string;
   } | null>(null);
+  const [distProgress, setDistProgress] = useState<{
+    batchId: string;
+    done: number;
+    total: number;
+    startedAt: number;
+    elapsedMs: number;
+    phase: 'running' | 'done' | 'failed';
+    message: string;
+  } | null>(null);
   const pollRef = useRef<number | null>(null);
   const tickRef = useRef<number | null>(null);
+  const distTickRef = useRef<number | null>(null);
+
 
   const loadBatchStats = async (ids: string[]) => {
     if (!ids.length) { setBatchStats({}); return; }
