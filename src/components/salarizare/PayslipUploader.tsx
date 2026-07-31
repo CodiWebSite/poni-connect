@@ -605,6 +605,21 @@ export default function PayslipUploader() {
                           Re-procesează
                         </Button>
                       )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy === b.id}
+                        onClick={() => triggerCarUpload(b.id)}
+                        title="Încarcă PDF-ul centralizator CAR — fluturașul CAR se adaugă dedesubtul fluturașului de salariu, în același document"
+                      >
+                        {busy === b.id ? (
+                          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                        ) : (
+                          <Paperclip className="w-3.5 h-3.5 mr-1" />
+                        )}
+                        {b.car_attached_count ? 'Reîncarcă CAR' : 'Atașează CAR'}
+                      </Button>
+
                       {b.status === 'distributed' && (
                         <Button
                           size="sm"
