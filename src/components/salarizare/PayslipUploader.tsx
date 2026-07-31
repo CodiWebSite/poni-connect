@@ -29,6 +29,9 @@ interface Batch {
   status: string;
   distributed_at: string | null;
   created_at: string;
+  car_filename?: string | null;
+  car_attached_count?: number | null;
+
 }
 
 interface Slip {
