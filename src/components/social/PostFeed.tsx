@@ -178,7 +178,12 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator =
     const signed = await signAttachments((attRes.data ?? []) as any[]);
     setAttachments((prev) => {
       const map = { ...prev };
-      signed.forEach((a) => { (map[a.post_id] ||= []).push(a); });
+      // rebuild the lists for the hydrated posts to avoid duplicates on re-hydration
+      postIds.forEach((id) => { map[id] = []; });
+      signed.forEach((a) => {
+        const list = (map[a.post_id] ||= []);
+        if (!list.some((x) => x.id === a.id)) list.push(a);
+      });
       return map;
     });
   }, [user]);
