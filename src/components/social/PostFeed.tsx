@@ -93,6 +93,7 @@ interface Props {
   canPost?: boolean;
   emptyHint?: string;
   isModerator?: boolean;
+  highlightPostId?: string | null;
 }
 
 const PAGE_SIZE = 20;
@@ -109,7 +110,7 @@ async function signAttachments(atts: Omit<Attachment, 'url'>[]): Promise<Attachm
   return atts.map((a) => ({ ...a, url: map.get(a.storage_path) || '' }));
 }
 
-const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator = false }: Props) => {
+const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator = false, highlightPostId = null }: Props) => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileMini>>({});
@@ -374,6 +375,12 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator =
     load();
   };
 
+  useEffect(() => {
+    if (!highlightPostId || loading) return;
+    const el = document.getElementById(`post-${highlightPostId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [highlightPostId, loading, posts.length]);
+
   return (
     <div className="space-y-4">
       {canPost && user && (
@@ -485,30 +492,38 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator =
       ) : (
         <>
           {posts.map((p) => (
-            <PostCard
+            <div
               key={p.id}
-              post={p}
-              author={profiles[p.author_id]}
-              myReaction={myReactions[p.id] ?? null}
-              attachments={attachments[p.id] ?? []}
-              currentUserId={user?.id ?? null}
-              isBookmarked={bookmarks.has(p.id)}
-              isModerator={isModerator}
-              onReact={(r) => setReaction(p, r)}
-              onDelete={() => deletePost(p.id)}
-              onBookmark={() => toggleBookmark(p.id)}
-              onPin={() => togglePin(p)}
-              onEdit={(content) => editPost(p.id, content)}
-              onCommentDelta={(delta) =>
-                setPosts((ps) =>
-                  ps.map((post) =>
-                    post.id === p.id
-                      ? { ...post, comment_count: Math.max(0, post.comment_count + delta) }
-                      : post,
-                  ),
-                )
-              }
-            />
+              id={`post-${p.id}`}
+              className={cn(
+                'scroll-mt-24 transition-all',
+                highlightPostId === p.id && 'rounded-2xl ring-2 ring-primary/60 ring-offset-2 ring-offset-background',
+              )}
+            >
+              <PostCard
+                post={p}
+                author={profiles[p.author_id]}
+                myReaction={myReactions[p.id] ?? null}
+                attachments={attachments[p.id] ?? []}
+                currentUserId={user?.id ?? null}
+                isBookmarked={bookmarks.has(p.id)}
+                isModerator={isModerator}
+                onReact={(r) => setReaction(p, r)}
+                onDelete={() => deletePost(p.id)}
+                onBookmark={() => toggleBookmark(p.id)}
+                onPin={() => togglePin(p)}
+                onEdit={(content) => editPost(p.id, content)}
+                onCommentDelta={(delta) =>
+                  setPosts((ps) =>
+                    ps.map((post) =>
+                      post.id === p.id
+                        ? { ...post, comment_count: Math.max(0, post.comment_count + delta) }
+                        : post,
+                    ),
+                  )
+                }
+              />
+            </div>
           ))}
           {hasMore && (
             <div className="flex justify-center pt-2">
