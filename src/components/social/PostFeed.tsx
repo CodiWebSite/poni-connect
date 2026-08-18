@@ -110,7 +110,7 @@ async function signAttachments(atts: Omit<Attachment, 'url'>[]): Promise<Attachm
   return atts.map((a) => ({ ...a, url: map.get(a.storage_path) || '' }));
 }
 
-const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator = false }: Props) => {
+const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator = false, highlightPostId = null }: Props) => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileMini>>({});
