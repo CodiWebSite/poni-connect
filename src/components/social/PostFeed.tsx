@@ -375,6 +375,12 @@ const PostFeed = ({ communityId = null, canPost = true, emptyHint, isModerator =
     load();
   };
 
+  useEffect(() => {
+    if (!highlightPostId || loading) return;
+    const el = document.getElementById(`post-${highlightPostId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [highlightPostId, loading, posts.length]);
+
   return (
     <div className="space-y-4">
       {canPost && user && (
