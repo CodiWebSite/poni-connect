@@ -93,6 +93,7 @@ interface Props {
   canPost?: boolean;
   emptyHint?: string;
   isModerator?: boolean;
+  highlightPostId?: string | null;
 }
 
 const PAGE_SIZE = 20;
