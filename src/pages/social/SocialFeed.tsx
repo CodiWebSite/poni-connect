@@ -15,6 +15,9 @@ interface CommunityMini {
 
 const SocialFeed = () => {
   const [communities, setCommunities] = useState<CommunityMini[]>([]);
+  const [searchParams] = useSearchParams();
+  const highlightPostId = searchParams.get('post');
+
 
   useEffect(() => {
     (async () => {
