@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import SocialLayout from '@/components/layout/SocialLayout';
 import { Card } from '@/components/ui/card';
 import { Info, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import PostFeed from '@/components/social/PostFeed';
 
