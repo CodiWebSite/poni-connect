@@ -52,8 +52,10 @@ const SocialFeed = () => {
           <PostFeed
             communityId={null}
             canPost
+            highlightPostId={highlightPostId}
             emptyHint="Nicio postare încă în feed. Fii primul care împărtășește ceva!"
           />
+
         </div>
 
         <div className="space-y-6">
