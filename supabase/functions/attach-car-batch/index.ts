@@ -227,6 +227,28 @@ async function stackPayslipAndCar(
   return await out.save();
 }
 
+// Undo a previous merge (legacy files with no pristine backup): keep only the top payslip area.
+async function stripCarStrip(mergedBytes: Uint8Array, car: DetectedCar): Promise<Uint8Array> {
+  const src = await PDFDocument.load(mergedBytes, { ignoreEncryption: true });
+  const page = src.getPage(0);
+  const W = page.getWidth();
+  const H = page.getHeight();
+  const boxW = car.cropBox.right - car.cropBox.left;
+  const boxH = car.cropBox.top - car.cropBox.bottom;
+  const rotated = car.rotation === 90 || car.rotation === 270;
+  const carH = rotated ? boxW : boxH;
+  const gap = 12;
+  const bottom = gap + carH;
+  const topH = H - bottom;
+  if (topH < 60) return mergedBytes; // nothing sensible to strip
+  const out = await PDFDocument.create();
+  const embedded = await out.embedPage(page, { left: 0, bottom, right: W, top: H });
+  const p = out.addPage([W, topH]);
+  p.drawPage(embedded, { x: 0, y: 0, width: W, height: topH });
+  return await out.save();
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return jsonResp({ error: "Method not allowed" }, 405);
