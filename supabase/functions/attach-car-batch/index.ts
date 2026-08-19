@@ -227,6 +227,28 @@ async function stackPayslipAndCar(
   return await out.save();
 }
 
+// Undo a previous merge (legacy files with no pristine backup): keep only the top payslip area.
+async function stripCarStrip(mergedBytes: Uint8Array, car: DetectedCar): Promise<Uint8Array> {
+  const src = await PDFDocument.load(mergedBytes, { ignoreEncryption: true });
+  const page = src.getPage(0);
+  const W = page.getWidth();
+  const H = page.getHeight();
+  const boxW = car.cropBox.right - car.cropBox.left;
+  const boxH = car.cropBox.top - car.cropBox.bottom;
+  const rotated = car.rotation === 90 || car.rotation === 270;
+  const carH = rotated ? boxW : boxH;
+  const gap = 12;
+  const bottom = gap + carH;
+  const topH = H - bottom;
+  if (topH < 60) return mergedBytes; // nothing sensible to strip
+  const out = await PDFDocument.create();
+  const embedded = await out.embedPage(page, { left: 0, bottom, right: W, top: H });
+  const p = out.addPage([W, topH]);
+  p.drawPage(embedded, { x: 0, y: 0, width: W, height: topH });
+  return await out.save();
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return jsonResp({ error: "Method not allowed" }, 405);
@@ -293,20 +315,33 @@ Deno.serve(async (req) => {
       }, 422);
     }
 
-    // Resolve each detected card to an employee
+    // ---- Primary index: by "marca" (employee number) — unambiguous, no name fuzziness.
+    const carByMarca = new Map<string, DetectedCar>();
+    const ambiguousMarca = new Set<string>();
+    for (const card of detected) {
+      const mk = (card.marca ?? "").replace(/^0+/, "");
+      if (!mk) continue;
+      if (carByMarca.has(mk)) { ambiguousMarca.add(mk); continue; }
+      carByMarca.set(mk, card);
+    }
+    for (const mk of ambiguousMarca) carByMarca.delete(mk);
+
+    // ---- Secondary index: by employee (strict name match, fuzzy only when unique)
     const byEmployee = new Map<string, DetectedCar>();
     const unresolved: string[] = [];
     for (const card of detected) {
       let ids = byName.get(card.normalizedName);
       if (!ids || ids.length !== 1) {
-        // fuzzy fallback (diacritics/typos in the CAR export)
+        // fuzzy fallback, but only when the best candidate is clearly better than the runner-up
         let best: { key: string; d: number } | null = null;
+        let second = Infinity;
         for (const key of allKeys) {
           if (Math.abs(key.length - card.normalizedName.length) > 3) continue;
           const d = levenshtein(key, card.normalizedName);
-          if (!best || d < best.d) best = { key, d };
+          if (!best || d < best.d) { second = best ? best.d : second; best = { key, d }; }
+          else if (d < second) second = d;
         }
-        if (best && best.d <= 2) ids = byName.get(best.key);
+        if (best && best.d <= 2 && second - best.d >= 2) ids = byName.get(best.key);
       }
       if (ids && ids.length === 1) {
         if (!byEmployee.has(ids[0])) byEmployee.set(ids[0], card);
@@ -319,23 +354,52 @@ Deno.serve(async (req) => {
 
     const { data: slips } = await admin
       .from("payslips")
-      .select("id, employee_epd_id, file_path, file_path_encrypted, car_attached")
+      .select("id, employee_epd_id, marca_detected, file_path, file_path_encrypted, car_attached")
       .eq("batch_id", batchId);
 
     let attached = 0;
     const failures: Array<{ id: string; error: string }> = [];
     const notFound: string[] = [];
     const encryptedCleanup: string[] = [];
+    let matchedByMarca = 0;
+    let matchedByName = 0;
+
+    const origPathOf = (p: string) => p.replace(/\.pdf$/i, "") + ".orig.pdf";
 
     for (const s of (slips ?? []) as any[]) {
-      if (!s.employee_epd_id || !s.file_path) continue;
-      const car = byEmployee.get(s.employee_epd_id);
+      if (!s.file_path) continue;
+      const mk = String(s.marca_detected ?? "").replace(/^0+/, "");
+      let car: DetectedCar | undefined = mk ? carByMarca.get(mk) : undefined;
+      if (car) matchedByMarca++;
+      else if (s.employee_epd_id) {
+        car = byEmployee.get(s.employee_epd_id);
+        if (car) matchedByName++;
+      }
       if (!car) { notFound.push(s.id); continue; }
       try {
-        const { data: blob, error: dlErr } = await admin.storage.from("payslips").download(s.file_path);
-        if (dlErr || !blob) throw new Error(dlErr?.message ?? "download failed");
-        const plain = new Uint8Array(await blob.arrayBuffer());
-        const merged = await stackPayslipAndCar(plain, carDoc, car);
+        const origPath = origPathOf(s.file_path);
+
+        // 1) Always work from a pristine payslip so re-uploads never stack a second CAR slip.
+        let base: Uint8Array | null = null;
+        const { data: origBlob } = await admin.storage.from("payslips").download(origPath);
+        if (origBlob) {
+          base = new Uint8Array(await origBlob.arrayBuffer());
+        } else {
+          const { data: blob, error: dlErr } = await admin.storage.from("payslips").download(s.file_path);
+          if (dlErr || !blob) throw new Error(dlErr?.message ?? "download failed");
+          base = new Uint8Array(await blob.arrayBuffer());
+
+          if (s.car_attached) {
+            // Legacy merged file without backup: strip the CAR strip at the bottom.
+            base = await stripCarStrip(base, car);
+          }
+          // Keep the pristine copy for future re-uploads.
+          await admin.storage.from("payslips").upload(origPath, base, {
+            contentType: "application/pdf", upsert: true,
+          });
+        }
+
+        const merged = await stackPayslipAndCar(base, carDoc, car);
 
         const { error: upErr } = await admin.storage
           .from("payslips")
@@ -355,6 +419,7 @@ Deno.serve(async (req) => {
       }
     }
 
+
     if (encryptedCleanup.length) {
       try { await admin.storage.from("payslips").remove(encryptedCleanup); } catch (_) { /* non-fatal */ }
     }
@@ -373,6 +438,9 @@ Deno.serve(async (req) => {
       details: {
         cards_found: detected.length,
         matched_employees: byEmployee.size,
+        matched_by_marca: matchedByMarca,
+        matched_by_name: matchedByName,
+        ambiguous_marca: [...ambiguousMarca].slice(0, 50),
         unresolved_names: unresolved.slice(0, 50),
         attached,
         without_car: notFound.length,
@@ -384,12 +452,15 @@ Deno.serve(async (req) => {
     return jsonResp({
       ok: true,
       cards_found: detected.length,
-      detected: byEmployee.size,
+      detected: carByMarca.size || byEmployee.size,
+      matched_by_marca: matchedByMarca,
+      matched_by_name: matchedByName,
       attached,
       without_car: notFound.length,
       unresolved_names: unresolved.slice(0, 50),
       failures,
     });
+
   } catch (e) {
     console.error("attach-car-batch error", e);
     return jsonResp({ error: (e as Error).message }, 500);
