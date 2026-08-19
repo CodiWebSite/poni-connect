@@ -438,6 +438,9 @@ Deno.serve(async (req) => {
       details: {
         cards_found: detected.length,
         matched_employees: byEmployee.size,
+        matched_by_marca: matchedByMarca,
+        matched_by_name: matchedByName,
+        ambiguous_marca: [...ambiguousMarca].slice(0, 50),
         unresolved_names: unresolved.slice(0, 50),
         attached,
         without_car: notFound.length,
@@ -449,12 +452,15 @@ Deno.serve(async (req) => {
     return jsonResp({
       ok: true,
       cards_found: detected.length,
-      detected: byEmployee.size,
+      detected: carByMarca.size || byEmployee.size,
+      matched_by_marca: matchedByMarca,
+      matched_by_name: matchedByName,
       attached,
       without_car: notFound.length,
       unresolved_names: unresolved.slice(0, 50),
       failures,
     });
+
   } catch (e) {
     console.error("attach-car-batch error", e);
     return jsonResp({ error: (e as Error).message }, 500);
