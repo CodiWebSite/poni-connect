@@ -4549,6 +4549,14 @@ export type Database = {
         }
         Returns: string
       }
+      can_create_leave_notification: {
+        Args: {
+          _actor_id: string
+          _related_id: string
+          _target_user_id: string
+        }
+        Returns: boolean
+      }
       can_manage_communities: { Args: { _user_id: string }; Returns: boolean }
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
