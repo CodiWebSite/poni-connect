@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import { sendMailWithRetry } from "../_shared/smtp-retry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -186,7 +187,7 @@ Deno.serve(async (req) => {
 
     // If testEmail is provided, just send a test to that address
     if (testEmail) {
-      await transporter.sendMail({
+      await sendMailWithRetry(transporter, {
         from: fromAddress,
         to: testEmail,
         subject: "🔔 Reminder: Activează-ți contul pe Intranet ICMPP",
@@ -243,7 +244,7 @@ Deno.serve(async (req) => {
     for (const emp of inactiveEmployees) {
       const name = `${emp.first_name} ${emp.last_name}`.trim();
       try {
-        await transporter.sendMail({
+        await sendMailWithRetry(transporter, {
           from: fromAddress,
           to: emp.email,
           subject: "🔔 Reminder: Activează-ți contul pe Intranet ICMPP",

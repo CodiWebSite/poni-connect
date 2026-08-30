@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { sendMailWithRetry } from "../_shared/smtp-retry.ts";
 import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
@@ -256,7 +257,7 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    await transporter.sendMail({
+    await sendMailWithRetry(transporter, {
       from: fromAddress,
       to,
       subject: "🏛️ Bine ai venit pe Intranet ICMPP — Ghid de utilizare",
