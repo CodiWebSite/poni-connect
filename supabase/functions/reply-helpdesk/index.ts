@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import { sendMailWithRetry } from "../_shared/smtp-retry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -108,7 +109,7 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    await transporter.sendMail({
+    await sendMailWithRetry(transporter, {
       from: fromAddress,
       to: to_email,
       subject: subject || "Răspuns HelpDesk IT — ICMPP",

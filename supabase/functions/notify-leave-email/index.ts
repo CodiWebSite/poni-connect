@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import { sendMailWithRetry } from "../_shared/smtp-retry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -193,7 +194,7 @@ Deno.serve(async (req) => {
     // Send to approver(s) — informative email
     const approverSubject = `Cerere concediu nouă — ${employee_name} (${request_number})`;
     for (const email of recipientEmails) {
-      await transporter.sendMail({
+      await sendMailWithRetry(transporter, {
         from: fromAddress,
         to: email,
         subject: approverSubject,
@@ -206,7 +207,7 @@ Deno.serve(async (req) => {
     // Send to delegate(s) — priority email with action banner
     const delegateSubject = `⚡ [PRIORITAR] Cerere concediu — ${employee_name} (${request_number})`;
     for (const email of delegateEmails) {
-      await transporter.sendMail({
+      await sendMailWithRetry(transporter, {
         from: fromAddress,
         to: email,
         subject: delegateSubject,

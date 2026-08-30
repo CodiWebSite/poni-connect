@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { sendMailWithRetry } from "../_shared/smtp-retry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
   <p style="margin-top: 28px;">Cu deosebită considerație,<br><strong>Echipa Intranet ICMPP</strong></p>
 </div>`;
 
-    const info = await transporter.sendMail({ from: fromAddress, to, subject, html });
+    const info = await sendMailWithRetry(transporter, { from: fromAddress, to, subject, html });
 
     return new Response(JSON.stringify({ success: true, messageId: info.messageId, to }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

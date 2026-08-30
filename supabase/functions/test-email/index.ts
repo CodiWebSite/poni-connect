@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { sendMailWithRetry } from "../_shared/smtp-retry.ts";
 import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
@@ -157,7 +158,7 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    const info = await transporter.sendMail({
+    const info = await sendMailWithRetry(transporter, {
       from: fromAddress,
       to: to,
       subject,
