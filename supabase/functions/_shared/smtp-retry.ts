@@ -94,7 +94,8 @@ export function sendMailWithRetry(
   transporter: { sendMail: (opts: Record<string, unknown>) => Promise<unknown> },
   mailOptions: Record<string, unknown>,
   options: SendRetryOptions = {},
-): Promise<unknown> {
+): Promise<any> {
+  // eslint-disable-next-line -eslint/no-explicit-any
   const cfg = { ...DEFAULTS, ...options };
   const label = options.label || "email";
   const to = String(mailOptions.to ?? "");
