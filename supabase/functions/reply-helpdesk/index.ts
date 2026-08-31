@@ -120,21 +120,36 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    await sendMailWithRetry(transporter, {
-      from: fromAddress,
-      to: to_email,
-      subject: subject || "Răspuns HelpDesk IT — ICMPP",
-      html,
-    });
+    try {
+      await sendMailWithRetry(
+        transporter,
+        {
+          from: fromAddress,
+          to: to_email,
+          subject: subject || "Răspuns HelpDesk IT — ICMPP",
+          html,
+        },
+        { label: "reply-helpdesk" },
+      );
+    } catch (mailErr) {
+      const msg = (mailErr as Error)?.message ?? "eroare SMTP necunoscută";
+      console.error("[INTERNAL] reply-helpdesk SMTP failure:", msg);
+      return new Response(
+        JSON.stringify({ error: `Emailul nu a putut fi trimis: ${msg}` }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Update ticket with admin notes about the reply
-    await supabaseAdmin
+    const { error: updErr } = await supabaseAdmin
       .from("helpdesk_tickets")
       .update({
         admin_notes: `[Răspuns trimis pe email la ${new Date().toISOString()}]\n${reply_message}`,
         status: "in_progress",
       })
       .eq("id", ticket_id);
+    if (updErr) console.error("[INTERNAL] reply-helpdesk ticket update failed:", updErr.message);
+
 
     return new Response(
       JSON.stringify({ success: true }),
