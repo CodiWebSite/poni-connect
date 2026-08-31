@@ -38,21 +38,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
+    // Check admin role (a user may hold several roles — never use maybeSingle here)
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-    const { data: roleData } = await supabaseAdmin
+    const { data: roleRows, error: roleErr } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .in("role", ["super_admin", "admin"])
-      .maybeSingle();
+      .in("role", ["super_admin", "admin"]);
 
-    if (!roleData) {
+    if (roleErr) {
+      console.error("[INTERNAL] reply-helpdesk role lookup failed:", roleErr.message);
+      return new Response(JSON.stringify({ error: "Nu am putut verifica permisiunile" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!roleRows || roleRows.length === 0) {
+      console.error("[INTERNAL] reply-helpdesk forbidden for user", user.id);
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     const { ticket_id, to_email, to_name, subject, reply_message } = await req.json();
 
