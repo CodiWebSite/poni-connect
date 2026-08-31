@@ -1,7 +1,7 @@
 import { useUserRole } from '@/hooks/useUserRole';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert, ShieldCheck, History, Siren, ScrollText, FlaskConical, Megaphone, Settings2 } from 'lucide-react';
 import BroadcastNotificationPanel from '@/components/admin/BroadcastNotificationPanel';
 import AdminOverview from '@/components/admin/AdminOverview';
@@ -18,14 +18,32 @@ import GdprPanel from '@/components/admin/GdprPanel';
 import LeaveSandboxPanel from '@/components/admin/LeaveSandboxPanel';
 import OperationalRulesPanel from '@/components/admin/OperationalRulesPanel';
 
+const TAB_ALIASES: Record<string, { tab: string; sub?: string }> = {
+  helpdesk: { tab: 'users', sub: 'helpdesk' },
+  conturi: { tab: 'users', sub: 'create' },
+  cereri: { tab: 'users', sub: 'requests' },
+  utilizatori: { tab: 'users' },
+  roluri: { tab: 'roles' },
+  audit: { tab: 'audit' },
+  'system-health': { tab: 'health' },
+  securitate: { tab: 'security' },
+  gdpr: { tab: 'gdpr' },
+  incidente: { tab: 'incidents' },
+};
+
 const Admin = () => {
   const { role, isRealSuperAdmin } = useUserRole();
+  const [searchParams] = useSearchParams();
 
   if (role && !isRealSuperAdmin) return <Navigate to="/" replace />;
 
+  const raw = searchParams.get('tab') || '';
+  const mapped = TAB_ALIASES[raw] || (raw ? { tab: raw } : undefined);
+
   return (
     <MainLayout title="Centru de Control" description="Administrare, monitorizare și audit al platformei ICMPP">
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs defaultValue={mapped?.tab || 'overview'} className="space-y-6">
+
         <div className="-mx-3 px-3 md:mx-0 md:px-0">
           <TabsList className="flex flex-wrap h-auto gap-1 p-1.5 w-full justify-start bg-muted/50 backdrop-blur-sm rounded-xl">
 
@@ -89,7 +107,7 @@ const Admin = () => {
         </div>
 
         <TabsContent value="overview"><AdminOverview /></TabsContent>
-        <TabsContent value="users"><AdminUsersPanel /></TabsContent>
+        <TabsContent value="users"><AdminUsersPanel initialTab={mapped?.sub} /></TabsContent>
         <TabsContent value="roles"><AdminRolesAccessPanel /></TabsContent>
         <TabsContent value="security"><SecurityDashboard /></TabsContent>
         <TabsContent value="health"><AdminSystemHealth /></TabsContent>

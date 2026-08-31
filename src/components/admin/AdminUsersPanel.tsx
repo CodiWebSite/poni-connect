@@ -75,7 +75,7 @@ interface UserWithRole {
   role_id: string;
 }
 
-const AdminUsersPanel = () => {
+const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -289,7 +289,7 @@ const AdminUsersPanel = () => {
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="list" className="space-y-4">
+      <Tabs defaultValue={initialTab || 'list'} className="space-y-4">
         <TabsList className="h-auto flex-wrap gap-1 p-1">
           <TabsTrigger value="list" className="text-xs gap-1.5"><Users className="w-3.5 h-3.5" />Utilizatori ({users.length})</TabsTrigger>
           <TabsTrigger value="create" className="text-xs gap-1.5"><UserPlus className="w-3.5 h-3.5" />Creare Cont</TabsTrigger>
