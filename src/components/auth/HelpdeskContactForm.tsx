@@ -57,8 +57,15 @@ const HelpdeskContactForm = ({ onBack }: HelpdeskContactFormProps) => {
         console.error('Helpdesk insert error details:', JSON.stringify(error));
         toast.error('Eroare la trimiterea mesajului. Încercați din nou.');
       } else {
+        const ticketId = data?.[0]?.id;
+        if (ticketId) {
+          supabase.functions
+            .invoke('notify-helpdesk-ticket', { body: { ticket_id: ticketId } })
+            .catch((e) => console.error('Helpdesk notify error:', e));
+        }
         setSent(true);
       }
+
     } catch (err) {
       console.error('Helpdesk insert exception:', err);
       toast.error('Eroare la trimiterea mesajului. Încercați din nou.');
