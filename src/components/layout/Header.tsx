@@ -104,20 +104,51 @@ const Header = ({ title, description }: HeaderProps) => {
             <NotificationBell />
           </div>
 
-          <div className="hidden sm:flex items-center gap-2.5 pl-1.5 md:pl-3 border-l border-border">
-            {/* Avatar with gradient ring */}
-            <div className="rounded-full p-[2px] bg-gradient-to-br from-primary to-accent">
-              <Avatar className="w-8 h-8 border-2 border-background">
-                <AvatarImage src={avatarUrl || ''} />
-                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                  {user?.email ? getInitials(user.email) : 'U'}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <div className="hidden lg:block leading-tight">
-              <p className="text-sm font-medium truncate max-w-[150px]">{displayName || user?.email}</p>
-            </div>
+          <div className="flex items-center gap-2.5 pl-1.5 md:pl-3 border-l border-border">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2.5" aria-label="Meniu cont">
+                  {/* Avatar with gradient ring */}
+                  <div className="rounded-full p-[2px] bg-gradient-to-br from-primary to-accent">
+                    <Avatar className="w-8 h-8 border-2 border-background">
+                      <AvatarImage src={avatarUrl || ''} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                        {user?.email ? getInitials(user.email) : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="hidden lg:block leading-tight text-left">
+                    <p className="text-sm font-medium truncate max-w-[150px]">{displayName || user?.email}</p>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="truncate">{displayName || user?.email}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/my-profile" className="cursor-pointer">
+                    <User className="w-4 h-4 mr-2" />
+                    Profilul meu
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="cursor-pointer">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Setări
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Deconectare
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+
         </div>
       </div>
     </header>
