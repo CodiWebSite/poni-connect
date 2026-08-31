@@ -6,12 +6,21 @@ import { GlobalSearch } from '@/components/layout/GlobalSearch';
 import MobileNav from '@/components/layout/MobileNav';
 import HubSwitcher from '@/components/layout/HubSwitcher';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, ChevronRight, FlaskConical, X } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Sun, Moon, ChevronRight, FlaskConical, X, LogOut, User, Settings } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useDemoMode } from '@/contexts/DemoModeContext';
 import { formatNumePrenume } from '@/utils/formatName';
+
 
 const routeLabels: Record<string, string> = {
   '/': 'Dashboard',
