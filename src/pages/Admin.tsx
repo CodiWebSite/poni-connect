@@ -26,8 +26,9 @@ const Admin = () => {
   return (
     <MainLayout title="Centru de Control" description="Administrare, monitorizare și audit al platformei ICMPP">
       <Tabs defaultValue="overview" className="space-y-6">
-        <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0 scrollbar-hide">
-          <TabsList className="inline-flex md:flex h-12 gap-1 p-1.5 min-w-max md:min-w-0 bg-muted/50 backdrop-blur-sm rounded-xl">
+        <div className="-mx-3 px-3 md:mx-0 md:px-0">
+          <TabsList className="flex flex-wrap h-auto gap-1 p-1.5 w-full justify-start bg-muted/50 backdrop-blur-sm rounded-xl">
+
             <TabsTrigger value="overview" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">Overview</span>
