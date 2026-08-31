@@ -113,7 +113,17 @@ IP: ${getClientIp(req)}`;
       });
     } catch (_) { /* ignore */ }
 
+    // Best-effort email alert to admins
+    try {
+      await fetch(`${supabaseUrl}/functions/v1/notify-helpdesk-ticket`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
+        body: JSON.stringify({ ticket_id: ticket.id }),
+      });
+    } catch (_) { /* ignore */ }
+
     return jsonResponse({ success: true, ticket_id: ticket.id });
+
   } catch (err) {
     console.error("[INTERNAL] helpdesk mfa-reset error:", err);
     return jsonResponse({ error: "Eroare internă" }, 500);
