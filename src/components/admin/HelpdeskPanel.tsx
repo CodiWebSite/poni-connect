@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Headset, Loader2, Clock, CheckCircle2, MessageSquare, Trash2, Mail, Send, Reply } from 'lucide-react';
+import { Headset, Loader2, Clock, CheckCircle2, MessageSquare, Trash2, Mail, Send, Reply, AlertTriangle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -47,15 +47,23 @@ const HelpdeskPanel = () => {
   const [showReply, setShowReply] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [sendingReply, setSendingReply] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchTickets = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
     const { data, error } = await supabase
       .from('helpdesk_tickets')
       .select('*')
       .order('created_at', { ascending: false });
-    
-    if (data) setTickets(data as unknown as Ticket[]);
-    if (error) console.error('Error fetching tickets:', error);
+
+    if (error) {
+      console.error('Error fetching tickets:', error);
+      setTickets([]);
+      setLoadError('Tichetele nu au putut fi încărcate. Verifică accesul la baza de date și încearcă din nou.');
+    } else {
+      setTickets((data || []) as unknown as Ticket[]);
+    }
     setLoading(false);
   }, []);
 
@@ -177,7 +185,17 @@ const HelpdeskPanel = () => {
         <CardDescription>Mesaje primite de la angajați prin formularul de contact IT</CardDescription>
       </CardHeader>
       <CardContent>
-        {tickets.length === 0 ? (
+        {loadError ? (
+          <div className="flex flex-col items-center py-8 text-center">
+            <AlertTriangle className="w-10 h-10 text-destructive mb-3" />
+            <p className="text-sm font-medium text-destructive">Eroare la încărcarea tichetelor</p>
+            <p className="mt-1 max-w-md text-sm text-muted-foreground">{loadError}</p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={fetchTickets}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Reîncearcă
+            </Button>
+          </div>
+        ) : tickets.length === 0 ? (
           <div className="text-center py-8">
             <MessageSquare className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">Nu există tichete HelpDesk.</p>
