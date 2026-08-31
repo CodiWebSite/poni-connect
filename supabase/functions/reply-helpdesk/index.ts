@@ -4,14 +4,16 @@ import { sendMailWithRetry } from "../_shared/smtp-retry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
+
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -38,21 +40,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
+    // Check admin role (a user may hold several roles — never use maybeSingle here)
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-    const { data: roleData } = await supabaseAdmin
+    const { data: roleRows, error: roleErr } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .in("role", ["super_admin", "admin"])
-      .maybeSingle();
+      .in("role", ["super_admin", "admin"]);
 
-    if (!roleData) {
+    if (roleErr) {
+      console.error("[INTERNAL] reply-helpdesk role lookup failed:", roleErr.message);
+      return new Response(JSON.stringify({ error: "Nu am putut verifica permisiunile" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!roleRows || roleRows.length === 0) {
+      console.error("[INTERNAL] reply-helpdesk forbidden for user", user.id);
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     const { ticket_id, to_email, to_name, subject, reply_message } = await req.json();
 
@@ -109,21 +120,36 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    await sendMailWithRetry(transporter, {
-      from: fromAddress,
-      to: to_email,
-      subject: subject || "Răspuns HelpDesk IT — ICMPP",
-      html,
-    });
+    try {
+      await sendMailWithRetry(
+        transporter,
+        {
+          from: fromAddress,
+          to: to_email,
+          subject: subject || "Răspuns HelpDesk IT — ICMPP",
+          html,
+        },
+        { label: "reply-helpdesk" },
+      );
+    } catch (mailErr) {
+      const msg = (mailErr as Error)?.message ?? "eroare SMTP necunoscută";
+      console.error("[INTERNAL] reply-helpdesk SMTP failure:", msg);
+      return new Response(
+        JSON.stringify({ error: `Emailul nu a putut fi trimis: ${msg}` }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Update ticket with admin notes about the reply
-    await supabaseAdmin
+    const { error: updErr } = await supabaseAdmin
       .from("helpdesk_tickets")
       .update({
         admin_notes: `[Răspuns trimis pe email la ${new Date().toISOString()}]\n${reply_message}`,
         status: "in_progress",
       })
       .eq("id", ticket_id);
+    if (updErr) console.error("[INTERNAL] reply-helpdesk ticket update failed:", updErr.message);
+
 
     return new Response(
       JSON.stringify({ success: true }),

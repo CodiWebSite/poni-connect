@@ -149,7 +149,21 @@ const HelpdeskPanel = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Surface the real reason returned by the function (SMTP, permisiuni etc.)
+        let detail = error.message;
+        try {
+          const ctx = (error as { context?: Response }).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            if (body?.error) detail = body.error;
+          }
+        } catch { /* ignore parse errors */ }
+        throw new Error(detail);
+      }
+      if ((data as { error?: string } | null)?.error) {
+        throw new Error((data as { error: string }).error);
+      }
 
       toast({ title: 'Email trimis', description: `Răspunsul a fost trimis la ${ticket.email}.` });
       setReplyTexts(prev => ({ ...prev, [ticket.id]: '' }));
@@ -157,8 +171,13 @@ const HelpdeskPanel = () => {
       fetchTickets();
     } catch (e) {
       console.error('Reply error:', e);
-      toast({ title: 'Eroare', description: 'Nu s-a putut trimite emailul.', variant: 'destructive' });
+      toast({
+        title: 'Eroare',
+        description: (e as Error)?.message || 'Nu s-a putut trimite emailul.',
+        variant: 'destructive',
+      });
     }
+
     setSendingReply(null);
   };
 
