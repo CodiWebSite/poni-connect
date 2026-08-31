@@ -1,7 +1,7 @@
 import { useUserRole } from '@/hooks/useUserRole';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { LayoutDashboard, Users, Shield, HeartPulse, FileText, Bot, ShieldAlert, ShieldCheck, History, Siren, ScrollText, FlaskConical, Megaphone, Settings2 } from 'lucide-react';
 import BroadcastNotificationPanel from '@/components/admin/BroadcastNotificationPanel';
 import AdminOverview from '@/components/admin/AdminOverview';
@@ -107,7 +107,7 @@ const Admin = () => {
         </div>
 
         <TabsContent value="overview"><AdminOverview /></TabsContent>
-        <TabsContent value="users"><AdminUsersPanel /></TabsContent>
+        <TabsContent value="users"><AdminUsersPanel initialTab={mapped?.sub} /></TabsContent>
         <TabsContent value="roles"><AdminRolesAccessPanel /></TabsContent>
         <TabsContent value="security"><SecurityDashboard /></TabsContent>
         <TabsContent value="health"><AdminSystemHealth /></TabsContent>
