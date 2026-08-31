@@ -75,7 +75,7 @@ interface UserWithRole {
   role_id: string;
 }
 
-const AdminUsersPanel = () => {
+const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
