@@ -39,12 +39,19 @@ interface HeaderProps {
 }
 
 const Header = ({ title, description }: HeaderProps) => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const { isDemo, toggleDemo } = useDemoMode();
   const location = useLocation();
+  const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string>('');
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
 
   useEffect(() => {
     if (user) {
