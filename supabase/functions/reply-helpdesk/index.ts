@@ -25,23 +25,26 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const token = authHeader.replace("Bearer ", "").trim();
 
-    // Verify caller is admin
-    const supabaseAuth = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
     });
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+
+    // Verify caller — service-role client validates the token regardless of legacy anon-key state
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+    const user = userData?.user;
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      console.error("[INTERNAL] reply-helpdesk auth failed:", userError?.message ?? "no user");
+      return new Response(JSON.stringify({ error: "Sesiune invalidă. Reautentifică-te și încearcă din nou." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Check admin role (a user may hold several roles — never use maybeSingle here)
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
     const { data: roleRows, error: roleErr } = await supabaseAdmin
       .from("user_roles")
       .select("role")
