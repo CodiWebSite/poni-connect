@@ -26,63 +26,64 @@ const Admin = () => {
   return (
     <MainLayout title="Centru de Control" description="Administrare, monitorizare și audit al platformei ICMPP">
       <Tabs defaultValue="overview" className="space-y-6">
-        <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0 scrollbar-hide">
-          <TabsList className="inline-flex md:flex h-12 gap-1 p-1.5 min-w-max md:min-w-0 bg-muted/50 backdrop-blur-sm rounded-xl">
-            <TabsTrigger value="overview" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+        <div className="-mx-3 px-3 md:mx-0 md:px-0">
+          <TabsList className="flex flex-wrap h-auto gap-1 p-1.5 w-full justify-start bg-muted/50 backdrop-blur-sm rounded-xl">
+
+            <TabsTrigger value="overview" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <LayoutDashboard className="w-4 h-4" />
-              <span className="hidden sm:inline">Overview</span>
+              <span>Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="users" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Utilizatori</span>
+              <span>Utilizatori</span>
             </TabsTrigger>
-            <TabsTrigger value="roles" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="roles" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <Shield className="w-4 h-4" />
-              <span className="hidden sm:inline">Roluri & Acces</span>
+              <span>Roluri & Acces</span>
             </TabsTrigger>
-            <TabsTrigger value="security" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="security" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <ShieldAlert className="w-4 h-4" />
-              <span className="hidden sm:inline">Securitate</span>
+              <span>Securitate</span>
             </TabsTrigger>
-            <TabsTrigger value="health" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="health" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <HeartPulse className="w-4 h-4" />
-              <span className="hidden sm:inline">System Health</span>
+              <span>System Health</span>
             </TabsTrigger>
-            <TabsTrigger value="audit" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="audit" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">Audit</span>
+              <span>Audit</span>
             </TabsTrigger>
-            <TabsTrigger value="role-audit" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="role-audit" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <History className="w-4 h-4" />
-              <span className="hidden sm:inline">Audit Roluri</span>
+              <span>Audit Roluri</span>
             </TabsTrigger>
-            <TabsTrigger value="iris-feedback" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="iris-feedback" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <Bot className="w-4 h-4" />
-              <span className="hidden sm:inline">IRIS Feedback</span>
+              <span>IRIS Feedback</span>
             </TabsTrigger>
-            <TabsTrigger value="quiz-admin" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="quiz-admin" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <ShieldCheck className="w-4 h-4" />
-              <span className="hidden sm:inline">Securitate Digitală</span>
+              <span>Securitate Digitală</span>
             </TabsTrigger>
-            <TabsTrigger value="incidents" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="incidents" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <Siren className="w-4 h-4" />
-              <span className="hidden sm:inline">Incidente</span>
+              <span>Incidente</span>
             </TabsTrigger>
-            <TabsTrigger value="gdpr" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="gdpr" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <ScrollText className="w-4 h-4" />
-              <span className="hidden sm:inline">GDPR</span>
+              <span>GDPR</span>
             </TabsTrigger>
-            <TabsTrigger value="leave-sandbox" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="leave-sandbox" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <FlaskConical className="w-4 h-4" />
-              <span className="hidden sm:inline">Test Concedii</span>
+              <span>Test Concedii</span>
             </TabsTrigger>
-            <TabsTrigger value="broadcast" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="broadcast" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <Megaphone className="w-4 h-4" />
-              <span className="hidden sm:inline">Broadcast</span>
+              <span>Broadcast</span>
             </TabsTrigger>
-            <TabsTrigger value="operational-rules" className="text-sm px-4 gap-2 data-[state=active]:shadow-md rounded-lg">
+            <TabsTrigger value="operational-rules" className="text-xs sm:text-sm px-3 py-2 gap-1.5 data-[state=active]:shadow-md rounded-lg">
               <Settings2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Reguli operaționale</span>
+              <span>Reguli operaționale</span>
             </TabsTrigger>
           </TabsList>
         </div>
