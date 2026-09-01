@@ -6,9 +6,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VAPID_PUBLIC_KEY = "BF6kyn_JW4gE8qJ9j98FSIE9jbDdxVPYQv-dw5Pxz1wpa2LE1yZBUmwUzPdeuC24rhyvXMMhnr1fMWk2V23ifu4";
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:no-reply@icmpp.ro";
+// VAPID keypair v2 (rotated 2026-09-01 — previous private key did not match the
+// public key used by clients, so every web push was rejected with 403 invalid JWT).
+const VAPID_PUBLIC_KEY = "BL1EtUd_2wmVQDPg7amSSCdIKVc7J8wWiAH0rS-TS-nRZyTOecN9Nw85Q5zg9CXU74UazHWGTYR0wO6H085IYd8";
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY_V2")!;
+const rawSubject = Deno.env.get("VAPID_SUBJECT_V2") || "";
+const VAPID_SUBJECT = /^(mailto:|https:\/\/)/.test(rawSubject)
+  ? rawSubject
+  : "mailto:no-reply@icmpp.ro";
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
@@ -177,7 +182,14 @@ Deno.serve(async (req) => {
             );
             webSent++;
           } catch (err: any) {
-            if (err?.statusCode === 410 || err?.statusCode === 404) {
+            // 410/404 = gone, 401/403 = subscription signed with an old VAPID key
+            // -> drop it so the client re-subscribes with the current key.
+            if (
+              err?.statusCode === 410 ||
+              err?.statusCode === 404 ||
+              err?.statusCode === 401 ||
+              err?.statusCode === 403
+            ) {
               expiredIds.push(s.id);
             } else {
               console.error("Push send error:", err?.statusCode, err?.body);

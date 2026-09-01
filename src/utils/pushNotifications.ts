@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const VAPID_PUBLIC_KEY =
-  "BF6kyn_JW4gE8qJ9j98FSIE9jbDdxVPYQv-dw5Pxz1wpa2LE1yZBUmwUzPdeuC24rhyvXMMhnr1fMWk2V23ifu4";
+  "BL1EtUd_2wmVQDPg7amSSCdIKVc7J8wWiAH0rS-TS-nRZyTOecN9Nw85Q5zg9CXU74UazHWGTYR0wO6H085IYd8";
 
 const SW_URL = "/push-sw.js";
 
@@ -13,6 +13,19 @@ function urlBase64ToUint8Array(base64String: string): BufferSource {
   const view = new Uint8Array(buffer);
   for (let i = 0; i < rawData.length; ++i) view[i] = rawData.charCodeAt(i);
   return buffer;
+}
+
+function bufferToBase64Url(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let str = "";
+  for (const b of bytes) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function subscriptionMatchesCurrentKey(sub: PushSubscription): boolean {
+  const key = sub.options?.applicationServerKey;
+  if (!key) return true; // cannot verify — assume valid
+  return bufferToBase64Url(key as ArrayBuffer) === VAPID_PUBLIC_KEY;
 }
 
 export function isPushSupported(): boolean {
@@ -49,12 +62,22 @@ export async function subscribeToPush(): Promise<{ ok: boolean; error?: string }
     await navigator.serviceWorker.ready;
 
     let sub = await reg.pushManager.getSubscription();
+    if (sub && !subscriptionMatchesCurrentKey(sub)) {
+      // Subscription created with an older VAPID key — recreate it.
+      try {
+        await sub.unsubscribe();
+      } catch {
+        /* ignore */
+      }
+      sub = null;
+    }
     if (!sub) {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
     }
+
 
     const json = sub.toJSON();
     const endpoint = json.endpoint!;
@@ -113,5 +136,5 @@ export async function isSubscribedToPush(): Promise<boolean> {
   const reg = await navigator.serviceWorker.getRegistration(SW_URL);
   if (!reg) return false;
   const sub = await reg.pushManager.getSubscription();
-  return !!sub;
+  return !!sub && subscriptionMatchesCurrentKey(sub);
 }
