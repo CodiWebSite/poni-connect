@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const VAPID_PUBLIC_KEY =
-  "BF6kyn_JW4gE8qJ9j98FSIE9jbDdxVPYQv-dw5Pxz1wpa2LE1yZBUmwUzPdeuC24rhyvXMMhnr1fMWk2V23ifu4";
+  "BL1EtUd_2wmVQDPg7amSSCdIKVc7J8wWiAH0rS-TS-nRZyTOecN9Nw85Q5zg9CXU74UazHWGTYR0wO6H085IYd8";
 
 const SW_URL = "/push-sw.js";
 
