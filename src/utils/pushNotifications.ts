@@ -15,6 +15,19 @@ function urlBase64ToUint8Array(base64String: string): BufferSource {
   return buffer;
 }
 
+function bufferToBase64Url(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let str = "";
+  for (const b of bytes) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function subscriptionMatchesCurrentKey(sub: PushSubscription): boolean {
+  const key = sub.options?.applicationServerKey;
+  if (!key) return true; // cannot verify — assume valid
+  return bufferToBase64Url(key as ArrayBuffer) === VAPID_PUBLIC_KEY;
+}
+
 export function isPushSupported(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -123,5 +136,5 @@ export async function isSubscribedToPush(): Promise<boolean> {
   const reg = await navigator.serviceWorker.getRegistration(SW_URL);
   if (!reg) return false;
   const sub = await reg.pushManager.getSubscription();
-  return !!sub;
+  return !!sub && subscriptionMatchesCurrentKey(sub);
 }
