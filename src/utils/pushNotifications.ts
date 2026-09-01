@@ -49,12 +49,22 @@ export async function subscribeToPush(): Promise<{ ok: boolean; error?: string }
     await navigator.serviceWorker.ready;
 
     let sub = await reg.pushManager.getSubscription();
+    if (sub && !subscriptionMatchesCurrentKey(sub)) {
+      // Subscription created with an older VAPID key — recreate it.
+      try {
+        await sub.unsubscribe();
+      } catch {
+        /* ignore */
+      }
+      sub = null;
+    }
     if (!sub) {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
     }
+
 
     const json = sub.toJSON();
     const endpoint = json.endpoint!;
