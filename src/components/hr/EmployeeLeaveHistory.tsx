@@ -533,6 +533,24 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
                 </div>
               )}
 
+              {/* Conflict propriu: deplasare vs concediu */}
+              {selfConflicts.length > 0 && (
+                <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/30">
+                  <p className="text-xs font-medium text-destructive flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {addLeaveType === TRAVEL_LEAVE_TYPE
+                      ? 'Atenție: angajatul are deja concediu înregistrat în această perioadă:'
+                      : 'Atenție: angajatul are deja deplasare înregistrată în această perioadă:'}
+                  </p>
+                  {selfConflicts.map((c, i) => (
+                    <p key={i} className="text-xs text-destructive/90 ml-5">• {formatConflict(c)}</p>
+                  ))}
+                  <p className="text-xs text-muted-foreground ml-5 mt-1">
+                    Verificați perioada înainte de a salva — înregistrarea rămâne posibilă doar dacă este intenționată.
+                  </p>
+                </div>
+              )}
+
               {/* Deduction source - only for deductible types with carryover */}
               {isDeductible && carryoverDays > 0 && addWorkingDays > 0 && (
                 <div className="space-y-2">
