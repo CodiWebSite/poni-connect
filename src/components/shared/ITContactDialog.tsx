@@ -80,29 +80,30 @@ const ITContactDialog = ({ trigger }: ITContactDialogProps) => {
     }
 
     setSending(true);
-    const { data, error } = await supabase
+    // Id generat în client: evităm `INSERT ... RETURNING`, care ar fi blocat de
+    // politicile de citire când emailul completat diferă de cel al contului.
+    const ticketId = crypto.randomUUID();
+    const { error } = await supabase
       .from('helpdesk_tickets')
       .insert({
+        id: ticketId,
         name: name.trim(),
         email: email.trim().toLowerCase(),
         subject: subject || 'General',
         message: message.trim(),
-      })
-      .select('id');
+      });
 
     if (error) {
       console.error('Helpdesk ticket insert error:', error);
       toast.error('Eroare la trimiterea mesajului. Încercați din nou.');
     } else {
-      const ticketId = data?.[0]?.id;
-      if (ticketId) {
-        supabase.functions
-          .invoke('notify-helpdesk-ticket', { body: { ticket_id: ticketId } })
-          .catch((e) => console.error('Helpdesk notify error:', e));
-      }
+      supabase.functions
+        .invoke('notify-helpdesk-ticket', { body: { ticket_id: ticketId } })
+        .catch((e) => console.error('Helpdesk notify error:', e));
       setSent(true);
       fetchTickets();
     }
+
 
     setSending(false);
   };
