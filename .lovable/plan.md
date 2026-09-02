@@ -1,67 +1,56 @@
-# Refresh vizual major — Intranet ICMPP
+# Audit platformă intranet — probleme identificate și îmbunătățiri propuse
 
-Scop: o identitate vizuală mai matură și mai „instituțional-premium”, densitate mai bună a informației și consistență între module. Zero schimbări de logică de business (HR, concedii, salarizare rămân neatinse funcțional).
+Am verificat codul, configurarea și baza de date. Nu există erori de build sau erori runtime raportate în acest moment — platforma este funcțională. Problemele de mai jos sunt de robustețe, performanță și securitate.
 
-## 1. Sistemul de design (fundația)
+## 1. Ecran alb la orice eroare de randare (prioritate maximă)
 
-Astăzi paleta e albastru rece + accent teal, font Inter + Playfair Display, radius 0.75rem, umbre stratificate și tokenuri de glass/gradient deja definite în `index.css`.
+Nu există niciun ErrovBoundary în aplicație (verificat: zero apariții în `src/`). O singură eroare JavaScript într-un singur card (ex. o dată invalidă, un câmp lipsă din baza de date) face ca **toată pagina să devină albă**, fără mesaj. Acesta este exact simptomul semnalat de mai multe ori („imagine albă, nu apare nimic").
 
-Ce schimb:
-- **Tipografie**: înlocuiesc Inter/Playfair cu o pereche mai distinctă și mai lizibilă la densitate mare — titluri cu un display grotesk, corp cu un sans neutru optimizat pentru ecran. Scală tipografică explicită (display / h1–h4 / body / caption / mono pentru cifre).
-- **Cifre tabelare**: `font-variant-numeric: tabular-nums` global pe tabele, solduri, statistici — coloanele de zile/sume nu mai „dansează”.
-- **Paletă**: păstrez albastrul instituțional ca primar, dar recalibrez suprafețele (background mai cald/neutru, carduri cu separare clară), reduc gradientele decorative și le rezerv doar pentru elementele „hero”. Accentul teal devine strict semantic (succes/activ), nu decorativ.
-- **Umbre & borduri**: trec pe o ierarhie de 3 niveluri (flat / raised / overlay) în loc de umbre multiple aplicate inconsistent.
-- **Radius**: scădere ușoară pentru un aer mai „enterprise”, cu radius mai mare doar pe carduri mari.
-- **Dark mode**: recalibrare completă a contrastelor (în prezent tema dark e derivată, nu proiectată) — verificare WCAG AA pe text, badge-uri și grafice.
-- **Densitate**: introduc o clasă de densitate compactă pentru tabele și liste (HR, salarizare, arhivă) — mai multe rânduri pe ecran, fără să pară înghesuit.
+Propunere:
+- `ErrorBoundary` global în `App.tsx` cu ecran de eroare prietenos (buton „Reîncarcă", „Înapoi la Dashboard") și logare automată a erorii.
+- `ErrorBoundary` local pe widget-urile de Dashboard și pe modulele grele (Salarizare, Social, Chat), astfel încât un modul căzut să nu ia pagina cu el.
 
-## 2. Header și navigație
+## 2. Toată aplicația se încarcă într-un singur pachet
 
-- Header redesenat: titlu + breadcrumb pe un singur rând coerent, grupare vizuală a acțiunilor (căutare / temă / hub / notificări / avatar) cu separatoare consistente și dimensiuni uniforme ale butoanelor.
-- Căutarea globală devine element vizibil (câmp cu shortcut `Ctrl/⌘ K` afișat), nu doar iconiță.
-- Bara de „MOD DEMO” refăcută cu tokeni semantici (acum folosește culori hardcodate amber), aliniată vizual cu restul sistemului.
-- Sidebar: ierarhie mai clară a grupurilor, stare activă mai evidentă, badge-uri de notificări aliniate, tranziție curată la colapsare (rămâne mini-variant cu iconițe).
-- Meniu mobil: aceleași grupuri ca desktop, ținte de atingere ≥44px, secțiuni colapsabile.
+`App.tsx` importă direct toate cele ~60 de pagini (66 de importuri, zero `React.lazy`). Un utilizator care intră doar pe Dashboard descarcă și Salarizarea, Medicina Muncii, Biblioteca, Chat-ul, Kiosk-ul etc. Pe conexiuni lente / mobil, prima încărcare este vizibil întârziată.
 
-## 3. Dashboard-uri (cea mai vizibilă schimbare)
+Propunere:
+- `React.lazy` + `Suspense` pentru toate rutele, cu un skeleton de încărcare.
+- Separarea manuală a librăriilor grele în chunk-uri proprii (PDF, Excel, editor de text) ca să nu intre în pachetul principal.
 
-Există 6 dashboard-uri pe rol (`SuperAdmin`, `HRStaff`, `SefDepartment`, `MedicMuncii`, `OperationalRole`, `Employee`) și ~30 de widget-uri. Astăzi arată diferit între ele.
+## 3. Cache-ul de date nu este configurat
 
-- **Grilă unificată de tip bento**: un rând de „stat cards” compacte sus, apoi zone mari (calendar/anunțuri) și coloană laterală de acțiuni rapide. Aceeași structură pentru toate rolurile, doar conținutul diferă.
-- **StatCard redesenat**: valoare dominantă, delta față de perioada anterioară, sparkline discretă, iconiță subtilă — un singur component folosit peste tot.
-- **Salut personalizat** compact, integrat în primul rând (nu bandă separată).
-- **Bannere** (alerte, MFA, instalare app) unificate într-un singur slot cu priorități, ca să nu se stivuiască 3 bannere unul sub altul.
-- **Skeletons** consistente pentru toate widget-urile (evită saltul de layout la încărcare).
-- **Stări goale** desenate (ilustrație simplă + mesaj + acțiune), în loc de text gol.
+`new QueryClient()` este folosit fără opțiuni. Practic fiecare navigare între pagini reinterogează baza de date, iar același utilizator/profil este cerut de zeci de ori pe sesiune.
 
-## 4. Componente recurente
+Propunere: configurare `staleTime`, `gcTime`, `retry` și dezactivarea refetch-ului la fiecare focus de fereastră. Efect direct: mai puține cereri către backend (deci și mai puține credite consumate) și interfață mai rapidă.
 
-- **Tabele**: header sticky, zebra subtilă, sortare vizibilă, acțiuni la hover, paginare consistentă; pe mobil se transformă în carduri în loc de scroll orizontal.
-- **Formulare**: etichete, spațiere, erori și texte ajutătoare standardizate (HR, cerere concediu, salarizare arată azi diferit).
-- **Badge-uri de status**: un set unic de variante (aprobat / în așteptare / respins / anulat / distribuit), folosit în toate modulele.
-- **Dialoguri și panouri**: dimensiuni și padding standard, header/footer fixe cu conținut scrollabil.
-- **Micro-animații**: fade/scale discrete la montare, tranziții pe hover, respectând `prefers-reduced-motion`.
+## 4. Interogări care aduc coloane inutile
 
-## 5. Social Hub
+Există 85 de interogări `select('*')`, inclusiv pe tabele „grele" precum `employee_personal_data` (35 coloane, date sensibile) și `leave_requests` (32 coloane). Aduce trafic inutil și expune mai multe date decât e nevoie în client.
 
-- Feed cu ierarhie tipografică mai clară, carduri de postare mai aerisite, acțiuni (reacții/comentarii/salvare) grupate într-o bară consistentă.
-- Composer cu toolbar aliniat noului sistem.
-- Profil comunitate cu header vizual (cover + avatar + membri).
+Propunere: înlocuirea treptată, începând cu tabelele cu date personale și cu listele lungi (HR, concedii, salarizare).
 
-## Detalii tehnice
+## 5. Securitate — funcții cu privilegii apelabile public
 
-- Toate valorile noi intră ca tokeni HSL în `index.css` + `tailwind.config.ts`; niciun `text-white` / `bg-[#...]` în componente.
-- Refactorizare pe variante shadcn (`cva`) pentru `StatCard`, badge-uri de status, tabele — nu clase ad-hoc.
-- Fonturile se încarcă cu `display=swap` și preconnect.
-- Fără modificări de schemă, RLS, Edge Functions sau logică de calcul (concedii/FIFO/fluturași).
-- Verificare finală pe desktop, tabletă și mobil, în light și dark, cu capturi înainte/după.
+Linterul bazei de date semnalează 144 de avertismente, toate de același tip: funcții `SECURITY DEFINER` care pot fi apelate direct prin API de utilizatori anonimi (69) sau autentificați (75). Multe sunt funcții interne (triggere, funcții de notificare, funcții auxiliare pentru RLS) care nu ar trebui să fie apelabile din exterior.
 
-## Ordinea livrării
+Propunere: revocarea dreptului de execuție de la `anon`/`authenticated` pentru funcțiile interne (triggere, `notify_*`, `audit_*`, `social_*_trg`), păstrând accesul doar pentru funcțiile chemate intenționat din aplicație.
 
-1. Tokeni + tipografie + dark mode (fundația).
-2. Header, sidebar, meniu mobil.
-3. StatCard + grila bento + cele 6 dashboard-uri.
-4. Tabele, formulare, badge-uri, dialoguri.
-5. Social Hub.
+## 6. Igienă de cod
 
-Pot livra etapizat, ca să validezi după fiecare pas înainte să merg mai departe.
+- 92 de fișiere folosesc `: any`, ceea ce ascunde erori reale la compilare (ex. tipul `related_id` care a produs deja un bug în Social).
+- Fișiere foarte mari, greu de întreținut: `MedicinaMuncii.tsx` (1366 linii), `PostFeed.tsx` (1191), `MyProfile.tsx` (1155), `SystemStatus.tsx` (1020).
+- 44 de fișiere conțin culori hardcodate (`text-white`, `bg-black`, hex), ceea ce sparge tema și modul întunecat în acele zone.
+
+Propunere: refactorizare punctuală, doar unde aduce valoare (spargerea celor 4 fișiere mari în componente și înlocuirea culorilor hardcodate cu token-uri).
+
+## Ordinea recomandată
+
+1. ErrorBoundary global + local (elimină ecranele albe)
+2. Lazy loading rute + chunk-uri (viteză)
+3. Configurare cache react-query (viteză + credite)
+4. Hardening funcții baze de date (securitate)
+5. Curățare `select('*')` pe modulele cu date personale
+6. Refactorizări de cod și token-uri de culoare
+
+Spune-mi de unde vrei să începem — recomand punctele 1-3, care se pot livra împreună și au impactul cel mai vizibil pentru utilizatori.
