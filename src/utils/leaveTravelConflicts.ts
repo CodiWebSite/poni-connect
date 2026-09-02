@@ -68,7 +68,7 @@ export async function fetchOwnPeriodConflicts({
     });
   };
 
-  const hrQueries: Promise<any>[] = [];
+  const hrQueries: PromiseLike<any>[] = [];
   if (userId) {
     hrQueries.push(
       supabase
@@ -76,8 +76,7 @@ export async function fetchOwnPeriodConflicts({
         .select('id, details')
         .eq('request_type', 'concediu')
         .eq('status', 'approved')
-        .eq('user_id', userId)
-        .then((r) => r),
+        .eq('user_id', userId),
     );
   }
   if (epdId) {
@@ -87,8 +86,7 @@ export async function fetchOwnPeriodConflicts({
         .select('id, details')
         .eq('request_type', 'concediu')
         .eq('status', 'approved')
-        .eq('details->>epd_id', epdId)
-        .then((r) => r),
+        .eq('details->>epd_id', epdId),
     );
   }
 
