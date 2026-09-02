@@ -4,6 +4,9 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
+import PageHeader from '@/components/layout/PageHeader';
+import { IdCard } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -515,8 +518,16 @@ const MyProfile = () => {
     <MainLayout title="Profilul Meu" description="Vizualizați datele personale și documentele dvs.">
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
 
+        <PageHeader
+          eyebrow="Dosar personal"
+          title="Profilul meu"
+          description="Datele personale, documentele și situația concediilor"
+          icon={IdCard}
+        />
+
         {/* ─── Hero Header ─── */}
-        <Card className="overflow-hidden border-0 shadow-lg animate-fade-in">
+        <Card className="overflow-hidden border-0 shadow-lg rounded-2xl animate-fade-in">
+
           <div className="relative bg-gradient-to-br from-primary/15 via-primary/5 to-accent/10 p-5 sm:p-8">
             {/* Dot pattern overlay */}
             <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--foreground)) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />

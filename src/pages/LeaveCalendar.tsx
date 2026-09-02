@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import PageHeader from '@/components/layout/PageHeader';
+
 import { useUserRole } from '@/hooks/useUserRole';
 import { useIsApprover } from '@/hooks/useIsApprover';
 import { supabase } from '@/integrations/supabase/client';
@@ -270,33 +272,28 @@ const LeaveCalendar = () => {
 
   return (
     <MainLayout title="Calendar Concedii" description={department ? `Departament: ${department}` : 'Vizualizare concedii departament'}>
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="p-2 sm:p-2.5 rounded-xl bg-primary/10 shrink-0">
-            <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base sm:text-xl font-display font-bold text-foreground capitalize truncate">
-              {format(currentMonth, 'MMMM yyyy', { locale: ro })}
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              {employees.length} {employees.length === 1 ? 'coleg' : 'colegi'} cu concediu
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm" className="h-8 sm:h-9 text-xs sm:text-sm font-medium px-2 sm:px-3" onClick={() => setCurrentMonth(new Date())}>
-            Azi
-          </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+      {/* Header unificat */}
+      <PageHeader
+        eyebrow="Calendar concedii"
+        title={format(currentMonth, 'MMMM yyyy', { locale: ro })}
+        description={`${employees.length} ${employees.length === 1 ? 'coleg' : 'colegi'} cu concediu${department ? ` — ${department}` : ''}`}
+        icon={CalendarIcon}
+        className="[&_h2]:capitalize"
+        actions={
+          <>
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setCurrentMonth(m => subMonths(m, 1))} aria-label="Luna anterioară">
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" className="h-9 text-sm font-medium px-3" onClick={() => setCurrentMonth(new Date())}>
+              Azi
+            </Button>
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setCurrentMonth(m => addMonths(m, 1))} aria-label="Luna următoare">
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </>
+        }
+      />
+
 
       {/* Colleagues on leave today */}
       {colleaguesOnLeaveToday.length > 0 && (
