@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,61 +18,79 @@ import { supabase } from "@/integrations/supabase/client";
 
 import IrisButton from "@/components/iris/IrisButton";
 import DbHealthOverlay from "@/components/system/DbHealthOverlay";
+import ErrorBoundary from "@/components/system/ErrorBoundary";
+import RouteFallback from "@/components/system/RouteFallback";
+
+// Rute critice — încărcate imediat (primul ecran al utilizatorului)
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-
-import Settings from "./pages/Settings";
-import MyProfile from "./pages/MyProfile";
-import HRManagement from "./pages/HRManagement";
-import Admin from "./pages/Admin";
-import LeaveCalendar from "./pages/LeaveCalendar";
-import LeaveRequest from "./pages/LeaveRequest";
-import ResetPassword from "./pages/ResetPassword";
-import FormTemplates from "./pages/FormTemplates";
 import NotFound from "./pages/NotFound";
-import Library from "./pages/Library";
 import Maintenance from "./pages/Maintenance";
-import PlatformGuide from "./pages/PlatformGuide";
-import Salarizare from "./pages/Salarizare";
-import Announcements from "./pages/Announcements";
-import SystemStatus from "./pages/SystemStatus";
-import MyTeam from "./pages/MyTeam";
-import RoomBookings from "./pages/RoomBookings";
-import RecreationalActivities from "./pages/RecreationalActivities";
-import Chat from "./pages/Chat";
-import MedicinaMuncii from "./pages/MedicinaMuncii";
-import InstallApp from "./pages/InstallApp";
-import Kiosk from "./pages/Kiosk";
-import Archive from "./pages/Archive";
-import MeetingsAgenda from "./pages/MeetingsAgenda";
-import MeetingRemindersStatus from "./pages/MeetingRemindersStatus";
-import SocialFeed from "./pages/social/SocialFeed";
-import Communities from "./pages/social/Communities";
-import CommunityDetail from "./pages/social/CommunityDetail";
-import Birthdays from "./pages/social/Birthdays";
-import Colleagues from "./pages/social/Colleagues";
-import OrgChart from "./pages/social/OrgChart";
-import SocialSettings from "./pages/social/SocialSettings";
-import SavedPosts from "./pages/social/SavedPosts";
+
+// Restul rutelor — încărcate la cerere (code splitting)
+const Settings = lazy(() => import("./pages/Settings"));
+const MyProfile = lazy(() => import("./pages/MyProfile"));
+const HRManagement = lazy(() => import("./pages/HRManagement"));
+const Admin = lazy(() => import("./pages/Admin"));
+const LeaveCalendar = lazy(() => import("./pages/LeaveCalendar"));
+const LeaveRequest = lazy(() => import("./pages/LeaveRequest"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const FormTemplates = lazy(() => import("./pages/FormTemplates"));
+const Library = lazy(() => import("./pages/Library"));
+const PlatformGuide = lazy(() => import("./pages/PlatformGuide"));
+const Salarizare = lazy(() => import("./pages/Salarizare"));
+const Announcements = lazy(() => import("./pages/Announcements"));
+const SystemStatus = lazy(() => import("./pages/SystemStatus"));
+const MyTeam = lazy(() => import("./pages/MyTeam"));
+const RoomBookings = lazy(() => import("./pages/RoomBookings"));
+const RecreationalActivities = lazy(() => import("./pages/RecreationalActivities"));
+const Chat = lazy(() => import("./pages/Chat"));
+const MedicinaMuncii = lazy(() => import("./pages/MedicinaMuncii"));
+const InstallApp = lazy(() => import("./pages/InstallApp"));
+const Kiosk = lazy(() => import("./pages/Kiosk"));
+const Archive = lazy(() => import("./pages/Archive"));
+const MeetingsAgenda = lazy(() => import("./pages/MeetingsAgenda"));
+const MeetingRemindersStatus = lazy(() => import("./pages/MeetingRemindersStatus"));
+const SocialFeed = lazy(() => import("./pages/social/SocialFeed"));
+const Communities = lazy(() => import("./pages/social/Communities"));
+const CommunityDetail = lazy(() => import("./pages/social/CommunityDetail"));
+const Birthdays = lazy(() => import("./pages/social/Birthdays"));
+const Colleagues = lazy(() => import("./pages/social/Colleagues"));
+const OrgChart = lazy(() => import("./pages/social/OrgChart"));
+const SocialSettings = lazy(() => import("./pages/social/SocialSettings"));
+const SavedPosts = lazy(() => import("./pages/social/SavedPosts"));
+const PublicProfile = lazy(() => import("./pages/PublicProfile"));
+const BusinessCards = lazy(() => import("./pages/BusinessCards"));
+const Changelog = lazy(() => import("./pages/Changelog"));
+const Inventory = lazy(() => import("./pages/Inventory"));
+const InventoryProfile = lazy(() => import("./pages/InventoryProfile"));
+const InventoryPublicView = lazy(() => import("./pages/InventoryPublicView"));
+const SecurityQuiz = lazy(() => import("./pages/SecurityQuiz"));
+const Suggestions = lazy(() => import("./pages/Suggestions"));
+const AccountSecurity = lazy(() => import("./pages/AccountSecurity"));
+const ReportIncident = lazy(() => import("./pages/ReportIncident"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const PublicLegal = lazy(() => import("./pages/PublicLegal"));
 
 const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
 const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
 
-import PublicProfile from "./pages/PublicProfile";
-import BusinessCards from "./pages/BusinessCards";
-import Changelog from "./pages/Changelog";
-import Inventory from "./pages/Inventory";
-import InventoryProfile from "./pages/InventoryProfile";
-import InventoryPublicView from "./pages/InventoryPublicView";
-import SecurityQuiz from "./pages/SecurityQuiz";
-import Suggestions from "./pages/Suggestions";
-import AccountSecurity from "./pages/AccountSecurity";
-import ReportIncident from "./pages/ReportIncident";
-import Privacy from "./pages/Privacy";
-import PublicLegal from "./pages/PublicLegal";
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Datele rămân proaspete 2 minute → navigarea între pagini nu re-interoghează inutil
+      staleTime: 2 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      retry: 1,
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
-
-const queryClient = new QueryClient();
 
 function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const { settings, loading: settingsLoading } = useAppSettings();
@@ -219,8 +237,20 @@ function GlobalChatNotifier() {
   return null;
 }
 
+/** Resetează bariera de eroare la fiecare schimbare de rută. */
+function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  return (
+    <ErrorBoundary key={location.pathname}>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </ErrorBoundary>
+  );
+}
+
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
+
     <ThemeProvider attribute="class" defaultTheme="light" storageKey="icmpp-theme">
       <AuthProvider>
         <ImpersonationProvider>
@@ -236,6 +266,7 @@ const App = () => (
             <MFAGuard>
             <IrisButton />
             <MaintenanceGuard>
+              <RouteErrorBoundary>
               <Routes>
                 <Route path="/kiosk" element={<Kiosk />} />
                 <Route path="/" element={<Index />} />
@@ -296,6 +327,7 @@ const App = () => (
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </RouteErrorBoundary>
             </MaintenanceGuard>
             </MFAGuard>
           </BrowserRouter>
@@ -306,6 +338,7 @@ const App = () => (
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
