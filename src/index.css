@@ -37,7 +37,14 @@
     --input: 218 18% 89%;
     --ring: 219 74% 34%;
 
+    /* Brand surface — institutional deep blue panel (auth, hero) */
+    --brand: 220 76% 22%;
+    --brand-foreground: 210 40% 98%;
+    --brand-muted: 213 45% 82%;
+    --brand-accent: 205 85% 72%;
+
     --radius: 0.625rem;
+
 
     /* Semantic tokens */
     --success: 152 58% 34%;
@@ -111,6 +118,13 @@
     --border: 222 16% 22%;
     --input: 222 16% 24%;
     --ring: 214 88% 64%;
+
+    --brand: 222 45% 11%;
+    --brand-foreground: 210 40% 98%;
+    --brand-muted: 213 30% 74%;
+    --brand-accent: 205 85% 70%;
+
+
 
     --success: 152 55% 52%;
     --success-foreground: 222 40% 10%;
