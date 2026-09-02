@@ -17,6 +17,7 @@ import { History, Pencil, Trash2, Loader2, Calendar, Paperclip, Download, Plus, 
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { isPublicHoliday, getPublicHolidayName } from '@/utils/romanianHolidays';
+import { fetchOwnPeriodConflicts, formatConflict, TRAVEL_LEAVE_TYPE, type PeriodConflict } from '@/utils/leaveTravelConflicts';
 
 interface EmployeeLeaveHistoryProps {
   open: boolean;
