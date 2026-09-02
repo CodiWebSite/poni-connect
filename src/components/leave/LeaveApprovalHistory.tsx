@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchApproverScope } from '@/utils/approverScope';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDemoMode } from '@/contexts/DemoModeContext';
 import { Badge } from '@/components/ui/badge';
