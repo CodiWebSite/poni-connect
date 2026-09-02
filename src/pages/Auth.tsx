@@ -284,9 +284,10 @@ const Auth = () => {
   ];
 
   return (
-    <div className="min-h-dvh flex flex-col lg:flex-row bg-background overflow-x-hidden">
+    <div className="min-h-dvh lg:h-dvh flex flex-col lg:flex-row bg-background overflow-x-hidden">
       {/* Left panel — brand & trust */}
-      <aside className="relative hidden lg:flex lg:w-5/12 xl:w-[38%] flex-col justify-between p-12 xl:p-16 bg-brand text-brand-foreground overflow-hidden">
+      <aside className="relative hidden lg:flex lg:w-5/12 xl:w-[38%] lg:h-dvh flex-col justify-between p-10 xl:p-14 bg-brand text-brand-foreground overflow-hidden">
+
         <div className="absolute inset-0 opacity-[0.14] pointer-events-none animate-[pulse_9s_ease-in-out_infinite]">
           <MolecularPattern className="w-full h-full" />
         </div>
