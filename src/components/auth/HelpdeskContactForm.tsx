@@ -44,27 +44,27 @@ const HelpdeskContactForm = ({ onBack }: HelpdeskContactFormProps) => {
 
     setSending(true);
     try {
+      // Generăm id-ul în client pentru a evita `INSERT ... RETURNING`
+      // (politicile de citire ar bloca tichetele trimise pe altă adresă de email).
+      const ticketId = crypto.randomUUID();
       const payload = {
+        id: ticketId,
         name: name.trim(),
         email: email.trim().toLowerCase(),
         subject: subject || 'General',
         message: message.trim(),
       };
-      console.log('Helpdesk insert payload:', payload);
-      const { data, error } = await supabase.from('helpdesk_tickets').insert(payload).select();
-      console.log('Helpdesk insert result:', { data, error });
+      const { error } = await supabase.from('helpdesk_tickets').insert(payload);
       if (error) {
         console.error('Helpdesk insert error details:', JSON.stringify(error));
         toast.error('Eroare la trimiterea mesajului. Încercați din nou.');
       } else {
-        const ticketId = data?.[0]?.id;
-        if (ticketId) {
-          supabase.functions
-            .invoke('notify-helpdesk-ticket', { body: { ticket_id: ticketId } })
-            .catch((e) => console.error('Helpdesk notify error:', e));
-        }
+        supabase.functions
+          .invoke('notify-helpdesk-ticket', { body: { ticket_id: ticketId } })
+          .catch((e) => console.error('Helpdesk notify error:', e));
         setSent(true);
       }
+
 
     } catch (err) {
       console.error('Helpdesk insert exception:', err);
