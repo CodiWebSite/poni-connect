@@ -645,7 +645,7 @@ const Auth = () => {
                   Nu reușești să-ți creezi cont? Solicită ajutor
                 </button>
 
-                <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                   <div className="flex items-center gap-3.5">
                     <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                       <Headset className="w-[18px] h-[18px]" />
