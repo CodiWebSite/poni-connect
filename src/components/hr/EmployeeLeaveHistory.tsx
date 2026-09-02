@@ -132,9 +132,23 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
 
   // Check overlaps when dates change
   useEffect(() => {
-    if (!addStartDate || !addEndDate || !epdId) { setOverlaps([]); return; }
-    checkOverlaps();
-  }, [addStartDate, addEndDate]);
+    if (!addStartDate || !addEndDate) { setOverlaps([]); setSelfConflicts([]); return; }
+    if (epdId) checkOverlaps();
+    checkSelfConflicts();
+  }, [addStartDate, addEndDate, addLeaveType]);
+
+  // Suprapuneri proprii: deplasare vs concediu pentru același angajat
+  const checkSelfConflicts = async () => {
+    if (!addStartDate || !addEndDate || (!epdId && !userId)) { setSelfConflicts([]); return; }
+    try {
+      const list = await fetchOwnPeriodConflicts({ userId, epdId, startDate: addStartDate, endDate: addEndDate });
+      const addingTravel = addLeaveType === TRAVEL_LEAVE_TYPE;
+      // La deplasare avertizăm despre concedii existente; la concediu despre deplasări existente
+      setSelfConflicts(list.filter(c => (addingTravel ? c.leaveType !== TRAVEL_LEAVE_TYPE : c.leaveType === TRAVEL_LEAVE_TYPE)));
+    } catch {
+      setSelfConflicts([]);
+    }
+  };
 
   const checkOverlaps = async () => {
     if (!epdId || !addStartDate || !addEndDate) return;
@@ -154,6 +168,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
     });
     setOverlaps(found);
   };
+
 
   const addWorkingDays = addStartDate && addEndDate ? calculateWorkingDays(addStartDate, addEndDate, customHolidayDates) : 0;
   const isDeductible = LEAVE_TYPES.find(t => t.key === addLeaveType)?.deductible ?? true;
