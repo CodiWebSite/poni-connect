@@ -48,6 +48,12 @@ const signupSchema = z.object({
   fullName: z.string().min(2, 'Numele trebuie să aibă cel puțin 2 caractere').max(100, 'Numele este prea lung'),
 });
 
+const fieldClass =
+  'h-12 rounded-xl border-border bg-card px-4 text-base shadow-sm transition-all placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0';
+
+const labelClass =
+  'text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground';
+
 const PasswordInput = ({
   id,
   value,
@@ -63,12 +69,11 @@ const PasswordInput = ({
 
   return (
     <div className="relative">
-      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
       <Input
         id={id}
         type={showPassword ? 'text' : 'password'}
         placeholder={placeholder}
-        className="pl-10 pr-10"
+        className={`${fieldClass} pr-12`}
         value={value}
         onChange={onChange}
         required
@@ -76,7 +81,8 @@ const PasswordInput = ({
       <button
         type="button"
         onClick={() => setShowPassword(!showPassword)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+        className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        aria-label={showPassword ? 'Ascunde parola' : 'Arată parola'}
         tabIndex={-1}
       >
         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -84,6 +90,7 @@ const PasswordInput = ({
     </div>
   );
 };
+
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
