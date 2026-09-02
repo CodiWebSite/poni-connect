@@ -8,7 +8,24 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig(({ mode }) => ({
   build: {
     target: "es2015",
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return;
+          // Librării grele izolate ca să nu intre în pachetul principal
+          if (/pdf-lib|jspdf|pdfjs|html2canvas/.test(id)) return "vendor-pdf";
+          if (/xlsx|exceljs|docx|file-saver/.test(id)) return "vendor-office";
+          if (/recharts|d3-/.test(id)) return "vendor-charts";
+          if (/emoji|dompurify|marked/.test(id)) return "vendor-editor";
+          if (/@supabase/.test(id)) return "vendor-supabase";
+          if (/react-router|@tanstack/.test(id)) return "vendor-router";
+          if (/react-dom|scheduler/.test(id)) return "vendor-react";
+        },
+      },
+    },
   },
+
   server: {
     host: "::",
     port: 8080,
