@@ -67,6 +67,18 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [delegateReminderOpen, setDelegateReminderOpen] = useState(false);
   const [delegatePeriod, setDelegatePeriod] = useState<{ start: string; end: string } | null>(null);
+  const [travelConflicts, setTravelConflicts] = useState<PeriodConflict[]>([]);
+
+  // Avertizare live dacă perioada se suprapune cu o deplasare înregistrată de HR
+  useEffect(() => {
+    if (!startDate || !endDate || !user || !employeeData) { setTravelConflicts([]); return; }
+    let active = true;
+    fetchOwnPeriodConflicts({ userId: user.id, epdId: employeeData.id, startDate, endDate })
+      .then((list) => { if (active) setTravelConflicts(list.filter(c => c.leaveType === TRAVEL_LEAVE_TYPE)); })
+      .catch(() => { if (active) setTravelConflicts([]); });
+    return () => { active = false; };
+  }, [startDate, endDate, user, employeeData]);
+
 
   useEffect(() => {
     if (user) {
