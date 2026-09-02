@@ -693,6 +693,22 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
           </div>
         )}
 
+        {/* Conflict cu deplasare înregistrată de HR */}
+        {travelConflicts.length > 0 && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-1">
+            <p className="text-sm font-medium text-destructive flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              Aveți deplasare înregistrată în această perioadă
+            </p>
+            {travelConflicts.map((c, i) => (
+              <p key={i} className="text-xs text-destructive/90 ml-6">• {formatConflict(c)}</p>
+            ))}
+            <p className="text-xs text-muted-foreground ml-6">
+              Nu puteți depune cerere de concediu care se suprapune cu o deplasare. Alegeți altă perioadă sau contactați SRUS.
+            </p>
+          </div>
+        )}
+
         {/* Replacement */}
         <div className="space-y-2">
           <Label>Înlocuitor pe perioada concediului</Label>
