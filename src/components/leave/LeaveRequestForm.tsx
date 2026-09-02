@@ -742,7 +742,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         <div className="flex justify-end">
           <Button
             onClick={handleSubmit}
-            disabled={submitting || !signature || !startDate || !endDate || workingDays <= 0}
+            disabled={submitting || !signature || !startDate || !endDate || workingDays <= 0 || travelConflicts.length > 0}
             className="gap-2"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
