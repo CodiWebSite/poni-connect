@@ -280,6 +280,25 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       return;
     }
 
+    // Blocare suprapunere cu deplasare deja înregistrată de HR
+    const periodConflicts = await fetchOwnPeriodConflicts({
+      userId: user.id,
+      epdId: employeeData.id,
+      startDate,
+      endDate,
+    });
+    const travelConflict = periodConflicts.find(c => c.leaveType === TRAVEL_LEAVE_TYPE);
+    if (travelConflict) {
+      toast({
+        title: 'Suprapunere cu deplasare',
+        description: `Aveți deja o deplasare înregistrată (${formatConflict(travelConflict)}). Nu puteți depune concediu în această perioadă. Contactați SRUS dacă deplasarea a fost anulată.`,
+        variant: 'destructive',
+      });
+      setSubmitting(false);
+      submittingRef.current = false;
+      return;
+    }
+
     const selectedColleague = colleagues.find(c => c.id === replacementId);
 
     // Lookup designated approver: per-employee first, then per-department fallback
