@@ -83,9 +83,29 @@ export function LeaveApprovalHistory({ refreshTrigger }: LeaveApprovalHistoryPro
     let query = (isDemo ? (baseQuery as any).eq('is_demo', true) : (baseQuery as any).or('is_demo.eq.false,is_demo.is.null')).order('dept_head_approved_at', { ascending: false, nullsFirst: false });
 
     if (!isSuperAdmin) {
-      // Only show requests approved/rejected by this user
-      query = query.or(`dept_head_id.eq.${user.id},rejected_by.eq.${user.id}`);
+      // Tot ce a decis utilizatorul + tot ce ține de departamentele din subordinea sa
+      const orParts = [`dept_head_id.eq.${user.id}`, `rejected_by.eq.${user.id}`, `approver_id.eq.${user.id}`];
+
+      try {
+        const scope = await fetchApproverScope(user.id);
+        if (scope.departments.length > 0) {
+          const { data: scopeEpd } = await supabase
+            .from('employee_personal_data')
+            .select('id')
+            .in('department', scope.departments);
+          const ids = (scopeEpd || []).map((e: any) => e.id);
+          if (ids.length > 0) orParts.push(`epd_id.in.(${ids.join(',')})`);
+        }
+        if (scope.employeeUserIds.length > 0) {
+          orParts.push(`user_id.in.(${scope.employeeUserIds.join(',')})`);
+        }
+      } catch (e) {
+        console.warn('Could not resolve approver scope', e);
+      }
+
+      query = query.or(orParts.join(','));
     }
+
 
     const { data, error } = await query as { data: any[] | null; error: any };
 
