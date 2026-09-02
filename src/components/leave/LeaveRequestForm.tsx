@@ -22,6 +22,7 @@ import { isPublicHoliday, isDayOff } from '@/utils/romanianHolidays';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { fetchOwnPeriodConflicts, formatConflict, TRAVEL_LEAVE_TYPE, type PeriodConflict } from '@/utils/leaveTravelConflicts';
 
 interface EmployeeData {
   id: string;
@@ -66,6 +67,18 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [delegateReminderOpen, setDelegateReminderOpen] = useState(false);
   const [delegatePeriod, setDelegatePeriod] = useState<{ start: string; end: string } | null>(null);
+  const [travelConflicts, setTravelConflicts] = useState<PeriodConflict[]>([]);
+
+  // Avertizare live dacă perioada se suprapune cu o deplasare înregistrată de HR
+  useEffect(() => {
+    if (!startDate || !endDate || !user || !employeeData) { setTravelConflicts([]); return; }
+    let active = true;
+    fetchOwnPeriodConflicts({ userId: user.id, epdId: employeeData.id, startDate, endDate })
+      .then((list) => { if (active) setTravelConflicts(list.filter(c => c.leaveType === TRAVEL_LEAVE_TYPE)); })
+      .catch(() => { if (active) setTravelConflicts([]); });
+    return () => { active = false; };
+  }, [startDate, endDate, user, employeeData]);
+
 
   useEffect(() => {
     if (user) {
@@ -273,6 +286,25 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       toast({
         title: 'Cerere duplicat detectată',
         description: `Există deja o cerere activă (${existingRequests[0].request_number}) pentru perioada ${formatDate(startDate)} - ${formatDate(endDate)}.`,
+        variant: 'destructive',
+      });
+      setSubmitting(false);
+      submittingRef.current = false;
+      return;
+    }
+
+    // Blocare suprapunere cu deplasare deja înregistrată de HR
+    const periodConflicts = await fetchOwnPeriodConflicts({
+      userId: user.id,
+      epdId: employeeData.id,
+      startDate,
+      endDate,
+    });
+    const travelConflict = periodConflicts.find(c => c.leaveType === TRAVEL_LEAVE_TYPE);
+    if (travelConflict) {
+      toast({
+        title: 'Suprapunere cu deplasare',
+        description: `Aveți deja o deplasare înregistrată (${formatConflict(travelConflict)}). Nu puteți depune concediu în această perioadă. Contactați SRUS dacă deplasarea a fost anulată.`,
         variant: 'destructive',
       });
       setSubmitting(false);
@@ -661,6 +693,22 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
           </div>
         )}
 
+        {/* Conflict cu deplasare înregistrată de HR */}
+        {travelConflicts.length > 0 && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-1">
+            <p className="text-sm font-medium text-destructive flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              Aveți deplasare înregistrată în această perioadă
+            </p>
+            {travelConflicts.map((c, i) => (
+              <p key={i} className="text-xs text-destructive/90 ml-6">• {formatConflict(c)}</p>
+            ))}
+            <p className="text-xs text-muted-foreground ml-6">
+              Nu puteți depune cerere de concediu care se suprapune cu o deplasare. Alegeți altă perioadă sau contactați SRUS.
+            </p>
+          </div>
+        )}
+
         {/* Replacement */}
         <div className="space-y-2">
           <Label>Înlocuitor pe perioada concediului</Label>
@@ -694,7 +742,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         <div className="flex justify-end">
           <Button
             onClick={handleSubmit}
-            disabled={submitting || !signature || !startDate || !endDate || workingDays <= 0}
+            disabled={submitting || !signature || !startDate || !endDate || workingDays <= 0 || travelConflicts.length > 0}
             className="gap-2"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

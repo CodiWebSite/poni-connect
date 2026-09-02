@@ -17,6 +17,7 @@ import { History, Pencil, Trash2, Loader2, Calendar, Paperclip, Download, Plus, 
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { isPublicHoliday, getPublicHolidayName } from '@/utils/romanianHolidays';
+import { fetchOwnPeriodConflicts, formatConflict, TRAVEL_LEAVE_TYPE, type PeriodConflict } from '@/utils/leaveTravelConflicts';
 
 interface EmployeeLeaveHistoryProps {
   open: boolean;
@@ -81,6 +82,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
   const [currentBalance, setCurrentBalance] = useState(0);
   const [totalLeaveDays, setTotalLeaveDays] = useState(21);
   const [overlaps, setOverlaps] = useState<string[]>([]);
+  const [selfConflicts, setSelfConflicts] = useState<PeriodConflict[]>([]);
   const submitGuard = useRef(false);
 
   useEffect(() => {
@@ -126,15 +128,29 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
   };
 
   const resetAddForm = () => {
-    setAddStartDate(''); setAddEndDate(''); setAddLeaveType('co'); setAddNotes(''); setAddDeductFrom('auto'); setAddFile(null); setOverlaps([]);
+    setAddStartDate(''); setAddEndDate(''); setAddLeaveType('co'); setAddNotes(''); setAddDeductFrom('auto'); setAddFile(null); setOverlaps([]); setSelfConflicts([]);
     submitGuard.current = false;
   };
 
   // Check overlaps when dates change
   useEffect(() => {
-    if (!addStartDate || !addEndDate || !epdId) { setOverlaps([]); return; }
-    checkOverlaps();
-  }, [addStartDate, addEndDate]);
+    if (!addStartDate || !addEndDate) { setOverlaps([]); setSelfConflicts([]); return; }
+    if (epdId) checkOverlaps();
+    checkSelfConflicts();
+  }, [addStartDate, addEndDate, addLeaveType]);
+
+  // Suprapuneri proprii: deplasare vs concediu pentru același angajat
+  const checkSelfConflicts = async () => {
+    if (!addStartDate || !addEndDate || (!epdId && !userId)) { setSelfConflicts([]); return; }
+    try {
+      const list = await fetchOwnPeriodConflicts({ userId, epdId, startDate: addStartDate, endDate: addEndDate });
+      const addingTravel = addLeaveType === TRAVEL_LEAVE_TYPE;
+      // La deplasare avertizăm despre concedii existente; la concediu despre deplasări existente
+      setSelfConflicts(list.filter(c => (addingTravel ? c.leaveType !== TRAVEL_LEAVE_TYPE : c.leaveType === TRAVEL_LEAVE_TYPE)));
+    } catch {
+      setSelfConflicts([]);
+    }
+  };
 
   const checkOverlaps = async () => {
     if (!epdId || !addStartDate || !addEndDate) return;
@@ -154,6 +170,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
     });
     setOverlaps(found);
   };
+
 
   const addWorkingDays = addStartDate && addEndDate ? calculateWorkingDays(addStartDate, addEndDate, customHolidayDates) : 0;
   const isDeductible = LEAVE_TYPES.find(t => t.key === addLeaveType)?.deductible ?? true;
@@ -513,6 +530,24 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
                     <AlertTriangle className="w-3.5 h-3.5" /> Suprapunere cu colegi din departament:
                   </p>
                   {overlaps.map((o, i) => <p key={i} className="text-xs text-amber-600 dark:text-amber-400 ml-5">• {o}</p>)}
+                </div>
+              )}
+
+              {/* Conflict propriu: deplasare vs concediu */}
+              {selfConflicts.length > 0 && (
+                <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/30">
+                  <p className="text-xs font-medium text-destructive flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {addLeaveType === TRAVEL_LEAVE_TYPE
+                      ? 'Atenție: angajatul are deja concediu înregistrat în această perioadă:'
+                      : 'Atenție: angajatul are deja deplasare înregistrată în această perioadă:'}
+                  </p>
+                  {selfConflicts.map((c, i) => (
+                    <p key={i} className="text-xs text-destructive/90 ml-5">• {formatConflict(c)}</p>
+                  ))}
+                  <p className="text-xs text-muted-foreground ml-5 mt-1">
+                    Verificați perioada înainte de a salva — înregistrarea rămâne posibilă doar dacă este intenționată.
+                  </p>
                 </div>
               )}
 
