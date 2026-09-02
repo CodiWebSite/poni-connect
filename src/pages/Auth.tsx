@@ -338,7 +338,7 @@ const Auth = () => {
       </aside>
 
       {/* Right panel — auth */}
-      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-center px-5 py-8 sm:px-8 lg:h-dvh lg:overflow-y-auto lg:px-14 xl:px-20">
+      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-center px-5 py-6 sm:px-8 lg:h-dvh lg:overflow-y-auto lg:px-14 xl:px-20">
         <div className="absolute inset-0 text-primary opacity-[0.06] pointer-events-none lg:hidden">
           <MolecularPattern className="w-full h-full" />
         </div>
