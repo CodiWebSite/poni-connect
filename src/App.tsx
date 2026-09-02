@@ -237,8 +237,20 @@ function GlobalChatNotifier() {
   return null;
 }
 
+/** Resetează bariera de eroare la fiecare schimbare de rută. */
+function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  return (
+    <ErrorBoundary key={location.pathname}>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </ErrorBoundary>
+  );
+}
+
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
+
     <ThemeProvider attribute="class" defaultTheme="light" storageKey="icmpp-theme">
       <AuthProvider>
         <ImpersonationProvider>
