@@ -35,15 +35,25 @@ const DashboardGreeting = ({ subtitle }: DashboardGreetingProps) => {
   const today = format(new Date(), 'd MMMM yyyy', { locale: ro });
 
   return (
-    <div className="animate-fade-in">
-      <h2 className="text-lg sm:text-2xl font-display font-bold text-foreground">
-        {getGreeting()}, {displayName || 'utilizator'}! 👋
-      </h2>
-      <p className="text-sm sm:text-base text-muted-foreground mt-0.5">
-        {today} {subtitle ? `— ${subtitle}` : ''}
-      </p>
+    <div className="animate-fade-in flex items-start gap-3 sm:gap-4">
+      <span
+        aria-hidden="true"
+        className="mt-1 hidden sm:block h-12 w-[3px] shrink-0 rounded-full bg-gradient-to-b from-primary to-accent"
+      />
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          Intranet ICMPP
+        </p>
+        <h2 className="font-display text-lg font-bold tracking-tight text-foreground sm:text-2xl">
+          {getGreeting()}, {displayName || 'utilizator'}!
+        </h2>
+        <p className="mt-0.5 text-sm text-muted-foreground sm:text-base">
+          {today} {subtitle ? `— ${subtitle}` : ''}
+        </p>
+      </div>
     </div>
   );
+
 };
 
 export default DashboardGreeting;
