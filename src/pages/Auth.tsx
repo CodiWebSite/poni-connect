@@ -672,7 +672,7 @@ const Auth = () => {
           )}
 
           {/* GDPR / legal footer */}
-          <footer className="mt-14 pt-7 border-t border-border space-y-3 text-center">
+          <footer className="mt-8 pt-5 border-t border-border space-y-2 text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
               © {new Date().getFullYear()} ICMPP „Petru Poni” — Academia Română
             </p>
