@@ -20,6 +20,7 @@ import IrisButton from "@/components/iris/IrisButton";
 import DbHealthOverlay from "@/components/system/DbHealthOverlay";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import RouteFallback from "@/components/system/RouteFallback";
+import { Button } from "@/components/ui/button";
 
 // Rute critice — încărcate imediat (primul ecran al utilizatorului)
 import Index from "./pages/Index";
@@ -147,6 +148,8 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [needsMFA, setNeedsMFA] = useState<boolean | null>(null);
   const [needsReenroll, setNeedsReenroll] = useState(false);
+  const [mfaError, setMfaError] = useState(false);
+  const [retryMfaCheck, setRetryMfaCheck] = useState(0);
   const location = useLocation();
 
   useEffect(() => {
@@ -154,36 +157,42 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
     if (!user) {
       setNeedsMFA(false);
       setNeedsReenroll(false);
+      setMfaError(false);
       return;
     }
 
     (async () => {
-      // 1) force_mfa_reenroll flag (e.g. after recovery-code use)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('force_mfa_reenroll')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      if (profile?.force_mfa_reenroll) {
-        setNeedsReenroll(true);
-        setNeedsMFA(false);
-        return;
-      }
+      try {
+        setMfaError(false);
+        setNeedsMFA(null);
 
-      // 2) Normal AAL check
-      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (cancelled) return;
-      if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
-        // Trusted-device shortcut: validate the saved 30-day browser token before showing MFA.
-        if (sessionStorage.getItem(TRUSTED_SESSION_KEY) === user.id) {
+        // 1) force_mfa_reenroll flag (e.g. after recovery-code use)
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('force_mfa_reenroll')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (profileError) throw profileError;
+        if (cancelled) return;
+        if (profile?.force_mfa_reenroll) {
+          setNeedsReenroll(true);
           setNeedsMFA(false);
           return;
         }
 
-        const trustedToken = localStorage.getItem(TRUSTED_TOKEN_KEY);
-        if (trustedToken) {
-          try {
+        // 2) Normal AAL check
+        const { data: aal, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (aalError) throw aalError;
+        if (cancelled) return;
+        if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+          // Trusted-device shortcut: validate the saved 30-day browser token before showing MFA.
+          if (sessionStorage.getItem(TRUSTED_SESSION_KEY) === user.id) {
+            setNeedsMFA(false);
+            return;
+          }
+
+          const trustedToken = localStorage.getItem(TRUSTED_TOKEN_KEY);
+          if (trustedToken) {
             const { data, error } = await supabase.functions.invoke('mfa-trusted-check', {
               body: { token: trustedToken },
             });
@@ -198,19 +207,21 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
             if (data?.valid === false && ['not_found', 'mismatch', 'revoked', 'expired', 'force_reenroll'].includes(data.reason)) {
               localStorage.removeItem(TRUSTED_TOKEN_KEY);
             }
-          } catch {
-            // Network/function errors fall back to normal MFA challenge.
           }
-        }
 
-        setNeedsMFA(true);
-      } else {
-        setNeedsMFA(false);
+          setNeedsMFA(true);
+        } else {
+          setNeedsMFA(false);
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[MFAGuard] Verificarea MFA a eșuat', error);
+        setMfaError(true);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, retryMfaCheck]);
 
   // Don't block public routes
   const publicPaths = ['/auth', '/auth/reset-password', '/kiosk', '/maintenance'];
@@ -218,7 +229,22 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  if (loading || needsMFA === null) return null;
+  if (loading || needsMFA === null) {
+    if (mfaError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-6">
+          <div className="max-w-sm text-center">
+            <h1 className="text-xl font-semibold text-foreground">Conexiunea nu a putut fi verificată</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Accesul rămâne protejat. Reîncearcă verificarea.</p>
+            <Button className="mt-5" onClick={() => setRetryMfaCheck((value) => value + 1)}>
+              Reîncearcă
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    return <RouteFallback />;
+  }
 
   if (needsReenroll && location.pathname !== '/settings') {
     return <Navigate to="/settings?reenroll=1" replace />;
