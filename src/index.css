@@ -119,6 +119,13 @@
     --input: 222 16% 24%;
     --ring: 214 88% 64%;
 
+    --brand: 222 45% 11%;
+    --brand-foreground: 210 40% 98%;
+    --brand-muted: 213 30% 74%;
+    --brand-accent: 205 85% 70%;
+
+
+
     --success: 152 55% 52%;
     --success-foreground: 222 40% 10%;
     --warning: 38 92% 62%;
