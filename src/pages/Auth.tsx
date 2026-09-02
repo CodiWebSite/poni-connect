@@ -310,7 +310,7 @@ const Auth = () => {
             </div>
           </div>
 
-          <h1 className="mt-14 xl:mt-20 font-display text-4xl xl:text-5xl font-bold leading-[1.08]">
+          <h1 className="mt-10 xl:mt-14 font-display text-4xl xl:text-5xl font-bold leading-[1.08]">
             Acces securizat
             <br />
             <span className="text-brand-accent">Intranet ICMPP.</span>
@@ -321,7 +321,7 @@ const Auth = () => {
           </p>
         </div>
 
-        <div className="relative z-10 space-y-7">
+        <div className="relative z-10 space-y-5">
           {trustPoints.map(({ icon: Icon, title, description }) => (
             <div key={title} className="flex items-start gap-4">
               <Icon className="mt-0.5 w-5 h-5 shrink-0 text-brand-accent" strokeWidth={2.2} />
@@ -331,14 +331,14 @@ const Auth = () => {
               </div>
             </div>
           ))}
-          <p className="pt-6 border-t border-brand-foreground/15 text-[11px] text-brand-muted/70">
+          <p className="pt-5 border-t border-brand-foreground/15 text-[11px] text-brand-muted/70">
             Sistem informatic intern. Accesul neautorizat este interzis și înregistrat.
           </p>
         </div>
       </aside>
 
       {/* Right panel — auth */}
-      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-center px-5 py-12 sm:px-8 lg:px-16 xl:px-24">
+      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-center px-5 py-10 sm:px-8 lg:h-dvh lg:overflow-y-auto lg:px-14 xl:px-20">
         <div className="absolute inset-0 text-primary opacity-[0.06] pointer-events-none lg:hidden">
           <MolecularPattern className="w-full h-full" />
         </div>
