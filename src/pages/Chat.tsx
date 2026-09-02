@@ -1,6 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import PageHeader from '@/components/layout/PageHeader';
+import { MessagesSquare } from 'lucide-react';
+
 import ChatBetaBanner from '@/components/chat/ChatBetaBanner';
 import ConversationList from '@/components/chat/ConversationList';
 import ChatWindow from '@/components/chat/ChatWindow';
