@@ -266,6 +266,7 @@ const App = () => (
             <MFAGuard>
             <IrisButton />
             <MaintenanceGuard>
+              <RouteErrorBoundary>
               <Routes>
                 <Route path="/kiosk" element={<Kiosk />} />
                 <Route path="/" element={<Index />} />
@@ -326,6 +327,7 @@ const App = () => (
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </RouteErrorBoundary>
             </MaintenanceGuard>
             </MFAGuard>
           </BrowserRouter>
@@ -336,6 +338,7 @@ const App = () => (
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
