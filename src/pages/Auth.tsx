@@ -654,14 +654,15 @@ const Auth = () => {
                       Asistență IT instituțională
                     </h3>
                   </div>
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
                     Pentru probleme de autentificare, parolă sau 2FA, contactează echipa IT a
                     Institutului prin formularul securizat.
                   </p>
                   <button
                     type="button"
                     onClick={() => setShowHelpdeskForm(true)}
-                    className="mt-4 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+                    className="mt-2.5 inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+
                   >
                     <Headset className="w-4 h-4" />
                     Trimite un mesaj echipei IT
