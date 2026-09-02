@@ -284,9 +284,10 @@ const Auth = () => {
   ];
 
   return (
-    <div className="min-h-dvh flex flex-col lg:flex-row bg-background overflow-x-hidden">
+    <div className="min-h-dvh lg:h-dvh flex flex-col lg:flex-row bg-background overflow-x-hidden">
       {/* Left panel — brand & trust */}
-      <aside className="relative hidden lg:flex lg:w-5/12 xl:w-[38%] flex-col justify-between p-12 xl:p-16 bg-brand text-brand-foreground overflow-hidden">
+      <aside className="relative hidden lg:flex lg:w-5/12 xl:w-[38%] lg:h-dvh flex-col justify-between p-10 xl:p-14 bg-brand text-brand-foreground overflow-hidden">
+
         <div className="absolute inset-0 opacity-[0.14] pointer-events-none animate-[pulse_9s_ease-in-out_infinite]">
           <MolecularPattern className="w-full h-full" />
         </div>
@@ -309,7 +310,7 @@ const Auth = () => {
             </div>
           </div>
 
-          <h1 className="mt-14 xl:mt-20 font-display text-4xl xl:text-5xl font-bold leading-[1.08]">
+          <h1 className="mt-10 xl:mt-14 font-display text-4xl xl:text-5xl font-bold leading-[1.08]">
             Acces securizat
             <br />
             <span className="text-brand-accent">Intranet ICMPP.</span>
@@ -320,7 +321,7 @@ const Auth = () => {
           </p>
         </div>
 
-        <div className="relative z-10 space-y-7">
+        <div className="relative z-10 space-y-5">
           {trustPoints.map(({ icon: Icon, title, description }) => (
             <div key={title} className="flex items-start gap-4">
               <Icon className="mt-0.5 w-5 h-5 shrink-0 text-brand-accent" strokeWidth={2.2} />
@@ -330,14 +331,14 @@ const Auth = () => {
               </div>
             </div>
           ))}
-          <p className="pt-6 border-t border-brand-foreground/15 text-[11px] text-brand-muted/70">
+          <p className="pt-5 border-t border-brand-foreground/15 text-[11px] text-brand-muted/70">
             Sistem informatic intern. Accesul neautorizat este interzis și înregistrat.
           </p>
         </div>
       </aside>
 
       {/* Right panel — auth */}
-      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-center px-5 py-12 sm:px-8 lg:px-16 xl:px-24">
+      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-center px-5 py-6 sm:px-8 lg:h-dvh lg:overflow-y-auto lg:px-14 xl:px-20">
         <div className="absolute inset-0 text-primary opacity-[0.06] pointer-events-none lg:hidden">
           <MolecularPattern className="w-full h-full" />
         </div>
@@ -645,7 +646,7 @@ const Auth = () => {
                   Nu reușești să-ți creezi cont? Solicită ajutor
                 </button>
 
-                <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                   <div className="flex items-center gap-3.5">
                     <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                       <Headset className="w-[18px] h-[18px]" />
@@ -654,14 +655,15 @@ const Auth = () => {
                       Asistență IT instituțională
                     </h3>
                   </div>
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
                     Pentru probleme de autentificare, parolă sau 2FA, contactează echipa IT a
                     Institutului prin formularul securizat.
                   </p>
                   <button
                     type="button"
                     onClick={() => setShowHelpdeskForm(true)}
-                    className="mt-4 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+                    className="mt-2.5 inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+
                   >
                     <Headset className="w-4 h-4" />
                     Trimite un mesaj echipei IT
@@ -672,7 +674,7 @@ const Auth = () => {
           )}
 
           {/* GDPR / legal footer */}
-          <footer className="mt-14 pt-7 border-t border-border space-y-3 text-center">
+          <footer className="mt-7 pt-4 border-t border-border space-y-2 text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
               © {new Date().getFullYear()} ICMPP „Petru Poni” — Academia Română
             </p>
