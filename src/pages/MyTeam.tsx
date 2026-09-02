@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useIsApprover } from '@/hooks/useIsApprover';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchApproverScope } from '@/utils/approverScope';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -45,27 +46,43 @@ const MyTeam = () => {
     if (!user) return;
     setLoading(true);
 
-    // Get current user's department
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('department')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    // Perimetru complet: departamentul propriu + toate departamentele aprobate + angajați individuali
+    const scope = await fetchApproverScope(user.id);
 
-    if (!profile?.department) {
+    if (scope.departments.length === 0 && scope.employeeUserIds.length === 0) {
       setLoading(false);
       return;
     }
 
-    setDepartment(profile.department);
+    setDepartment(scope.departments.join(' • ') || null);
 
-    // Get all employees in the same department
-    const { data: employees } = await supabase
-      .from('employee_personal_data')
-      .select('id, first_name, last_name, position, total_leave_days, used_leave_days, employee_record_id')
-      .eq('department', profile.department)
-      .eq('is_archived', false)
-      .order('last_name', { ascending: true });
+    const rows: any[] = [];
+    if (scope.departments.length > 0) {
+      const { data } = await supabase
+        .from('employee_personal_data')
+        .select('id, first_name, last_name, position, total_leave_days, used_leave_days, employee_record_id')
+        .in('department', scope.departments)
+        .eq('is_archived', false);
+      rows.push(...(data || []));
+    }
+    if (scope.employeeUserIds.length > 0) {
+      const { data: recs } = await supabase
+        .from('employee_records')
+        .select('id')
+        .in('user_id', scope.employeeUserIds);
+      const recIds = (recs || []).map(r => r.id);
+      if (recIds.length > 0) {
+        const { data } = await supabase
+          .from('employee_personal_data')
+          .select('id, first_name, last_name, position, total_leave_days, used_leave_days, employee_record_id')
+          .in('employee_record_id', recIds)
+          .eq('is_archived', false);
+        rows.push(...(data || []));
+      }
+    }
+
+    const employees = Array.from(new Map(rows.map(r => [r.id, r])).values())
+      .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || '', 'ro'));
 
     if (!employees || employees.length === 0) {
       setMembers([]);
@@ -154,7 +171,7 @@ const MyTeam = () => {
   }
 
   return (
-    <MainLayout title="Echipa Mea" description={department ? `Departament: ${department}` : 'Angajații din departamentul dvs.'}>
+    <MainLayout title="Echipa Mea" description={department ? `Departament(e): ${department}` : 'Angajații din subordinea dvs.'}>
       <div className="max-w-5xl mx-auto space-y-6">
 
         {loading ? (
@@ -165,7 +182,7 @@ const MyTeam = () => {
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Nu s-au găsit angajați în departamentul dvs.</p>
+              <p>Nu s-au găsit angajați în subordinea dvs.</p>
             </CardContent>
           </Card>
         ) : (

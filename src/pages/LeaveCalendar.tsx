@@ -4,6 +4,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useIsApprover } from '@/hooks/useIsApprover';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchApproverScope } from '@/utils/approverScope';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,7 +57,15 @@ const LeaveCalendar = () => {
 
     const { data: profile } = await supabase.from('profiles').select('full_name, department').eq('user_id', user.id).single();
     const userDept = profile?.department || null;
-    setDepartment(userDept);
+
+    // Perimetru complet de subordine (poate include mai multe departamente)
+    const scope = await fetchApproverScope(user.id);
+    const scopeDepts = new Set(scope.departments.map(d => d.toLowerCase()));
+    if (userDept) scopeDepts.add(userDept.toLowerCase());
+    const scopeUserIds = new Set(scope.employeeUserIds);
+    setDepartment(scope.departments.length > 1 ? scope.departments.join(' • ') : userDept);
+    const inScope = (empDept: string | null | undefined, empUserId?: string | null) =>
+      (!!empDept && scopeDepts.has(empDept.toLowerCase())) || (!!empUserId && scopeUserIds.has(empUserId));
 
     const { data: holidays } = await supabase.from('custom_holidays').select('holiday_date, name');
     const holidayMap: Record<string, string> = {};
@@ -165,7 +174,7 @@ const LeaveCalendar = () => {
       seenLeaveKeys.add(key);
 
       const isCurrentUser = lr.user_id === user.id && !d.epd_id;
-      if (isCurrentUser || (userDept && empInfo.department === userDept)) {
+      if (isCurrentUser || inScope(empInfo.department, lr.user_id)) {
         entries.push({
           employeeId: personId,
           employeeName: getCanonicalDisplayName(personId, empInfo.name),
@@ -194,7 +203,7 @@ const LeaveCalendar = () => {
       seenLeaveKeys.add(key);
 
       const isCurrentUser = lr.user_id === user.id && !lr.epd_id;
-      if (isCurrentUser || (userDept && empInfo.department === userDept)) {
+      if (isCurrentUser || inScope(empInfo.department, lr.user_id)) {
         entries.push({
           employeeId: personId,
           employeeName: getCanonicalDisplayName(personId, empInfo.name),
