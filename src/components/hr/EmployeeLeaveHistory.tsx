@@ -128,7 +128,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
   };
 
   const resetAddForm = () => {
-    setAddStartDate(''); setAddEndDate(''); setAddLeaveType('co'); setAddNotes(''); setAddDeductFrom('auto'); setAddFile(null); setOverlaps([]);
+    setAddStartDate(''); setAddEndDate(''); setAddLeaveType('co'); setAddNotes(''); setAddDeductFrom('auto'); setAddFile(null); setOverlaps([]); setSelfConflicts([]);
     submitGuard.current = false;
   };
 
