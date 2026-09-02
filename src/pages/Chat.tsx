@@ -63,12 +63,19 @@ const Chat = () => {
 
   return (
     <MainLayout title="Mesagerie" description="Chat intern între colegi">
+      <PageHeader
+        eyebrow="Comunicare internă"
+        title="Mesagerie"
+        description="Discuții directe și de grup între colegi"
+        icon={MessagesSquare}
+      />
       <ChatBetaBanner />
 
       <div
-        className="bg-card border border-border rounded-xl overflow-hidden flex"
-        style={{ height: isMobile ? 'calc(100dvh - 160px)' : 'calc(100vh - 220px)' }}
+        className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex"
+        style={{ height: isMobile ? 'calc(100dvh - 200px)' : 'calc(100vh - 260px)' }}
       >
+
         {showList && (
           <div className={isMobile ? "w-full h-full" : "w-[320px] flex-shrink-0 border-r border-border"}>
             <ConversationList key={listKey} selectedId={selectedConvId} onSelect={setSelectedConvId} />
