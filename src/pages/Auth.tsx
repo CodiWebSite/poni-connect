@@ -297,9 +297,10 @@ const Auth = () => {
 
         <div className="relative z-10">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-brand-foreground/10 border border-brand-foreground/20 backdrop-blur-sm flex items-center justify-center">
-              <img src="/logo-icmpp.png" alt="Sigla ICMPP" className="w-9 h-9 object-contain" />
+            <div className="w-16 h-16 rounded-2xl bg-brand-foreground p-2 ring-1 ring-brand-foreground/40 shadow-lg flex items-center justify-center">
+              <img src="/logo-icmpp.png" alt="Sigla ICMPP" className="w-full h-full object-contain" />
             </div>
+
             <div className="leading-tight">
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-muted">
                 Academia Română
