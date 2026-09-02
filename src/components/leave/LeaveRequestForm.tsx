@@ -22,6 +22,7 @@ import { isPublicHoliday, isDayOff } from '@/utils/romanianHolidays';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { fetchOwnPeriodConflicts, formatConflict, TRAVEL_LEAVE_TYPE, type PeriodConflict } from '@/utils/leaveTravelConflicts';
 
 interface EmployeeData {
   id: string;
