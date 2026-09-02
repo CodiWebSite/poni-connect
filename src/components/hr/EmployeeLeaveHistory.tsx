@@ -81,6 +81,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
   const [currentBalance, setCurrentBalance] = useState(0);
   const [totalLeaveDays, setTotalLeaveDays] = useState(21);
   const [overlaps, setOverlaps] = useState<string[]>([]);
+  const [selfConflicts, setSelfConflicts] = useState<PeriodConflict[]>([]);
   const submitGuard = useRef(false);
 
   useEffect(() => {
