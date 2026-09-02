@@ -4,10 +4,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Lock, Mail, User, Eye, EyeOff, ArrowLeft, CheckCircle2, MailCheck, HelpCircle, Headset } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, MailCheck, HelpCircle, Headset } from 'lucide-react';
 import { z } from 'zod';
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '@/integrations/supabase/client';
@@ -287,7 +287,7 @@ const Auth = () => {
     <div className="min-h-dvh flex flex-col lg:flex-row bg-background overflow-x-hidden">
       {/* Left panel — brand & trust */}
       <aside className="relative hidden lg:flex lg:w-5/12 xl:w-[38%] flex-col justify-between p-12 xl:p-16 bg-brand text-brand-foreground overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.14] pointer-events-none animate-pulse-slow">
+        <div className="absolute inset-0 opacity-[0.14] pointer-events-none animate-[pulse_9s_ease-in-out_infinite]">
           <MolecularPattern className="w-full h-full" />
         </div>
         <div
@@ -428,7 +428,7 @@ const Auth = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-13 min-h-12 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                  className="w-full min-h-12 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99]"
                   variant="hero"
                   disabled={isLoading}
                 >
@@ -534,7 +534,7 @@ const Auth = () => {
 
                     <Button
                       type="submit"
-                      className="w-full min-h-12 h-13 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                      className="w-full min-h-12 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99]"
                       variant="hero"
                       disabled={isLoading}
                     >
@@ -624,7 +624,7 @@ const Auth = () => {
 
                     <Button
                       type="submit"
-                      className="w-full min-h-12 h-13 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                      className="w-full min-h-12 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99]"
                       variant="hero"
                       disabled={isLoading}
                     >
@@ -647,7 +647,7 @@ const Auth = () => {
                 <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
                   <div className="flex items-center gap-3.5">
                     <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                      <Headset className="w-4.5 h-4.5" />
+                      <Headset className="w-[18px] h-[18px]" />
                     </div>
                     <h3 className="text-sm font-bold text-foreground">
                       Asistență IT instituțională
