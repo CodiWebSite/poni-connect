@@ -338,7 +338,7 @@ const Auth = () => {
       </aside>
 
       {/* Right panel — auth */}
-      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-center px-5 py-10 sm:px-8 lg:h-dvh lg:overflow-y-auto lg:px-14 xl:px-20">
+      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-center px-5 py-8 sm:px-8 lg:h-dvh lg:overflow-y-auto lg:px-14 xl:px-20">
         <div className="absolute inset-0 text-primary opacity-[0.06] pointer-events-none lg:hidden">
           <MolecularPattern className="w-full h-full" />
         </div>
@@ -674,7 +674,7 @@ const Auth = () => {
           )}
 
           {/* GDPR / legal footer */}
-          <footer className="mt-8 pt-5 border-t border-border space-y-2 text-center">
+          <footer className="mt-7 pt-4 border-t border-border space-y-2 text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
               © {new Date().getFullYear()} ICMPP „Petru Poni” — Academia Română
             </p>
