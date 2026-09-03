@@ -160,7 +160,13 @@ const LeaveRequest = () => {
 
   return (
     <MainLayout title="Cereri Concediu de Odihnă" description={<span className="inline-flex items-center gap-1">Depune și gestionează cererile de concediu <ContextualHelp title="Cerere de Concediu" content="Completați formularul, semnați electronic și trimiteți cererea." steps={['Completați perioada și înlocuitorul', 'Semnați cererea electronic', 'Așteptați aprobarea: Șef → SRUS → Aprobat']} /></span>}>
-      
+      <PageHeader
+        eyebrow="Concedii"
+        title="Cereri Concediu de Odihnă"
+        description="Depune și gestionează cererile de concediu"
+        icon={FileText}
+      />
+
       {/* Debug Sandbox Panel - only for Super Admin */}
       {(isSuperAdmin || canManageHR || isSef) && isDemo && (
         <Card className="mb-4 border-2 border-dashed border-purple-400/60 bg-purple-50/50 dark:bg-purple-950/20 dark:border-purple-500/40">

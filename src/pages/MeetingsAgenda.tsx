@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Plus, Calendar as CalendarIcon, Search, X, Send, Trash2, Filter } from "lucide-react";
+import PageHeader from "@/components/layout/PageHeader";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
