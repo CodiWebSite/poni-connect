@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { User, Building2, Phone, Save, Sun, Moon, Monitor, Check, RotateCcw, Lock, Eye, EyeOff, KeyRound, Shield } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
 import OnboardingTour from '@/components/onboarding/OnboardingTour';
 import SecurityPanel from '@/components/settings/SecurityPanel';
@@ -178,6 +179,12 @@ const Settings = () => {
 
   return (
     <MainLayout title="Setări" description="Gestionează-ți profilul și preferințele">
+      <PageHeader
+        eyebrow="Cont"
+        title="Setări"
+        description="Gestionează-ți profilul și preferințele"
+        icon={KeyRound}
+      />
       <div className="max-w-4xl space-y-6">
         {/* Profile Card */}
         <Card>

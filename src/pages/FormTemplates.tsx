@@ -47,6 +47,12 @@ const categories = [...new Set(templates.map(t => t.category))];
 export default function FormTemplates() {
   return (
     <MainLayout title="Formulare și Modele" description={<span className="inline-flex items-center gap-1">Descărcați modelele de formulare necesare activității instituționale <ContextualHelp title="Formulare" content="Apăsați pe orice formular pentru a-l descărca. Completați-l și depuneți-l conform procedurii." /></span>}>
+      <PageHeader
+        eyebrow="Resurse"
+        title="Formulare și Modele"
+        description="Descărcați modelele de formulare necesare activității instituționale"
+        icon={FileText}
+      />
       <div className="space-y-6">
 
         {categories.map(category => (
