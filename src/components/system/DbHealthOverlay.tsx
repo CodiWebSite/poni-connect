@@ -122,8 +122,9 @@ export default function DbHealthOverlay() {
               <CheckCircle2 className="w-8 h-8 text-emerald-400" />
             </div>
             <h1 className="text-2xl font-bold mb-2">Serviciile au revenit</h1>
-            <p className="text-white/70 mb-6">Reîncărcăm intranetul...</p>
+            <p className="text-white/70 mb-6">Poți continua de unde ai rămas — datele completate sunt păstrate.</p>
             <Loader2 className="w-6 h-6 animate-spin mx-auto text-white/70" />
+
           </>
         ) : (
           <>
