@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { usePersistentState } from '@/hooks/usePersistentState';
 import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
 import { EmployeeLeaveHistory } from '@/components/hr/EmployeeLeaveHistory';
 import { LeaveBonusManager } from '@/components/hr/LeaveBonusManager';
@@ -91,33 +92,58 @@ const leadershipRoleColors: Record<string, string> = {
   hr: 'bg-purple-500 text-white',
 };
 
+const emptyEditForm = { department: '', position: '', grade: '', hire_date: '', contract_type: 'nedeterminat', total_leave_days: 21, used_leave_days: 0 };
+
 export default function EmployeeHub({ employees, archivedEmployees, loading, onRefresh, onSync, syncing }: EmployeeHubProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [accountFilter, setAccountFilter] = useState<'all' | 'with_account' | 'without_account'>('all');
-  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
+  // Filtre & căutare — păstrate la revenirea în pagină
+  const [searchQuery, setSearchQuery] = usePersistentState('hr-emp-search', '');
+  const [accountFilter, setAccountFilter] = usePersistentState<'all' | 'with_account' | 'without_account'>('hr-emp-account-filter', 'all');
+  const [departmentFilter, setDepartmentFilter] = usePersistentState<string>('hr-emp-dept-filter', 'all');
+  const [activeTab, setActiveTab] = usePersistentState<'active' | 'archived'>('hr-emp-subtab', 'active');
   const [departmentHeadEmails, setDepartmentHeadEmails] = useState<Map<string, string>>(new Map());
 
-  // Dialogs
-  const [editingEmployee, setEditingEmployee] = useState<EmployeeWithData | null>(null);
-  const [editForm, setEditForm] = useState({ department: '', position: '', grade: '', hire_date: '', contract_type: 'nedeterminat', total_leave_days: 21, used_leave_days: 0 });
+  // Dialogs — starea de editare se păstrează (id-ul angajatului + formularul)
+  const [editingEmployeeId, setEditingEmployeeId] = usePersistentState<string | null>('hr-emp-editing-id', null);
+  const [editForm, setEditForm] = usePersistentState('hr-emp-edit-form', emptyEditForm);
+  const [initialEditForm, setInitialEditForm] = usePersistentState('hr-emp-edit-form-initial', emptyEditForm);
   const [saving, setSaving] = useState(false);
   const [uploadingFor, setUploadingFor] = useState<EmployeeWithData | null>(null);
   const [uploadForm, setUploadForm] = useState({ document_type: 'contract', name: '', description: '' });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [editingPersonalData, setEditingPersonalData] = useState<EmployeeWithData | null>(null);
+  const [editingPersonalDataId, setEditingPersonalDataId] = usePersistentState<string | null>('hr-emp-ci-id', null);
   const [leaveHistoryEmployee, setLeaveHistoryEmployee] = useState<EmployeeWithData | null>(null);
   const [bonusEmployee, setBonusEmployee] = useState<EmployeeWithData | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
-  const [archivedSearchQuery, setArchivedSearchQuery] = useState('');
+  const [archivedSearchQuery, setArchivedSearchQuery] = usePersistentState('hr-emp-archived-search', '');
+
+  const allEmployeesById = new Map([...employees, ...archivedEmployees].map(e => [e.id, e]));
+  const editingEmployee = editingEmployeeId ? allEmployeesById.get(editingEmployeeId) || null : null;
+  const editingPersonalData = editingPersonalDataId ? allEmployeesById.get(editingPersonalDataId) || null : null;
+  const isEditDirty = JSON.stringify(editForm) !== JSON.stringify(initialEditForm);
+
+  const closeEditDialog = (force = false) => {
+    if (!force && isEditDirty && !window.confirm('Ai modificări nesalvate. Sigur închizi fără să salvezi?')) return;
+    setEditingEmployeeId(null);
+    setEditForm(emptyEditForm);
+    setInitialEditForm(emptyEditForm);
+  };
+
+  // Avertizare la închiderea/reîncărcarea paginii cu modificări nesalvate
+  useEffect(() => {
+    if (!isEditDirty || !editingEmployeeId) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isEditDirty, editingEmployeeId]);
 
   useEffect(() => {
     fetchDepartmentHeads();
   }, []);
+
 
   const fetchDepartmentHeads = async () => {
     const headMap = new Map<string, string>();
@@ -178,8 +204,8 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
   });
 
   const openEditDialog = (employee: EmployeeWithData) => {
-    setEditingEmployee(employee);
-    setEditForm({
+    setEditingEmployeeId(employee.id);
+    const form = {
       department: employee.department || '',
       position: employee.position || '',
       grade: employee.grade || '',
@@ -187,8 +213,11 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
       contract_type: employee.record?.contract_type || employee.contract_type || 'nedeterminat',
       total_leave_days: employee.total_leave_days,
       used_leave_days: employee.used_leave_days,
-    });
+    };
+    setEditForm(form);
+    setInitialEditForm(form);
   };
+
 
   const saveEmployeeRecord = async () => {
     if (!editingEmployee) return;
@@ -205,7 +234,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
     }
     if (user) { await supabase.rpc('log_audit_event', { _user_id: user.id, _action: 'employee_edit', _entity_type: 'employee_personal_data', _entity_id: editingEmployee.id, _details: { employee_name: editingEmployee.full_name } }); }
     toast({ title: 'Succes', description: 'Datele angajatului au fost actualizate.' });
-    onRefresh(); setSaving(false); setEditingEmployee(null);
+    onRefresh(); setSaving(false); closeEditDialog(true);
   };
 
   const uploadDocument = async () => {
@@ -349,7 +378,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setEditingPersonalData(employee)}><CreditCard className="w-4 h-4 mr-2" />Date Personale (CI)</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditingPersonalDataId(employee.id)}><CreditCard className="w-4 h-4 mr-2" />Date Personale (CI)</DropdownMenuItem>
                               {employee.hasAccount && <DropdownMenuItem onClick={() => setUploadingFor(employee)}><Upload className="w-4 h-4 mr-2" />Încarcă Document</DropdownMenuItem>}
                               <DropdownMenuItem onClick={() => setBonusEmployee(employee)}><Gift className="w-4 h-4 mr-2" />Sold Suplimentar</DropdownMenuItem>
                               <DropdownMenuSeparator />
@@ -409,7 +438,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
       )}
 
       {/* Edit Dialog */}
-      <Dialog open={!!editingEmployee} onOpenChange={() => setEditingEmployee(null)}>
+      <Dialog open={!!editingEmployee} onOpenChange={(open) => { if (!open) closeEditDialog(); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Editare {editingEmployee?.full_name}</DialogTitle></DialogHeader>
           <div className="space-y-4">
@@ -434,7 +463,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
             <div className="p-3 bg-muted rounded-lg"><p className="text-sm"><span className="text-muted-foreground">Disponibile: </span><span className="font-bold text-primary">{editForm.total_leave_days - editForm.used_leave_days}</span></p></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingEmployee(null)}>Anulează</Button>
+            <Button variant="outline" onClick={() => closeEditDialog()}>Anulează</Button>
             <Button onClick={saveEmployeeRecord} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}Salvează</Button>
           </DialogFooter>
         </DialogContent>
@@ -462,7 +491,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
       </Dialog>
 
       {/* Personal Data Editor */}
-      <PersonalDataEditor employeeRecordId={editingPersonalData?.employee_record_id || null} employeeName={editingPersonalData?.full_name || ''} open={!!editingPersonalData} onOpenChange={(open) => !open && setEditingPersonalData(null)} onSaved={onRefresh} employeePersonalDataId={editingPersonalData?.id} />
+      <PersonalDataEditor employeeRecordId={editingPersonalData?.employee_record_id || null} employeeName={editingPersonalData?.full_name || ''} open={!!editingPersonalData} onOpenChange={(open) => !open && setEditingPersonalDataId(null)} onSaved={onRefresh} employeePersonalDataId={editingPersonalData?.id} />
 
       {/* Leave History */}
       <EmployeeLeaveHistory open={!!leaveHistoryEmployee} onOpenChange={(open) => !open && setLeaveHistoryEmployee(null)} employeeName={leaveHistoryEmployee?.full_name || ''} userId={leaveHistoryEmployee?.user_id} epdId={leaveHistoryEmployee?.id} employeeRecordId={leaveHistoryEmployee?.employee_record_id || null} onChanged={onRefresh} />
