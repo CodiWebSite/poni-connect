@@ -197,7 +197,7 @@ const HRManagement = () => {
         description="Centru Profesionist de Administrare Personal"
         icon={Users}
       />
-      <Tabs defaultValue="dashboard" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         {/* Sticky toolbar */}
         <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border/40 -mx-4 px-4 py-2 md:-mx-6 md:px-6 flex flex-col gap-2">
           <div className="flex gap-2 justify-between items-center">
