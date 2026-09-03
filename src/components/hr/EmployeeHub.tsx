@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { usePersistentState } from '@/hooks/usePersistentState';
 import { PersonalDataEditor } from '@/components/hr/PersonalDataEditor';
 import { EmployeeLeaveHistory } from '@/components/hr/EmployeeLeaveHistory';
 import { LeaveBonusManager } from '@/components/hr/LeaveBonusManager';
@@ -203,8 +204,8 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
   });
 
   const openEditDialog = (employee: EmployeeWithData) => {
-    setEditingEmployee(employee);
-    setEditForm({
+    setEditingEmployeeId(employee.id);
+    const form = {
       department: employee.department || '',
       position: employee.position || '',
       grade: employee.grade || '',
@@ -230,7 +231,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
     }
     if (user) { await supabase.rpc('log_audit_event', { _user_id: user.id, _action: 'employee_edit', _entity_type: 'employee_personal_data', _entity_id: editingEmployee.id, _details: { employee_name: editingEmployee.full_name } }); }
     toast({ title: 'Succes', description: 'Datele angajatului au fost actualizate.' });
-    onRefresh(); setSaving(false); setEditingEmployee(null);
+    onRefresh(); setSaving(false); closeEditDialog(true);
   };
 
   const uploadDocument = async () => {
@@ -374,7 +375,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setEditingPersonalData(employee)}><CreditCard className="w-4 h-4 mr-2" />Date Personale (CI)</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditingPersonalDataId(employee.id)}><CreditCard className="w-4 h-4 mr-2" />Date Personale (CI)</DropdownMenuItem>
                               {employee.hasAccount && <DropdownMenuItem onClick={() => setUploadingFor(employee)}><Upload className="w-4 h-4 mr-2" />Încarcă Document</DropdownMenuItem>}
                               <DropdownMenuItem onClick={() => setBonusEmployee(employee)}><Gift className="w-4 h-4 mr-2" />Sold Suplimentar</DropdownMenuItem>
                               <DropdownMenuSeparator />
@@ -434,7 +435,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
       )}
 
       {/* Edit Dialog */}
-      <Dialog open={!!editingEmployee} onOpenChange={() => setEditingEmployee(null)}>
+      <Dialog open={!!editingEmployee} onOpenChange={(open) => { if (!open) closeEditDialog(); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Editare {editingEmployee?.full_name}</DialogTitle></DialogHeader>
           <div className="space-y-4">
@@ -459,7 +460,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
             <div className="p-3 bg-muted rounded-lg"><p className="text-sm"><span className="text-muted-foreground">Disponibile: </span><span className="font-bold text-primary">{editForm.total_leave_days - editForm.used_leave_days}</span></p></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingEmployee(null)}>Anulează</Button>
+            <Button variant="outline" onClick={() => closeEditDialog()}>Anulează</Button>
             <Button onClick={saveEmployeeRecord} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}Salvează</Button>
           </DialogFooter>
         </DialogContent>
@@ -487,7 +488,7 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
       </Dialog>
 
       {/* Personal Data Editor */}
-      <PersonalDataEditor employeeRecordId={editingPersonalData?.employee_record_id || null} employeeName={editingPersonalData?.full_name || ''} open={!!editingPersonalData} onOpenChange={(open) => !open && setEditingPersonalData(null)} onSaved={onRefresh} employeePersonalDataId={editingPersonalData?.id} />
+      <PersonalDataEditor employeeRecordId={editingPersonalData?.employee_record_id || null} employeeName={editingPersonalData?.full_name || ''} open={!!editingPersonalData} onOpenChange={(open) => !open && setEditingPersonalDataId(null)} onSaved={onRefresh} employeePersonalDataId={editingPersonalData?.id} />
 
       {/* Leave History */}
       <EmployeeLeaveHistory open={!!leaveHistoryEmployee} onOpenChange={(open) => !open && setLeaveHistoryEmployee(null)} employeeName={leaveHistoryEmployee?.full_name || ''} userId={leaveHistoryEmployee?.user_id} epdId={leaveHistoryEmployee?.id} employeeRecordId={leaveHistoryEmployee?.employee_record_id || null} onChanged={onRefresh} />
