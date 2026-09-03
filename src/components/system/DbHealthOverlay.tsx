@@ -59,15 +59,21 @@ export default function DbHealthOverlay() {
     if (res.ok) {
       failuresRef.current = 0;
       if (down) {
-        // DB is back → show "recovered" flash then hard reload
+        // DB a revenit → NU reîncărcăm singuri pagina (datele din formulare
+        // trebuie păstrate). Ascundem overlay-ul și lăsăm reîncărcarea la
+        // decizia utilizatorului.
         setRecovering(true);
         setTimeout(() => {
-          window.location.reload();
-        }, 2500);
+          setRecovering(false);
+          setDown(false);
+          setDownSince(null);
+          schedule(HEALTHY_INTERVAL_MS, runCheck);
+        }, 1500);
         return;
       }
       setLastError(null);
       schedule(HEALTHY_INTERVAL_MS, runCheck);
+
     } else {
       failuresRef.current += 1;
       setLastError(res.error || 'unknown');
