@@ -213,8 +213,11 @@ export default function EmployeeHub({ employees, archivedEmployees, loading, onR
       contract_type: employee.record?.contract_type || employee.contract_type || 'nedeterminat',
       total_leave_days: employee.total_leave_days,
       used_leave_days: employee.used_leave_days,
-    });
+    };
+    setEditForm(form);
+    setInitialEditForm(form);
   };
+
 
   const saveEmployeeRecord = async () => {
     if (!editingEmployee) return;
