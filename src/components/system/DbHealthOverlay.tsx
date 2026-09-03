@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 const HEALTHY_INTERVAL_MS = 30_000;
 const DEGRADED_INTERVAL_MS = 8_000;
 const PING_TIMEOUT_MS = 6_000;
-const FAILURES_TO_TRIP = 2;
+const FAILURES_TO_TRIP = 4;
 
 async function pingDb(): Promise<{ ok: boolean; error?: string; latency: number }> {
   const started = performance.now();
