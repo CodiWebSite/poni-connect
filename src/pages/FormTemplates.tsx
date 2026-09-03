@@ -2,6 +2,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, FileText, FileSpreadsheet, File } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import ContextualHelp from '@/components/shared/ContextualHelp';
 
 interface Template {

@@ -392,6 +392,12 @@ export default function MeetingsAgenda() {
 
   return (
     <MainLayout title="Agenda întâlniri" description="Calendar întâlniri pentru director și secretariat">
+      <PageHeader
+        eyebrow="Coordonare"
+        title="Agenda întâlniri"
+        description="Calendar întâlniri pentru director și secretariat"
+        icon={CalendarIcon}
+      />
       {/* Toolbar */}
       <div className="flex flex-col lg:flex-row gap-3 mb-4">
         <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
