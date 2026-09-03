@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { Plus, Megaphone, Paperclip, X, Link2, Loader2 } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 
 interface LinkItem {
   label: string;
@@ -200,6 +201,12 @@ const Announcements = () => {
 
   return (
     <Layout title="Anunțuri" description="Comunicate și informații importante">
+      <PageHeader
+        eyebrow="Comunicare"
+        title="Anunțuri"
+        description="Comunicate și informații importante"
+        icon={Megaphone}
+      />
       {canPost && (
         <div className="flex justify-end mb-6">
           <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>

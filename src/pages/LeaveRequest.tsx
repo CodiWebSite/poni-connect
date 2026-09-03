@@ -15,6 +15,7 @@ import { LeaveRequestsHR } from '@/components/leave/LeaveRequestsHR';
 import { LeaveRequestsList } from '@/components/leave/LeaveRequestsList';
 import { LeaveApprovalDelegate } from '@/components/leave/LeaveApprovalDelegate';
 import { FileText, CheckSquare, ClipboardList, Send, History, FlaskConical, UserCheck, Bug, Eye } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import ContextualHelp from '@/components/shared/ContextualHelp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
