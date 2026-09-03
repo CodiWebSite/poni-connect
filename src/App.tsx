@@ -20,7 +20,7 @@ import IrisButton from "@/components/iris/IrisButton";
 import DbHealthOverlay from "@/components/system/DbHealthOverlay";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import RouteFallback from "@/components/system/RouteFallback";
-import { Button } from "@/components/ui/button";
+
 
 // Rute critice — încărcate imediat (primul ecran al utilizatorului)
 import Index from "./pages/Index";
@@ -148,8 +148,6 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [needsMFA, setNeedsMFA] = useState<boolean | null>(null);
   const [needsReenroll, setNeedsReenroll] = useState(false);
-  const [mfaError, setMfaError] = useState(false);
-  const [retryMfaCheck, setRetryMfaCheck] = useState(0);
   const location = useLocation();
 
   useEffect(() => {
@@ -157,22 +155,21 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
     if (!user) {
       setNeedsMFA(false);
       setNeedsReenroll(false);
-      setMfaError(false);
       return;
     }
 
     (async () => {
       try {
-        setMfaError(false);
         setNeedsMFA(null);
 
-        // 1) force_mfa_reenroll flag (e.g. after recovery-code use)
-        const { data: profile, error: profileError } = await supabase
+        // 1) force_mfa_reenroll flag (e.g. after recovery-code use).
+        // Transient profile lookup errors are non-fatal: fall through to the
+        // normal AAL check so a network hiccup can't lock the whole app.
+        const { data: profile } = await supabase
           .from('profiles')
           .select('force_mfa_reenroll')
           .eq('user_id', user.id)
           .maybeSingle();
-        if (profileError) throw profileError;
         if (cancelled) return;
         if (profile?.force_mfa_reenroll) {
           setNeedsReenroll(true);
@@ -193,35 +190,41 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
 
           const trustedToken = localStorage.getItem(TRUSTED_TOKEN_KEY);
           if (trustedToken) {
-            const { data, error } = await supabase.functions.invoke('mfa-trusted-check', {
-              body: { token: trustedToken },
-            });
-            if (cancelled) return;
+            try {
+              const { data, error } = await supabase.functions.invoke('mfa-trusted-check', {
+                body: { token: trustedToken },
+              });
+              if (cancelled) return;
 
-            if (!error && data?.valid) {
-              sessionStorage.setItem(TRUSTED_SESSION_KEY, user.id);
-              setNeedsMFA(false);
-              return;
-            }
+              if (!error && data?.valid) {
+                sessionStorage.setItem(TRUSTED_SESSION_KEY, user.id);
+                setNeedsMFA(false);
+                return;
+              }
 
-            if (data?.valid === false && ['not_found', 'mismatch', 'revoked', 'expired', 'force_reenroll'].includes(data.reason)) {
-              localStorage.removeItem(TRUSTED_TOKEN_KEY);
+              if (data?.valid === false && ['not_found', 'mismatch', 'revoked', 'expired', 'force_reenroll'].includes(data.reason)) {
+                localStorage.removeItem(TRUSTED_TOKEN_KEY);
+              }
+            } catch {
+              // Network/function errors fall back to the normal MFA challenge.
             }
           }
 
-          setNeedsMFA(true);
+          if (!cancelled) setNeedsMFA(true);
         } else {
           setNeedsMFA(false);
         }
       } catch (error) {
         if (cancelled) return;
         console.error('[MFAGuard] Verificarea MFA a eșuat', error);
-        setMfaError(true);
+        // Fail closed but not locked out: ask for the 2FA code instead of
+        // blocking every route behind a full-screen error.
+        setNeedsMFA(true);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [user, retryMfaCheck]);
+  }, [user]);
 
   // Don't block public routes
   const publicPaths = ['/auth', '/auth/reset-password', '/kiosk', '/maintenance'];
@@ -230,19 +233,6 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (loading || needsMFA === null) {
-    if (mfaError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-6">
-          <div className="max-w-sm text-center">
-            <h1 className="text-xl font-semibold text-foreground">Conexiunea nu a putut fi verificată</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Accesul rămâne protejat. Reîncearcă verificarea.</p>
-            <Button className="mt-5" onClick={() => setRetryMfaCheck((value) => value + 1)}>
-              Reîncearcă
-            </Button>
-          </div>
-        </div>
-      );
-    }
     return <RouteFallback />;
   }
 
