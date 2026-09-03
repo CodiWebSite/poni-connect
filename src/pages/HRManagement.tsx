@@ -237,7 +237,17 @@ const HRManagement = () => {
             </Button>
             <HRExportButton requests={hrRequests} employees={exportEmployees} />
           </div>
+          {(loading || syncing) && (
+            <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs text-primary">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span className="font-medium">
+                {syncing ? 'Se sincronizează datele cu conturile de utilizator…' : 'Se reîncarcă lista de angajați…'}
+              </span>
+              <span className="text-primary/70 hidden sm:inline">Modificările din formularele deschise sunt păstrate.</span>
+            </div>
+          )}
         </div>
+
 
         {/* Tab Contents */}
         <TabsContent value="dashboard"><HRDashboard /></TabsContent>
