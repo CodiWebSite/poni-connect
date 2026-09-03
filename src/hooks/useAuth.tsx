@@ -23,7 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        // Păstrăm aceeași referință de user când e vorba de același cont
+        // (ex: TOKEN_REFRESHED la revenirea în tab) ca să nu remontăm arborele
+        // și să nu se piardă starea formularelor / taburilor deschise.
+        setUser((prev) => {
+          const next = session?.user ?? null;
+          if (prev && next && prev.id === next.id) return prev;
+          return next;
+        });
         setLoading(false);
 
         // Register native push token after successful sign-in (Android app only)
@@ -34,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     );
+
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
