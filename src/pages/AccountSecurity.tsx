@@ -8,6 +8,7 @@ import {
   ShieldCheck, LogOut, History, AlertTriangle, Loader2, KeyRound,
   Smartphone, Trash2, Copy, RefreshCw, Download,
 } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -180,12 +181,12 @@ export default function AccountSecurity() {
       <Sidebar />
       <MobileNav />
       <main className="lg:ml-64 px-4 lg:px-8 py-8 max-w-4xl mx-auto space-y-6">
-        <header>
-          <h1 className="text-3xl font-display font-bold flex items-center gap-3">
-            <ShieldCheck className="w-8 h-8 text-primary" /> Securitatea contului meu
-          </h1>
-          <p className="text-muted-foreground mt-2">Starea autentificării, alertele și sesiunile tale.</p>
-        </header>
+        <PageHeader
+          eyebrow="Cont"
+          title="Securitatea contului meu"
+          description="Starea autentificării, alertele și sesiunile tale."
+          icon={ShieldCheck}
+        />
 
         <Card>
           <CardHeader>

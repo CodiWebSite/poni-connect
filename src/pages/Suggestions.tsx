@@ -20,6 +20,7 @@ import {
   Eye, EyeOff, Sparkles, ArrowUp, BarChart3, Clock, CheckCircle2, XCircle,
   AlertTriangle, Loader2, ChevronDown, ChevronUp, Reply, User, Trash2
 } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -475,15 +476,12 @@ export default function Suggestions() {
     <MainLayout title="Idei & Feedback" description="Contribuie la îmbunătățirea platformei și a institutului">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg">
-            <Lightbulb className="w-7 h-7" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Idei & Feedback</h1>
-            <p className="text-sm text-muted-foreground">Contribuie cu idei, sugestii și feedback pentru ICMPP</p>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="Implicare"
+          title="Idei & Feedback"
+          description="Contribuie cu idei, sugestii și feedback pentru ICMPP"
+          icon={Lightbulb}
+        />
 
         {/* Stats bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

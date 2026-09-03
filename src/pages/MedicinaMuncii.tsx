@@ -29,6 +29,7 @@ import {
   CheckCircle, XCircle, Clock, Upload, Trash2, Eye, Activity,
   Users, ShieldCheck, Download, ChevronLeft, ChevronRight, FolderOpen, Settings, ClipboardList
 } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { Navigate } from 'react-router-dom';
 
 type MedicalFitness = 'apt' | 'apt_conditionat' | 'inapt' | 'pending';
@@ -524,15 +525,12 @@ const MedicinaMuncii = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Activity className="w-7 h-7 text-primary" />
-              Medicină a Muncii
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {isDoctor ? 'Gestionare dosare medicale și programări' : 'Vizualizare status avize medicale'}
-            </p>
-          </div>
+          <PageHeader
+            eyebrow="Sănătate"
+            title="Medicină a Muncii"
+            description={isDoctor ? 'Gestionare dosare medicale și programări' : 'Vizualizare status avize medicale'}
+            icon={Activity}
+          />
           <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={exportExcel}>
               <Download className="w-4 h-4 mr-1" /> Export Excel

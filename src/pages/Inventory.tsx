@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, Package, QrCode, Building2, Monitor, Upload, Eye } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { useNavigate, Navigate } from 'react-router-dom';
 import InventoryImport from '@/components/inventory/InventoryImport';
 
@@ -84,13 +85,12 @@ const Inventory = () => {
   return (
     <MainLayout title="Inventar IT" description="Gestiune avansată echipamente și software">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Package className="w-6 h-6 text-primary" />
-            Inventar IT
-          </h1>
-          <p className="text-muted-foreground text-sm">Gestiune avansată echipamente și software</p>
-        </div>
+        <PageHeader
+          eyebrow="Resurse"
+          title="Inventar IT"
+          description="Gestiune avansată echipamente și software"
+          icon={Package}
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

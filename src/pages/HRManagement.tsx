@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
+import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -190,6 +191,12 @@ const HRManagement = () => {
 
   return (
     <MainLayout title="Gestiune HR" description="Centru Profesionist de Administrare Personal">
+      <PageHeader
+        eyebrow="Resurse Umane"
+        title="Gestiune HR"
+        description="Centru Profesionist de Administrare Personal"
+        icon={Users}
+      />
       <Tabs defaultValue="dashboard" className="space-y-6">
         {/* Sticky toolbar */}
         <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border/40 -mx-4 px-4 py-2 md:-mx-6 md:px-6 flex flex-col gap-2">

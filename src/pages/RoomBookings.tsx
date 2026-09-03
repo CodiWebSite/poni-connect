@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Trash2, User, CalendarDays } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 
 type RoomBooking = {
   id: string;
@@ -223,6 +224,12 @@ const RoomBookings = () => {
 
   return (
     <MainLayout title="Programări Săli" description="Rezervă sala de conferințe sau biblioteca">
+      <PageHeader
+        eyebrow="Facilități"
+        title="Programări Săli"
+        description="Rezervă sala de conferințe sau biblioteca"
+        icon={CalendarDays}
+      />
       <div className="space-y-6">
         <div className="flex justify-end">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

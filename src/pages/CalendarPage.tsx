@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { Plus, Clock, MapPin, Calendar as CalendarIcon } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { format, isSameDay } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -97,6 +98,12 @@ const CalendarPage = () => {
 
   return (
     <MainLayout title="Calendar" description="Evenimente și programări">
+      <PageHeader
+        eyebrow="Planificare"
+        title="Calendar"
+        description="Evenimente și programări"
+        icon={CalendarIcon}
+      />
       {(canManageContent || isEventPublisher) && (
         <div className="flex justify-end mb-6">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>

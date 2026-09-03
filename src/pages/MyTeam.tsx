@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, Users, AlertTriangle } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { Navigate } from 'react-router-dom';
 
 interface TeamMember {
@@ -172,6 +173,12 @@ const MyTeam = () => {
 
   return (
     <MainLayout title="Echipa Mea" description={department ? `Departament(e): ${department}` : 'Angajații din subordinea dvs.'}>
+      <PageHeader
+        eyebrow="Management"
+        title="Echipa Mea"
+        description={department ? `Departament(e): ${department}` : 'Angajații din subordinea dvs.'}
+        icon={Users}
+      />
       <div className="max-w-5xl mx-auto space-y-6">
 
         {loading ? (

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Download, Loader2, Banknote, CalendarDays } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { format, startOfMonth, endOfMonth, subMonths, eachDayOfInterval, isWeekend } from 'date-fns';
@@ -528,15 +529,12 @@ const Salarizare = () => {
   return (
     <MainLayout title="Salarizare">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Banknote className="w-7 h-7 text-primary" />
-            Salarizare
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Export rapoarte concedii și distribuție fluturași de salariu
-          </p>
-        </div>
+        <PageHeader
+          eyebrow="Financiar"
+          title="Salarizare"
+          description="Export rapoarte concedii și distribuție fluturași de salariu"
+          icon={Banknote}
+        />
 
         <PayslipUploader />
 

@@ -83,6 +83,9 @@ const Header = ({ title, description }: HeaderProps) => {
           <MobileNav />
 
           <div className="min-w-0">
+            <p className="hidden md:block text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80 leading-none mb-1">
+              Intranet ICMPP
+            </p>
             <div className="flex items-baseline gap-2 min-w-0">
               <h1 className="text-base md:text-xl font-display font-semibold text-foreground truncate tracking-tight">{title}</h1>
               {currentRoute !== '/' && breadcrumbLabel && (

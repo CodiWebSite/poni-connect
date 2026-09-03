@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { BookOpen, Plus, Download, RotateCcw, UserPlus, Trash2, History, Pencil, Check, X, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -372,13 +373,12 @@ const Library = () => {
   return (
     <MainLayout title="Bibliotecă" description="Gestionarea cărților și revistelor">
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <BookOpen className="w-8 h-8 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Bibliotecă</h1>
-            <p className="text-muted-foreground">Gestionarea cărților și revistelor</p>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="Resurse"
+          title="Bibliotecă"
+          description="Gestionarea cărților și revistelor"
+          icon={BookOpen}
+        />
 
         <Tabs defaultValue="books" className="w-full">
           <TabsList>

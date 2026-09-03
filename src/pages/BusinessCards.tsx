@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { CreditCard, Download, Search, Loader2, Pencil } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import {
@@ -482,17 +483,14 @@ const BusinessCards = () => {
   return (
     <MainLayout title="Carte de Vizită">
       <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <CreditCard className="w-6 h-6 text-primary" />
-            {isAdmin ? 'Generator Cărți de Vizită' : 'Cartea mea de vizită'}
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {isAdmin
-              ? 'Selectează un angajat pentru a genera cartea de vizită cu QR personalizat.'
-              : 'Previzualizează și descarcă cartea ta de vizită profesională.'}
-          </p>
-        </div>
+        <PageHeader
+          eyebrow="Identitate"
+          title={isAdmin ? 'Generator Cărți de Vizită' : 'Cartea mea de vizită'}
+          description={isAdmin
+            ? 'Selectează un angajat pentru a genera cartea de vizită cu QR personalizat.'
+            : 'Previzualizează și descarcă cartea ta de vizită profesională.'}
+          icon={CreditCard}
+        />
         {isAdmin ? <AdminView /> : <SelfServiceView />}
       </div>
     </MainLayout>
