@@ -23,6 +23,7 @@ import {
   CalendarDays, MapPin, Users, Check, X, HelpCircle, Trash2,
   UserPlus, Crown, Edit, ChevronsUpDown
 } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 
 type ActivityCategory = 'film' | 'muzica' | 'jocuri' | 'quiz' | 'creativ' | 'socializare' | 'altele';
 
@@ -266,28 +267,28 @@ const RecreationalActivities = () => {
   return (
     <MainLayout title="Activități Recreative">
       <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <p className="text-muted-foreground">
-              Activități de relaxare și socializare pentru colectivul ICMPP 🎉
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {isSuperAdmin && (
-              <Button variant="outline" onClick={() => setShowOrgManage(true)}>
-                <Crown className="w-4 h-4 mr-2" />
-                Organizatori
-              </Button>
-            )}
-            {(isOrganizer || isSuperAdmin) && (
-              <Button onClick={() => { setEditActivity(null); setForm({ title: '', description: '', category: 'socializare', location: '', scheduled_at: '', max_participants: '' }); setShowCreate(true); }}>
-                <Plus className="w-4 h-4 mr-2" />
-                Activitate Nouă
-              </Button>
-            )}
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="Viața institutului"
+          title="Activități Recreative"
+          description="Activități de relaxare și socializare pentru colectivul ICMPP"
+          icon={Sparkles}
+          actions={
+            <div className="flex gap-2">
+              {isSuperAdmin && (
+                <Button variant="outline" onClick={() => setShowOrgManage(true)}>
+                  <Crown className="w-4 h-4 mr-2" />
+                  Organizatori
+                </Button>
+              )}
+              {(isOrganizer || isSuperAdmin) && (
+                <Button onClick={() => { setEditActivity(null); setForm({ title: '', description: '', category: 'socializare', location: '', scheduled_at: '', max_participants: '' }); setShowCreate(true); }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Activitate Nouă
+                </Button>
+              )}
+            </div>
+          }
+        />
 
         <Tabs defaultValue="upcoming" className="w-full">
           <TabsList>
