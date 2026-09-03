@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       injectRegister: null,
       devOptions: { enabled: false },
       includeAssets: ["logo-icmpp.png", "favicon.ico"],
@@ -29,8 +29,8 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/, /^\/kiosk/],
         // Exclude HTML from precache so navigations always go network-first.
         globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
-        skipWaiting: true,
-        clientsClaim: true,
+        skipWaiting: false,
+        clientsClaim: false,
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

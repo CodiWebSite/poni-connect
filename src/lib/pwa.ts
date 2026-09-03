@@ -11,9 +11,9 @@ import { restoreFormSnapshot, saveFormSnapshot } from "./formStateSnapshot";
  * - Never registers in dev, inside an iframe (Lovable preview) or on
  *   Lovable preview hosts; unregisters any stale SW there.
  * - `?sw=off` kill switch unregisters and skips registration.
- * - Checks for updates on load, every 60s, on tab focus / visibility change
- *   and when the connection comes back.
- * - Applies the new SW immediately and reloads once when it takes control.
+ * - Checks for updates on load, every 30 min and when the connection returns.
+ * - NEVER reloads on its own: a new version is applied only when the user
+ *   clicks "Actualizează" in the toast, so in-progress data is never lost.
  */
 
 const SW_URL = "/sw.js";
@@ -76,21 +76,35 @@ export function initPwa() {
     return;
   }
 
-  // Reload exactly once when a new SW takes control of the page.
-  let reloaded = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (reloaded) return;
-    reloaded = true;
-    // Persist in-progress form data before the automatic refresh.
+  // No silent auto-reload: the page never refreshes by itself while the user
+  // is filling in data. A new version is only applied when the user asks.
+  let promptShown = false;
+
+  const applyUpdate = async (update: (reload?: boolean) => Promise<void>) => {
     saveFormSnapshot();
+    await update(true);
     window.location.reload();
-  });
+  };
 
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
-      // autoUpdate normally handles this, but force it just in case.
-      void updateSW(true);
+      if (promptShown) return;
+      promptShown = true;
+      toast.info("Versiune nouă disponibilă", {
+        duration: Infinity,
+        description:
+          "Poți continua ce lucrezi. Actualizează când ești gata — datele din formular vor fi păstrate.",
+        action: {
+          label: "Actualizează",
+          onClick: () => {
+            void applyUpdate(updateSW);
+          },
+        },
+        onDismiss: () => {
+          promptShown = false;
+        },
+      });
     },
     onRegisteredSW(_swUrl, registration) {
       if (!registration) return;
@@ -100,14 +114,9 @@ export function initPwa() {
         registration.update().catch(() => {});
       };
 
-      // Frequent, cheap freshness checks so a Publish lands without hard refresh.
-      setInterval(check, 60 * 1000);
-      window.addEventListener("focus", check);
+      // Rare, cheap freshness checks — they never reload the page on their own.
+      setInterval(check, 30 * 60 * 1000);
       window.addEventListener("online", check);
-      document.addEventListener("visibilitychange", check);
-
-      // If a new worker is already waiting, activate it now.
-      if (registration.waiting) void updateSW(true);
     },
   });
 }
