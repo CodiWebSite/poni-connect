@@ -20,7 +20,7 @@ import IrisButton from "@/components/iris/IrisButton";
 import DbHealthOverlay from "@/components/system/DbHealthOverlay";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import RouteFallback from "@/components/system/RouteFallback";
-import { Button } from "@/components/ui/button";
+
 
 // Rute critice — încărcate imediat (primul ecran al utilizatorului)
 import Index from "./pages/Index";
