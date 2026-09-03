@@ -91,33 +91,58 @@ const leadershipRoleColors: Record<string, string> = {
   hr: 'bg-purple-500 text-white',
 };
 
+const emptyEditForm = { department: '', position: '', grade: '', hire_date: '', contract_type: 'nedeterminat', total_leave_days: 21, used_leave_days: 0 };
+
 export default function EmployeeHub({ employees, archivedEmployees, loading, onRefresh, onSync, syncing }: EmployeeHubProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [accountFilter, setAccountFilter] = useState<'all' | 'with_account' | 'without_account'>('all');
-  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
+  // Filtre & căutare — păstrate la revenirea în pagină
+  const [searchQuery, setSearchQuery] = usePersistentState('hr-emp-search', '');
+  const [accountFilter, setAccountFilter] = usePersistentState<'all' | 'with_account' | 'without_account'>('hr-emp-account-filter', 'all');
+  const [departmentFilter, setDepartmentFilter] = usePersistentState<string>('hr-emp-dept-filter', 'all');
+  const [activeTab, setActiveTab] = usePersistentState<'active' | 'archived'>('hr-emp-subtab', 'active');
   const [departmentHeadEmails, setDepartmentHeadEmails] = useState<Map<string, string>>(new Map());
 
-  // Dialogs
-  const [editingEmployee, setEditingEmployee] = useState<EmployeeWithData | null>(null);
-  const [editForm, setEditForm] = useState({ department: '', position: '', grade: '', hire_date: '', contract_type: 'nedeterminat', total_leave_days: 21, used_leave_days: 0 });
+  // Dialogs — starea de editare se păstrează (id-ul angajatului + formularul)
+  const [editingEmployeeId, setEditingEmployeeId] = usePersistentState<string | null>('hr-emp-editing-id', null);
+  const [editForm, setEditForm] = usePersistentState('hr-emp-edit-form', emptyEditForm);
+  const [initialEditForm, setInitialEditForm] = usePersistentState('hr-emp-edit-form-initial', emptyEditForm);
   const [saving, setSaving] = useState(false);
   const [uploadingFor, setUploadingFor] = useState<EmployeeWithData | null>(null);
   const [uploadForm, setUploadForm] = useState({ document_type: 'contract', name: '', description: '' });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [editingPersonalData, setEditingPersonalData] = useState<EmployeeWithData | null>(null);
+  const [editingPersonalDataId, setEditingPersonalDataId] = usePersistentState<string | null>('hr-emp-ci-id', null);
   const [leaveHistoryEmployee, setLeaveHistoryEmployee] = useState<EmployeeWithData | null>(null);
   const [bonusEmployee, setBonusEmployee] = useState<EmployeeWithData | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
-  const [archivedSearchQuery, setArchivedSearchQuery] = useState('');
+  const [archivedSearchQuery, setArchivedSearchQuery] = usePersistentState('hr-emp-archived-search', '');
+
+  const allEmployeesById = new Map([...employees, ...archivedEmployees].map(e => [e.id, e]));
+  const editingEmployee = editingEmployeeId ? allEmployeesById.get(editingEmployeeId) || null : null;
+  const editingPersonalData = editingPersonalDataId ? allEmployeesById.get(editingPersonalDataId) || null : null;
+  const isEditDirty = JSON.stringify(editForm) !== JSON.stringify(initialEditForm);
+
+  const closeEditDialog = (force = false) => {
+    if (!force && isEditDirty && !window.confirm('Ai modificări nesalvate. Sigur închizi fără să salvezi?')) return;
+    setEditingEmployeeId(null);
+    setEditForm(emptyEditForm);
+    setInitialEditForm(emptyEditForm);
+  };
+
+  // Avertizare la închiderea/reîncărcarea paginii cu modificări nesalvate
+  useEffect(() => {
+    if (!isEditDirty || !editingEmployeeId) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isEditDirty, editingEmployeeId]);
 
   useEffect(() => {
     fetchDepartmentHeads();
   }, []);
+
 
   const fetchDepartmentHeads = async () => {
     const headMap = new Map<string, string>();
