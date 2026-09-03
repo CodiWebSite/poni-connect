@@ -52,6 +52,16 @@ const HRManagement = () => {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [customHolidayDates, setCustomHolidayDates] = useState<string[]>([]);
+  // Tab-ul rămâne salvat: revenirea în pagină (după selectarea unui fișier de pe PC,
+  // reîmprospătarea tokenului etc.) nu mai aruncă utilizatorul pe Dashboard.
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try { return sessionStorage.getItem('hr-active-tab') || 'dashboard'; } catch { return 'dashboard'; }
+  });
+
+  useEffect(() => {
+    try { sessionStorage.setItem('hr-active-tab', activeTab); } catch { /* noop */ }
+  }, [activeTab]);
+
 
   useEffect(() => {
     if (canManageHR) {
