@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Archive, Upload, Download, Search, FileText, Trash2, Scale, Shield, FolderOpen } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -203,22 +204,17 @@ export default function ArchivePage() {
     <MainLayout title="Arhivă Online" description="Arhivare electronică conform Legii 16/1996">
       <div className="space-y-6 p-4 md:p-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Archive className="h-7 w-7 text-primary" />
-              Arhivă Online
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Conform Legii 16/1996 (Arhivele Naționale) și Legii 135/2007 (arhivare electronică)
-            </p>
-          </div>
-          {userDept && (
+        <PageHeader
+          eyebrow="Documente"
+          title="Arhivă Online"
+          description="Conform Legii 16/1996 (Arhivele Naționale) și Legii 135/2007 (arhivare electronică)"
+          icon={Archive}
+          actions={userDept && (
             <Button onClick={() => setUploadOpen(true)} className="gap-2">
               <Upload className="h-4 w-4" /> Arhivează Document
             </Button>
           )}
-        </div>
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
