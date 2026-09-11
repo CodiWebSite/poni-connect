@@ -129,7 +129,16 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
   const [approverSignature, setApproverSignature] = useState<string | null>(null);
   const [fetchingIP, setFetchingIP] = useState(false);
 
-  const useDigitalSignature = role === 'sef_srus' || role === 'secretar_stiintific';
+  // Semnătură digitală (nume + IP + dată/oră) pentru toți aprobatorii cu funcție de conducere
+  const useDigitalSignature = [
+    'sef',
+    'sef_srus',
+    'department_head',
+    'secretar_stiintific',
+    'director',
+    'director_institut',
+    'director_adjunct',
+  ].includes(role as string);
 
   const isDeptHead = role === 'sef' || role === 'sef_srus' || isSuperAdmin;
 
