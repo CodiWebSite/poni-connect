@@ -16,8 +16,9 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
   Search, Shield, Users, Loader2, Trash2, AlertTriangle, UserX, UserPlus,
-  Globe, RefreshCw, Mail, Headset, Bell, ClipboardList, Lock, Filter, ShieldOff
+  Globe, RefreshCw, Mail, Headset, Bell, ClipboardList, Lock, Filter, ShieldOff, KeyRound, Copy
 } from 'lucide-react';
+
 import ManualAccountCreate from './ManualAccountCreate';
 import AccountRequestsPanel from './AccountRequestsPanel';
 import InvitePlatformPanel from './InvitePlatformPanel';
@@ -93,6 +94,11 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
   const [reauthTitle, setReauthTitle] = useState('');
   const [reauthDesc, setReauthDesc] = useState('');
   const [resettingMFA, setResettingMFA] = useState<string | null>(null);
+  const [pwdUser, setPwdUser] = useState<UserWithRole | null>(null);
+  const [tempPassword, setTempPassword] = useState('');
+  const [savingPwd, setSavingPwd] = useState(false);
+  const [pwdDone, setPwdDone] = useState(false);
+
 
   useEffect(() => {
     fetchUsers();
@@ -276,6 +282,41 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
     setResettingMFA(null);
   };
 
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    const rnd = new Uint32Array(14);
+    crypto.getRandomValues(rnd);
+    return 'Icmpp-' + Array.from(rnd).map(n => chars[n % chars.length]).join('');
+  };
+
+  const openPasswordDialog = (u: UserWithRole) => {
+    setPwdUser(u);
+    setTempPassword(generatePassword());
+    setPwdDone(false);
+  };
+
+  const applyPassword = async () => {
+    if (!pwdUser) return;
+    setSavingPwd(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-set-password', {
+        body: { userId: pwdUser.user_id, password: tempPassword },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setPwdDone(true);
+        toast({ title: 'Parolă schimbată', description: `Parola temporară a fost setată pentru ${pwdUser.full_name}.` });
+      } else {
+        toast({ title: 'Eroare', description: data?.error || 'Nu s-a putut schimba parola.', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Eroare', description: err.message || 'Eroare la schimbarea parolei.', variant: 'destructive' });
+    }
+    setSavingPwd(false);
+  };
+
+
+
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const filteredUsers = users.filter(u => {
@@ -407,6 +448,15 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
                             <div className="flex items-center justify-end gap-1">
                               <Button
                                 variant="ghost" size="icon"
+                                className="h-8 w-8 text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30"
+                                onClick={() => openPasswordDialog(u)}
+                                disabled={u.user_id === user?.id}
+                                title="Setează parolă temporară"
+                              >
+                                <KeyRound className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost" size="icon"
                                 className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
                                 onClick={() => resetMFA(u)}
                                 disabled={resettingMFA === u.user_id || u.user_id === user?.id}
@@ -414,6 +464,7 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
                               >
                                 {resettingMFA === u.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldOff className="w-4 h-4" />}
                               </Button>
+
                               <Button
                                 variant="ghost" size="icon"
                                 className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -471,6 +522,42 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Temporary password dialog */}
+      <Dialog open={!!pwdUser} onOpenChange={(o) => { if (!o) { setPwdUser(null); setTempPassword(''); setPwdDone(false); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-sky-600" />
+              Parolă temporară
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Setează o parolă temporară pentru <strong>{pwdUser?.full_name}</strong>. Transmite-o personal și cere-i să o schimbe imediat după prima autentificare.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input value={tempPassword} onChange={(e) => setTempPassword(e.target.value)} className="font-mono" />
+              <Button variant="outline" size="icon" title="Copiază" onClick={() => { navigator.clipboard.writeText(tempPassword); toast({ title: 'Copiat' }); }}>
+                <Copy className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="icon" title="Generează alta" onClick={() => setTempPassword(generatePassword())}>
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
+            {pwdDone && (
+              <p className="text-sm text-emerald-600 font-medium">Parola a fost activată. Se poate autentifica acum cu ea.</p>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPwdUser(null)}>Închide</Button>
+            <Button onClick={applyPassword} disabled={savingPwd || tempPassword.length < 10}>
+              {savingPwd ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Se aplică...</>) : 'Activează parola'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Reauth Dialog */}
       <ReauthDialog
