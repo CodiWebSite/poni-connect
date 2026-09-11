@@ -523,6 +523,42 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
         </DialogContent>
       </Dialog>
 
+      {/* Temporary password dialog */}
+      <Dialog open={!!pwdUser} onOpenChange={(o) => { if (!o) { setPwdUser(null); setTempPassword(''); setPwdDone(false); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-sky-600" />
+              Parolă temporară
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Setează o parolă temporară pentru <strong>{pwdUser?.full_name}</strong>. Transmite-o personal și cere-i să o schimbe imediat după prima autentificare.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input value={tempPassword} onChange={(e) => setTempPassword(e.target.value)} className="font-mono" />
+              <Button variant="outline" size="icon" title="Copiază" onClick={() => { navigator.clipboard.writeText(tempPassword); toast({ title: 'Copiat' }); }}>
+                <Copy className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="icon" title="Generează alta" onClick={() => setTempPassword(generatePassword())}>
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
+            {pwdDone && (
+              <p className="text-sm text-emerald-600 font-medium">Parola a fost activată. Se poate autentifica acum cu ea.</p>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPwdUser(null)}>Închide</Button>
+            <Button onClick={applyPassword} disabled={savingPwd || tempPassword.length < 10}>
+              {savingPwd ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Se aplică...</>) : 'Activează parola'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
       {/* Reauth Dialog */}
       <ReauthDialog
         open={reauthOpen}
