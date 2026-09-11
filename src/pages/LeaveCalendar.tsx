@@ -37,7 +37,7 @@ const DAY_NAMES: Record<number, string> = { 0: 'Dum', 1: 'Lun', 2: 'Mar', 3: 'Mi
 
 const LeaveCalendar = () => {
   const { user } = useAuth();
-  const { isSuperAdmin, canManageHR, isSef, isSefSRUS } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, isInstituteLeadership } = useUserRole();
   const { isDesignatedApprover, loading: approverLoading } = useIsApprover();
   const isMobile = useIsMobile();
   const [currentMonth, setCurrentMonth] = useState(new Date());
