@@ -8,6 +8,26 @@ import { toast } from 'sonner';
 import { Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+const MIN_PASSWORD_LENGTH = 10;
+
+const getPasswordResetError = (message: string) => {
+  const normalizedMessage = message.toLowerCase();
+
+  if (normalizedMessage.includes('weak') || normalizedMessage.includes('easy to guess')) {
+    return 'Această parolă este cunoscută ca fiind compromisă sau prea ușor de ghicit. Alege o parolă unică, de minimum 10 caractere, pe care nu ai mai folosit-o.';
+  }
+
+  if (normalizedMessage.includes('same password')) {
+    return 'Parola nouă trebuie să fie diferită de parola folosită anterior.';
+  }
+
+  if (normalizedMessage.includes('expired') || normalizedMessage.includes('session')) {
+    return 'Linkul de resetare a expirat. Solicită un email nou de resetare.';
+  }
+
+  return 'Parola nu a putut fi schimbată. Solicită un link nou de resetare și încearcă din nou.';
+};
+
 const PasswordInput = ({
   id,
   value,
@@ -32,7 +52,8 @@ const PasswordInput = ({
         value={value}
         onChange={onChange}
         required
-        minLength={6}
+        minLength={MIN_PASSWORD_LENGTH}
+        autoComplete="new-password"
       />
       <button
         type="button"
@@ -72,8 +93,8 @@ const ResetPassword = () => {
       return;
     }
 
-    if (password.length < 6) {
-      toast.error('Parola trebuie să aibă cel puțin 6 caractere');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      toast.error(`Parola trebuie să aibă cel puțin ${MIN_PASSWORD_LENGTH} caractere`);
       return;
     }
 
@@ -82,7 +103,7 @@ const ResetPassword = () => {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      toast.error('Eroare la resetarea parolei. Încercați din nou.');
+      toast.error(getPasswordResetError(error.message), { duration: 9000 });
     } else {
       setIsSuccess(true);
       toast.success('Parola a fost schimbată cu succes!');
@@ -131,7 +152,7 @@ const ResetPassword = () => {
                   id="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minim 6 caractere"
+                  placeholder="Minimum 10 caractere, parolă unică"
                 />
               </div>
 
