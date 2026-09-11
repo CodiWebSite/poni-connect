@@ -47,7 +47,7 @@ const LeaveCalendar = () => {
   const [loading, setLoading] = useState(true);
 
   // Restrict access to approvers/HR/admin only
-  const hasAccess = isSuperAdmin || canManageHR || isSef || isSefSRUS || isDesignatedApprover;
+  const hasAccess = isSuperAdmin || canManageHR || isSef || isSefSRUS || isDesignatedApprover || isInstituteLeadership;
 
   useEffect(() => {
     if (user) fetchData();
