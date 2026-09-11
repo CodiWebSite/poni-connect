@@ -4562,6 +4562,7 @@ export type Database = {
         Returns: boolean
       }
       can_publish_events: { Args: { _user_id: string }; Returns: boolean }
+      can_view_institute_leave: { Args: { _user_id: string }; Returns: boolean }
       can_view_medical_status: { Args: { _user_id: string }; Returns: boolean }
       can_view_restricted_management: {
         Args: { _user_id: string }
