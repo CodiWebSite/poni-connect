@@ -94,6 +94,11 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
   const [reauthTitle, setReauthTitle] = useState('');
   const [reauthDesc, setReauthDesc] = useState('');
   const [resettingMFA, setResettingMFA] = useState<string | null>(null);
+  const [pwdUser, setPwdUser] = useState<UserWithRole | null>(null);
+  const [tempPassword, setTempPassword] = useState('');
+  const [savingPwd, setSavingPwd] = useState(false);
+  const [pwdDone, setPwdDone] = useState(false);
+
 
   useEffect(() => {
     fetchUsers();
