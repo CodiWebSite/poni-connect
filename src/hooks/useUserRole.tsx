@@ -91,6 +91,7 @@ export function useUserRole() {
     isSalarizare,
     isMedicMuncii,
     isStaff,
+    isInstituteLeadership,
     canManageContent,
     canManageHR,
     canManageLibrary,
