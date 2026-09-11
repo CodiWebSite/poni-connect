@@ -27,7 +27,7 @@ interface TeamMember {
 
 const MyTeam = () => {
   const { user } = useAuth();
-  const { isSef, isSefSRUS, isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { isSef, isSefSRUS, isSuperAdmin, isInstituteLeadership, loading: roleLoading } = useUserRole();
   const { isDesignatedApprover, loading: approverLoading } = useIsApprover();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
