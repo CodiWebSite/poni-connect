@@ -67,6 +67,11 @@ export function useUserRole() {
   const isSalarizare = role === 'salarizare' || isSuperAdmin || allRoles.includes('salarizare');
   const isMedicMuncii = role === 'medic_medicina_muncii' || (isSuperAdmin && allRoles.includes('medic_medicina_muncii'));
   const isStaff = isSuperAdmin || isHR || isSefSRUS;
+  // Conducerea institutului: vizibilitate la nivel de institut (toți angajații / toate concediile)
+  const isInstituteLeadership =
+    role === 'secretar_stiintific' || role === 'director_institut' || role === 'director_adjunct' ||
+    isSuperAdmin ||
+    allRoles.includes('secretar_stiintific') || allRoles.includes('director_institut') || allRoles.includes('director_adjunct');
   
   const canManageHR = isSuperAdmin || isHR || isSefSRUS;
   const canManageContent = role !== null && role !== 'user';
@@ -86,6 +91,7 @@ export function useUserRole() {
     isSalarizare,
     isMedicMuncii,
     isStaff,
+    isInstituteLeadership,
     canManageContent,
     canManageHR,
     canManageLibrary,

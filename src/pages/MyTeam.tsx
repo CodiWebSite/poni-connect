@@ -27,13 +27,13 @@ interface TeamMember {
 
 const MyTeam = () => {
   const { user } = useAuth();
-  const { isSef, isSefSRUS, isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { isSef, isSefSRUS, isSuperAdmin, isInstituteLeadership, loading: roleLoading } = useUserRole();
   const { isDesignatedApprover, loading: approverLoading } = useIsApprover();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [department, setDepartment] = useState<string | null>(null);
 
-  const isDeptHead = isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover;
+  const isDeptHead = isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover || isInstituteLeadership;
 
   const getRemainingDays = (member: TeamMember) =>
     Math.max(0, member.total_leave_days - member.used_leave_days) + member.bonus_days + member.carryover_remaining;
@@ -41,23 +41,36 @@ const MyTeam = () => {
   useEffect(() => {
     if (!user || roleLoading || approverLoading || !isDeptHead) return;
     fetchTeam();
-  }, [user, roleLoading, approverLoading, isDeptHead]);
+  }, [user, roleLoading, approverLoading, isDeptHead, isInstituteLeadership]);
 
   const fetchTeam = async () => {
     if (!user) return;
     setLoading(true);
 
-    // Perimetru complet: departamentul propriu + toate departamentele aprobate + angajați individuali
-    const scope = await fetchApproverScope(user.id);
+    const rows: any[] = [];
 
-    if (scope.departments.length === 0 && scope.employeeUserIds.length === 0) {
+    // Conducerea institutului vede toți angajații
+    if (isInstituteLeadership) {
+      setDepartment('Toate departamentele');
+      const { data } = await supabase
+        .from('employee_personal_data')
+        .select('id, first_name, last_name, position, total_leave_days, used_leave_days, employee_record_id')
+        .eq('is_archived', false);
+      rows.push(...(data || []));
+    }
+
+    // Perimetru complet: departamentul propriu + toate departamentele aprobate + angajați individuali
+    const scope = isInstituteLeadership
+      ? { departments: [], employeeUserIds: [] }
+      : await fetchApproverScope(user.id);
+
+    if (!isInstituteLeadership && scope.departments.length === 0 && scope.employeeUserIds.length === 0) {
       setLoading(false);
       return;
     }
 
-    setDepartment(scope.departments.join(' • ') || null);
+    if (!isInstituteLeadership) setDepartment(scope.departments.join(' • ') || null);
 
-    const rows: any[] = [];
     if (scope.departments.length > 0) {
       const { data } = await supabase
         .from('employee_personal_data')

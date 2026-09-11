@@ -37,7 +37,7 @@ const DAY_NAMES: Record<number, string> = { 0: 'Dum', 1: 'Lun', 2: 'Mar', 3: 'Mi
 
 const LeaveCalendar = () => {
   const { user } = useAuth();
-  const { isSuperAdmin, canManageHR, isSef, isSefSRUS } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, isInstituteLeadership } = useUserRole();
   const { isDesignatedApprover, loading: approverLoading } = useIsApprover();
   const isMobile = useIsMobile();
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -47,7 +47,7 @@ const LeaveCalendar = () => {
   const [loading, setLoading] = useState(true);
 
   // Restrict access to approvers/HR/admin only
-  const hasAccess = isSuperAdmin || canManageHR || isSef || isSefSRUS || isDesignatedApprover;
+  const hasAccess = isSuperAdmin || canManageHR || isSef || isSefSRUS || isDesignatedApprover || isInstituteLeadership;
 
   useEffect(() => {
     if (user) fetchData();
@@ -65,9 +65,10 @@ const LeaveCalendar = () => {
     const scopeDepts = new Set(scope.departments.map(d => d.toLowerCase()));
     if (userDept) scopeDepts.add(userDept.toLowerCase());
     const scopeUserIds = new Set(scope.employeeUserIds);
-    setDepartment(scope.departments.length > 1 ? scope.departments.join(' • ') : userDept);
+    const seesEveryone = isInstituteLeadership || canManageHR || isSuperAdmin;
+    setDepartment(seesEveryone ? 'Toate departamentele' : (scope.departments.length > 1 ? scope.departments.join(' • ') : userDept));
     const inScope = (empDept: string | null | undefined, empUserId?: string | null) =>
-      (!!empDept && scopeDepts.has(empDept.toLowerCase())) || (!!empUserId && scopeUserIds.has(empUserId));
+      seesEveryone || (!!empDept && scopeDepts.has(empDept.toLowerCase())) || (!!empUserId && scopeUserIds.has(empUserId));
 
     const { data: holidays } = await supabase.from('custom_holidays').select('holiday_date, name');
     const holidayMap: Record<string, string> = {};
