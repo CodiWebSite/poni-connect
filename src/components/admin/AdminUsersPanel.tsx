@@ -282,6 +282,41 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
     setResettingMFA(null);
   };
 
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    const rnd = new Uint32Array(14);
+    crypto.getRandomValues(rnd);
+    return 'Icmpp-' + Array.from(rnd).map(n => chars[n % chars.length]).join('');
+  };
+
+  const openPasswordDialog = (u: UserWithRole) => {
+    setPwdUser(u);
+    setTempPassword(generatePassword());
+    setPwdDone(false);
+  };
+
+  const applyPassword = async () => {
+    if (!pwdUser) return;
+    setSavingPwd(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-set-password', {
+        body: { userId: pwdUser.user_id, password: tempPassword },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setPwdDone(true);
+        toast({ title: 'Parolă schimbată', description: `Parola temporară a fost setată pentru ${pwdUser.full_name}.` });
+      } else {
+        toast({ title: 'Eroare', description: data?.error || 'Nu s-a putut schimba parola.', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Eroare', description: err.message || 'Eroare la schimbarea parolei.', variant: 'destructive' });
+    }
+    setSavingPwd(false);
+  };
+
+
+
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const filteredUsers = users.filter(u => {
