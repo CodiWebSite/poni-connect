@@ -217,9 +217,18 @@ function MFAGuard({ children }: { children: React.ReactNode }) {
       } catch (error) {
         if (cancelled) return;
         console.error('[MFAGuard] Verificarea MFA a eșuat', error);
-        // Fail closed but not locked out: ask for the 2FA code instead of
-        // blocking every route behind a full-screen error.
-        setNeedsMFA(true);
+        // Transient failure: only show the 2FA challenge if the account really
+        // has a verified TOTP factor, otherwise the user would be stuck on a
+        // code screen with no code to enter.
+        try {
+          const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+          if (cancelled) return;
+          if (factorsError) throw factorsError;
+          const hasVerifiedTotp = (factors?.totp || []).some((f: any) => f.status === 'verified');
+          setNeedsMFA(hasVerifiedTotp);
+        } catch {
+          if (!cancelled) setNeedsMFA(false);
+        }
       }
     })();
 
