@@ -47,17 +47,30 @@ const MyTeam = () => {
     if (!user) return;
     setLoading(true);
 
-    // Perimetru complet: departamentul propriu + toate departamentele aprobate + angajați individuali
-    const scope = await fetchApproverScope(user.id);
+    const rows: any[] = [];
 
-    if (scope.departments.length === 0 && scope.employeeUserIds.length === 0) {
+    // Conducerea institutului vede toți angajații
+    if (isInstituteLeadership) {
+      setDepartment('Toate departamentele');
+      const { data } = await supabase
+        .from('employee_personal_data')
+        .select('id, first_name, last_name, position, total_leave_days, used_leave_days, employee_record_id')
+        .eq('is_archived', false);
+      rows.push(...(data || []));
+    }
+
+    // Perimetru complet: departamentul propriu + toate departamentele aprobate + angajați individuali
+    const scope = isInstituteLeadership
+      ? { departments: [], employeeUserIds: [] }
+      : await fetchApproverScope(user.id);
+
+    if (!isInstituteLeadership && scope.departments.length === 0 && scope.employeeUserIds.length === 0) {
       setLoading(false);
       return;
     }
 
-    setDepartment(scope.departments.join(' • ') || null);
+    if (!isInstituteLeadership) setDepartment(scope.departments.join(' • ') || null);
 
-    const rows: any[] = [];
     if (scope.departments.length > 0) {
       const { data } = await supabase
         .from('employee_personal_data')
