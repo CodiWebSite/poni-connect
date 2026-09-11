@@ -33,7 +33,7 @@ const MyTeam = () => {
   const [loading, setLoading] = useState(true);
   const [department, setDepartment] = useState<string | null>(null);
 
-  const isDeptHead = isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover;
+  const isDeptHead = isSef || isSefSRUS || isSuperAdmin || isDesignatedApprover || isInstituteLeadership;
 
   const getRemainingDays = (member: TeamMember) =>
     Math.max(0, member.total_leave_days - member.used_leave_days) + member.bonus_days + member.carryover_remaining;
