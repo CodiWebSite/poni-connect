@@ -407,6 +407,15 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
                             <div className="flex items-center justify-end gap-1">
                               <Button
                                 variant="ghost" size="icon"
+                                className="h-8 w-8 text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30"
+                                onClick={() => openPasswordDialog(u)}
+                                disabled={u.user_id === user?.id}
+                                title="Setează parolă temporară"
+                              >
+                                <KeyRound className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost" size="icon"
                                 className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
                                 onClick={() => resetMFA(u)}
                                 disabled={resettingMFA === u.user_id || u.user_id === user?.id}
@@ -414,6 +423,7 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
                               >
                                 {resettingMFA === u.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldOff className="w-4 h-4" />}
                               </Button>
+
                               <Button
                                 variant="ghost" size="icon"
                                 className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
