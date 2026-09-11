@@ -65,9 +65,10 @@ const LeaveCalendar = () => {
     const scopeDepts = new Set(scope.departments.map(d => d.toLowerCase()));
     if (userDept) scopeDepts.add(userDept.toLowerCase());
     const scopeUserIds = new Set(scope.employeeUserIds);
-    setDepartment(scope.departments.length > 1 ? scope.departments.join(' • ') : userDept);
+    const seesEveryone = isInstituteLeadership || canManageHR || isSuperAdmin;
+    setDepartment(seesEveryone ? 'Toate departamentele' : (scope.departments.length > 1 ? scope.departments.join(' • ') : userDept));
     const inScope = (empDept: string | null | undefined, empUserId?: string | null) =>
-      (!!empDept && scopeDepts.has(empDept.toLowerCase())) || (!!empUserId && scopeUserIds.has(empUserId));
+      seesEveryone || (!!empDept && scopeDepts.has(empDept.toLowerCase())) || (!!empUserId && scopeUserIds.has(empUserId));
 
     const { data: holidays } = await supabase.from('custom_holidays').select('holiday_date, name');
     const holidayMap: Record<string, string> = {};
