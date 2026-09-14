@@ -64,3 +64,5 @@ project_id = "erghywhqrxmwqptusbxd"
   [functions.reply-helpdesk]
     verify_jwt = false
 
+  [functions.notify-payslip-distributed]
+    verify_jwt = false

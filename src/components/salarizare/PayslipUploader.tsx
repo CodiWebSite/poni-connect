@@ -357,9 +357,31 @@ export default function PayslipUploader() {
       } else {
         toast.success(`Distribuit către ${totalDistributed} angajați.${allFailures.length ? ` ${allFailures.length} eșecuri.` : ''}`);
       }
-      setDistProgress(p => (p ? { ...p, phase: 'done', done: totalDistributed, total: Math.max(p.total, totalDistributed), elapsedMs: Date.now() - p.startedAt, message: `Fluturașii sunt din nou disponibili în „Fluturașii mei”.${allFailures.length ? ` ${allFailures.length} eșecuri.` : ''}` } : p));
+
+      // Notificare pe e-mail: fiecare angajat află că fluturașul e disponibil în Intranet.
+      let emailsSent = 0;
+      try {
+        setDistProgress(p => (p ? { ...p, message: 'Se trimit e-mailurile de notificare…' } : p));
+        let mailSafety = 60;
+        while (mailSafety-- > 0) {
+          const res = await supabase.functions.invoke('notify-payslip-distributed', {
+            body: { batch_id: batchId, chunk_size: 40 },
+          });
+          if (res.error) throw new Error(await getFunctionErrorMessage(res.error, 'Eroare la trimiterea e-mailurilor'));
+          if (res.data?.error) throw new Error(res.data.error);
+          emailsSent += Number(res.data?.sent ?? 0);
+          setDistProgress(p => (p ? { ...p, message: `Se trimit e-mailurile… ${emailsSent} trimise` } : p));
+          if (res.data?.done) break;
+        }
+        if (emailsSent > 0) toast.success(`${emailsSent} e-mailuri de notificare trimise.`);
+      } catch (mailErr) {
+        toast.warning(`Fluturașii au fost distribuiți, dar notificarea pe e-mail a eșuat: ${(mailErr as Error).message}`);
+      }
+
+      setDistProgress(p => (p ? { ...p, phase: 'done', done: totalDistributed, total: Math.max(p.total, totalDistributed), elapsedMs: Date.now() - p.startedAt, message: `Fluturașii sunt disponibili în „Fluturașii mei”.${emailsSent ? ` ${emailsSent} e-mailuri trimise.` : ''}${allFailures.length ? ` ${allFailures.length} eșecuri.` : ''}` } : p));
       await loadBatches();
       await loadSlips(batchId);
+
     } catch (e) {
       toast.error((e as Error).message);
       setDistProgress(p => (p ? { ...p, phase: 'failed', elapsedMs: Date.now() - p.startedAt, message: (e as Error).message } : p));
