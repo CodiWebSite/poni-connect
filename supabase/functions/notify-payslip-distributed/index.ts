@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
     const done = remaining <= 0;
 
     await admin.from("payslip_audit_log").insert({
-      user_id: userData.user.id,
+      user_id: actorId,
       batch_id: batchId,
       action: done ? "email_notify" : "email_notify_chunk",
       details: { sent, skipped: skipped.length, failed: failed.length, remaining },
