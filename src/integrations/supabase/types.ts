@@ -2848,6 +2848,7 @@ export type Database = {
           created_at: string
           distributed_at: string | null
           download_count: number
+          email_notified_at: string | null
           employee_epd_id: string | null
           file_path: string | null
           file_path_encrypted: string | null
@@ -2869,6 +2870,7 @@ export type Database = {
           created_at?: string
           distributed_at?: string | null
           download_count?: number
+          email_notified_at?: string | null
           employee_epd_id?: string | null
           file_path?: string | null
           file_path_encrypted?: string | null
@@ -2890,6 +2892,7 @@ export type Database = {
           created_at?: string
           distributed_at?: string | null
           download_count?: number
+          email_notified_at?: string | null
           employee_epd_id?: string | null
           file_path?: string | null
           file_path_encrypted?: string | null
