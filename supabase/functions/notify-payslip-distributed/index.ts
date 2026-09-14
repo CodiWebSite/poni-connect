@@ -71,14 +71,19 @@ Deno.serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceKey);
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData } = await admin.auth.getUser(token);
-    if (!userData?.user) return jsonResp({ error: "Sesiune invalidă" }, 401);
-
-    const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userData.user.id);
-    const roleSet = new Set((roles ?? []).map((r: { role: string }) => r.role));
-    if (!(roleSet.has("super_admin") || roleSet.has("salarizare"))) {
-      return jsonResp({ error: "Nu ai permisiuni" }, 403);
+    const isServiceCall = token === serviceKey;
+    let actorId: string | null = null;
+    if (!isServiceCall) {
+      const { data: userData } = await admin.auth.getUser(token);
+      if (!userData?.user) return jsonResp({ error: "Sesiune invalidă" }, 401);
+      actorId = userData.user.id;
+      const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", actorId);
+      const roleSet = new Set((roles ?? []).map((r: { role: string }) => r.role));
+      if (!(roleSet.has("super_admin") || roleSet.has("salarizare"))) {
+        return jsonResp({ error: "Nu ai permisiuni" }, 403);
+      }
     }
+
 
     const body = await req.json().catch(() => ({}));
     const batchId: string | undefined = body.batch_id;
