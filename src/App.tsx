@@ -277,6 +277,13 @@ function DoctoralAccessGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Doctoranzii văd profilul academic dedicat; restul, profilul de angajat. */
+function ProfileRoute() {
+  const { role, loading } = useUserRole();
+  if (loading) return <RouteFallback />;
+  return role === 'doctorand' ? <DoctoralProfile /> : <MyProfile />;
+}
+
 /** Resetează bariera de eroare la fiecare schimbare de rută. */
 function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
   const location = useLocation();
