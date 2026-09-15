@@ -1,30 +1,39 @@
-// Romanian public holidays 2025-2028
-const PUBLIC_HOLIDAYS: Record<number, string[]> = {
-  2025: [
-    "2025-01-01","2025-01-02","2025-01-06","2025-01-07","2025-01-24",
-    "2025-04-18","2025-04-19","2025-04-20","2025-04-21",
-    "2025-05-01","2025-06-01","2025-06-08","2025-06-09",
-    "2025-08-15","2025-11-30","2025-12-01","2025-12-25","2025-12-26",
-  ],
-  2026: [
-    "2026-01-01","2026-01-02","2026-01-06","2026-01-07","2026-01-24",
-    "2026-04-10","2026-04-11","2026-04-12","2026-04-13",
-    "2026-05-01","2026-05-31","2026-06-01",
-    "2026-08-15","2026-11-30","2026-12-01","2026-12-25","2026-12-26",
-  ],
-  2027: [
-    "2027-01-01","2027-01-02","2027-01-06","2027-01-07","2027-01-24",
-    "2027-05-01","2027-05-02","2027-05-03","2027-05-04",
-    "2027-06-01","2027-06-20","2027-06-21",
-    "2027-08-15","2027-11-30","2027-12-01","2027-12-25","2027-12-26",
-  ],
-  2028: [
-    "2028-01-01","2028-01-02","2028-01-06","2028-01-07","2028-01-24",
-    "2028-04-14","2028-04-15","2028-04-16","2028-04-17",
-    "2028-05-01","2028-06-01","2028-06-04","2028-06-05",
-    "2028-08-15","2028-11-30","2028-12-01","2028-12-25","2028-12-26",
-  ],
-};
+// Sărbătorile legale din România (Codul Muncii art. 139) — calculate automat
+const FIXED_HOLIDAYS = [
+  "01-01","01-02","01-06","01-07","01-24",
+  "05-01","06-01","08-15","11-30","12-01","12-25","12-26",
+];
+
+function orthodoxEaster(year: number): Date {
+  const a = year % 4;
+  const b = year % 7;
+  const c = year % 19;
+  const d = (19 * c + 15) % 30;
+  const e = (2 * a + 4 * b - d + 34) % 7;
+  const month = Math.floor((d + e + 114) / 31);
+  const day = ((d + e + 114) % 31) + 1;
+  const julian = new Date(year, month - 1, day);
+  julian.setDate(julian.getDate() + 13);
+  return julian;
+}
+
+const holidayCache = new Map<number, string[]>();
+
+function holidaysForYear(year: number): string[] {
+  const cached = holidayCache.get(year);
+  if (cached) return cached;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const key = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const list = FIXED_HOLIDAYS.map((mmdd) => `${year}-${mmdd}`);
+  const easter = orthodoxEaster(year);
+  [-2, 0, 1, 49, 50].forEach((offset) => {
+    const d = new Date(easter.getFullYear(), easter.getMonth(), easter.getDate());
+    d.setDate(d.getDate() + offset);
+    list.push(key(d));
+  });
+  holidayCache.set(year, list);
+  return list;
+}
 
 function isWeekend(d: Date): boolean {
   const day = d.getDay();
@@ -32,18 +41,21 @@ function isWeekend(d: Date): boolean {
 }
 
 function formatDate(d: Date): string {
-  return d.toISOString().split("T")[0];
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export function calculateWorkingDays(startDate: string, endDate: string): number {
-  const start = new Date(startDate + "T00:00:00");
-  const end = new Date(endDate + "T00:00:00");
+  const [sy, sm, sd] = startDate.split("-").map(Number);
+  const [ey, em, ed] = endDate.split("-").map(Number);
+  // ora 12:00 evită orice pierdere de zi la trecerea orei de vară/iarnă
+  const start = new Date(sy, sm - 1, sd, 12, 0, 0);
+  const end = new Date(ey, em - 1, ed, 12, 0, 0);
   let count = 0;
   const current = new Date(start);
   while (current <= end) {
     const ds = formatDate(current);
-    const year = current.getFullYear();
-    if (!isWeekend(current) && !(PUBLIC_HOLIDAYS[year]?.includes(ds))) {
+    if (!isWeekend(current) && !holidaysForYear(current.getFullYear()).includes(ds)) {
       count++;
     }
     current.setDate(current.getDate() + 1);
