@@ -117,6 +117,15 @@ const Auth = () => {
   const requiresTurnstile = isTurnstileRequired();
 
   useEffect(() => {
+    if (accountType !== 'doctorand' || coordinators.length > 0) return;
+    supabase.from('doctoral_coordinators')
+      .select('id,full_name,academic_title,doctoral_school,research_field')
+      .eq('is_active', true)
+      .order('full_name')
+      .then(({ data }) => setCoordinators(data || []));
+  }, [accountType, coordinators.length]);
+
+  useEffect(() => {
     if (user) {
       navigate('/');
     }
@@ -230,7 +239,10 @@ const Auth = () => {
         doctoral_school: doctoralData.doctoralSchool, thesis_title: doctoralData.thesisTitle,
         study_year: Number(doctoralData.studyYear), start_date: doctoralData.startDate,
         expected_completion_date: doctoralData.expectedCompletionDate,
-        coordinator_name: doctoralData.coordinatorName,
+        coordinator_name: doctoralData.coordinatorId
+          ? (coordinators.find((item) => item.id === doctoralData.coordinatorId)?.full_name || doctoralData.coordinatorName)
+          : doctoralData.coordinatorName,
+        coordinator_id: doctoralData.coordinatorId,
       } : { account_type: 'employee' });
     
     if (error) {
@@ -254,7 +266,7 @@ const Auth = () => {
       setConfirmationEmail(signupData.email);
       setShowEmailConfirmation(true);
       setSignupData({ email: '', password: '', fullName: '' });
-      setDoctoralData({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '' });
+      setDoctoralData({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '', coordinatorId: '' });
     }
     
     setIsLoading(false);
