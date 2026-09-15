@@ -304,7 +304,12 @@ const DoctoralCoordinator = () => {
         ) : (
           <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
             <div className="space-y-2">
-              {students.map((item) => (
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Caută doctorand sau temă" className="pl-9" />
+              </div>
+              {visibleStudents.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Niciun rezultat.</p>}
+              {visibleStudents.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setSelectedId(item.id)}
@@ -389,19 +394,53 @@ const DoctoralCoordinator = () => {
                           {item.description && <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>}
                           {item.due_date && <p className="mt-1 text-xs font-medium text-primary">Termen: {format(parseISO(item.due_date), 'd MMMM yyyy', { locale: ro })}</p>}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           {item.status !== 'approved'
                             ? <Button size="sm" onClick={() => setMilestoneStatus(item, 'approved')}><Check className="mr-1 h-4 w-4" />Validează</Button>
                             : <Button size="sm" variant="outline" onClick={() => setMilestoneStatus(item, 'in_progress')}><RotateCcw className="mr-1 h-4 w-4" />Redeschide</Button>}
+                          <Button size="sm" variant="outline" onClick={() => setEditingMilestone({ id: item.id, title: item.title, description: item.description || '', due_date: item.due_date || '' })}><Pencil className="mr-1 h-4 w-4" />Modifică</Button>
+                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteMilestone(item)}><Trash2 className="mr-1 h-4 w-4" />Șterge</Button>
                         </div>
+                        {editingMilestone?.id === item.id && (
+                          <div className="w-full space-y-3 rounded-xl border border-primary/40 bg-primary/5 p-4">
+                            <div className="grid gap-3 sm:grid-cols-[1fr_200px]">
+                              <div className="space-y-2"><Label htmlFor={`edit-title-${item.id}`}>Titlu</Label><Input id={`edit-title-${item.id}`} value={editingMilestone.title} onChange={(e) => setEditingMilestone({ ...editingMilestone, title: e.target.value })} /></div>
+                              <div className="space-y-2"><Label htmlFor={`edit-date-${item.id}`}>Termen</Label><Input id={`edit-date-${item.id}`} type="date" value={editingMilestone.due_date} onChange={(e) => setEditingMilestone({ ...editingMilestone, due_date: e.target.value })} /></div>
+                            </div>
+                            <div className="space-y-2"><Label htmlFor={`edit-desc-${item.id}`}>Detalii</Label><Textarea id={`edit-desc-${item.id}`} rows={2} value={editingMilestone.description} onChange={(e) => setEditingMilestone({ ...editingMilestone, description: e.target.value })} /></div>
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={saveMilestoneEdit}><Check className="mr-1 h-4 w-4" />Salvează</Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditingMilestone(null)}><X className="mr-1 h-4 w-4" />Renunță</Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="documents">
+                  <Card className="mb-4"><CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Upload className="h-4 w-4" />Încarcă un document pentru doctorand</CardTitle></CardHeader><CardContent className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+                      <div className="space-y-2"><Label htmlFor="doc-title">Titlu document</Label><Input id="doc-title" value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} placeholder="Ex: Fișă de evaluare anuală" /></div>
+                      <div className="space-y-2">
+                        <Label htmlFor="doc-file">Fișier (max. 20 MB)</Label>
+                        <Input
+                          id="doc-file"
+                          type="file"
+                          disabled={uploading}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = '';
+                            if (file) uploadDocument(file);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {uploading && <p className="text-sm text-muted-foreground">Se încarcă documentul...</p>}
+                  </CardContent></Card>
                   <div className="space-y-2">
-                    {documents.length === 0 && <p className="py-10 text-center text-muted-foreground">Doctorandul nu a încărcat încă documente.</p>}
+                    {documents.length === 0 && <p className="py-10 text-center text-muted-foreground">Nu există încă documente.</p>}
                     {documents.map((doc) => (
                       <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-border py-4">
                         <div className="min-w-0">
@@ -413,6 +452,7 @@ const DoctoralCoordinator = () => {
                           <Button size="sm" variant="outline" onClick={() => openDocument(doc)}><Download className="mr-1 h-4 w-4" />Deschide</Button>
                           <Button size="sm" variant="outline" onClick={() => reviewDocument(doc, 'changes_requested')}><MessageSquareText className="mr-1 h-4 w-4" />Completări</Button>
                           {doc.status !== 'approved' && <Button size="sm" onClick={() => reviewDocument(doc, 'approved')}><Check className="mr-1 h-4 w-4" />Aprobă</Button>}
+                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteDocument(doc)}><Trash2 className="mr-1 h-4 w-4" />Șterge</Button>
                         </div>
                       </div>
                     ))}
@@ -434,7 +474,12 @@ const DoctoralCoordinator = () => {
                       <div key={note.id} className="border-b border-border py-4">
                         <div className="flex items-center justify-between gap-2">
                           <Badge variant={note.visibility === 'shared' ? 'default' : 'secondary'}>{note.visibility === 'shared' ? 'Trimis doctorandului' : 'Notă privată'}</Badge>
-                          <span className="text-xs text-muted-foreground">{format(new Date(note.created_at), 'dd.MM.yyyy HH:mm')}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{format(new Date(note.created_at), 'dd.MM.yyyy HH:mm')}</span>
+                            {(note.author_id === user?.id || isManager) && (
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" onClick={() => deleteNote(note)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                            )}
+                          </div>
                         </div>
                         <p className="mt-2 whitespace-pre-wrap text-sm">{note.body}</p>
                       </div>
