@@ -31,6 +31,7 @@ import Maintenance from "./pages/Maintenance";
 // Restul rutelor — încărcate la cerere (code splitting)
 const Settings = lazy(() => import("./pages/Settings"));
 const MyProfile = lazy(() => import("./pages/MyProfile"));
+const DoctoralProfile = lazy(() => import("./pages/DoctoralProfile"));
 const HRManagement = lazy(() => import("./pages/HRManagement"));
 const Admin = lazy(() => import("./pages/Admin"));
 const LeaveCalendar = lazy(() => import("./pages/LeaveCalendar"));
