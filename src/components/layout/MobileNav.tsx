@@ -49,7 +49,7 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, role } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess, role } = useUserRole();
   const { isCoordinator: isDoctoralCoordinator } = useDoctoralCoordinator();
   const { isDesignatedApprover } = useIsApprover();
   const [isOpen, setIsOpen] = useState(false);
@@ -129,6 +129,11 @@ const MobileNav = () => {
     { icon: Settings, label: 'Setări', path: '/settings' },
     
     ...(isDoctoralCoordinator ? [{ icon: GraduationCap, label: 'Doctoranzii mei', path: '/doctoral/coordonator' }] : []),
+    ...(hasDoctoralAccess && !isDoctorand ? [
+      { icon: GraduationCap, label: 'Parcursul meu doctoral', path: '/doctoral' },
+      { icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' },
+      { icon: BookOpen, label: 'Școala Doctorală', path: '/doctoral/scoala' },
+    ] : []),
     ...(isSuperAdmin ? [{ icon: ServerCog, label: 'Stare Sistem', path: '/system-status' }] : []),
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
