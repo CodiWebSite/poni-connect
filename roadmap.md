@@ -1,6 +1,7 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
+- [x] Centru de notificări activ: deschidere directă și filtrare alerte false din rețeaua ICMPP
 - [x] Noutăți recente în changelog și chenar vizibil pe Dashboard
 - [x] Sărbători legale calculate automat (Vinerea Mare, Paște, Rusalii) pentru orice an
 - [x] 5. Salvare automată a formularelor lungi (draft local + restaurare)

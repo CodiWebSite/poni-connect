@@ -29,6 +29,14 @@ function parseDeviceSummary(ua: string): string {
   return `${browser} / ${os}`;
 }
 
+function isInstituteIP(ip: string): boolean {
+  const normalized = ip.trim().replace(/^::ffff:/, "");
+  const parts = normalized.split(".").map(Number);
+  return parts.length === 4 &&
+    parts.every((part) => Number.isInteger(part) && part >= 0 && part <= 255) &&
+    parts[0] === 193 && parts[1] === 138 && parts[2] === 98;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -87,6 +95,7 @@ Deno.serve(async (req) => {
       let isSuspicious = false;
       let isNewDevice = false;
       let isNewIP = false;
+      const isTrustedInstituteNetwork = isInstituteIP(ip);
 
       if (recentLogs && recentLogs.length > 0) {
         const recentIPs = [...new Set(recentLogs.map((l: any) => l.ip_address))];
@@ -100,6 +109,13 @@ Deno.serve(async (req) => {
           isNewDevice = true;
           if (recentLogs.length >= 3) isSuspicious = true;
         }
+      }
+
+      // The institute network is trusted. Keep the login and device events in the
+      // security journal, but do not classify its changing workstation IPs as suspicious.
+      if (isTrustedInstituteNetwork) {
+        isSuspicious = false;
+        isNewIP = false;
       }
 
       // Insert login log

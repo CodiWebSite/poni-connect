@@ -324,6 +324,24 @@ function getUrlForNotification(
       return relatedId ? `/announcements?id=${relatedId}` : "/announcements";
     case "hr_request":
       return "/hr-management";
+    case "data_correction":
+      return "/hr-management";
+    case "payslip":
+      return "/my-profile";
+    case "payslip_issue_report":
+      return "/salarizare";
+    case "meeting":
+    case "meeting_reminder_log":
+      return "/agenda-intalniri";
+    case "medical_record":
+      return "/medicina-muncii";
+    case "security_event":
+    case "auth_login":
+      return "/securitatea-mea";
+    case "social_post":
+      return relatedId ? `/social?post=${relatedId}` : "/social";
+    case "system_alert":
+      return "/system-status";
     case "suggestion":
       return relatedId ? `/sugestii?id=${relatedId}` : "/sugestii";
     case "helpdesk_ticket":
