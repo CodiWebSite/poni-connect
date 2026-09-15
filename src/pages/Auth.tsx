@@ -360,7 +360,7 @@ const Auth = () => {
           <MolecularPattern className="w-full h-full" />
         </div>
 
-        <div className="relative w-full max-w-md animate-fade-in">
+        <div className="relative my-auto w-full max-w-md animate-fade-in">
           {/* Mobile brand header */}
           <div className="lg:hidden mb-10 flex flex-col items-center text-center">
             <img
