@@ -104,12 +104,12 @@ const DoctoralSchool = () => {
   }, [search]);
 
   if (loading || coordLoading) {
-    return <MainLayout><div className="p-6 text-sm text-muted-foreground">Se încarcă…</div></MainLayout>;
+    return <MainLayout title="Școala Doctorală"><div className="p-6 text-sm text-muted-foreground">Se încarcă…</div></MainLayout>;
   }
   if (!allowed) return <Navigate to="/" replace />;
 
   return (
-    <MainLayout>
+    <MainLayout title="Școala Doctorală">
       <PageHeader
         eyebrow="ICMPP · Școala Doctorală de Științe Chimice"
         title="Școala Doctorală (SDSC)"
