@@ -41,18 +41,21 @@ function isWeekend(d: Date): boolean {
 }
 
 function formatDate(d: Date): string {
-  return d.toISOString().split("T")[0];
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export function calculateWorkingDays(startDate: string, endDate: string): number {
-  const start = new Date(startDate + "T00:00:00");
-  const end = new Date(endDate + "T00:00:00");
+  const [sy, sm, sd] = startDate.split("-").map(Number);
+  const [ey, em, ed] = endDate.split("-").map(Number);
+  // ora 12:00 evită orice pierdere de zi la trecerea orei de vară/iarnă
+  const start = new Date(sy, sm - 1, sd, 12, 0, 0);
+  const end = new Date(ey, em - 1, ed, 12, 0, 0);
   let count = 0;
   const current = new Date(start);
   while (current <= end) {
     const ds = formatDate(current);
-    const year = current.getFullYear();
-    if (!isWeekend(current) && !(PUBLIC_HOLIDAYS[year]?.includes(ds))) {
+    if (!isWeekend(current) && !holidaysForYear(current.getFullYear()).includes(ds)) {
       count++;
     }
     current.setDate(current.getDate() + 1);
