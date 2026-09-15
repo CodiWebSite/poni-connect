@@ -5059,6 +5059,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      notify_doctoral_student: {
+        Args: {
+          _message: string
+          _profile_id: string
+          _title: string
+          _type?: string
+        }
+        Returns: undefined
+      }
       recalculate_leave_balance: {
         Args: { target_epd_id?: string }
         Returns: {
