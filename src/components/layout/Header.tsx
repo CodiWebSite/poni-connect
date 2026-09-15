@@ -107,7 +107,7 @@ const Header = ({ title, description }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-1.5 md:gap-2">
-          <GlobalSearch />
+          {!isDoctorand && <GlobalSearch />}
 
           {/* Grouped icon actions */}
           <div className="flex items-center gap-0.5 rounded-lg border border-border/70 bg-secondary/40 p-0.5">
@@ -121,7 +121,7 @@ const Header = ({ title, description }: HeaderProps) => {
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
 
-            <HubSwitcher />
+            {!isDoctorand && <HubSwitcher />}
 
             <NotificationBell />
           </div>
