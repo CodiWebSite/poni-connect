@@ -621,7 +621,32 @@ const Auth = () => {
                           <div className="space-y-2"><Label htmlFor="doctoral-year">An de studiu</Label><Select value={doctoralData.studyYear} onValueChange={(value) => setDoctoralData({ ...doctoralData, studyYear: value })}><SelectTrigger id="doctoral-year" className={fieldClass}><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4,5,6].map(year => <SelectItem key={year} value={String(year)}>Anul {year}</SelectItem>)}</SelectContent></Select></div>
                         </div>
                         <div className="space-y-2"><Label htmlFor="doctoral-school">Școala doctorală</Label><Input id="doctoral-school" value={doctoralData.doctoralSchool} onChange={(e) => setDoctoralData({ ...doctoralData, doctoralSchool: e.target.value })} className={fieldClass} required /></div>
-                        <div className="space-y-2"><Label htmlFor="coordinator">Conducător de doctorat</Label><Input id="coordinator" value={doctoralData.coordinatorName} onChange={(e) => setDoctoralData({ ...doctoralData, coordinatorName: e.target.value })} className={fieldClass} required /></div>
+                        <div className="space-y-2">
+                          <Label htmlFor="coordinator">Conducător de doctorat</Label>
+                          {coordinators.length > 0 ? (
+                            <>
+                              <Select
+                                value={doctoralData.coordinatorId || (doctoralData.coordinatorName ? 'other' : '')}
+                                onValueChange={(value) => setDoctoralData({ ...doctoralData, coordinatorId: value === 'other' ? '' : value, coordinatorName: value === 'other' ? doctoralData.coordinatorName : '' })}
+                              >
+                                <SelectTrigger id="coordinator" className={fieldClass}><SelectValue placeholder="Alege conducătorul din listă" /></SelectTrigger>
+                                <SelectContent className="max-h-72">
+                                  {coordinators.map((item) => (
+                                    <SelectItem key={item.id} value={item.id}>
+                                      {item.academic_title ? `${item.academic_title} ` : ''}{item.full_name}{item.research_field ? ` · ${item.research_field}` : ''}
+                                    </SelectItem>
+                                  ))}
+                                  <SelectItem value="other">Conducătorul meu nu apare în listă</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {!doctoralData.coordinatorId && (
+                                <Input aria-label="Numele conducătorului" value={doctoralData.coordinatorName} onChange={(e) => setDoctoralData({ ...doctoralData, coordinatorName: e.target.value })} className={fieldClass} placeholder="Scrie numele conducătorului" />
+                              )}
+                            </>
+                          ) : (
+                            <Input id="coordinator" value={doctoralData.coordinatorName} onChange={(e) => setDoctoralData({ ...doctoralData, coordinatorName: e.target.value })} className={fieldClass} required />
+                          )}
+                        </div>
                         <div className="space-y-2"><Label htmlFor="thesis-title">Tema tezei</Label><Input id="thesis-title" value={doctoralData.thesisTitle} onChange={(e) => setDoctoralData({ ...doctoralData, thesisTitle: e.target.value })} className={fieldClass} required /></div>
                         <div className="grid gap-4 sm:grid-cols-2">
                           <div className="space-y-2"><Label htmlFor="doctoral-start">Data începerii</Label><Input id="doctoral-start" type="date" value={doctoralData.startDate} onChange={(e) => setDoctoralData({ ...doctoralData, startDate: e.target.value })} className={fieldClass} required /></div>
