@@ -331,7 +331,11 @@ const Sidebar = () => {
     });
 
   const mainItems = filterByAccess(allMainItems);
-  const managementItems = filterByAccess(allManagementItems);
+  const canManageDoctoral = !!role && ['super_admin', 'hr', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific'].includes(role);
+  const managementItems = [
+    ...filterByAccess(allManagementItems),
+    ...(canManageDoctoral ? [{ icon: GraduationCap, label: 'Spațiul Doctoral', path: '/doctoral' }] : []),
+  ];
   const isDoctorand = role === 'doctorand';
   const doctoralItems = [
     { icon: GraduationCap, label: 'Acasă doctoral', path: '/doctoral' },
