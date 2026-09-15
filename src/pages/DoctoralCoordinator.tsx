@@ -360,6 +360,16 @@ const DoctoralCoordinator = () => {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button onClick={saveThesis} disabled={saving}>{saving ? 'Se salvează...' : 'Salvează modificările'}</Button>
+                      <select
+                        aria-label="Stare parcurs doctoral"
+                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        value={selected?.status || ''}
+                        onChange={(event) => changeStudentStatus(event.target.value)}
+                      >
+                        <option value="active">Parcurs activ</option>
+                        <option value="suspended">Suspendat</option>
+                        <option value="completed">Finalizat</option>
+                      </select>
                       {isManager && selected && (
                         <select
                           aria-label="Alocă conducător de doctorat"
