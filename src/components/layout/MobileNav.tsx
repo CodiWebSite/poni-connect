@@ -127,6 +127,7 @@ const MobileNav = () => {
     ...(isSalarizare ? [{ icon: Banknote, label: 'Salarizare', path: '/salarizare' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     
+    ...(isDoctoralCoordinator ? [{ icon: GraduationCap, label: 'Doctoranzii mei', path: '/doctoral/coordonator' }] : []),
     ...(isSuperAdmin ? [{ icon: ServerCog, label: 'Stare Sistem', path: '/system-status' }] : []),
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
