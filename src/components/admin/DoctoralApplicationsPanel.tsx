@@ -33,7 +33,16 @@ const DoctoralApplicationsPanel = () => {
     setSaving(true);
     const { error } = await supabase.rpc('review_doctoral_application', { _profile_id: selected.id, _decision: decision, _notes: notes.trim() || null });
     if (error) toast.error(error.message.includes('confirmată') ? 'Doctorandul trebuie să confirme mai întâi adresa @icmpp.ro.' : 'Decizia nu a putut fi salvată');
-    else { toast.success('Cererea a fost actualizată'); setSelected(null); await load(); }
+    else {
+      toast.success('Cererea a fost actualizată');
+      if (decision === 'active') {
+        const { error: mailError } = await supabase.functions.invoke('notify-doctoral-approved', { body: { profile_id: selected.id } });
+        if (mailError) toast.warning('Accesul este activ, dar emailul de bun venit nu a putut fi trimis.');
+        else toast.success('Doctorandul a fost anunțat pe email.');
+      }
+      setSelected(null);
+      await load();
+    }
     setSaving(false);
   };
 
