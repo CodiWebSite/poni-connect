@@ -647,7 +647,7 @@ const Auth = () => {
                             <Input id="coordinator" value={doctoralData.coordinatorName} onChange={(e) => setDoctoralData({ ...doctoralData, coordinatorName: e.target.value })} className={fieldClass} required />
                           )}
                         </div>
-                        <div className="space-y-2"><Label htmlFor="thesis-title">Tema tezei</Label><Input id="thesis-title" value={doctoralData.thesisTitle} onChange={(e) => setDoctoralData({ ...doctoralData, thesisTitle: e.target.value })} className={fieldClass} required /></div>
+                        <div className="space-y-2"><Label htmlFor="thesis-title">Titlul tezei</Label><Input id="thesis-title" value={doctoralData.thesisTitle} onChange={(e) => setDoctoralData({ ...doctoralData, thesisTitle: e.target.value })} className={fieldClass} required /></div>
                         <div className="grid gap-4 sm:grid-cols-2">
                           <div className="space-y-2"><Label htmlFor="doctoral-start">Data începerii</Label><Input id="doctoral-start" type="date" value={doctoralData.startDate} onChange={(e) => setDoctoralData({ ...doctoralData, startDate: e.target.value })} className={fieldClass} required /></div>
                           <div className="space-y-2"><Label htmlFor="doctoral-end">Termen estimat</Label><Input id="doctoral-end" type="date" value={doctoralData.expectedCompletionDate} onChange={(e) => setDoctoralData({ ...doctoralData, expectedCompletionDate: e.target.value })} className={fieldClass} required /></div>
