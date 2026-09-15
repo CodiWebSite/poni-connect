@@ -78,7 +78,17 @@ const DoctoralDashboard = () => {
 
   return (
     <MainLayout title="Spațiul Doctoral"><div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      <PageHeader eyebrow="ICMPP · Doctoranzi" title="Parcursul meu doctoral" description={profile?.thesis_title || 'Profil academic'} icon={GraduationCap} />
+      <PageHeader eyebrow="ICMPP · Doctoranzi" title={isManager ? 'Spațiul Doctoral' : 'Parcursul meu doctoral'} description={isManager ? 'Vizualizare pentru conducere: parcursul și documentele doctoranzilor' : profile?.thesis_title || 'Profil academic'} icon={GraduationCap} />
+      {isManager && (
+        <Card className="mb-6"><CardContent className="flex flex-wrap items-center gap-3 py-4">
+          <Label htmlFor="doctorand-select" className="text-sm text-muted-foreground">Doctorand</Label>
+          <select id="doctorand-select" value={selectedId || ''} onChange={(event) => setSelectedId(event.target.value)} className="h-10 min-w-[260px] rounded-md border border-input bg-background px-3 text-sm">
+            {allProfiles.length === 0 && <option value="">Nu există doctoranzi înregistrați</option>}
+            {allProfiles.map((item) => <option key={item.id} value={item.id}>{item.full_name || 'Fără nume'} · {statusLabel[item.status] || item.status}</option>)}
+          </select>
+          <Badge variant="outline">{allProfiles.length} doctoranzi</Badge>
+        </CardContent></Card>
+      )}
       <div className="mb-6 grid gap-4 md:grid-cols-3">
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Progres general</CardTitle></CardHeader><CardContent><div className="mb-2 flex items-end justify-between"><span className="text-3xl font-bold">{profile?.progress_percent || 0}%</span><span className="text-sm">Anul {profile?.study_year || '—'}</span></div><Progress value={profile?.progress_percent || 0} /></CardContent></Card>
         <Card><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm text-muted-foreground"><CalendarClock className="h-4 w-4" />Următorul termen</CardTitle></CardHeader><CardContent><p className="font-semibold">{nextMilestone?.title || 'Niciun termen stabilit'}</p>{nextMilestone?.due_date && <p className="mt-1 text-sm text-muted-foreground">{format(parseISO(nextMilestone.due_date), 'd MMMM yyyy', { locale: ro })} · {Math.max(0, differenceInCalendarDays(parseISO(nextMilestone.due_date), new Date()))} zile</p>}</CardContent></Card>
