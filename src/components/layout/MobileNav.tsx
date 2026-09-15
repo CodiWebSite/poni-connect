@@ -176,7 +176,7 @@ const MobileNav = () => {
             <img src="/logo-icmpp.png" alt="ICMPP Logo" className="w-10 h-10 object-contain" />
             <div>
               <h1 className="font-display font-bold text-lg leading-tight">ICMPP</h1>
-              <p className="text-xs text-sidebar-foreground/70">Intranet</p>
+              <p className="text-xs text-sidebar-foreground/70">{isDoctorand ? 'Spațiul Doctoral' : 'Intranet'}</p>
             </div>
           </div>
         </div>
