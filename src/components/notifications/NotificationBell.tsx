@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Check, CheckCheck, X } from 'lucide-react';
+import { Bell, Check, CheckCheck, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -12,10 +12,21 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+import { getNotificationRoute } from '@/utils/notificationRoutes';
 
 export function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const openNotification = async (notification: typeof notifications[number]) => {
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+    setOpen(false);
+    navigate(getNotificationRoute(notification));
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -73,19 +84,18 @@ export function NotificationBell() {
           ) : (
             <div className="divide-y">
               {notifications.map((notification) => (
-                <div
+                <Button
                   key={notification.id}
+                  type="button"
+                  variant="ghost"
                   className={cn(
-                    "p-3 cursor-pointer hover:bg-muted/50 transition-colors",
+                    "h-auto w-full justify-start rounded-none p-3 text-left hover:bg-muted/50",
                     !notification.read && "bg-primary/5"
                   )}
-                  onClick={() => {
-                    if (!notification.read) {
-                      markAsRead(notification.id);
-                    }
-                  }}
+                  onClick={() => openNotification(notification)}
+                  aria-label={`Deschide notificarea: ${notification.title}`}
                 >
-                  <div className="flex gap-3">
+                  <div className="flex w-full gap-3">
                     <div className="mt-0.5">
                       {getNotificationIcon(notification.type)}
                     </div>
@@ -106,8 +116,9 @@ export function NotificationBell() {
                     {!notification.read && (
                       <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
                     )}
+                    <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
                   </div>
-                </div>
+                </Button>
               ))}
             </div>
           )}
