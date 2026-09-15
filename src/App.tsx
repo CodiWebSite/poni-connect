@@ -31,6 +31,7 @@ import Maintenance from "./pages/Maintenance";
 // Restul rutelor — încărcate la cerere (code splitting)
 const Settings = lazy(() => import("./pages/Settings"));
 const MyProfile = lazy(() => import("./pages/MyProfile"));
+const DoctoralProfile = lazy(() => import("./pages/DoctoralProfile"));
 const HRManagement = lazy(() => import("./pages/HRManagement"));
 const Admin = lazy(() => import("./pages/Admin"));
 const LeaveCalendar = lazy(() => import("./pages/LeaveCalendar"));
@@ -276,6 +277,13 @@ function DoctoralAccessGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Doctoranzii văd profilul academic dedicat; restul, profilul de angajat. */
+function ProfileRoute() {
+  const { role, loading } = useUserRole();
+  if (loading) return <RouteFallback />;
+  return role === 'doctorand' ? <DoctoralProfile /> : <MyProfile />;
+}
+
 /** Resetează bariera de eroare la fiecare schimbare de rută. */
 function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -317,7 +325,7 @@ const App = () => (
                 <Route path="/doctoral/pending" element={<DoctoralPending />} />
                 
                 <Route path="/leave-calendar" element={<LeaveCalendar />} />
-                <Route path="/my-profile" element={<MyProfile />} />
+                <Route path="/my-profile" element={<ProfileRoute />} />
                 <Route path="/hr-management" element={<HRManagement />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/leave-request" element={<LeaveRequest />} />
