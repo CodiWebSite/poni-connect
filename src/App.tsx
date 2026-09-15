@@ -78,6 +78,7 @@ const DoctoralDashboard = lazy(() => import("./pages/DoctoralDashboard"));
 const DoctoralPending = lazy(() => import("./pages/DoctoralPending"));
 const DoctoralCoordinator = lazy(() => import("./pages/DoctoralCoordinator"));
 const DoctoralCommunity = lazy(() => import("./pages/DoctoralCommunity"));
+const DoctoralSchool = lazy(() => import("./pages/DoctoralSchool"));
 
 const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
 const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
@@ -327,6 +328,7 @@ const App = () => (
                 <Route path="/doctoral/pending" element={<DoctoralPending />} />
                 <Route path="/doctoral/coordonator" element={<DoctoralCoordinator />} />
                 <Route path="/doctoral/comunitate" element={<DoctoralCommunity />} />
+                <Route path="/doctoral/scoala" element={<DoctoralSchool />} />
                 
                 <Route path="/leave-calendar" element={<LeaveCalendar />} />
                 <Route path="/my-profile" element={<ProfileRoute />} />
