@@ -8,6 +8,7 @@
 - [x] 6. Căutare unică extinsă (pagini, tichete, ședințe, noutăți)
 - [x] 1. Centru de sănătate al platformei (eșecuri 24h + reîncercare) — tab „Eșecuri 24h" în /system-status
 - [x] 4. Aprobare cu un clic din e-mail / telefon (link one-time 7 zile, pagină /aprobare/:token)
+- [x] 11. Spațiul Doctoranzilor: înregistrare separată, aprobare, acces limitat, profil academic, parcurs, termene și documente private
 - [ ] 8. Raport trimestrial automat pentru conducere
 - [ ] 7. Registru de deplasări legat de concedii (blocare suprapuneri)
 
