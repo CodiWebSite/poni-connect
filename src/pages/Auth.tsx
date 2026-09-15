@@ -98,7 +98,8 @@ const Auth = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', fullName: '' });
   const [accountType, setAccountType] = useState<'employee' | 'doctorand'>('employee');
-  const [doctoralData, setDoctoralData] = useState({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '' });
+  const [doctoralData, setDoctoralData] = useState({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '', coordinatorId: '' });
+  const [coordinators, setCoordinators] = useState<{ id: string; full_name: string; academic_title: string | null; doctoral_school: string | null; research_field: string | null }[]>([]);
   const [loginToken, setLoginToken] = useState<string | null>(null);
   const [signupToken, setSignupToken] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -114,6 +115,15 @@ const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const requiresTurnstile = isTurnstileRequired();
+
+  useEffect(() => {
+    if (accountType !== 'doctorand' || coordinators.length > 0) return;
+    supabase.from('doctoral_coordinators')
+      .select('id,full_name,academic_title,doctoral_school,research_field')
+      .eq('is_active', true)
+      .order('full_name')
+      .then(({ data }) => setCoordinators(data || []));
+  }, [accountType, coordinators.length]);
 
   useEffect(() => {
     if (user) {
@@ -217,7 +227,7 @@ const Auth = () => {
       return;
     }
 
-    if (accountType === 'doctorand' && (!doctoralData.doctoralSchool || !doctoralData.thesisTitle || !doctoralData.coordinatorName || !doctoralData.startDate || !doctoralData.expectedCompletionDate)) {
+    if (accountType === 'doctorand' && (!doctoralData.doctoralSchool || !doctoralData.thesisTitle || (!doctoralData.coordinatorId && !doctoralData.coordinatorName) || !doctoralData.startDate || !doctoralData.expectedCompletionDate)) {
       toast.error('Completează toate datele academice obligatorii');
       setIsLoading(false);
       return;
@@ -229,7 +239,10 @@ const Auth = () => {
         doctoral_school: doctoralData.doctoralSchool, thesis_title: doctoralData.thesisTitle,
         study_year: Number(doctoralData.studyYear), start_date: doctoralData.startDate,
         expected_completion_date: doctoralData.expectedCompletionDate,
-        coordinator_name: doctoralData.coordinatorName,
+        coordinator_name: doctoralData.coordinatorId
+          ? (coordinators.find((item) => item.id === doctoralData.coordinatorId)?.full_name || doctoralData.coordinatorName)
+          : doctoralData.coordinatorName,
+        coordinator_id: doctoralData.coordinatorId,
       } : { account_type: 'employee' });
     
     if (error) {
@@ -253,7 +266,7 @@ const Auth = () => {
       setConfirmationEmail(signupData.email);
       setShowEmailConfirmation(true);
       setSignupData({ email: '', password: '', fullName: '' });
-      setDoctoralData({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '' });
+      setDoctoralData({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '', coordinatorId: '' });
     }
     
     setIsLoading(false);
@@ -608,7 +621,32 @@ const Auth = () => {
                           <div className="space-y-2"><Label htmlFor="doctoral-year">An de studiu</Label><Select value={doctoralData.studyYear} onValueChange={(value) => setDoctoralData({ ...doctoralData, studyYear: value })}><SelectTrigger id="doctoral-year" className={fieldClass}><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4,5,6].map(year => <SelectItem key={year} value={String(year)}>Anul {year}</SelectItem>)}</SelectContent></Select></div>
                         </div>
                         <div className="space-y-2"><Label htmlFor="doctoral-school">Școala doctorală</Label><Input id="doctoral-school" value={doctoralData.doctoralSchool} onChange={(e) => setDoctoralData({ ...doctoralData, doctoralSchool: e.target.value })} className={fieldClass} required /></div>
-                        <div className="space-y-2"><Label htmlFor="coordinator">Conducător de doctorat</Label><Input id="coordinator" value={doctoralData.coordinatorName} onChange={(e) => setDoctoralData({ ...doctoralData, coordinatorName: e.target.value })} className={fieldClass} required /></div>
+                        <div className="space-y-2">
+                          <Label htmlFor="coordinator">Conducător de doctorat</Label>
+                          {coordinators.length > 0 ? (
+                            <>
+                              <Select
+                                value={doctoralData.coordinatorId || (doctoralData.coordinatorName ? 'other' : '')}
+                                onValueChange={(value) => setDoctoralData({ ...doctoralData, coordinatorId: value === 'other' ? '' : value, coordinatorName: value === 'other' ? doctoralData.coordinatorName : '' })}
+                              >
+                                <SelectTrigger id="coordinator" className={fieldClass}><SelectValue placeholder="Alege conducătorul din listă" /></SelectTrigger>
+                                <SelectContent className="max-h-72">
+                                  {coordinators.map((item) => (
+                                    <SelectItem key={item.id} value={item.id}>
+                                      {item.academic_title ? `${item.academic_title} ` : ''}{item.full_name}{item.research_field ? ` · ${item.research_field}` : ''}
+                                    </SelectItem>
+                                  ))}
+                                  <SelectItem value="other">Conducătorul meu nu apare în listă</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {!doctoralData.coordinatorId && (
+                                <Input aria-label="Numele conducătorului" value={doctoralData.coordinatorName} onChange={(e) => setDoctoralData({ ...doctoralData, coordinatorName: e.target.value })} className={fieldClass} placeholder="Scrie numele conducătorului" />
+                              )}
+                            </>
+                          ) : (
+                            <Input id="coordinator" value={doctoralData.coordinatorName} onChange={(e) => setDoctoralData({ ...doctoralData, coordinatorName: e.target.value })} className={fieldClass} required />
+                          )}
+                        </div>
                         <div className="space-y-2"><Label htmlFor="thesis-title">Tema tezei</Label><Input id="thesis-title" value={doctoralData.thesisTitle} onChange={(e) => setDoctoralData({ ...doctoralData, thesisTitle: e.target.value })} className={fieldClass} required /></div>
                         <div className="grid gap-4 sm:grid-cols-2">
                           <div className="space-y-2"><Label htmlFor="doctoral-start">Data începerii</Label><Input id="doctoral-start" type="date" value={doctoralData.startDate} onChange={(e) => setDoctoralData({ ...doctoralData, startDate: e.target.value })} className={fieldClass} required /></div>

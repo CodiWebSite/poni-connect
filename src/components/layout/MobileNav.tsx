@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useDoctoralCoordinator } from '@/hooks/useDoctoralCoordinator';
 import { useIsApprover } from '@/hooks/useIsApprover';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -49,6 +50,7 @@ const MobileNav = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, role } = useUserRole();
+  const { isCoordinator: isDoctoralCoordinator } = useDoctoralCoordinator();
   const { isDesignatedApprover } = useIsApprover();
   const [isOpen, setIsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -125,6 +127,7 @@ const MobileNav = () => {
     ...(isSalarizare ? [{ icon: Banknote, label: 'Salarizare', path: '/salarizare' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     
+    ...(isDoctoralCoordinator ? [{ icon: GraduationCap, label: 'Doctoranzii mei', path: '/doctoral/coordonator' }] : []),
     ...(isSuperAdmin ? [{ icon: ServerCog, label: 'Stare Sistem', path: '/system-status' }] : []),
     ...(isSuperAdmin ? [{ icon: Shield, label: 'Administrare', path: '/admin' }] : []),
   ];
