@@ -325,7 +325,7 @@ const App = () => (
                 <Route path="/doctoral/pending" element={<DoctoralPending />} />
                 
                 <Route path="/leave-calendar" element={<LeaveCalendar />} />
-                <Route path="/my-profile" element={<MyProfile />} />
+                <Route path="/my-profile" element={<ProfileRoute />} />
                 <Route path="/hr-management" element={<HRManagement />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/leave-request" element={<LeaveRequest />} />
