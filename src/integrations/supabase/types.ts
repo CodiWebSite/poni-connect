@@ -968,6 +968,51 @@ export type Database = {
         }
         Relationships: []
       }
+      doctoral_coordinators: {
+        Row: {
+          academic_title: string | null
+          created_at: string
+          created_by: string | null
+          doctoral_school: string | null
+          email: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          max_students: number | null
+          research_field: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          academic_title?: string | null
+          created_at?: string
+          created_by?: string | null
+          doctoral_school?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          max_students?: number | null
+          research_field?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          academic_title?: string | null
+          created_at?: string
+          created_by?: string | null
+          doctoral_school?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          max_students?: number | null
+          research_field?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       doctoral_documents: {
         Row: {
           created_at: string
@@ -4984,6 +5029,7 @@ export type Database = {
         Args: { _community_id: string; _user_id: string }
         Returns: boolean
       }
+      is_doctoral_coordinator: { Args: { _user_id: string }; Returns: boolean }
       is_gdpr_officer: { Args: { _user_id: string }; Returns: boolean }
       is_ip_bypass_user: { Args: { _user_id: string }; Returns: boolean }
       is_leave_approver_for_epd: {

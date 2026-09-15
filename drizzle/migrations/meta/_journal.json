@@ -57,6 +57,13 @@
       "when": 1789459516107,
       "tag": "0007_doctoral_document_storage_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789461272830,
+      "tag": "0008_doctoral_coordinators",
+      "breakpoints": true
     }
   ]
 }
