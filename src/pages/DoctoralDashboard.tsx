@@ -27,7 +27,7 @@ const MANAGER_ROLES = ['super_admin', 'hr', 'sef_srus', 'director_institut', 'di
 
 const DoctoralDashboard = () => {
   const { user } = useAuth();
-  const { role, loading: roleLoading } = useUserRole();
+  const { role, hasDoctoralAccess, loading: roleLoading } = useUserRole();
   const isManager = !!role && MANAGER_ROLES.includes(role);
   const [profile, setProfile] = useState<DoctoralProfile | null>(null);
   const [allProfiles, setAllProfiles] = useState<(DoctoralProfile & { full_name: string | null })[]>([]);
@@ -65,7 +65,7 @@ const DoctoralDashboard = () => {
   const nextMilestone = useMemo(() => milestones.find((item) => item.status !== 'approved'), [milestones]);
 
   if (!roleLoading && role === 'doctorand_pending') return <Navigate to="/doctoral/pending" replace />;
-  if (!roleLoading && role !== 'doctorand' && !isManager) return <Navigate to="/" replace />;
+  if (!roleLoading && role !== 'doctorand' && !hasDoctoralAccess && !isManager) return <Navigate to="/" replace />;
 
   const uploadDocument = async (file?: File) => {
     if (!file || !profile || !user || !documentTitle.trim()) { toast.error('Completează titlul și alege documentul'); return; }

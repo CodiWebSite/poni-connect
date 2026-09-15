@@ -91,11 +91,11 @@ const DocList = ({ items }: { items: Doc[] }) => (
 );
 
 const DoctoralSchool = () => {
-  const { role, loading } = useUserRole();
+  const { role, hasDoctoralAccess, loading } = useUserRole();
   const { isCoordinator, loading: coordLoading } = useDoctoralCoordinator();
   const [search, setSearch] = useState('');
 
-  const allowed = !!role && (role === 'doctorand' || role === 'doctorand_pending' || MANAGER_ROLES.includes(role) || isCoordinator);
+  const allowed = !!role && (role === 'doctorand' || role === 'doctorand_pending' || hasDoctoralAccess || MANAGER_ROLES.includes(role) || isCoordinator);
 
   const filteredCoordinators = useMemo(() => {
     const query = search.trim().toLowerCase();
