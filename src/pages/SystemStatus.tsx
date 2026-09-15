@@ -4,6 +4,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OpsFailuresPanel } from '@/components/admin/OpsFailuresPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -996,12 +997,16 @@ const SystemStatus = () => {
       <Tabs defaultValue="health" className="space-y-6">
         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="health" className="text-xs sm:text-sm">Stare Rețea</TabsTrigger>
+          <TabsTrigger value="failures" className="text-xs sm:text-sm">Eșecuri 24h</TabsTrigger>
           <TabsTrigger value="backup" className="text-xs sm:text-sm">Backup & DR</TabsTrigger>
           <TabsTrigger value="status" className="text-xs sm:text-sm">Incidente</TabsTrigger>
           <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit Export</TabsTrigger>
         </TabsList>
         <TabsContent value="health">
           <HealthCheckTab />
+        </TabsContent>
+        <TabsContent value="failures">
+          <OpsFailuresPanel />
         </TabsContent>
         <TabsContent value="backup">
           {user && <BackupTab userId={user.id} />}

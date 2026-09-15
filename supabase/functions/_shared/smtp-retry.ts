@@ -13,6 +13,8 @@
  * rate-limiting or temporarily blocking the sender.
  */
 
+import { logOpsFailure } from "./ops-log.ts";
+
 export interface SendRetryOptions {
   /** Max total attempts (first try included). Default 4. */
   maxAttempts?: number;
@@ -24,6 +26,8 @@ export interface SendRetryOptions {
   minIntervalMs?: number;
   /** Label used in logs (function name / email type). */
   label?: string;
+  /** Funcția + corpul care pot fi reapelate din centrul de sănătate. */
+  retry?: { function: string; body?: Record<string, unknown> };
 }
 
 const DEFAULTS = {
@@ -122,12 +126,30 @@ export function sendMailWithRetry(
 
         if (!transient) {
           console.error(`[smtp] ${label} permanent failure for ${to}: ${msg}`);
+          await logOpsFailure({
+            source: label,
+            kind: "email",
+            subject: String(mailOptions.subject ?? ""),
+            target: to,
+            error: msg,
+            retry_function: options.retry?.function,
+            retry_body: options.retry?.body,
+          });
           throw err;
         }
         if (attempt === cfg.maxAttempts) {
           console.error(
             `[smtp] ${label} giving up for ${to} after ${attempt} attempts: ${msg}`,
           );
+          await logOpsFailure({
+            source: label,
+            kind: "email",
+            subject: String(mailOptions.subject ?? ""),
+            target: to,
+            error: `după ${attempt} încercări: ${msg}`,
+            retry_function: options.retry?.function,
+            retry_body: options.retry?.body,
+          });
           throw err;
         }
         const delay = backoff(attempt, cfg);

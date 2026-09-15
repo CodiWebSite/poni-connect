@@ -23,6 +23,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { fetchOwnPeriodConflicts, formatConflict, TRAVEL_LEAVE_TYPE, type PeriodConflict } from '@/utils/leaveTravelConflicts';
+import { useFormDraft } from '@/hooks/useFormDraft';
+import { DraftRestoreBanner } from '@/components/shared/DraftRestoreBanner';
 
 interface EmployeeData {
   id: string;
@@ -68,6 +70,16 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   const [delegateReminderOpen, setDelegateReminderOpen] = useState(false);
   const [delegatePeriod, setDelegatePeriod] = useState<{ start: string; end: string } | null>(null);
   const [travelConflicts, setTravelConflicts] = useState<PeriodConflict[]>([]);
+
+  // Salvare automată a completării (draft local, 7 zile)
+  const draft = useFormDraft('leave-request', { startDate, endDate, replacementId });
+  const restoreDraft = (d: { startDate: string; endDate: string; replacementId: string }) => {
+    if (d.startDate) setStartDate(d.startDate);
+    if (d.endDate) setEndDate(d.endDate);
+    if (d.replacementId) setReplacementId(d.replacementId);
+    draft.clear();
+  };
+
 
   // Avertizare live dacă perioada se suprapune cu o deplasare înregistrată de HR
   useEffect(() => {
@@ -462,6 +474,8 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
             replacement_name: selectedColleagueForEmail?.name || '',
             approver_user_id: designatedApproverId || null,
             delegate_user_ids: delegateUserIds,
+            request_id: insertedRequest!.id,
+            app_origin: window.location.origin,
           },
         }).then(res => {
           if (res.error) console.warn('Email notification failed:', res.error);
@@ -469,6 +483,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         }).catch(err => console.warn('Email notification error:', err));
       }
 
+      draft.clear();
       onSubmitted();
 
       // Reminder for approvers (department heads / designated approvers) to set a delegate
@@ -529,6 +544,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <DraftRestoreBanner draft={draft} onRestore={restoreDraft} label="Ai o cerere începută, salvată automat" />
         {isDemo && (
           <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm flex items-center gap-2">
             <CalendarIcon className="w-4 h-4 flex-shrink-0" />

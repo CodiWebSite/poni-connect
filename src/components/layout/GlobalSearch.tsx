@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import {
   Search, FileText, Megaphone, Users, Calendar, X,
   BookOpen, Lightbulb, Boxes, Inbox, Archive, DoorOpen, Loader2,
+  LifeBuoy, Presentation, Sparkles, Compass,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +21,12 @@ type ResultType =
   | 'suggestion'
   | 'equipment'
   | 'archive'
-  | 'room';
+  | 'room'
+  | 'page'
+  | 'ticket'
+  | 'meeting'
+  | 'news';
+
 
 interface SearchResult {
   id: string;
@@ -41,7 +47,35 @@ const typeMeta: Record<ResultType, { icon: any; label: string; color: string }> 
   equipment: { icon: Boxes, label: 'Echipament', color: 'bg-slate-500/10 text-slate-600 dark:text-slate-300' },
   archive: { icon: Archive, label: 'Arhivă', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
   room: { icon: DoorOpen, label: 'Rezervare sală', color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400' },
+  page: { icon: Compass, label: 'Pagină', color: 'bg-primary/10 text-primary' },
+  ticket: { icon: LifeBuoy, label: 'Tichet HelpDesk', color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400' },
+  meeting: { icon: Presentation, label: 'Ședință', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' },
+  news: { icon: Sparkles, label: 'Noutate', color: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400' },
 };
+
+// Pagini și acțiuni frecvente — căutabile fără să știi unde se află în meniu
+const PAGES: { title: string; description: string; url: string; keywords: string }[] = [
+  { title: 'Cerere concediu', description: 'Trimite o cerere nouă de concediu', url: '/leave-request', keywords: 'concediu cerere co odihna zile libere' },
+  { title: 'Calendar concedii', description: 'Concediile colegilor și ale echipei', url: '/leave-calendar', keywords: 'calendar concedii echipa' },
+  { title: 'Fluturașii mei', description: 'Fluturași de salariu pe luni', url: '/salarizare', keywords: 'fluturas salariu salarizare venit' },
+  { title: 'Gestiune HR', description: 'Dosare, angajați, concedii', url: '/hr-management', keywords: 'hr resurse umane dosar angajati' },
+  { title: 'Anunțuri', description: 'Toate anunțurile institutului', url: '/announcements', keywords: 'anunturi comunicate' },
+  { title: 'Intranet Social', description: 'Feed, comunități, postări', url: '/social', keywords: 'social feed postari comunitati' },
+  { title: 'Mesagerie', description: 'Conversații cu colegii', url: '/chat', keywords: 'chat mesaje mesagerie' },
+  { title: 'Rezervări săli', description: 'Rezervă o sală de ședințe', url: '/room-bookings', keywords: 'sala rezervare sedinta' },
+  { title: 'Inventar echipamente', description: 'Echipamente și software', url: '/inventory', keywords: 'inventar echipamente calculator' },
+  { title: 'Bibliotecă', description: 'Cărți și reviste', url: '/library', keywords: 'biblioteca carti reviste' },
+  { title: 'Medicina muncii', description: 'Dosar medical și examinări', url: '/medicina-muncii', keywords: 'medicina muncii medical aviz' },
+  { title: 'Sugestii', description: 'Propune o idee sau semnalează o problemă', url: '/sugestii', keywords: 'sugestii idei feedback problema' },
+  { title: 'Ghid platformă', description: 'Cum se folosește intranetul', url: '/ghid', keywords: 'ghid ajutor help instructiuni' },
+  { title: 'Raportează un incident', description: 'Incident de securitate sau IT', url: '/raporteaza-incident', keywords: 'incident securitate raportare it' },
+  { title: 'Setări cont', description: 'Profil, securitate, 2FA', url: '/settings', keywords: 'setari cont parola 2fa securitate notificari' },
+  { title: 'Starea platformei', description: 'Sănătatea sistemului și incidente', url: '/system-status', keywords: 'status sanatate platforma incidente' },
+  { title: 'Noutăți', description: 'Ce s-a schimbat pe platformă', url: '/changelog', keywords: 'noutati changelog versiuni' },
+];
+
+// Elimină diacriticele pentru potrivire tolerantă
+const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 // Escape PostgREST or() reserved characters
 const esc = (s: string) => s.replace(/[%,()]/g, ' ').trim();
@@ -102,6 +136,7 @@ export const GlobalSearch = () => {
       // per role/department/GDPR — we never bypass it on the client.
       const [
         annR, docR, empR, evtR, libR, magR, sugR, eqR, arcR, roomR,
+        tickR, meetR, newsR,
       ] = await Promise.all([
         supabase.from('announcements').select('id, title, content').or(`title.ilike.${like},content.ilike.${like}`).limit(4),
         supabase.from('documents').select('id, name, description').or(`name.ilike.${like},description.ilike.${like}`).limit(4),
@@ -113,9 +148,37 @@ export const GlobalSearch = () => {
         supabase.from('equipment_items').select('id, name, serial_number, inventory_number, brand_model').or(`name.ilike.${like},serial_number.ilike.${like},inventory_number.ilike.${like},brand_model.ilike.${like}`).limit(4),
         supabase.from('archive_documents').select('id, file_name, description, registration_number, department').or(`file_name.ilike.${like},description.ilike.${like},registration_number.ilike.${like}`).limit(3),
         supabase.from('room_bookings').select('id, title, room, description, start_time').or(`title.ilike.${like},room.ilike.${like},description.ilike.${like}`).limit(3),
+        supabase.from('helpdesk_tickets').select('id, subject, message, status, created_at').or(`subject.ilike.${like},message.ilike.${like},name.ilike.${like}`).limit(3),
+        supabase.from('meetings').select('id, title, location, start_at').or(`title.ilike.${like},location.ilike.${like},notes.ilike.${like}`).limit(3),
+        supabase.from('changelog_entries').select('id, title, description, version').or(`title.ilike.${like},description.ilike.${like}`).limit(3),
       ]);
 
       const merged: SearchResult[] = [];
+
+      // Pagini (potrivire locală, tolerantă la diacritice)
+      const fq = fold(q);
+      PAGES.filter(p => fold(`${p.title} ${p.description} ${p.keywords}`).includes(fq))
+        .slice(0, 4)
+        .forEach(p => merged.push({
+          id: p.url, title: p.title, description: p.description, type: 'page', url: p.url,
+        }));
+
+      (tickR.data || []).forEach((t: any) => merged.push({
+        id: t.id, title: t.subject || 'Tichet HelpDesk',
+        description: [t.status, t.message ? String(t.message).substring(0, 80) + '…' : null].filter(Boolean).join(' • '),
+        type: 'ticket', url: '/admin?tab=helpdesk',
+      }));
+      (meetR.data || []).forEach((m: any) => merged.push({
+        id: m.id, title: m.title,
+        description: [m.location, m.start_at ? new Date(m.start_at).toLocaleString('ro-RO') : null].filter(Boolean).join(' • '),
+        type: 'meeting', url: '/agenda-intalniri',
+      }));
+      (newsR.data || []).forEach((c: any) => merged.push({
+        id: c.id, title: c.title,
+        description: [c.version, c.description ? String(c.description).substring(0, 80) + '…' : null].filter(Boolean).join(' • '),
+        type: 'news', url: '/changelog',
+      }));
+
 
       (annR.data || []).forEach((a: any) => merged.push({
         id: a.id, title: a.title,
@@ -196,8 +259,8 @@ export const GlobalSearch = () => {
 
   const SearchResultsList = () => {
     const order: ResultType[] = [
-      'announcement','event','employee','document','archive',
-      'library','magazine','equipment','room','suggestion',
+      'page','announcement','event','employee','document','archive',
+      'ticket','meeting','news','library','magazine','equipment','room','suggestion',
     ];
 
     if (loading && results.length === 0) {

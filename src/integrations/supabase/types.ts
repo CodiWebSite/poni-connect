@@ -217,6 +217,45 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_links: {
+        Row: {
+          approver_user_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          request_id: string
+          request_type: string
+          token: string
+          used_action: string | null
+          used_at: string | null
+          used_ip: string | null
+        }
+        Insert: {
+          approver_user_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          request_id: string
+          request_type?: string
+          token: string
+          used_action?: string | null
+          used_at?: string | null
+          used_ip?: string | null
+        }
+        Update: {
+          approver_user_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          request_id?: string
+          request_type?: string
+          token?: string
+          used_action?: string | null
+          used_at?: string | null
+          used_ip?: string | null
+        }
+        Relationships: []
+      }
       approval_workflow_steps: {
         Row: {
           approver_role: string
@@ -2606,6 +2645,57 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      ops_failures: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          last_retry_at: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          retry_body: Json | null
+          retry_count: number
+          retry_function: string | null
+          source: string
+          status: string
+          subject: string | null
+          target: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          last_retry_at?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          retry_body?: Json | null
+          retry_count?: number
+          retry_function?: string | null
+          source: string
+          status?: string
+          subject?: string | null
+          target?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          last_retry_at?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          retry_body?: Json | null
+          retry_count?: number
+          retry_function?: string | null
+          source?: string
+          status?: string
+          subject?: string | null
+          target?: string | null
         }
         Relationships: []
       }
