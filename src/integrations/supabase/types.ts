@@ -5114,6 +5114,15 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      grant_doctoral_access: {
+        Args: {
+          _coordinator_user_id?: string
+          _study_year?: number
+          _thesis_title?: string
+          _user_id: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -5200,6 +5209,7 @@ export type Database = {
         Args: { _reason: string; _user_id: string }
         Returns: number
       }
+      revoke_doctoral_access: { Args: { _user_id: string }; Returns: undefined }
       social_setting_enabled: {
         Args: { _default?: boolean; _key: string }
         Returns: boolean
