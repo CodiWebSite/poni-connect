@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { History, Pencil, Trash2, Loader2, Calendar, Paperclip, Download, Plus, AlertTriangle, Upload } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { isPublicHoliday, getPublicHolidayName } from '@/utils/romanianHolidays';
 import { fetchOwnPeriodConflicts, formatConflict, TRAVEL_LEAVE_TYPE, type PeriodConflict } from '@/utils/leaveTravelConflicts';
@@ -43,8 +43,8 @@ const leaveStatusConfig: Record<string, { label: string; variant: 'default' | 's
 };
 
 const calculateWorkingDays = (startDate: string, endDate: string, customHolidayDates: string[]): number => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const start = parseISO(startDate);
+  const end = parseISO(endDate);
   let count = 0;
   const current = new Date(start);
   while (current <= end) {
@@ -176,7 +176,7 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
   const isDeductible = LEAVE_TYPES.find(t => t.key === addLeaveType)?.deductible ?? true;
 
   const getNonWorkingDays = (start: string, end: string) => {
-    const s = new Date(start); const e = new Date(end);
+    const s = parseISO(start); const e = parseISO(end);
     const result: { date: string; reason: string }[] = [];
     const cur = new Date(s);
     while (cur <= e) {
