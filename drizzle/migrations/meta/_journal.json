@@ -22,6 +22,41 @@
       "when": 1789457948565,
       "tag": "0002_create_approval_links",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789459369189,
+      "tag": "0003_add_doctorand_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789459405959,
+      "tag": "0004_add_doctorand_pending_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789459453439,
+      "tag": "0005_create_doctoral_space",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789459498378,
+      "tag": "0006_secure_doctoral_approval",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789459516107,
+      "tag": "0007_doctoral_document_storage_policies",
+      "breakpoints": true
     }
   ]
 }

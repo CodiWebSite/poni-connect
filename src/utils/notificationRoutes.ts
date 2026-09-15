@@ -41,6 +41,11 @@ export function getNotificationRoute(notification: NotificationRouteInput): stri
       return '/admin?tab=gdpr';
     case 'system_alert':
       return '/system-status';
+    case 'doctoral_profile':
+    case 'doctoral_milestone':
+      return id ? `/doctoral?item=${id}` : '/doctoral';
+    case 'doctoral_application':
+      return '/admin?tab=users&subtab=doctoranzi';
     default:
       return '/';
   }

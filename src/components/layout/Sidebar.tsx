@@ -47,6 +47,7 @@ import {
   FileLock2,
   ScrollText,
   Bell,
+  GraduationCap,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
@@ -331,6 +332,14 @@ const Sidebar = () => {
 
   const mainItems = filterByAccess(allMainItems);
   const managementItems = filterByAccess(allManagementItems);
+  const isDoctorand = role === 'doctorand';
+  const doctoralItems = [
+    { icon: GraduationCap, label: 'Acasă doctoral', path: '/doctoral' },
+    { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
+    { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
+    { icon: Users, label: 'Comunitatea doctoranzilor', path: '/social/comunitati' },
+    { icon: UserCircle, label: 'Profilul meu', path: '/my-profile' },
+  ];
 
   const renderNavItem = (item: { icon: any; label: string; path: string; badge?: number; external?: boolean }) => {
     const isExternal = item.external;
@@ -493,20 +502,20 @@ const Sidebar = () => {
             <span className="h-px flex-1 bg-gradient-to-r from-transparent via-sidebar-border/40 to-transparent" />
             <span className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/35 font-semibold flex items-center gap-1.5">
               <span className="w-1 h-1 rounded-full bg-sidebar-primary/40" />
-              Meniu Principal
+              {isDoctorand ? 'Spațiul Doctoral' : 'Meniu Principal'}
             </span>
             <span className="h-px flex-1 bg-gradient-to-r from-transparent via-sidebar-border/40 to-transparent" />
           </div>
         )}
         <div className="space-y-0.5">
-          {mainItems.map(renderNavItem)}
+          {(isDoctorand ? doctoralItems : mainItems).map(renderNavItem)}
         </div>
 
         {/* Separator */}
-        <div className="my-4 gradient-separator mx-2" />
+        {!isDoctorand && <div className="my-4 gradient-separator mx-2" />}
 
         {/* Management section */}
-        {!isCollapsed && (
+        {!isDoctorand && !isCollapsed && (
           <div className="flex items-center gap-2.5 px-3 mb-3">
             <span className="h-px flex-1 bg-gradient-to-r from-transparent via-sidebar-border/40 to-transparent" />
             <span className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/35 font-semibold flex items-center gap-1.5">
@@ -516,7 +525,7 @@ const Sidebar = () => {
             <span className="h-px flex-1 bg-gradient-to-r from-transparent via-sidebar-border/40 to-transparent" />
           </div>
         )}
-        <div className="space-y-0.5">
+        <div className={cn("space-y-0.5", isDoctorand && "hidden")}>
           {managementItems.map(renderNavItem)}
         </div>
       </nav>

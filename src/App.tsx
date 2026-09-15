@@ -73,6 +73,8 @@ const AccountSecurity = lazy(() => import("./pages/AccountSecurity"));
 const ReportIncident = lazy(() => import("./pages/ReportIncident"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const PublicLegal = lazy(() => import("./pages/PublicLegal"));
+const DoctoralDashboard = lazy(() => import("./pages/DoctoralDashboard"));
+const DoctoralPending = lazy(() => import("./pages/DoctoralPending"));
 
 const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
 const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
@@ -263,6 +265,17 @@ function GlobalChatNotifier() {
   return null;
 }
 
+function DoctoralAccessGuard({ children }: { children: React.ReactNode }) {
+  const { user, loading: authLoading } = useAuth();
+  const { role, loading: roleLoading } = useUserRole();
+  const location = useLocation();
+  if (!user || authLoading || roleLoading) return <>{children}</>;
+  if (role === 'doctorand_pending' && location.pathname !== '/doctoral/pending' && location.pathname !== '/auth') return <Navigate to="/doctoral/pending" replace />;
+  const allowed = ['/doctoral', '/social', '/chat', '/announcements', '/my-profile', '/settings'];
+  if (role === 'doctorand' && !allowed.some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`))) return <Navigate to="/doctoral" replace />;
+  return <>{children}</>;
+}
+
 /** Resetează bariera de eroare la fiecare schimbare de rută. */
 function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -292,6 +305,7 @@ const App = () => (
             <MFAGuard>
             <IrisButton />
             <MaintenanceGuard>
+              <DoctoralAccessGuard>
               <RouteErrorBoundary>
               <Routes>
                 <Route path="/kiosk" element={<Kiosk />} />
@@ -299,6 +313,8 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/reset-password" element={<ResetPassword />} />
+                <Route path="/doctoral" element={<DoctoralDashboard />} />
+                <Route path="/doctoral/pending" element={<DoctoralPending />} />
                 
                 <Route path="/leave-calendar" element={<LeaveCalendar />} />
                 <Route path="/my-profile" element={<MyProfile />} />
@@ -355,6 +371,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </RouteErrorBoundary>
+              </DoctoralAccessGuard>
             </MaintenanceGuard>
             </MFAGuard>
           </BrowserRouter>

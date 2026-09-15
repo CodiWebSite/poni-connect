@@ -25,6 +25,7 @@ import InvitePlatformPanel from './InvitePlatformPanel';
 import AccountReminderPanel from './AccountReminderPanel';
 import PreAssignRoles from './PreAssignRoles';
 import HelpdeskPanel from './HelpdeskPanel';
+import DoctoralApplicationsPanel from './DoctoralApplicationsPanel';
 import ReauthDialog from '@/components/shared/ReauthDialog';
 
 const roleLabels: Record<string, string> = {
@@ -44,6 +45,8 @@ const roleLabels: Record<string, string> = {
   compartiment_comunicare: 'Comunicare',
   medic_medicina_muncii: 'Medic Muncii',
   pensionar_colaborator: 'Pensionar colaborator',
+  doctorand: 'Doctorand',
+  doctorand_pending: 'Doctorand în verificare',
   user: 'Angajat',
 };
 
@@ -335,6 +338,7 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
           <TabsTrigger value="list" className="text-xs gap-1.5"><Users className="w-3.5 h-3.5" />Utilizatori ({users.length})</TabsTrigger>
           <TabsTrigger value="create" className="text-xs gap-1.5"><UserPlus className="w-3.5 h-3.5" />Creare Cont</TabsTrigger>
           <TabsTrigger value="requests" className="text-xs gap-1.5"><ClipboardList className="w-3.5 h-3.5" />Cereri Cont</TabsTrigger>
+          <TabsTrigger value="doctoranzi" className="text-xs gap-1.5">Doctoranzi</TabsTrigger>
           <TabsTrigger value="invitations" className="text-xs gap-1.5"><Mail className="w-3.5 h-3.5" />Invitații</TabsTrigger>
           <TabsTrigger value="reminders" className="text-xs gap-1.5"><Bell className="w-3.5 h-3.5" />Remindere</TabsTrigger>
           <TabsTrigger value="preassign" className="text-xs gap-1.5"><Lock className="w-3.5 h-3.5" />Pre-atribuire</TabsTrigger>
@@ -485,6 +489,7 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="doctoranzi"><DoctoralApplicationsPanel /></TabsContent>
 
         <TabsContent value="create"><ManualAccountCreate /></TabsContent>
         <TabsContent value="requests"><AccountRequestsPanel /></TabsContent>
