@@ -37,7 +37,7 @@ const DAY_NAMES: Record<number, string> = { 0: 'Dum', 1: 'Lun', 2: 'Mar', 3: 'Mi
 
 const LeaveCalendar = () => {
   const { user } = useAuth();
-  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, isInstituteLeadership } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, isInstituteLeadership, loading: roleLoading } = useUserRole();
   const { isDesignatedApprover, loading: approverLoading } = useIsApprover();
   const isMobile = useIsMobile();
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -50,8 +50,9 @@ const LeaveCalendar = () => {
   const hasAccess = isSuperAdmin || canManageHR || isSef || isSefSRUS || isDesignatedApprover || isInstituteLeadership;
 
   useEffect(() => {
-    if (user) fetchData();
-  }, [user, currentMonth]);
+    if (user && !roleLoading && !approverLoading) fetchData();
+  }, [user, currentMonth, roleLoading, approverLoading, isInstituteLeadership, canManageHR, isSuperAdmin]);
+
 
   const fetchData = async () => {
     if (!user) return;

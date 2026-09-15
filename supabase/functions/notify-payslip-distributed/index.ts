@@ -122,35 +122,45 @@ Deno.serve(async (req) => {
       return jsonResp({ ok: true, test: true, sent_to: testEmail });
     }
 
+    const offset = Math.max(0, Number(body.offset) || 0);
+
     const { data: slips } = await admin
       .from("payslips")
       .select("id, employee_epd_id")
       .eq("batch_id", batchId)
       .eq("match_status", "distributed")
-      .is("email_notified_at", null);
+      .is("email_notified_at", null)
+      .order("id", { ascending: true });
 
     const pending = (slips ?? []).filter((s: { employee_epd_id: string | null }) => s.employee_epd_id);
-    if (pending.length === 0) return jsonResp({ ok: true, done: true, sent: 0, remaining: 0, failed: [] });
+    if (pending.length <= offset) {
+      return jsonResp({ ok: true, done: true, sent: 0, skipped: 0, remaining: 0, failed: [], next_offset: offset, missing_email: [], invalid_email: [] });
+    }
 
-    const chunk = pending.slice(0, chunkSize);
+    const chunk = pending.slice(offset, offset + chunkSize);
     const epdIds = chunk.map((s: { employee_epd_id: string }) => s.employee_epd_id);
     const { data: people } = await admin
       .from("employee_personal_data")
-      .select("id, email, first_name")
+      .select("id, email, first_name, last_name")
       .in("id", epdIds);
     const byId = new Map((people ?? []).map((p: { id: string }) => [p.id, p]));
+
 
     const now = new Date().toISOString();
     let sent = 0;
     const failed: Array<{ id: string; error: string }> = [];
     const skipped: string[] = [];
+    const missingEmail: string[] = [];
+    const invalidEmail: Array<{ email: string; name: string }> = [];
 
     for (const s of chunk as Array<{ id: string; employee_epd_id: string }>) {
-      const person = byId.get(s.employee_epd_id) as { email?: string | null; first_name?: string | null } | undefined;
+      const person = byId.get(s.employee_epd_id) as { email?: string | null; first_name?: string | null; last_name?: string | null } | undefined;
+      const fullName = `${(person?.last_name ?? "").trim()} ${(person?.first_name ?? "").trim()}`.trim();
       const email = (person?.email ?? "").trim();
       if (!email || !email.includes("@")) {
+        // No usable address: do NOT mark as notified, so a corrected address gets the email later.
         skipped.push(s.id);
-        await admin.from("payslips").update({ email_notified_at: now }).eq("id", s.id);
+        missingEmail.push(fullName || s.employee_epd_id);
         continue;
       }
       try {
@@ -163,21 +173,50 @@ Deno.serve(async (req) => {
         await admin.from("payslips").update({ email_notified_at: now }).eq("id", s.id);
         sent++;
       } catch (e) {
-        failed.push({ id: s.id, error: (e as Error).message });
+        const msg = (e as Error).message ?? String(e);
+        const code = (e as { responseCode?: number }).responseCode;
+        const permanent = (typeof code === "number" && code >= 500) || /\b5\d\d\b/.test(msg) || /rejected|no such|not exist|valid mx|unrouteable|user unknown/i.test(msg);
+        if (permanent) {
+          // Bad address: stop retrying it, flag it for HR correction.
+          await admin.from("payslips").update({ email_notified_at: now }).eq("id", s.id);
+          invalidEmail.push({ email, name: fullName });
+        } else {
+          failed.push({ id: s.id, error: msg });
+        }
       }
     }
 
-    const remaining = pending.length - sent - skipped.length - failed.length;
-    const done = remaining <= 0;
+    // Rows left in place (no email / temporary failure) are stepped over via next_offset,
+    // so the chunk loop always advances and terminates.
+    const stayedInPlace = skipped.length + failed.length;
+    const nextOffset = offset + stayedInPlace;
+    const remaining = Math.max(0, pending.length - (offset + chunk.length));
+    const done = remaining === 0;
 
     await admin.from("payslip_audit_log").insert({
       user_id: actorId,
       batch_id: batchId,
       action: done ? "email_notify" : "email_notify_chunk",
-      details: { sent, skipped: skipped.length, failed: failed.length, remaining },
+      details: {
+        sent,
+        skipped: skipped.length,
+        failed: failed.length,
+        remaining,
+        missing_email: missingEmail,
+        invalid_email: invalidEmail,
+      },
     });
 
-    return jsonResp({ ok: true, done, sent, skipped: skipped.length, remaining, failed });
+    return jsonResp({
+      ok: true, done, sent,
+      skipped: skipped.length,
+      remaining, failed,
+      next_offset: nextOffset,
+      missing_email: missingEmail,
+      invalid_email: invalidEmail,
+    });
+
+
   } catch (e) {
     console.error("notify-payslip-distributed error", e);
     return jsonResp({ error: "Eroare internă la trimiterea e-mailurilor." }, 500);

@@ -360,20 +360,33 @@ export default function PayslipUploader() {
 
       // Notificare pe e-mail: fiecare angajat află că fluturașul e disponibil în Intranet.
       let emailsSent = 0;
+      const noEmailNames: string[] = [];
+      const badEmails: string[] = [];
       try {
         setDistProgress(p => (p ? { ...p, message: 'Se trimit e-mailurile de notificare…' } : p));
         let mailSafety = 60;
+        let mailOffset = 0;
         while (mailSafety-- > 0) {
           const res = await supabase.functions.invoke('notify-payslip-distributed', {
-            body: { batch_id: batchId, chunk_size: 40 },
+            body: { batch_id: batchId, chunk_size: 40, offset: mailOffset },
           });
           if (res.error) throw new Error(await getFunctionErrorMessage(res.error, 'Eroare la trimiterea e-mailurilor'));
           if (res.data?.error) throw new Error(res.data.error);
           emailsSent += Number(res.data?.sent ?? 0);
+          mailOffset = Number(res.data?.next_offset ?? mailOffset);
+          (res.data?.missing_email ?? []).forEach((n: string) => noEmailNames.push(n));
+          (res.data?.invalid_email ?? []).forEach((x: { email: string; name: string }) => badEmails.push(`${x.name || '—'} (${x.email})`));
           setDistProgress(p => (p ? { ...p, message: `Se trimit e-mailurile… ${emailsSent} trimise` } : p));
           if (res.data?.done) break;
         }
         if (emailsSent > 0) toast.success(`${emailsSent} e-mailuri de notificare trimise.`);
+        if (noEmailNames.length > 0) {
+          toast.warning(`${noEmailNames.length} angajați nu au e-mail în Gestiune HR: ${noEmailNames.slice(0, 8).join(', ')}${noEmailNames.length > 8 ? '…' : ''}`, { duration: 12000 });
+        }
+        if (badEmails.length > 0) {
+          toast.warning(`${badEmails.length} adrese de e-mail greșite (de corectat în Gestiune HR): ${badEmails.slice(0, 8).join(', ')}${badEmails.length > 8 ? '…' : ''}`, { duration: 12000 });
+        }
+
       } catch (mailErr) {
         toast.warning(`Fluturașii au fost distribuiți, dar notificarea pe e-mail a eșuat: ${(mailErr as Error).message}`);
       }
