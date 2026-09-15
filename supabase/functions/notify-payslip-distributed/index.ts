@@ -186,8 +186,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // The chunk is the tail of the pending list -> nothing left to process.
-    const remaining = Math.max(0, pending.length - chunk.length);
+    // Rows left in place (no email / temporary failure) are stepped over via next_offset,
+    // so the chunk loop always advances and terminates.
+    const stayedInPlace = skipped.length + failed.length;
+    const nextOffset = offset + stayedInPlace;
+    const remaining = Math.max(0, pending.length - (offset + chunk.length));
     const done = remaining === 0;
 
     await admin.from("payslip_audit_log").insert({
@@ -208,9 +211,11 @@ Deno.serve(async (req) => {
       ok: true, done, sent,
       skipped: skipped.length,
       remaining, failed,
+      next_offset: nextOffset,
       missing_email: missingEmail,
       invalid_email: invalidEmail,
     });
+
 
   } catch (e) {
     console.error("notify-payslip-distributed error", e);
