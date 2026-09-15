@@ -1085,6 +1085,115 @@ export type Database = {
           },
         ]
       }
+      doctoral_forum_likes: {
+        Row: {
+          created_at: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctoral_forum_likes_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "doctoral_forum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctoral_forum_replies: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          is_answer: boolean
+          topic_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          is_answer?: boolean
+          topic_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_answer?: boolean
+          topic_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctoral_forum_replies_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "doctoral_forum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctoral_forum_topics: {
+        Row: {
+          author_id: string
+          body: string
+          category: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          is_resolved: boolean
+          last_activity_at: string
+          like_count: number
+          reply_count: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          is_resolved?: boolean
+          last_activity_at?: string
+          like_count?: number
+          reply_count?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          is_resolved?: boolean
+          last_activity_at?: string
+          like_count?: number
+          reply_count?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       doctoral_milestones: {
         Row: {
           completed_at: string | null
@@ -4906,6 +5015,10 @@ export type Database = {
           _user_id?: string
         }
         Returns: string
+      }
+      can_access_doctoral_forum: {
+        Args: { _user_id: string }
+        Returns: boolean
       }
       can_manage_communities: { Args: { _user_id: string }; Returns: boolean }
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
