@@ -274,7 +274,7 @@ function DoctoralAccessGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   if (!user || authLoading || roleLoading) return <>{children}</>;
   if (role === 'doctorand_pending' && location.pathname !== '/doctoral/pending' && location.pathname !== '/auth') return <Navigate to="/doctoral/pending" replace />;
-  const allowed = ['/doctoral', '/social', '/chat', '/announcements', '/my-profile', '/settings'];
+  const allowed = ['/doctoral', '/chat', '/announcements', '/my-profile', '/settings'];
   if (role === 'doctorand' && !allowed.some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`))) return <Navigate to="/doctoral" replace />;
   return <>{children}</>;
 }
