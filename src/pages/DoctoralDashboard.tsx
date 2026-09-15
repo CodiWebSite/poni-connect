@@ -23,10 +23,15 @@ type DocumentRow = { id: string; title: string; file_name: string; status: strin
 
 const statusLabel: Record<string, string> = { pending: 'În așteptare', submitted: 'Trimis', approved: 'Aprobat', changes_requested: 'Completări', overdue: 'Depășit', rejected: 'Respins' };
 
+const MANAGER_ROLES = ['super_admin', 'hr', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific'];
+
 const DoctoralDashboard = () => {
   const { user } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
+  const isManager = !!role && MANAGER_ROLES.includes(role);
   const [profile, setProfile] = useState<DoctoralProfile | null>(null);
+  const [allProfiles, setAllProfiles] = useState<(DoctoralProfile & { full_name: string | null })[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -34,21 +39,31 @@ const DoctoralDashboard = () => {
 
   const loadData = useCallback(async () => {
     if (!user) return;
-    const { data: profileData } = await supabase.from('doctoral_profiles').select('id,thesis_title,coordinator_name,doctoral_school,study_year,expected_completion_date,progress_percent,status').eq('user_id', user.id).maybeSingle();
+    let profileData: DoctoralProfile | null = null;
+    if (isManager) {
+      const { data } = await supabase.from('doctoral_profiles').select('id,full_name,thesis_title,coordinator_name,doctoral_school,study_year,expected_completion_date,progress_percent,status').order('full_name');
+      const list = (data || []) as (DoctoralProfile & { full_name: string | null })[];
+      setAllProfiles(list);
+      profileData = list.find((item) => item.id === selectedId) || list[0] || null;
+      if (profileData) setSelectedId(profileData.id);
+    } else {
+      const { data } = await supabase.from('doctoral_profiles').select('id,thesis_title,coordinator_name,doctoral_school,study_year,expected_completion_date,progress_percent,status').eq('user_id', user.id).maybeSingle();
+      profileData = data;
+    }
     setProfile(profileData);
-    if (!profileData) return;
+    if (!profileData) { setMilestones([]); setDocuments([]); return; }
     const [{ data: milestoneData }, { data: documentData }] = await Promise.all([
       supabase.from('doctoral_milestones').select('id,title,description,due_date,status').eq('doctoral_profile_id', profileData.id).order('due_date'),
       supabase.from('doctoral_documents').select('id,title,file_name,status,created_at').eq('doctoral_profile_id', profileData.id).order('created_at', { ascending: false }),
     ]);
     setMilestones(milestoneData || []); setDocuments(documentData || []);
-  }, [user]);
+  }, [user, isManager, selectedId]);
 
   useEffect(() => { loadData(); }, [loadData]);
   const nextMilestone = useMemo(() => milestones.find((item) => item.status !== 'approved'), [milestones]);
 
   if (!roleLoading && role === 'doctorand_pending') return <Navigate to="/doctoral/pending" replace />;
-  if (!roleLoading && role !== 'doctorand') return <Navigate to="/" replace />;
+  if (!roleLoading && role !== 'doctorand' && !isManager) return <Navigate to="/" replace />;
 
   const uploadDocument = async (file?: File) => {
     if (!file || !profile || !user || !documentTitle.trim()) { toast.error('Completează titlul și alege documentul'); return; }
