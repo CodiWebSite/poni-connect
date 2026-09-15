@@ -351,7 +351,7 @@ const DoctoralCoordinator = () => {
 
                 <TabsContent value="thesis">
                   <Card><CardContent className="space-y-4 pt-6">
-                    <div className="space-y-2"><Label htmlFor="thesis">Tema tezei</Label><Input id="thesis" value={thesisForm.thesis_title} onChange={(e) => setThesisForm({ ...thesisForm, thesis_title: e.target.value })} /></div>
+                    <div className="space-y-2"><Label htmlFor="thesis">Titlul tezei</Label><Input id="thesis" value={thesisForm.thesis_title} onChange={(e) => setThesisForm({ ...thesisForm, thesis_title: e.target.value })} /></div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2"><Label htmlFor="school">Școala doctorală</Label><Input id="school" value={thesisForm.doctoral_school} onChange={(e) => setThesisForm({ ...thesisForm, doctoral_school: e.target.value })} /></div>
                       <div className="space-y-2"><Label htmlFor="year">An de studiu</Label><Input id="year" type="number" min={1} max={6} value={thesisForm.study_year} onChange={(e) => setThesisForm({ ...thesisForm, study_year: e.target.value })} /></div>

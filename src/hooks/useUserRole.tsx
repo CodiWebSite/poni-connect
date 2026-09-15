@@ -45,7 +45,11 @@ export function useUserRole() {
         .map((row) => row.role as string)
         .filter((r): r is AppRole => validRoles.includes(r as AppRole));
 
-      const resolvedRole = validRoles.find((r) => assignedRoles.includes(r)) ?? 'user';
+      // Colegii care sunt și angajați și doctoranzi păstrează rolul de angajat,
+      // iar accesul doctoral se adaugă separat (hasDoctoralAccess).
+      const nonDoctoral = assignedRoles.filter((r) => r !== 'doctorand' && r !== 'doctorand_pending');
+      const pool = nonDoctoral.length > 0 ? nonDoctoral : assignedRoles;
+      const resolvedRole = validRoles.find((r) => pool.includes(r)) ?? 'user';
       setRealRole(resolvedRole);
       setAllRoles(assignedRoles);
       setLoading(false);
@@ -77,6 +81,8 @@ export function useUserRole() {
   const canManageContent = role !== null && role !== 'user';
   const canManageLibrary = isSuperAdmin || isBibliotecar;
   const canAccessMedical = isMedicMuncii || isHR || isSefSRUS || isSuperAdmin;
+  // Acces la Spațiul Doctoral: doctoranzi „puri" sau angajați care sunt și doctoranzi
+  const hasDoctoralAccess = role === 'doctorand' || allRoles.includes('doctorand');
 
   return { 
     role, 
@@ -96,6 +102,7 @@ export function useUserRole() {
     canManageHR,
     canManageLibrary,
     canAccessMedical,
+    hasDoctoralAccess,
     loading 
   };
 }

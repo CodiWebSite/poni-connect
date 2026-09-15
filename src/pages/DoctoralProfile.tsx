@@ -195,7 +195,7 @@ const DoctoralProfile = () => {
               </CardHeader>
               <CardContent className="space-y-5">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tema tezei</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Titlul tezei</p>
                   <p className="mt-1 font-medium">{profile.thesis_title || 'Necompletată'}</p>
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">

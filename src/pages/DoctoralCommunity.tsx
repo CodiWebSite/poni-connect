@@ -40,10 +40,10 @@ const initials = (name?: string | null) => (name || 'Coleg').split(' ').filter(B
 
 const DoctoralCommunity = () => {
   const { user } = useAuth();
-  const { role, loading: roleLoading } = useUserRole();
+  const { role, hasDoctoralAccess, loading: roleLoading } = useUserRole();
   const { isCoordinator, loading: coordLoading } = useDoctoralCoordinator();
   const isManager = !!role && MANAGER_ROLES.includes(role);
-  const isDoctorand = role === 'doctorand';
+  const isDoctorand = role === 'doctorand' || hasDoctoralAccess;
 
   const [topics, setTopics] = useState<Topic[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});

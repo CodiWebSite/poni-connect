@@ -59,7 +59,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { role, allRoles, isSuperAdmin, isRealSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
+  const { role, allRoles, isSuperAdmin, isRealSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess } = useUserRole();
   const { isCoordinator: isDoctoralCoordinator, studentCount: coordinatorStudents } = useDoctoralCoordinator();
   const { isDesignatedApprover } = useIsApprover();
   const { canAccessPage } = usePageAccess();
@@ -340,6 +340,11 @@ const Sidebar = () => {
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: GraduationCap, label: 'Doctoranzii mei', path: '/doctoral/coordonator', badge: coordinatorStudents || undefined }] : []),
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' }] : []),
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: BookOpen, label: 'Școala Doctorală', path: '/doctoral/scoala' }] : []),
+    ...(hasDoctoralAccess && !canManageDoctoral ? [
+      { icon: GraduationCap, label: 'Parcursul meu doctoral', path: '/doctoral' },
+      { icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' },
+      { icon: BookOpen, label: 'Școala Doctorală', path: '/doctoral/scoala' },
+    ] : []),
   ];
   const isDoctorand = role === 'doctorand';
   const doctoralItems = [

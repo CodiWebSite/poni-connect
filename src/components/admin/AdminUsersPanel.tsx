@@ -27,6 +27,7 @@ import PreAssignRoles from './PreAssignRoles';
 import HelpdeskPanel from './HelpdeskPanel';
 import DoctoralApplicationsPanel from './DoctoralApplicationsPanel';
 import DoctoralCoordinatorsPanel from './DoctoralCoordinatorsPanel';
+import DoctoralAccessPanel from './DoctoralAccessPanel';
 import ReauthDialog from '@/components/shared/ReauthDialog';
 
 const roleLabels: Record<string, string> = {
@@ -341,6 +342,7 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
           <TabsTrigger value="requests" className="text-xs gap-1.5"><ClipboardList className="w-3.5 h-3.5" />Cereri Cont</TabsTrigger>
           <TabsTrigger value="doctoranzi" className="text-xs gap-1.5">Doctoranzi</TabsTrigger>
           <TabsTrigger value="conducatori" className="text-xs gap-1.5">Conducători doctorat</TabsTrigger>
+          <TabsTrigger value="acces-doctoral" className="text-xs gap-1.5">Acces doctoral</TabsTrigger>
           <TabsTrigger value="invitations" className="text-xs gap-1.5"><Mail className="w-3.5 h-3.5" />Invitații</TabsTrigger>
           <TabsTrigger value="reminders" className="text-xs gap-1.5"><Bell className="w-3.5 h-3.5" />Remindere</TabsTrigger>
           <TabsTrigger value="preassign" className="text-xs gap-1.5"><Lock className="w-3.5 h-3.5" />Pre-atribuire</TabsTrigger>
@@ -493,6 +495,7 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
         </TabsContent>
         <TabsContent value="doctoranzi"><DoctoralApplicationsPanel /></TabsContent>
         <TabsContent value="conducatori"><DoctoralCoordinatorsPanel /></TabsContent>
+        <TabsContent value="acces-doctoral"><DoctoralAccessPanel /></TabsContent>
 
         <TabsContent value="create"><ManualAccountCreate /></TabsContent>
         <TabsContent value="requests"><AccountRequestsPanel /></TabsContent>
