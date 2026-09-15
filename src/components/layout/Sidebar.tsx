@@ -346,6 +346,7 @@ const Sidebar = () => {
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' },
+    { icon: BookOpen, label: 'Școala Doctorală', path: '/doctoral/scoala' },
     { icon: UserCircle, label: 'Profilul meu', path: '/my-profile' },
   ];
 
