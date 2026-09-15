@@ -60,6 +60,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { role, allRoles, isSuperAdmin, isRealSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
+  const { isCoordinator: isDoctoralCoordinator, studentCount: coordinatorStudents } = useDoctoralCoordinator();
   const { isDesignatedApprover } = useIsApprover();
   const { canAccessPage } = usePageAccess();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
