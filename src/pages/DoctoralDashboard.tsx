@@ -34,6 +34,7 @@ const DoctoralDashboard = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [feedback, setFeedback] = useState<{ id: string; body: string; created_at: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [documentTitle, setDocumentTitle] = useState('');
 
@@ -51,12 +52,13 @@ const DoctoralDashboard = () => {
       profileData = data;
     }
     setProfile(profileData);
-    if (!profileData) { setMilestones([]); setDocuments([]); return; }
-    const [{ data: milestoneData }, { data: documentData }] = await Promise.all([
+    if (!profileData) { setMilestones([]); setDocuments([]); setFeedback([]); return; }
+    const [{ data: milestoneData }, { data: documentData }, { data: noteData }] = await Promise.all([
       supabase.from('doctoral_milestones').select('id,title,description,due_date,status').eq('doctoral_profile_id', profileData.id).order('due_date'),
       supabase.from('doctoral_documents').select('id,title,file_name,status,created_at').eq('doctoral_profile_id', profileData.id).order('created_at', { ascending: false }),
+      supabase.from('doctoral_notes').select('id,body,created_at').eq('doctoral_profile_id', profileData.id).eq('visibility', 'shared').order('created_at', { ascending: false }),
     ]);
-    setMilestones(milestoneData || []); setDocuments(documentData || []);
+    setMilestones(milestoneData || []); setDocuments(documentData || []); setFeedback(noteData || []);
   }, [user, isManager, selectedId]);
 
   useEffect(() => { loadData(); }, [loadData]);
