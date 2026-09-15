@@ -355,12 +355,12 @@ const Auth = () => {
       </aside>
 
       {/* Right panel — auth */}
-      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-center px-5 py-6 sm:px-8 lg:h-dvh lg:overflow-y-auto lg:px-14 xl:px-20">
+      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-start px-5 py-6 sm:px-8 lg:h-dvh lg:justify-start lg:overflow-y-auto lg:py-12 lg:px-14 xl:px-20">
         <div className="absolute inset-0 text-primary opacity-[0.06] pointer-events-none lg:hidden">
           <MolecularPattern className="w-full h-full" />
         </div>
 
-        <div className="relative w-full max-w-md animate-fade-in">
+        <div className="relative my-auto w-full max-w-md animate-fade-in">
           {/* Mobile brand header */}
           <div className="lg:hidden mb-10 flex flex-col items-center text-center">
             <img
