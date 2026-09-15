@@ -338,13 +338,14 @@ const Sidebar = () => {
     ...filterByAccess(allManagementItems),
     ...(canManageDoctoral ? [{ icon: GraduationCap, label: 'Spațiul Doctoral', path: '/doctoral' }] : []),
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: GraduationCap, label: 'Doctoranzii mei', path: '/doctoral/coordonator', badge: coordinatorStudents || undefined }] : []),
+    ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' }] : []),
   ];
   const isDoctorand = role === 'doctorand';
   const doctoralItems = [
     { icon: GraduationCap, label: 'Acasă doctoral', path: '/doctoral' },
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
-    { icon: Users, label: 'Comunitatea doctoranzilor', path: '/social/comunitati' },
+    { icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' },
     { icon: UserCircle, label: 'Profilul meu', path: '/my-profile' },
   ];
 

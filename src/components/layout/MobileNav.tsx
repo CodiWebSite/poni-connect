@@ -117,7 +117,7 @@ const MobileNav = () => {
     { icon: GraduationCap, label: 'Acasă doctoral', path: '/doctoral' },
     { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
-    { icon: Users, label: 'Comunitatea doctoranzilor', path: '/social/comunitati' },
+    { icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' },
     { icon: UserCircle, label: 'Profilul meu', path: '/my-profile' },
   ];
   const mainItems = isDoctorand ? doctoralItems : isSocial ? socialItems : coreMainItems;

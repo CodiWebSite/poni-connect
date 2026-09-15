@@ -77,6 +77,7 @@ const PublicLegal = lazy(() => import("./pages/PublicLegal"));
 const DoctoralDashboard = lazy(() => import("./pages/DoctoralDashboard"));
 const DoctoralPending = lazy(() => import("./pages/DoctoralPending"));
 const DoctoralCoordinator = lazy(() => import("./pages/DoctoralCoordinator"));
+const DoctoralCommunity = lazy(() => import("./pages/DoctoralCommunity"));
 
 const TRUSTED_TOKEN_KEY = 'icmpp_trusted_device_token';
 const TRUSTED_SESSION_KEY = 'icmpp_trusted_session';
@@ -273,7 +274,7 @@ function DoctoralAccessGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   if (!user || authLoading || roleLoading) return <>{children}</>;
   if (role === 'doctorand_pending' && location.pathname !== '/doctoral/pending' && location.pathname !== '/auth') return <Navigate to="/doctoral/pending" replace />;
-  const allowed = ['/doctoral', '/social', '/chat', '/announcements', '/my-profile', '/settings'];
+  const allowed = ['/doctoral', '/chat', '/announcements', '/my-profile', '/settings'];
   if (role === 'doctorand' && !allowed.some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`))) return <Navigate to="/doctoral" replace />;
   return <>{children}</>;
 }
@@ -325,6 +326,7 @@ const App = () => (
                 <Route path="/doctoral" element={<DoctoralDashboard />} />
                 <Route path="/doctoral/pending" element={<DoctoralPending />} />
                 <Route path="/doctoral/coordonator" element={<DoctoralCoordinator />} />
+                <Route path="/doctoral/comunitate" element={<DoctoralCommunity />} />
                 
                 <Route path="/leave-calendar" element={<LeaveCalendar />} />
                 <Route path="/my-profile" element={<ProfileRoute />} />
