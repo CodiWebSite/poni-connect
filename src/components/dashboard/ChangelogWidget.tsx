@@ -43,6 +43,7 @@ const ChangelogWidget = () => {
       .from('changelog_entries')
       .select('*')
       .order('created_at', { ascending: false })
+      .order('version', { ascending: false })
       .limit(20);
 
     if (data) {
@@ -94,7 +95,7 @@ const ChangelogWidget = () => {
         ) : (
           <ScrollArea className="max-h-[330px] pr-2">
             <div className="divide-y divide-border">
-              {entries.map((entry, i) => {
+              {entries.map((entry) => {
                 const isRecent = Date.now() - new Date(entry.created_at).getTime() < 7 * 24 * 60 * 60 * 1000;
                 return (
                   <div
