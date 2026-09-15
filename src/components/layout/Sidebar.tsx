@@ -340,6 +340,11 @@ const Sidebar = () => {
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: GraduationCap, label: 'Doctoranzii mei', path: '/doctoral/coordonator', badge: coordinatorStudents || undefined }] : []),
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' }] : []),
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: BookOpen, label: 'Școala Doctorală', path: '/doctoral/scoala' }] : []),
+    ...(hasDoctoralAccess && !canManageDoctoral ? [
+      { icon: GraduationCap, label: 'Parcursul meu doctoral', path: '/doctoral' },
+      { icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' },
+      { icon: BookOpen, label: 'Școala Doctorală', path: '/doctoral/scoala' },
+    ] : []),
   ];
   const isDoctorand = role === 'doctorand';
   const doctoralItems = [
