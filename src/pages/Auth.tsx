@@ -98,7 +98,8 @@ const Auth = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', fullName: '' });
   const [accountType, setAccountType] = useState<'employee' | 'doctorand'>('employee');
-  const [doctoralData, setDoctoralData] = useState({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '' });
+  const [doctoralData, setDoctoralData] = useState({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '', coordinatorId: '' });
+  const [coordinators, setCoordinators] = useState<{ id: string; full_name: string; academic_title: string | null; doctoral_school: string | null; research_field: string | null }[]>([]);
   const [loginToken, setLoginToken] = useState<string | null>(null);
   const [signupToken, setSignupToken] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -217,7 +218,7 @@ const Auth = () => {
       return;
     }
 
-    if (accountType === 'doctorand' && (!doctoralData.doctoralSchool || !doctoralData.thesisTitle || !doctoralData.coordinatorName || !doctoralData.startDate || !doctoralData.expectedCompletionDate)) {
+    if (accountType === 'doctorand' && (!doctoralData.doctoralSchool || !doctoralData.thesisTitle || (!doctoralData.coordinatorId && !doctoralData.coordinatorName) || !doctoralData.startDate || !doctoralData.expectedCompletionDate)) {
       toast.error('Completează toate datele academice obligatorii');
       setIsLoading(false);
       return;
