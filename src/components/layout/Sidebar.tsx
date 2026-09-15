@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useIsApprover } from '@/hooks/useIsApprover';
 import { usePageAccess } from '@/hooks/usePageAccess';
+import { useDoctoralCoordinator } from '@/hooks/useDoctoralCoordinator';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -335,6 +336,7 @@ const Sidebar = () => {
   const managementItems = [
     ...filterByAccess(allManagementItems),
     ...(canManageDoctoral ? [{ icon: GraduationCap, label: 'Spațiul Doctoral', path: '/doctoral' }] : []),
+    ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: GraduationCap, label: 'Doctoranzii mei', path: '/doctoral/coordonator', badge: coordinatorStudents || undefined }] : []),
   ];
   const isDoctorand = role === 'doctorand';
   const doctoralItems = [
