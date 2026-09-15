@@ -8,7 +8,7 @@ import { Loader2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { isPublicHoliday, getPublicHolidayName } from '@/utils/romanianHolidays';
 
 interface LeaveEditDialogProps {
@@ -26,8 +26,8 @@ interface LeaveEditDialogProps {
 }
 
 const calculateWorkingDays = (startDate: string, endDate: string, customHolidayDates: string[]): number => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const start = parseISO(startDate);
+  const end = parseISO(endDate);
   let count = 0;
   const current = new Date(start);
   while (current <= end) {
@@ -133,8 +133,8 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
   const daysDiff = newDays - oldDays;
 
   const getNonWorkingDays = (start: string, end: string) => {
-    const s = new Date(start);
-    const e = new Date(end);
+    const s = parseISO(start);
+    const e = parseISO(end);
     const result: { date: string; reason: string }[] = [];
     const cur = new Date(s);
     while (cur <= e) {

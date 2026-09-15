@@ -263,8 +263,10 @@ export default function LeaveSandboxPanel() {
   }
 
   function countWorkingDays(start: string, end: string): number {
-    const s = new Date(start);
-    const e = new Date(end);
+    const [sy, sm, sd] = start.split('-').map(Number);
+    const [ey, em, ed] = end.split('-').map(Number);
+    const s = new Date(sy, sm - 1, sd);
+    const e = new Date(ey, em - 1, ed);
     let c = 0;
     const cur = new Date(s);
     while (cur <= e) {
