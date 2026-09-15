@@ -1,7 +1,7 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
-- [ ] Noutăți recente în changelog și chenar vizibil pe Dashboard
+- [x] Noutăți recente în changelog și chenar vizibil pe Dashboard
 - [x] Sărbători legale calculate automat (Vinerea Mare, Paște, Rusalii) pentru orice an
 - [x] 5. Salvare automată a formularelor lungi (draft local + restaurare)
 - [x] 6. Căutare unică extinsă (pagini, tichete, ședințe, noutăți)

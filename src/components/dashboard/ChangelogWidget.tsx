@@ -48,16 +48,19 @@ const ChangelogWidget = () => {
     if (data) {
       // Filter by role: show if target_roles is empty (for everyone) or includes user's role
       const filtered = (data as ChangelogEntry[]).filter(e =>
-        !e.target_roles || e.target_roles.length === 0 || (role && e.target_roles.includes(role))
+        !e.target_roles ||
+        e.target_roles.length === 0 ||
+        e.target_roles.includes('*') ||
+        (role && e.target_roles.includes(role))
       );
-      setEntries(filtered);
+      setEntries(filtered.slice(0, 3));
     }
     setLoading(false);
   };
 
   if (loading) {
     return (
-      <Card>
+      <Card className="border-primary/20">
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </CardContent>
@@ -66,34 +69,37 @@ const ChangelogWidget = () => {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="overflow-hidden border-primary/25 shadow-sm">
+      <div className="h-1 bg-primary" aria-hidden="true" />
+      <CardHeader className="border-b border-primary/10 bg-primary/5 pb-3 pt-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
-            <Newspaper className="w-4 h-4 text-primary" />
-            Ce s-a schimbat pentru tine
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Newspaper className="w-4 h-4 text-primary" />
+            </span>
+            Noutăți în platformă
           </CardTitle>
           {role === 'super_admin' && (
-            <Link to="/changelog">
-              <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="sm" asChild className="text-xs h-8 px-2 text-muted-foreground hover:text-foreground">
+              <Link to="/changelog">
                 Vezi tot <ArrowRight className="w-3 h-3 ml-1" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         {entries.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">Nu există noutăți momentan.</p>
         ) : (
-          <ScrollArea className="h-[320px] pr-2">
-            <div className="space-y-3">
+          <ScrollArea className="max-h-[330px] pr-2">
+            <div className="divide-y divide-border">
               {entries.map((entry, i) => {
                 const isRecent = Date.now() - new Date(entry.created_at).getTime() < 7 * 24 * 60 * 60 * 1000;
                 return (
                   <div
                     key={entry.id}
-                    className="relative rounded-lg border p-3 hover:bg-muted/30 transition-colors"
+                    className="relative py-3 first:pt-0 last:pb-0"
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <div className="flex items-center gap-2">
@@ -116,11 +122,11 @@ const ChangelogWidget = () => {
                     <h4 className="text-sm font-medium mb-0.5">{entry.title}</h4>
                     <p className="text-xs text-muted-foreground leading-relaxed">{entry.description}</p>
                     {entry.action_url && entry.action_label && (
-                      <Link to={entry.action_url}>
-                        <Button variant="link" size="sm" className="h-auto p-0 mt-1 text-xs">
+                      <Button variant="link" size="sm" asChild className="h-auto p-0 mt-1 text-xs">
+                        <Link to={entry.action_url}>
                           {entry.action_label} <ArrowRight className="w-3 h-3 ml-1" />
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     )}
                   </div>
                 );
