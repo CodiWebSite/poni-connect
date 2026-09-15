@@ -194,10 +194,97 @@ const DoctoralCoordinator = () => {
     await loadDetails(selected.id);
   };
 
+  const saveMilestoneEdit = async () => {
+    if (!selected || !editingMilestone) return;
+    if (!editingMilestone.title.trim()) { toast.error('Scrie titlul termenului'); return; }
+    const { error } = await supabase.from('doctoral_milestones').update({
+      title: editingMilestone.title.trim(),
+      description: editingMilestone.description.trim() || null,
+      due_date: editingMilestone.due_date || null,
+    }).eq('id', editingMilestone.id);
+    if (error) { toast.error('Termenul nu a putut fi modificat'); return; }
+    toast.success('Termen actualizat');
+    await notifyStudent('Termen actualizat', editingMilestone.title.trim(), 'info');
+    setEditingMilestone(null);
+    await loadDetails(selected.id);
+  };
+
+  const deleteMilestone = async (milestone: Milestone) => {
+    if (!selected) return;
+    if (!window.confirm(`Ștergi termenul „${milestone.title}”?`)) return;
+    const { error } = await supabase.from('doctoral_milestones').delete().eq('id', milestone.id);
+    if (error) { toast.error('Termenul nu a putut fi șters'); return; }
+    toast.success('Termen șters');
+    await loadDetails(selected.id);
+  };
+
+  const uploadDocument = async (file: File) => {
+    if (!selected || !user) return;
+    if (file.size > 20 * 1024 * 1024) { toast.error('Fișierul depășește 20 MB'); return; }
+    setUploading(true);
+    const safeName = file.name.replace(/[^\w.\-]+/g, '_');
+    const path = `${selected.id}/${Date.now()}_${safeName}`;
+    const { error: uploadError } = await supabase.storage.from('doctoral-documents').upload(path, file);
+    if (uploadError) { setUploading(false); toast.error('Fișierul nu a putut fi încărcat'); return; }
+    const { error } = await supabase.from('doctoral_documents').insert({
+      doctoral_profile_id: selected.id,
+      title: uploadTitle.trim() || file.name,
+      file_name: file.name,
+      storage_path: path,
+      file_size: file.size,
+      mime_type: file.type || null,
+      status: 'approved',
+      uploaded_by: user.id,
+    });
+    setUploading(false);
+    if (error) {
+      await supabase.storage.from('doctoral-documents').remove([path]);
+      toast.error('Documentul nu a putut fi salvat');
+      return;
+    }
+    toast.success('Document adăugat pentru doctorand');
+    await notifyStudent('Document nou de la conducător', uploadTitle.trim() || file.name, 'info');
+    setUploadTitle('');
+    await loadDetails(selected.id);
+  };
+
+  const deleteDocument = async (doc: DocumentRow) => {
+    if (!selected) return;
+    if (!window.confirm(`Ștergi documentul „${doc.title}”?`)) return;
+    const { error } = await supabase.from('doctoral_documents').delete().eq('id', doc.id);
+    if (error) { toast.error('Documentul nu a putut fi șters'); return; }
+    await supabase.storage.from('doctoral-documents').remove([doc.storage_path]);
+    toast.success('Document șters');
+    await loadDetails(selected.id);
+  };
+
+  const changeStudentStatus = async (status: string) => {
+    if (!selected) return;
+    const labels: Record<string, string> = { active: 'activ', suspended: 'suspendat', completed: 'finalizat' };
+    if (!window.confirm(`Marchezi parcursul lui ${selected.full_name} ca ${labels[status] || status}?`)) return;
+    const { error } = await supabase.from('doctoral_profiles').update({ status }).eq('id', selected.id);
+    if (error) { toast.error('Statusul nu a putut fi schimbat'); return; }
+    toast.success('Status actualizat');
+    await notifyStudent('Statusul parcursului doctoral a fost actualizat', `Parcursul tău este acum: ${labels[status] || status}.`, status === 'completed' ? 'success' : 'info');
+    await loadStudents();
+  };
+
+  const deleteNote = async (note: Note) => {
+    if (!selected) return;
+    if (!window.confirm('Ștergi această notă?')) return;
+    const { error } = await supabase.from('doctoral_notes').delete().eq('id', note.id);
+    if (error) { toast.error('Nota nu a putut fi ștearsă'); return; }
+    await loadDetails(selected.id);
+  };
+
   if (!roleLoading && !coordLoading && !isCoordinator && !isManager) return <Navigate to="/" replace />;
 
   const nextMilestone = milestones.find((item) => item.status !== 'approved');
   const pendingDocs = documents.filter((item) => item.status === 'submitted').length;
+  const query = search.trim().toLowerCase();
+  const visibleStudents = query
+    ? students.filter((item) => `${item.full_name} ${item.thesis_title || ''} ${item.email}`.toLowerCase().includes(query))
+    : students;
 
   return (
     <MainLayout title="Doctoranzii mei">
