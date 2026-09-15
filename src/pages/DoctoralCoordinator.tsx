@@ -55,6 +55,24 @@ const DoctoralCoordinator = () => {
   const [milestoneForm, setMilestoneForm] = useState({ title: '', description: '', due_date: '' });
   const [noteBody, setNoteBody] = useState('');
   const [saving, setSaving] = useState(false);
+  const [coordOptions, setCoordOptions] = useState<{ id: string; full_name: string; user_id: string | null }[]>([]);
+
+  useEffect(() => {
+    if (!isManager) return;
+    supabase.from('doctoral_coordinators').select('id,full_name,user_id').eq('is_active', true).order('full_name')
+      .then(({ data }) => setCoordOptions(data || []));
+  }, [isManager]);
+
+  const assignCoordinator = async (coordinatorId: string, profileId: string) => {
+    const option = coordOptions.find((item) => item.id === coordinatorId);
+    if (!option) return;
+    const { error } = await supabase.from('doctoral_profiles')
+      .update({ coordinator_user_id: option.user_id, coordinator_name: option.full_name })
+      .eq('id', profileId);
+    if (error) { toast.error('Conducătorul nu a putut fi alocat'); return; }
+    toast.success(option.user_id ? 'Conducător alocat — are acum acces la doctorand' : 'Conducător alocat (fără cont conectat)');
+    await loadStudents();
+  };
 
   const selected = useMemo(() => students.find((item) => item.id === selectedId) || null, [students, selectedId]);
 
