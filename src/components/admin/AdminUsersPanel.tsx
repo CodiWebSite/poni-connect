@@ -495,6 +495,7 @@ const AdminUsersPanel = ({ initialTab }: { initialTab?: string }) => {
         </TabsContent>
         <TabsContent value="doctoranzi"><DoctoralApplicationsPanel /></TabsContent>
         <TabsContent value="conducatori"><DoctoralCoordinatorsPanel /></TabsContent>
+        <TabsContent value="acces-doctoral"><DoctoralAccessPanel /></TabsContent>
 
         <TabsContent value="create"><ManualAccountCreate /></TabsContent>
         <TabsContent value="requests"><AccountRequestsPanel /></TabsContent>
