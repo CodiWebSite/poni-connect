@@ -447,7 +447,7 @@ const Sidebar = () => {
             {!isCollapsed && (
               <div className="overflow-hidden">
                 <h1 className="font-display font-bold text-lg leading-tight gradient-text">ICMPP</h1>
-                <p className="text-[11px] text-sidebar-foreground/50 tracking-wide">Intranet</p>
+                <p className="text-[11px] text-sidebar-foreground/50 tracking-wide">{isDoctorand ? 'Spațiul Doctoral' : 'Intranet'}</p>
               </div>
             )}
           </div>
