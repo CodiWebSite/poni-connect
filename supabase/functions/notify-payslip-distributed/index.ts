@@ -122,23 +122,29 @@ Deno.serve(async (req) => {
       return jsonResp({ ok: true, test: true, sent_to: testEmail });
     }
 
+    const offset = Math.max(0, Number(body.offset) || 0);
+
     const { data: slips } = await admin
       .from("payslips")
       .select("id, employee_epd_id")
       .eq("batch_id", batchId)
       .eq("match_status", "distributed")
-      .is("email_notified_at", null);
+      .is("email_notified_at", null)
+      .order("id", { ascending: true });
 
     const pending = (slips ?? []).filter((s: { employee_epd_id: string | null }) => s.employee_epd_id);
-    if (pending.length === 0) return jsonResp({ ok: true, done: true, sent: 0, remaining: 0, failed: [] });
+    if (pending.length <= offset) {
+      return jsonResp({ ok: true, done: true, sent: 0, skipped: 0, remaining: 0, failed: [], next_offset: offset, missing_email: [], invalid_email: [] });
+    }
 
-    const chunk = pending.slice(0, chunkSize);
+    const chunk = pending.slice(offset, offset + chunkSize);
     const epdIds = chunk.map((s: { employee_epd_id: string }) => s.employee_epd_id);
     const { data: people } = await admin
       .from("employee_personal_data")
-      .select("id, email, first_name")
+      .select("id, email, first_name, last_name")
       .in("id", epdIds);
     const byId = new Map((people ?? []).map((p: { id: string }) => [p.id, p]));
+
 
     const now = new Date().toISOString();
     let sent = 0;
