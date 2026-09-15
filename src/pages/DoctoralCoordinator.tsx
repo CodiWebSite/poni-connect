@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
-import { BookOpenCheck, CalendarClock, Check, Download, GraduationCap, MessageSquareText, Plus, RotateCcw, Users } from 'lucide-react';
+import { BookOpenCheck, CalendarClock, Check, Download, GraduationCap, MessageSquareText, Pencil, Plus, RotateCcw, Search, Trash2, Upload, Users, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -56,6 +56,10 @@ const DoctoralCoordinator = () => {
   const [noteBody, setNoteBody] = useState('');
   const [saving, setSaving] = useState(false);
   const [coordOptions, setCoordOptions] = useState<{ id: string; full_name: string; user_id: string | null }[]>([]);
+  const [search, setSearch] = useState('');
+  const [editingMilestone, setEditingMilestone] = useState<{ id: string; title: string; description: string; due_date: string } | null>(null);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!isManager) return;
