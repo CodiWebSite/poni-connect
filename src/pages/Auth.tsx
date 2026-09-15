@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Eye, EyeOff, ArrowLeft, MailCheck, HelpCircle, Headset } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, MailCheck, HelpCircle, Headset, UserRound, CalendarDays } from 'lucide-react';
 import { z } from 'zod';
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,7 @@ import HelpdeskContactForm from '@/components/auth/HelpdeskContactForm';
 import MolecularPattern from '@/components/auth/MolecularPattern';
 import { ShieldCheck, GraduationCap, FileLock2 } from 'lucide-react';
 import { BiometricUnlockButton } from '@/components/native/BiometricUnlockButton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 
@@ -96,6 +97,8 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', fullName: '' });
+  const [accountType, setAccountType] = useState<'employee' | 'doctorand'>('employee');
+  const [doctoralData, setDoctoralData] = useState({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '' });
   const [loginToken, setLoginToken] = useState<string | null>(null);
   const [signupToken, setSignupToken] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -214,7 +217,20 @@ const Auth = () => {
       return;
     }
 
-    const { error } = await signUp(signupData.email, signupData.password, signupData.fullName);
+    if (accountType === 'doctorand' && (!doctoralData.doctoralSchool || !doctoralData.thesisTitle || !doctoralData.coordinatorName || !doctoralData.startDate || !doctoralData.expectedCompletionDate)) {
+      toast.error('Completează toate datele academice obligatorii');
+      setIsLoading(false);
+      return;
+    }
+
+    const { error } = await signUp(signupData.email, signupData.password, signupData.fullName,
+      accountType === 'doctorand' ? {
+        account_type: 'doctorand', phone: doctoralData.phone,
+        doctoral_school: doctoralData.doctoralSchool, thesis_title: doctoralData.thesisTitle,
+        study_year: Number(doctoralData.studyYear), start_date: doctoralData.startDate,
+        expected_completion_date: doctoralData.expectedCompletionDate,
+        coordinator_name: doctoralData.coordinatorName,
+      } : { account_type: 'employee' });
     
     if (error) {
       if (error.message.includes('already registered')) {
@@ -231,6 +247,7 @@ const Auth = () => {
       setConfirmationEmail(signupData.email);
       setShowEmailConfirmation(true);
       setSignupData({ email: '', password: '', fullName: '' });
+      setDoctoralData({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '' });
     }
     
     setIsLoading(false);
@@ -550,6 +567,19 @@ const Auth = () => {
                 <TabsContent value="signup">
                   <form onSubmit={handleSignup} className="space-y-6">
                     <div className="space-y-2.5">
+                      <Label className={labelClass}>Creez cont ca</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button type="button" variant={accountType === 'employee' ? 'default' : 'outline'} className="h-auto min-h-16 justify-start gap-3 px-3 text-left" onClick={() => setAccountType('employee')}>
+                          <UserRound className="h-5 w-5 shrink-0" />
+                          <span><span className="block font-semibold">Angajat ICMPP</span><span className="block text-xs opacity-75">Acces pentru personal</span></span>
+                        </Button>
+                        <Button type="button" variant={accountType === 'doctorand' ? 'default' : 'outline'} className="h-auto min-h-16 justify-start gap-3 px-3 text-left" onClick={() => setAccountType('doctorand')}>
+                          <GraduationCap className="h-5 w-5 shrink-0" />
+                          <span><span className="block font-semibold">Doctorand ICMPP</span><span className="block text-xs opacity-75">Spațiu academic</span></span>
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2.5">
                       <Label htmlFor="signup-name" className={labelClass}>
                         Nume complet
                       </Label>
@@ -563,6 +593,24 @@ const Auth = () => {
                         required
                       />
                     </div>
+
+                    {accountType === 'doctorand' && (
+                      <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                        <div className="flex items-center gap-2 text-sm font-semibold"><GraduationCap className="h-4 w-4 text-primary" /> Date academice</div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="space-y-2"><Label htmlFor="doctoral-phone">Telefon</Label><Input id="doctoral-phone" value={doctoralData.phone} onChange={(e) => setDoctoralData({ ...doctoralData, phone: e.target.value })} className={fieldClass} /></div>
+                          <div className="space-y-2"><Label htmlFor="doctoral-year">An de studiu</Label><Select value={doctoralData.studyYear} onValueChange={(value) => setDoctoralData({ ...doctoralData, studyYear: value })}><SelectTrigger id="doctoral-year" className={fieldClass}><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4,5,6].map(year => <SelectItem key={year} value={String(year)}>Anul {year}</SelectItem>)}</SelectContent></Select></div>
+                        </div>
+                        <div className="space-y-2"><Label htmlFor="doctoral-school">Școala doctorală</Label><Input id="doctoral-school" value={doctoralData.doctoralSchool} onChange={(e) => setDoctoralData({ ...doctoralData, doctoralSchool: e.target.value })} className={fieldClass} required /></div>
+                        <div className="space-y-2"><Label htmlFor="coordinator">Conducător de doctorat</Label><Input id="coordinator" value={doctoralData.coordinatorName} onChange={(e) => setDoctoralData({ ...doctoralData, coordinatorName: e.target.value })} className={fieldClass} required /></div>
+                        <div className="space-y-2"><Label htmlFor="thesis-title">Tema tezei</Label><Input id="thesis-title" value={doctoralData.thesisTitle} onChange={(e) => setDoctoralData({ ...doctoralData, thesisTitle: e.target.value })} className={fieldClass} required /></div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="space-y-2"><Label htmlFor="doctoral-start">Data începerii</Label><Input id="doctoral-start" type="date" value={doctoralData.startDate} onChange={(e) => setDoctoralData({ ...doctoralData, startDate: e.target.value })} className={fieldClass} required /></div>
+                          <div className="space-y-2"><Label htmlFor="doctoral-end">Termen estimat</Label><Input id="doctoral-end" type="date" value={doctoralData.expectedCompletionDate} onChange={(e) => setDoctoralData({ ...doctoralData, expectedCompletionDate: e.target.value })} className={fieldClass} required /></div>
+                        </div>
+                        <p className="flex gap-2 text-xs text-muted-foreground"><CalendarDays className="h-4 w-4 shrink-0" />Contul devine activ după confirmarea adresei și aprobarea cererii.</p>
+                      </div>
+                    )}
 
                     <div className="space-y-2.5">
                       <Label htmlFor="signup-email" className={labelClass}>

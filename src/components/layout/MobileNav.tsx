@@ -40,6 +40,7 @@ import {
   Bookmark,
   ShieldCheck,
   ArrowLeft,
+  GraduationCap,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -47,7 +48,7 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, role } = useUserRole();
   const { isDesignatedApprover } = useIsApprover();
   const [isOpen, setIsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -109,7 +110,15 @@ const MobileNav = () => {
     { icon: Download, label: 'Instalează App', path: '/install' },
   ];
 
-  const mainItems = isSocial ? socialItems : coreMainItems;
+  const isDoctorand = role === 'doctorand';
+  const doctoralItems = [
+    { icon: GraduationCap, label: 'Acasă doctoral', path: '/doctoral' },
+    { icon: MessageCircle, label: 'Mesagerie', path: '/chat' },
+    { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
+    { icon: Users, label: 'Comunitatea doctoranzilor', path: '/social/comunitati' },
+    { icon: UserCircle, label: 'Profilul meu', path: '/my-profile' },
+  ];
+  const mainItems = isDoctorand ? doctoralItems : isSocial ? socialItems : coreMainItems;
 
   const managementItems = [
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
@@ -197,7 +206,7 @@ const MobileNav = () => {
             {mainItems.map(renderNavItem)}
           </div>
 
-          {!isSocial && (
+          {!isSocial && !isDoctorand && (
             <>
               {/* Separator */}
               <div className="my-3 border-t border-sidebar-border/50" />

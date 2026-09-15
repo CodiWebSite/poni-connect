@@ -968,6 +968,226 @@ export type Database = {
         }
         Relationships: []
       }
+      doctoral_documents: {
+        Row: {
+          created_at: string
+          doctoral_profile_id: string
+          document_type: string
+          file_name: string
+          file_size: number | null
+          id: string
+          milestone_id: string | null
+          mime_type: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          storage_path: string
+          title: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          doctoral_profile_id: string
+          document_type?: string
+          file_name: string
+          file_size?: number | null
+          id?: string
+          milestone_id?: string | null
+          mime_type?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          storage_path: string
+          title: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          doctoral_profile_id?: string
+          document_type?: string
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          milestone_id?: string | null
+          mime_type?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          storage_path?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctoral_documents_doctoral_profile_id_fkey"
+            columns: ["doctoral_profile_id"]
+            isOneToOne: false
+            referencedRelation: "doctoral_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctoral_documents_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "doctoral_milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctoral_milestones: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          doctoral_profile_id: string
+          due_date: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          doctoral_profile_id: string
+          due_date?: string | null
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          doctoral_profile_id?: string
+          due_date?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctoral_milestones_doctoral_profile_id_fkey"
+            columns: ["doctoral_profile_id"]
+            isOneToOne: false
+            referencedRelation: "doctoral_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctoral_notes: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          doctoral_profile_id: string
+          id: string
+          visibility: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          doctoral_profile_id: string
+          id?: string
+          visibility?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          doctoral_profile_id?: string
+          id?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctoral_notes_doctoral_profile_id_fkey"
+            columns: ["doctoral_profile_id"]
+            isOneToOne: false
+            referencedRelation: "doctoral_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctoral_profiles: {
+        Row: {
+          admin_notes: string | null
+          coordinator_name: string | null
+          coordinator_user_id: string | null
+          created_at: string
+          doctoral_school: string | null
+          email: string
+          expected_completion_date: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          progress_percent: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string | null
+          status: string
+          study_year: number | null
+          thesis_title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          coordinator_name?: string | null
+          coordinator_user_id?: string | null
+          created_at?: string
+          doctoral_school?: string | null
+          email: string
+          expected_completion_date?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          progress_percent?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string | null
+          status?: string
+          study_year?: number | null
+          thesis_title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          coordinator_name?: string | null
+          coordinator_user_id?: string | null
+          created_at?: string
+          doctoral_school?: string | null
+          email?: string
+          expected_completion_date?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          progress_percent?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string | null
+          status?: string
+          study_year?: number | null
+          thesis_title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           category: string | null
@@ -4644,6 +4864,7 @@ export type Database = {
       }
       can_manage_communities: { Args: { _user_id: string }; Returns: boolean }
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_doctoral: { Args: { _user_id: string }; Returns: boolean }
       can_manage_hr: { Args: { _user_id: string }; Returns: boolean }
       can_manage_library: { Args: { _user_id: string }; Returns: boolean }
       can_manage_medical: { Args: { _user_id: string }; Returns: boolean }
@@ -4803,6 +5024,10 @@ export type Database = {
           total_co_days: number
         }[]
       }
+      review_doctoral_application: {
+        Args: { _decision: string; _notes?: string; _profile_id: string }
+        Returns: undefined
+      }
       revoke_all_trusted_devices: {
         Args: { _reason: string; _user_id: string }
         Returns: number
@@ -4858,6 +5083,8 @@ export type Database = {
         | "compartiment_comunicare"
         | "medic_medicina_muncii"
         | "pensionar_colaborator"
+        | "doctorand"
+        | "doctorand_pending"
       audience_status: "pending" | "confirmed" | "completed" | "cancelled"
       community_member_role: "admin" | "member" | "moderator"
       community_visibility: "public" | "private"
@@ -5073,6 +5300,8 @@ export const Constants = {
         "compartiment_comunicare",
         "medic_medicina_muncii",
         "pensionar_colaborator",
+        "doctorand",
+        "doctorand_pending",
       ],
       audience_status: ["pending", "confirmed", "completed", "cancelled"],
       community_member_role: ["admin", "member", "moderator"],
