@@ -144,13 +144,17 @@ Deno.serve(async (req) => {
     let sent = 0;
     const failed: Array<{ id: string; error: string }> = [];
     const skipped: string[] = [];
+    const missingEmail: string[] = [];
+    const invalidEmail: Array<{ email: string; name: string }> = [];
 
     for (const s of chunk as Array<{ id: string; employee_epd_id: string }>) {
-      const person = byId.get(s.employee_epd_id) as { email?: string | null; first_name?: string | null } | undefined;
+      const person = byId.get(s.employee_epd_id) as { email?: string | null; first_name?: string | null; last_name?: string | null } | undefined;
+      const fullName = `${(person?.last_name ?? "").trim()} ${(person?.first_name ?? "").trim()}`.trim();
       const email = (person?.email ?? "").trim();
       if (!email || !email.includes("@")) {
+        // No usable address: do NOT mark as notified, so a corrected address gets the email later.
         skipped.push(s.id);
-        await admin.from("payslips").update({ email_notified_at: now }).eq("id", s.id);
+        missingEmail.push(fullName || s.employee_epd_id);
         continue;
       }
       try {
@@ -163,21 +167,45 @@ Deno.serve(async (req) => {
         await admin.from("payslips").update({ email_notified_at: now }).eq("id", s.id);
         sent++;
       } catch (e) {
-        failed.push({ id: s.id, error: (e as Error).message });
+        const msg = (e as Error).message ?? String(e);
+        const code = (e as { responseCode?: number }).responseCode;
+        const permanent = (typeof code === "number" && code >= 500) || /\b5\d\d\b/.test(msg) || /rejected|no such|not exist|valid mx|unrouteable|user unknown/i.test(msg);
+        if (permanent) {
+          // Bad address: stop retrying it, flag it for HR correction.
+          await admin.from("payslips").update({ email_notified_at: now }).eq("id", s.id);
+          invalidEmail.push({ email, name: fullName });
+        } else {
+          failed.push({ id: s.id, error: msg });
+        }
       }
     }
 
-    const remaining = pending.length - sent - skipped.length - failed.length;
-    const done = remaining <= 0;
+    // The chunk is the tail of the pending list -> nothing left to process.
+    const remaining = Math.max(0, pending.length - chunk.length);
+    const done = remaining === 0;
 
     await admin.from("payslip_audit_log").insert({
       user_id: actorId,
       batch_id: batchId,
       action: done ? "email_notify" : "email_notify_chunk",
-      details: { sent, skipped: skipped.length, failed: failed.length, remaining },
+      details: {
+        sent,
+        skipped: skipped.length,
+        failed: failed.length,
+        remaining,
+        missing_email: missingEmail,
+        invalid_email: invalidEmail,
+      },
     });
 
-    return jsonResp({ ok: true, done, sent, skipped: skipped.length, remaining, failed });
+    return jsonResp({
+      ok: true, done, sent,
+      skipped: skipped.length,
+      remaining, failed,
+      missing_email: missingEmail,
+      invalid_email: invalidEmail,
+    });
+
   } catch (e) {
     console.error("notify-payslip-distributed error", e);
     return jsonResp({ error: "Eroare internă la trimiterea e-mailurilor." }, 500);
