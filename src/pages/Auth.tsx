@@ -238,8 +238,14 @@ const Auth = () => {
       } else if (error.message.includes('rate limit') || error.message.includes('429')) {
         toast.error('Prea multe încercări. Așteaptă câteva minute sau solicită ajutor folosind butonul de mai jos.', { duration: 8000 });
         setShowAccountHelp(true);
+      } else if (error.message.toLowerCase().includes('weak') || error.message.toLowerCase().includes('pwned')) {
+        toast.error('Parola aleasă este prea slabă sau apare în liste publice de parole compromise. Alege o parolă unică, de minim 10 caractere, cu litere mari, mici, cifre și un simbol.', { duration: 10000 });
+      } else if (error.message.toLowerCase().includes('password')) {
+        toast.error('Parola nu respectă cerințele minime de securitate. Folosește minim 8 caractere, cu litere mari, mici și cifre.', { duration: 8000 });
+      } else if (error.message.toLowerCase().includes('email')) {
+        toast.error('Adresa de e-mail nu este acceptată. Folosește adresa ta instituțională @icmpp.ro.', { duration: 8000 });
       } else {
-        toast.error('Eroare la înregistrare. Dacă problema persistă, solicită ajutor pentru crearea contului.');
+        toast.error(`Eroare la înregistrare: ${error.message}. Dacă problema persistă, solicită ajutor pentru crearea contului.`, { duration: 10000 });
       }
       signupTurnstileRef.current?.reset();
       setSignupToken(null);
