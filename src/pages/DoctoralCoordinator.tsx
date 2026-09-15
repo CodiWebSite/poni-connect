@@ -264,6 +264,17 @@ const DoctoralCoordinator = () => {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button onClick={saveThesis} disabled={saving}>{saving ? 'Se salvează...' : 'Salvează modificările'}</Button>
+                      {isManager && selected && (
+                        <select
+                          aria-label="Alocă conducător de doctorat"
+                          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                          value=""
+                          onChange={(event) => assignCoordinator(event.target.value, selected.id)}
+                        >
+                          <option value="">Alocă alt conducător...</option>
+                          {coordOptions.map((item) => <option key={item.id} value={item.id}>{item.full_name}</option>)}
+                        </select>
+                      )}
                       <p className="self-center text-xs text-muted-foreground">{selected?.email} · început {selected?.start_date ? format(parseISO(selected.start_date), 'd MMM yyyy', { locale: ro }) : '—'}</p>
                     </div>
                   </CardContent></Card>
