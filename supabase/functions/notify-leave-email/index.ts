@@ -52,6 +52,8 @@ Deno.serve(async (req) => {
       replacement_name,
       approver_user_id,
       delegate_user_ids,
+      request_id,
+      app_origin,
     } = await req.json();
 
     if (!department || !employee_name || !request_number) {
@@ -69,12 +71,15 @@ Deno.serve(async (req) => {
 
     const recipientEmails: string[] = [];
     const delegateEmails: string[] = [];
+    const recipientIds: string[] = [];
+    const delegateIds: string[] = [];
 
     if (approver_user_id) {
       // Send to the designated approver
       const { data: { user: approverUser } } = await supabaseAdmin.auth.admin.getUserById(approver_user_id);
       if (approverUser?.email) {
         recipientEmails.push(approverUser.email);
+        recipientIds.push(approver_user_id);
       }
     } else {
       // Fallback: find dept heads in same department
@@ -96,6 +101,7 @@ Deno.serve(async (req) => {
             const { data: { user: headUser } } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
             if (headUser?.email) {
               recipientEmails.push(headUser.email);
+              recipientIds.push(profile.user_id);
             }
           }
         }
@@ -108,6 +114,7 @@ Deno.serve(async (req) => {
         const { data: { user: delUser } } = await supabaseAdmin.auth.admin.getUserById(delId);
         if (delUser?.email) {
           delegateEmails.push(delUser.email);
+          delegateIds.push(delId);
         }
       }
     }
@@ -152,7 +159,33 @@ Deno.serve(async (req) => {
       },
     });
 
-    const buildHtmlBody = (isDelegate: boolean) => `
+    // One-click approval link (valid 7 days, single use)
+    const origin = typeof app_origin === "string" && app_origin.startsWith("https://")
+      ? app_origin
+      : "https://intranet.icmpp.ro";
+
+    const createApprovalLink = async (approverId: string): Promise<string | null> => {
+      if (!request_id || !approverId) return null;
+      try {
+        const bytes = new Uint8Array(32);
+        crypto.getRandomValues(bytes);
+        const token = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        const { error } = await supabaseAdmin.from("approval_links").insert({
+          token,
+          request_type: "leave",
+          request_id,
+          approver_user_id: approverId,
+          expires_at: expires,
+        });
+        if (error) return null;
+        return `${origin}/aprobare/${token}`;
+      } catch (_e) {
+        return null;
+      }
+    };
+
+    const buildHtmlBody = (isDelegate: boolean, approvalUrl: string | null) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         ${isDelegate ? `
         <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px;">
@@ -182,7 +215,16 @@ Deno.serve(async (req) => {
             <td style="padding: 8px 12px; border: 1px solid #bee3f8;">${replacement_name || "N/A"}</td>
           </tr>
         </table>
-        <p>Vă rugăm să accesați platforma pentru a verifica și aproba cererea.</p>
+        ${approvalUrl ? `
+        <div style="text-align:center; margin: 24px 0;">
+          <a href="${approvalUrl}" style="background:#1a365d; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:8px; font-weight:bold; display:inline-block;">
+            Aprobă cererea acum
+          </a>
+          <p style="color:#718096; font-size:12px; margin-top:10px;">
+            Link personal, valabil 7 zile, o singură utilizare. Aprobarea aplică automat semnătura digitală (nume, dată, adresă IP).
+          </p>
+        </div>` : ''}
+        <p>Puteți verifica și aproba cererea și direct din platformă.</p>
         <p style="color: #718096; font-size: 12px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
           Acest email a fost trimis automat de sistemul Intranet ICMPP. Nu răspundeți la acest mesaj.
         </p>
@@ -193,12 +235,14 @@ Deno.serve(async (req) => {
 
     // Send to approver(s) — informative email
     const approverSubject = `Cerere concediu nouă — ${employee_name} (${request_number})`;
-    for (const email of recipientEmails) {
+    for (let i = 0; i < recipientEmails.length; i++) {
+      const email = recipientEmails[i];
+      const approvalUrl = await createApprovalLink(recipientIds[i]);
       await sendMailWithRetry(transporter, {
         from: fromAddress,
         to: email,
         subject: approverSubject,
-        html: buildHtmlBody(false),
+        html: buildHtmlBody(false, approvalUrl),
       });
       console.log(`Email sent to approver: ${email}`);
       totalSent++;
@@ -206,12 +250,14 @@ Deno.serve(async (req) => {
 
     // Send to delegate(s) — priority email with action banner
     const delegateSubject = `⚡ [PRIORITAR] Cerere concediu — ${employee_name} (${request_number})`;
-    for (const email of delegateEmails) {
+    for (let i = 0; i < delegateEmails.length; i++) {
+      const email = delegateEmails[i];
+      const approvalUrl = await createApprovalLink(delegateIds[i]);
       await sendMailWithRetry(transporter, {
         from: fromAddress,
         to: email,
         subject: delegateSubject,
-        html: buildHtmlBody(true),
+        html: buildHtmlBody(true, approvalUrl),
       });
       console.log(`Priority email sent to delegate: ${email}`);
       totalSent++;

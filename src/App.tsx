@@ -49,6 +49,7 @@ const Chat = lazy(() => import("./pages/Chat"));
 const MedicinaMuncii = lazy(() => import("./pages/MedicinaMuncii"));
 const InstallApp = lazy(() => import("./pages/InstallApp"));
 const Kiosk = lazy(() => import("./pages/Kiosk"));
+const ApprovalLink = lazy(() => import("./pages/ApprovalLink"));
 const Archive = lazy(() => import("./pages/Archive"));
 const MeetingsAgenda = lazy(() => import("./pages/MeetingsAgenda"));
 const MeetingRemindersStatus = lazy(() => import("./pages/MeetingRemindersStatus"));
@@ -294,6 +295,7 @@ const App = () => (
               <RouteErrorBoundary>
               <Routes>
                 <Route path="/kiosk" element={<Kiosk />} />
+                <Route path="/aprobare/:token" element={<ApprovalLink />} />
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/reset-password" element={<ResetPassword />} />

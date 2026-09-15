@@ -66,3 +66,9 @@ project_id = "erghywhqrxmwqptusbxd"
 
   [functions.notify-payslip-distributed]
     verify_jwt = false
+
+  [functions.retry-ops-failure]
+    verify_jwt = false
+
+  [functions.leave-approval-link]
+    verify_jwt = false
