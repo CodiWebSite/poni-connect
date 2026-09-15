@@ -19,6 +19,7 @@ import { useTheme } from 'next-themes';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useDemoMode } from '@/contexts/DemoModeContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { formatNumePrenume } from '@/utils/formatName';
 
 
@@ -42,6 +43,8 @@ const Header = ({ title, description }: HeaderProps) => {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const { isDemo, toggleDemo } = useDemoMode();
+  const { role } = useUserRole();
+  const isDoctorand = role === 'doctorand' || role === 'doctorand_pending';
   const location = useLocation();
   const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -84,7 +87,7 @@ const Header = ({ title, description }: HeaderProps) => {
 
           <div className="min-w-0">
             <p className="hidden md:block text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80 leading-none mb-1">
-              Intranet ICMPP
+              {isDoctorand ? 'Spațiul Doctoral ICMPP' : 'Intranet ICMPP'}
             </p>
             <div className="flex items-baseline gap-2 min-w-0">
               <h1 className="text-base md:text-xl font-display font-semibold text-foreground truncate tracking-tight">{title}</h1>
