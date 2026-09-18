@@ -9,9 +9,12 @@ interface Template {
   name: string;
   filename: string;
   category: string;
+  href?: string;
+  preview?: string;
 }
 
 const templates: Template[] = [
+  { name: 'Sigla Institutului „Petru Poni”', filename: 'Sigla_ICMPP.png', category: 'Identitate vizuală', href: '/logo-icmpp.png', preview: '/logo-icmpp.png' },
   { name: 'Model cerere de concediu', filename: 'Model_cerere_concediu.doc', category: 'Resurse Umane' },
   { name: 'Declarația persoanelor întreținute', filename: 'Declaratia_pers_intretinere.doc', category: 'Resurse Umane' },
   { name: 'Declarația contribuabilului', filename: 'Declaratia_contribuabilului.doc', category: 'Declarații' },
@@ -66,15 +69,24 @@ export default function FormTemplates() {
                 return (
                   <a
                     key={template.filename}
-                    href={`/templates/${template.filename}`}
-                    download
+                    href={template.href ?? `/templates/${template.filename}`}
+                    download={template.filename}
                     className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <Icon className="w-5 h-5 text-primary flex-shrink-0" />
-                      <span className="font-medium text-sm">{template.name}</span>
+                      {template.preview ? (
+                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md border border-border bg-background p-1.5">
+                          <img src={template.preview} alt="Sigla Institutului Petru Poni" className="h-full w-full object-contain" />
+                        </div>
+                      ) : (
+                        <Icon className="w-5 h-5 text-primary flex-shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <span className="block font-medium text-sm">{template.name}</span>
+                        {template.preview && <span className="block text-xs text-muted-foreground">Format PNG</span>}
+                      </div>
                     </div>
-                    <Download className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <Download className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                   </a>
                 );
               })}
