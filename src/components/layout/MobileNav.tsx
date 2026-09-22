@@ -42,6 +42,8 @@ import {
   ShieldCheck,
   ArrowLeft,
   GraduationCap,
+  BellRing,
+  BarChart3,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -49,7 +51,7 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess, role } = useUserRole();
+  const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess, role, isInstituteLeadership } = useUserRole();
   const { isCoordinator: isDoctoralCoordinator } = useDoctoralCoordinator();
   const { isDesignatedApprover } = useIsApprover();
   const [isOpen, setIsOpen] = useState(false);
@@ -94,6 +96,7 @@ const MobileNav = () => {
 
   const coreMainItems: { icon: any; label: string; path: string; external?: boolean }[] = [
     { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: BellRing, label: 'Noutăți pentru mine', path: '/noutati' },
     { icon: Megaphone, label: 'Anunțuri', path: '/announcements' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     ...((isSef || isSefSRUS || canManageHR || isSuperAdmin || isDesignatedApprover) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
@@ -125,6 +128,7 @@ const MobileNav = () => {
 
   const managementItems = [
     ...(canManageHR ? [{ icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management' }] : []),
+    ...((isInstituteLeadership || canManageHR) ? [{ icon: BarChart3, label: 'Raport trimestrial', path: '/raport-trimestrial' }] : []),
     ...(isSalarizare ? [{ icon: Banknote, label: 'Salarizare', path: '/salarizare' }] : []),
     { icon: Settings, label: 'Setări', path: '/settings' },
     
