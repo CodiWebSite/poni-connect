@@ -106,7 +106,7 @@ export function NotificationBell() {
                       )}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 break-words">
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
