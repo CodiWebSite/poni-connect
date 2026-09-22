@@ -37,6 +37,9 @@ const quarterRange = (year: number, quarter: number) => {
 const count = (rows: { status?: string | null }[] | null | undefined, status: string) =>
   (rows || []).filter((r) => (r.status || '') === status).length;
 
+const countPrefix = (rows: { status?: string | null }[] | null | undefined, prefix: string) =>
+  (rows || []).filter((r) => (r.status || '').startsWith(prefix)).length;
+
 const QuarterlyReport = () => {
   const { isInstituteLeadership, canManageHR, loading: roleLoading } = useUserRole();
   const allowed = isInstituteLeadership || canManageHR;
@@ -71,7 +74,7 @@ const QuarterlyReport = () => {
     ]);
 
     const leaveRows = leave.data || [];
-    const approvedLeave = leaveRows.filter((r) => (r.status || '').includes('approved') || r.status === 'approved');
+    const approvedLeave = leaveRows.filter((r) => (r.status || '') === 'approved');
     const leaveDays = approvedLeave.reduce((s, r) => s + (r.working_days || 0), 0);
     const activeEmployees = (employees.data || []).filter((e) => !e.is_archived).length;
     const newHires = (employees.data || []).filter(
@@ -95,7 +98,7 @@ const QuarterlyReport = () => {
           { label: 'Total cereri', value: leaveRows.length },
           { label: 'Aprobate', value: approvedLeave.length },
           { label: 'Respinse', value: count(leaveRows, 'rejected') },
-          { label: 'În așteptare', value: leaveRows.length - approvedLeave.length - count(leaveRows, 'rejected') },
+          { label: 'În așteptare', value: countPrefix(leaveRows, 'pending') },
           { label: 'Zile lucrătoare aprobate', value: leaveDays },
         ],
       },
@@ -105,9 +108,9 @@ const QuarterlyReport = () => {
         icon: ClipboardList,
         rows: [
           { label: 'Solicitări HR', value: (hr.data || []).length },
-          { label: 'Finalizate', value: count(hr.data, 'completed') },
-          { label: 'În lucru', value: count(hr.data, 'in_progress') },
-          { label: 'În așteptare', value: count(hr.data, 'pending') },
+          { label: 'Aprobate', value: count(hr.data, 'approved') + count(hr.data, 'completed') },
+          { label: 'Respinse', value: count(hr.data, 'rejected') },
+          { label: 'În așteptare', value: countPrefix(hr.data, 'pending') + count(hr.data, 'in_progress') },
           { label: 'Angajări noi în trimestru', value: newHires },
         ],
       },
@@ -117,7 +120,7 @@ const QuarterlyReport = () => {
         icon: ShoppingCart,
         rows: [
           { label: 'Referate de necesitate', value: (proc.data || []).length },
-          { label: 'Aprobate', value: count(proc.data, 'approved') },
+          { label: 'Aprobate', value: count(proc.data, 'approved') + count(proc.data, 'completed') },
           { label: 'Respinse', value: count(proc.data, 'rejected') },
           { label: 'Valoare estimată totală', value: `${procValue.toLocaleString('ro-RO')} lei` },
         ],
@@ -140,7 +143,7 @@ const QuarterlyReport = () => {
         rows: [
           { label: 'Tichete deschise în trimestru', value: (tickets.data || []).length },
           { label: 'Rezolvate', value: count(tickets.data, 'resolved') },
-          { label: 'În lucru', value: count(tickets.data, 'in_progress') },
+          { label: 'În lucru', value: (tickets.data || []).length - count(tickets.data, 'resolved') },
         ],
       },
       {
@@ -157,9 +160,9 @@ const QuarterlyReport = () => {
         label: 'Sugestii de la colegi',
         icon: Lightbulb,
         rows: [
-          { label: 'Sugestii noi', value: (suggestions.data || []).length },
+          { label: 'Sugestii primite', value: (suggestions.data || []).length },
           { label: 'Implementate', value: count(suggestions.data, 'implemented') },
-          { label: 'În analiză', value: count(suggestions.data, 'under_review') },
+          { label: 'În analiză', value: count(suggestions.data, 'under_review') + count(suggestions.data, 'new') },
         ],
       },
     ]);
