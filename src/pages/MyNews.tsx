@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Megaphone, Sparkles, FileText, CalendarClock, Inbox, CheckCheck, BellRing, ArrowRight, Bell } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { getNotificationRoute } from '@/utils/notificationRoutes';
 
 const STORAGE_KEY = 'icmpp_news_last_seen';
 
@@ -65,13 +66,13 @@ const MyNews = () => {
       supabase.from('meetings').select('id, title, start_at, location').gte('start_at', new Date().toISOString()).lte('start_at', inSevenDays).order('start_at').limit(10),
       supabase.from('leave_requests').select('id, request_number, status, updated_at').eq('user_id', user.id).gte('updated_at', sinceIso).order('updated_at', { ascending: false }).limit(10),
       supabase.from('hr_requests').select('id, request_type, status, updated_at').eq('user_id', user.id).gte('updated_at', sinceIso).order('updated_at', { ascending: false }).limit(10),
-      supabase.from('notifications').select('id, title, message, created_at, read', { count: 'exact' }).eq('user_id', user.id).eq('read', false).order('created_at', { ascending: false }).limit(15),
+      supabase.from('notifications').select('id, title, message, created_at, related_type, related_id', { count: 'exact' }).eq('user_id', user.id).eq('read', false).order('created_at', { ascending: false }).limit(15),
     ]);
 
     const collected: NewsItem[] = [
       ...(notifications.data || []).map((n) => ({
         id: `ntf-${n.id}`, title: n.title, subtitle: n.message,
-        date: n.created_at, link: '/', group: 'notification' as const,
+        date: n.created_at, link: getNotificationRoute({ related_type: n.related_type, related_id: n.related_id }), group: 'notification' as const,
       })),
       ...(announcements.data || []).map((a) => ({
         id: `ann-${a.id}`, title: a.title, subtitle: a.priority === 'high' ? 'Prioritate ridicată' : null,
