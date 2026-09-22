@@ -275,7 +275,9 @@ const Sidebar = () => {
 
   const allMainItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: BellRing, label: 'Noutăți pentru mine', path: '/noutati' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
+
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request', badge: (isSef || isSefSRUS || isSuperAdmin) ? pendingHR : undefined },
