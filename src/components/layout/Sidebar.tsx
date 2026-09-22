@@ -48,6 +48,8 @@ import {
   FileLock2,
   ScrollText,
   Bell,
+  BellRing,
+  BarChart3,
   GraduationCap,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
