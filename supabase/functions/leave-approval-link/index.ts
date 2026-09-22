@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
           hrRoles.map((r: any) => ({
             user_id: r.user_id,
             title: "Cerere concediu — necesită validare SRUS",
-            message: `${request.employee_name || "Angajat"} — cererea ${request.request_number} a fost aprobată de șeful de compartiment.`,
+            message: `${employeeName || "Angajat"} — cererea ${request.request_number} a fost aprobată de șeful de compartiment.`,
             type: "info",
             related_type: "leave_request",
             related_id: request.id,
