@@ -31,18 +31,18 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Autentificare obligatorie: doar utilizatori logați pot testa PIN-ul
-    const authHeader = req.headers.get("Authorization") || "";
-    const token = authHeader.replace("Bearer ", "").trim();
-    if (!token) return json({ success: false, error: "Unauthorized" }, 401);
+    const body = await req.json().catch(() => ({}));
+    const equipment_id = body?.equipment_id;
+    const pin = body?.pin;
 
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) return json({ success: false, error: "Unauthorized" }, 401);
-
-    const { equipment_id, pin } = await req.json();
     if (!equipment_id || !pin || typeof pin !== "string" || pin.length > 64) {
       return json({ success: false, error: "Missing parameters" }, 400);
     }
+
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      "unknown";
 
     const { data: settings } = await supabaseAdmin
       .from("equipment_pin_settings")
@@ -54,6 +54,25 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    const maxAttempts = settings.max_attempts ?? 5;
+    const lockoutMinutes = settings.lockout_minutes ?? 15;
+    const since = new Date(Date.now() - lockoutMinutes * 60_000).toISOString();
+
+    // Protecție anti-forțare brută: numărăm încercările greșite recente pe IP
+    const { count: failedCount } = await supabaseAdmin
+      .from("inventory_pin_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("ip", ip)
+      .eq("success", false)
+      .gte("created_at", since);
+
+    if ((failedCount ?? 0) >= maxAttempts) {
+      return json(
+        { success: false, error: "locked", retry_after_minutes: lockoutMinutes },
+        429,
+      );
+    }
+
     const stored = String(settings.global_pin_hash);
     const isHashed = /^[a-f0-9]{64}$/.test(stored);
     const pinHash = await sha256Hex(pin);
@@ -62,7 +81,7 @@ Deno.serve(async (req) => {
     if (isHashed) {
       isValid = pinHash === stored;
     } else {
-      // PIN vechi salvat în clar — validăm o singură dată și migrăm la hash
+      // PIN vechi salvat în clar — îl validăm o singură dată și îl migrăm la hash
       isValid = pin === stored;
       if (isValid) {
         await supabaseAdmin
@@ -71,6 +90,12 @@ Deno.serve(async (req) => {
           .eq("id", settings.id);
       }
     }
+
+    await supabaseAdmin.from("inventory_pin_attempts").insert({
+      ip,
+      equipment_id,
+      success: isValid,
+    });
 
     return json({ success: isValid });
   } catch (_error) {
