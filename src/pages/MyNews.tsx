@@ -70,7 +70,7 @@ const MyNews = () => {
     const collected: NewsItem[] = [
       ...(announcements.data || []).map((a) => ({
         id: `ann-${a.id}`, title: a.title, subtitle: a.priority === 'high' ? 'Prioritate ridicată' : null,
-        date: a.created_at, link: '/anunturi', group: 'announcement' as const,
+        date: a.created_at, link: '/announcements', group: 'announcement' as const,
       })),
       ...(changelog.data || []).map((c) => ({
         id: `chg-${c.id}`, title: c.title, subtitle: c.version ? `Versiunea ${c.version}` : c.description,
@@ -82,15 +82,15 @@ const MyNews = () => {
       })),
       ...(meetings.data || []).map((m) => ({
         id: `mtg-${m.id}`, title: m.title, subtitle: m.location,
-        date: m.start_at, link: '/sedinte', group: 'meeting' as const,
+        date: m.start_at, link: '/agenda-intalniri', group: 'meeting' as const,
       })),
       ...(leave.data || []).map((l) => ({
         id: `lv-${l.id}`, title: `Cererea de concediu ${l.request_number || ''}`.trim(),
-        subtitle: statusLabel(l.status), date: l.updated_at, link: '/concedii', group: 'request' as const,
+        subtitle: statusLabel(l.status), date: l.updated_at, link: '/leave-request', group: 'request' as const,
       })),
       ...(hr.data || []).map((h) => ({
         id: `hr-${h.id}`, title: 'Solicitare resurse umane',
-        subtitle: statusLabel(h.status), date: h.updated_at, link: '/hr-requests', group: 'request' as const,
+        subtitle: statusLabel(h.status), date: h.updated_at, link: '/leave-request', group: 'request' as const,
       })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
