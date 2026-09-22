@@ -61,7 +61,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { role, allRoles, isSuperAdmin, isRealSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess } = useUserRole();
+  const { role, allRoles, isSuperAdmin, isRealSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess, isInstituteLeadership } = useUserRole();
   const { isCoordinator: isDoctoralCoordinator, studentCount: coordinatorStudents } = useDoctoralCoordinator();
   const { isDesignatedApprover } = useIsApprover();
   const { canAccessPage } = usePageAccess();
