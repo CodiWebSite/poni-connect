@@ -2027,6 +2027,30 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_pin_attempts: {
+        Row: {
+          created_at: string
+          equipment_id: string | null
+          id: string
+          ip: string
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          equipment_id?: string | null
+          id?: string
+          ip: string
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          equipment_id?: string | null
+          id?: string
+          ip?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       ip_bypass_users: {
         Row: {
           added_by: string | null
