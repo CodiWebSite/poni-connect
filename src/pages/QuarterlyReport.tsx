@@ -238,7 +238,7 @@ const QuarterlyReport = () => {
   };
 
   if (roleLoading) return null;
-  if (!allowed) return <Navigate to="/dashboard" replace />;
+  if (!allowed) return <Navigate to="/" replace />;
 
   return (
     <MainLayout title="Raport trimestrial">
