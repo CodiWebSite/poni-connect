@@ -89,7 +89,7 @@ export function NotificationBell() {
                   type="button"
                   variant="ghost"
                   className={cn(
-                    "h-auto w-full justify-start rounded-none p-3 text-left hover:bg-muted/50",
+                    "h-auto w-full justify-start rounded-none p-3 text-left hover:bg-muted/50 whitespace-normal",
                     !notification.read && "bg-primary/5"
                   )}
                   onClick={() => openNotification(notification)}
@@ -101,12 +101,12 @@ export function NotificationBell() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={cn(
-                        "text-sm",
+                        "text-sm break-words",
                         !notification.read && "font-semibold"
                       )}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 break-words">
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
