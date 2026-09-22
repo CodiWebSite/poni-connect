@@ -305,6 +305,10 @@ const Sidebar = () => {
   const allManagementItems = [
     { icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR },
     { icon: Banknote, label: 'Salarizare', path: '/salarizare' },
+    ...(isInstituteLeadership || canManageHR
+      ? [{ icon: BarChart3, label: 'Raport trimestrial', path: '/raport-trimestrial' }]
+      : []),
+
     ...(canAccessMeetings
       ? [
           { icon: CalendarClock, label: 'Agenda întâlniri', path: '/agenda-intalniri' },
