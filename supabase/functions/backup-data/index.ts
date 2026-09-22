@@ -344,6 +344,14 @@ Deno.serve(async (req) => {
     // Send email to super_admin
     await sendBackupEmail(supabase, userId, backupStatus, totalRows, sizeMB, errors, driveResult.webViewLink);
 
+    if (isCronCall) {
+      // Backupul programat merge doar în Drive; nu returnăm datele în răspuns
+      return new Response(
+        JSON.stringify({ status: backupStatus, rows: totalRows, size_mb: sizeMB, drive_file_id: driveResult.fileId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     return new Response(jsonStr, {
       headers: {
         ...corsHeaders,
@@ -351,6 +359,7 @@ Deno.serve(async (req) => {
         "Content-Disposition": `attachment; filename="backup_${new Date().toISOString().slice(0, 10)}.json"`,
       },
     });
+
   } catch (error) {
     console.error("[INTERNAL] Backup data error:", error);
     return new Response(JSON.stringify({ error: "Eroare internă. Te rugăm să încerci din nou." }), {
