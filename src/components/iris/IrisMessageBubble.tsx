@@ -14,9 +14,12 @@ function simpleMarkdown(text: string): string {
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/`(.+?)`/g, '<code class="bg-muted-foreground/10 px-1 py-0.5 rounded text-xs">$1</code>')
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => {
-      const safeUrl = /^(https?:\/\/|\/|mailto:)/i.test(url.trim()) ? url.trim() : '#';
-      return `<a href="${safeUrl}" class="text-primary underline" target="_blank" rel="noopener noreferrer">${label}</a>`;
+      const raw = String(url).trim();
+      const safeUrl = /^(https?:\/\/|\/|mailto:)/i.test(raw) ? raw : '#';
+      const encodedUrl = safeUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return `<a href="${encodedUrl}" class="text-primary underline" target="_blank" rel="noopener noreferrer">${label}</a>`;
     })
+
     .replace(/^[-•]\s+(.+)/gm, "<li>$1</li>")
     .replace(/(<li>.*<\/li>)/gs, "<ul class='list-disc pl-4 my-1'>$1</ul>")
     .replace(/\n{2,}/g, "</p><p class='my-1'>")
