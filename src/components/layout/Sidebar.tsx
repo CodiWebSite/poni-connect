@@ -48,6 +48,8 @@ import {
   FileLock2,
   ScrollText,
   Bell,
+  BellRing,
+  BarChart3,
   GraduationCap,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -59,7 +61,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { role, allRoles, isSuperAdmin, isRealSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess } = useUserRole();
+  const { role, allRoles, isSuperAdmin, isRealSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess, isInstituteLeadership } = useUserRole();
   const { isCoordinator: isDoctoralCoordinator, studentCount: coordinatorStudents } = useDoctoralCoordinator();
   const { isDesignatedApprover } = useIsApprover();
   const { canAccessPage } = usePageAccess();
@@ -275,7 +277,9 @@ const Sidebar = () => {
 
   const allMainItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: BellRing, label: 'Noutăți pentru mine', path: '/noutati' },
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
+
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request', badge: (isSef || isSefSRUS || isSuperAdmin) ? pendingHR : undefined },
@@ -303,6 +307,10 @@ const Sidebar = () => {
   const allManagementItems = [
     { icon: ClipboardList, label: 'Gestiune HR', path: '/hr-management', badge: pendingHR },
     { icon: Banknote, label: 'Salarizare', path: '/salarizare' },
+    ...(isInstituteLeadership || canManageHR
+      ? [{ icon: BarChart3, label: 'Raport trimestrial', path: '/raport-trimestrial' }]
+      : []),
+
     ...(canAccessMeetings
       ? [
           { icon: CalendarClock, label: 'Agenda întâlniri', path: '/agenda-intalniri' },

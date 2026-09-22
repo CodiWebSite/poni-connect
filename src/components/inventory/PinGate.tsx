@@ -27,7 +27,11 @@ const PinGate = ({ equipmentId, onUnlock }: PinGateProps) => {
         body: { equipment_id: equipmentId, pin },
       });
 
-      if (fnError || !data?.success) {
+      if ((data as any)?.error === 'locked') {
+        setLocked(true);
+        setError('Prea multe încercări greșite. Încearcă din nou mai târziu.');
+        setPin('');
+      } else if (fnError || !data?.success) {
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         if (newAttempts >= 3) {
@@ -38,6 +42,7 @@ const PinGate = ({ equipmentId, onUnlock }: PinGateProps) => {
         }
         setPin('');
       } else {
+
         onUnlock();
       }
     } catch {

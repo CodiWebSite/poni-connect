@@ -32,6 +32,8 @@ import Maintenance from "./pages/Maintenance";
 const Settings = lazy(() => import("./pages/Settings"));
 const MyProfile = lazy(() => import("./pages/MyProfile"));
 const DoctoralProfile = lazy(() => import("./pages/DoctoralProfile"));
+const MyNews = lazy(() => import("./pages/MyNews"));
+const QuarterlyReport = lazy(() => import("./pages/QuarterlyReport"));
 const HRManagement = lazy(() => import("./pages/HRManagement"));
 const Admin = lazy(() => import("./pages/Admin"));
 const LeaveCalendar = lazy(() => import("./pages/LeaveCalendar"));
@@ -330,6 +332,8 @@ const App = () => (
                 <Route path="/doctoral/comunitate" element={<DoctoralCommunity />} />
                 <Route path="/doctoral/scoala" element={<DoctoralSchool />} />
                 
+                <Route path="/noutati" element={<MyNews />} />
+                <Route path="/raport-trimestrial" element={<QuarterlyReport />} />
                 <Route path="/leave-calendar" element={<LeaveCalendar />} />
                 <Route path="/my-profile" element={<ProfileRoute />} />
                 <Route path="/hr-management" element={<HRManagement />} />

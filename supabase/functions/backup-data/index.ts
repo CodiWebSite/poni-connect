@@ -224,13 +224,16 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Check if this is a cron call (no auth header) or manual call
+    // Apel manual (super_admin) sau apel programat (token intern) — niciodată anonim
     const authHeader = req.headers.get("Authorization");
+    const cronToken = req.headers.get("x-cron-secret") || "";
+    const isUserCall = !!authHeader && !authHeader.includes(Deno.env.get("SUPABASE_ANON_KEY") || "___none___");
     let userId: string;
+    let isCronCall = false;
 
-    if (authHeader && !authHeader.includes(Deno.env.get("SUPABASE_ANON_KEY") || "___none___")) {
+    if (isUserCall) {
       // Manual call - verify super_admin
-      const token = authHeader.replace("Bearer ", "");
+      const token = authHeader!.replace("Bearer ", "");
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
       if (authError || !user) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -247,7 +250,26 @@ Deno.serve(async (req) => {
       }
       userId = user.id;
     } else {
-      // Cron call - find a super_admin to attribute the backup to
+      // Apel programat: necesită tokenul intern de cron
+      const expected = Deno.env.get("CRON_SECRET") || "";
+      const { data: stored } = await supabase
+        .from("cron_secrets")
+        .select("token")
+        .eq("name", "backup-data")
+        .maybeSingle();
+
+      const matches =
+        (!!cronToken && !!expected && cronToken === expected) ||
+        (!!cronToken && !!stored?.token && cronToken === stored.token);
+
+      if (!matches) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      isCronCall = true;
       const { data: adminRole } = await supabase.from("user_roles").select("user_id").eq("role", "super_admin").limit(1).maybeSingle();
       if (!adminRole) {
         return new Response(JSON.stringify({ error: "No super_admin found" }), {
@@ -257,6 +279,7 @@ Deno.serve(async (req) => {
       }
       userId = adminRole.user_id;
     }
+
 
     // Export all tables
     const backup: Record<string, unknown[]> = {};
@@ -321,6 +344,14 @@ Deno.serve(async (req) => {
     // Send email to super_admin
     await sendBackupEmail(supabase, userId, backupStatus, totalRows, sizeMB, errors, driveResult.webViewLink);
 
+    if (isCronCall) {
+      // Backupul programat merge doar în Drive; nu returnăm datele în răspuns
+      return new Response(
+        JSON.stringify({ status: backupStatus, rows: totalRows, size_mb: sizeMB, drive_file_id: driveResult.fileId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     return new Response(jsonStr, {
       headers: {
         ...corsHeaders,
@@ -328,6 +359,7 @@ Deno.serve(async (req) => {
         "Content-Disposition": `attachment; filename="backup_${new Date().toISOString().slice(0, 10)}.json"`,
       },
     });
+
   } catch (error) {
     console.error("[INTERNAL] Backup data error:", error);
     return new Response(JSON.stringify({ error: "Eroare internă. Te rugăm să încerci din nou." }), {

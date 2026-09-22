@@ -99,6 +99,20 @@
       "when": 1790062327739,
       "tag": "0013_fix_grant_doctoral_access_notification",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790063388940,
+      "tag": "0014_security_hardening_cron_and_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1790063440311,
+      "tag": "0015_inventory_pin_attempts",
+      "breakpoints": true
     }
   ]
 }

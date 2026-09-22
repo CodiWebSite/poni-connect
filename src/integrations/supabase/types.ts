@@ -866,6 +866,24 @@ export type Database = {
           },
         ]
       }
+      cron_secrets: {
+        Row: {
+          created_at: string
+          name: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          name: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          name?: string
+          token?: string
+        }
+        Relationships: []
+      }
       custom_holidays: {
         Row: {
           created_at: string
@@ -2006,6 +2024,30 @@ export type Database = {
           status?: Database["public"]["Enums"]["hr_request_status"]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      inventory_pin_attempts: {
+        Row: {
+          created_at: string
+          equipment_id: string | null
+          id: string
+          ip: string
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          equipment_id?: string | null
+          id?: string
+          ip: string
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          equipment_id?: string | null
+          id?: string
+          ip?: string
+          success?: boolean
         }
         Relationships: []
       }
