@@ -9,7 +9,9 @@
 - [x] 1. Centru de sănătate al platformei (eșecuri 24h + reîncercare) — tab „Eșecuri 24h" în /system-status
 - [x] 4. Aprobare cu un clic din e-mail / telefon (link one-time 7 zile, pagină /aprobare/:token)
 - [x] 11. Spațiul Doctoranzilor: înregistrare separată, aprobare, acces limitat, profil academic, parcurs, termene și documente private
-- [ ] 8. Raport trimestrial automat pentru conducere
+- [x] 8. Raport trimestrial pentru conducere (pagină /raport-trimestrial + export PDF)
+- [x] 12. Hardening securitate (backup protejat cu secret cron, PIN inventar criptat + anti-forțare brută, date publice restrânse)
+- [x] 13. Pagina „Noutăți pentru mine" (/noutati)
 - [ ] 7. Registru de deplasări legat de concedii (blocare suprapuneri)
 
 ## Notițe
