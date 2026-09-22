@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Megaphone, Sparkles, FileText, CalendarClock, Inbox, CheckCheck, BellRing, ArrowRight } from 'lucide-react';
+import { Megaphone, Sparkles, FileText, CalendarClock, Inbox, CheckCheck, BellRing, ArrowRight, Bell } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 
@@ -19,10 +19,11 @@ interface NewsItem {
   subtitle?: string | null;
   date: string;
   link: string;
-  group: 'announcement' | 'changelog' | 'document' | 'meeting' | 'request';
+  group: 'notification' | 'announcement' | 'changelog' | 'document' | 'meeting' | 'request';
 }
 
 const GROUPS: Record<NewsItem['group'], { label: string; icon: React.ElementType }> = {
+  notification: { label: 'Notificări necitite', icon: Bell },
   announcement: { label: 'Anunțuri', icon: Megaphone },
   changelog: { label: 'Noutăți în platformă', icon: Sparkles },
   document: { label: 'Documente noi', icon: FileText },
@@ -64,10 +65,14 @@ const MyNews = () => {
       supabase.from('meetings').select('id, title, start_at, location').gte('start_at', new Date().toISOString()).lte('start_at', inSevenDays).order('start_at').limit(10),
       supabase.from('leave_requests').select('id, request_number, status, updated_at').eq('user_id', user.id).gte('updated_at', sinceIso).order('updated_at', { ascending: false }).limit(10),
       supabase.from('hr_requests').select('id, request_type, status, updated_at').eq('user_id', user.id).gte('updated_at', sinceIso).order('updated_at', { ascending: false }).limit(10),
-      supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false),
+      supabase.from('notifications').select('id, title, message, created_at, read', { count: 'exact' }).eq('user_id', user.id).eq('read', false).order('created_at', { ascending: false }).limit(15),
     ]);
 
     const collected: NewsItem[] = [
+      ...(notifications.data || []).map((n) => ({
+        id: `ntf-${n.id}`, title: n.title, subtitle: n.message,
+        date: n.created_at, link: '/', group: 'notification' as const,
+      })),
       ...(announcements.data || []).map((a) => ({
         id: `ann-${a.id}`, title: a.title, subtitle: a.priority === 'high' ? 'Prioritate ridicată' : null,
         date: a.created_at, link: '/announcements', group: 'announcement' as const,
