@@ -35,18 +35,46 @@ Deno.serve(async (req) => {
     }
     if (new Date(link.expires_at) < new Date()) return json({ state: "expired" });
 
-    const { data: request } = await admin
+    const { data: request, error: requestError } = await admin
       .from("leave_requests")
-      .select("id, request_number, start_date, end_date, working_days, status, employee_name, department, user_id, leave_type")
+      .select("id, request_number, start_date, end_date, working_days, status, user_id, epd_id")
       .eq("id", link.request_id)
       .maybeSingle();
 
+    if (requestError) console.error("leave_requests select failed", requestError);
     if (!request) return json({ error: "Cererea nu a fost găsită" }, 404);
+
+    let employeeName: string | null = null;
+    let department: string | null = null;
+
+    if (request.epd_id) {
+      const { data: epd } = await admin
+        .from("employee_personal_data")
+        .select("first_name, last_name, department")
+        .eq("id", request.epd_id)
+        .maybeSingle();
+      if (epd) {
+        employeeName = [epd.last_name, epd.first_name].filter(Boolean).join(" ") || null;
+        department = epd.department ?? null;
+      }
+    }
+
+    if ((!employeeName || !department) && request.user_id) {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("full_name, department")
+        .eq("user_id", request.user_id)
+        .maybeSingle();
+      if (profile) {
+        employeeName = employeeName || profile.full_name || null;
+        department = department || profile.department || null;
+      }
+    }
 
     const summary = {
       request_number: request.request_number,
-      employee_name: request.employee_name,
-      department: request.department,
+      employee_name: employeeName,
+      department,
       start_date: request.start_date,
       end_date: request.end_date,
       working_days: request.working_days,
@@ -94,7 +122,7 @@ Deno.serve(async (req) => {
           hrRoles.map((r: any) => ({
             user_id: r.user_id,
             title: "Cerere concediu — necesită validare SRUS",
-            message: `${request.employee_name || "Angajat"} — cererea ${request.request_number} a fost aprobată de șeful de compartiment.`,
+            message: `${employeeName || "Angajat"} — cererea ${request.request_number} a fost aprobată de șeful de compartiment.`,
             type: "info",
             related_type: "leave_request",
             related_id: request.id,
