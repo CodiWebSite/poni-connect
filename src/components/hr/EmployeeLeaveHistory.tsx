@@ -351,13 +351,14 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
     }
 
     if (userId) {
-      const { data } = await supabase.from('leave_requests').select('id, status, start_date, end_date, working_days, year, created_at, request_number, epd_id').eq('user_id', userId).order('created_at', { ascending: false });
+      const { data } = await supabase.from('leave_requests').select('id, status, start_date, end_date, working_days, year, created_at, request_number, epd_id, edit_reason').eq('user_id', userId).order('created_at', { ascending: false });
       if (data) {
         const existingIds = new Set(allLeaves.map(l => l.id));
         const mapped = data.filter((lr) => !epdId || !lr.epd_id || lr.epd_id === epdId).filter((lr) => !existingIds.has(lr.id)).map((lr) => ({
           id: lr.id,
           status: lr.status === 'approved' ? 'approved' : lr.status === 'rejected' ? 'rejected' : 'pending',
-          details: { startDate: lr.start_date, endDate: lr.end_date, numberOfDays: lr.working_days, leaveType: 'co', source: 'leave_requests', request_number: lr.request_number, year: (lr as any).year },
+          details: { startDate: lr.start_date, endDate: lr.end_date, numberOfDays: lr.working_days, leaveType: 'co', source: 'leave_requests', request_number: lr.request_number, year: (lr as any).year, edit_reason: (lr as any).edit_reason },
+
           created_at: lr.created_at,
         }));
         allLeaves = [...allLeaves, ...mapped];
@@ -365,13 +366,14 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
     }
 
     if (epdId) {
-      const { data } = await supabase.from('leave_requests').select('id, status, start_date, end_date, working_days, year, created_at, request_number').eq('epd_id', epdId).order('created_at', { ascending: false });
+      const { data } = await supabase.from('leave_requests').select('id, status, start_date, end_date, working_days, year, created_at, request_number, edit_reason').eq('epd_id', epdId).order('created_at', { ascending: false });
       if (data) {
         const existingIds = new Set(allLeaves.map(l => l.id));
         const mapped = data.filter(l => !existingIds.has(l.id)).map(lr => ({
           id: lr.id,
           status: lr.status === 'approved' ? 'approved' : lr.status === 'rejected' ? 'rejected' : 'pending',
-          details: { startDate: lr.start_date, endDate: lr.end_date, numberOfDays: lr.working_days, leaveType: 'co', source: 'leave_requests', request_number: lr.request_number, year: (lr as any).year },
+          details: { startDate: lr.start_date, endDate: lr.end_date, numberOfDays: lr.working_days, leaveType: 'co', source: 'leave_requests', request_number: lr.request_number, year: (lr as any).year, edit_reason: (lr as any).edit_reason },
+
           created_at: lr.created_at,
         }));
         allLeaves = [...allLeaves, ...mapped];
@@ -642,6 +644,12 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
                       <span>Înreg.: {format(new Date(leave.created_at), 'dd MMM yyyy', { locale: ro })}</span>
                     </div>
                     {details.notes && <p className="text-xs text-muted-foreground italic mt-1">{details.notes}</p>}
+                    {details.edit_reason && (
+                      <p className="text-xs mt-1 text-amber-700 dark:text-amber-400 break-words">
+                        <span className="font-medium">Motiv modificare:</span> {details.edit_reason}
+                      </p>
+                    )}
+
                     {details.scannedDocumentUrl && (
                       <button
                         className="flex items-center gap-1 text-xs text-primary hover:underline mt-1"
