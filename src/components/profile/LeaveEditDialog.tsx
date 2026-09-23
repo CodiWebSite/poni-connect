@@ -174,12 +174,19 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
         lastEditedAt: new Date().toISOString(),
       };
 
-      const { error } = await supabase
-        .from('hr_requests')
-        .update({ details: newDetails as any })
-        .eq('id', leave.id);
-
-      if (error) throw error;
+      if (leave.details?.source === 'leave_requests') {
+        const { error } = await supabase
+          .from('leave_requests')
+          .update({ start_date: startDate, end_date: endDate, working_days: newDays })
+          .eq('id', leave.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('hr_requests')
+          .update({ details: newDetails as any })
+          .eq('id', leave.id);
+        if (error) throw error;
+      }
 
       // Adjust leave balance if days changed
       if (daysDiff !== 0) {
@@ -192,12 +199,14 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
         } else if (deductFrom === 'current') {
           diffCurrent = daysDiff;
         } else {
-          // Auto: for increases, take from carryover first; for decreases, return to current first
+          // Auto: for increases, take from carryover first; for decreases, return to carryover first (FIFO)
           if (daysDiff > 0) {
             diffCarryover = Math.min(daysDiff, carryoverDays);
             diffCurrent = daysDiff - diffCarryover;
           } else {
-            diffCurrent = daysDiff; // Return to current year
+            const returnable = Math.min(Math.abs(daysDiff), carryoverRecord?.used_days || 0);
+            diffCarryover = -returnable;
+            diffCurrent = daysDiff + returnable;
           }
         }
 
