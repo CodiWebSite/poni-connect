@@ -113,6 +113,13 @@
       "when": 1790063440311,
       "tag": "0015_inventory_pin_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790163088320,
+      "tag": "0016_add_leave_requests_edit_reason",
+      "breakpoints": true
     }
   ]
 }

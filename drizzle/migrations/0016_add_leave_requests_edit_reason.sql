@@ -1,0 +1,2 @@
+ALTER TABLE public.leave_requests ADD COLUMN edit_reason text;
+COMMENT ON COLUMN public.leave_requests.edit_reason IS 'Motivul obligatoriu completat la editarea administrativă a perioadei concediului';
