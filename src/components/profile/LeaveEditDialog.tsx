@@ -291,6 +291,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
           new_days: newDays,
           days_diff: daysDiff,
           deduct_from: deductFrom,
+          edit_reason: trimmedEditReason || null,
         }
       });
 
