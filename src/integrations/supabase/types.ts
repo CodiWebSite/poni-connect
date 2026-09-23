@@ -2341,6 +2341,7 @@ export type Database = {
           director_approved_at: string | null
           director_id: string | null
           director_notes: string | null
+          edit_reason: string | null
           employee_signature: string | null
           employee_signed_at: string | null
           end_date: string
@@ -2375,6 +2376,7 @@ export type Database = {
           director_approved_at?: string | null
           director_id?: string | null
           director_notes?: string | null
+          edit_reason?: string | null
           employee_signature?: string | null
           employee_signed_at?: string | null
           end_date: string
@@ -2409,6 +2411,7 @@ export type Database = {
           director_approved_at?: string | null
           director_id?: string | null
           director_notes?: string | null
+          edit_reason?: string | null
           employee_signature?: string | null
           employee_signed_at?: string | null
           end_date?: string
@@ -5111,6 +5114,7 @@ export type Database = {
           director_approved_at: string | null
           director_id: string | null
           director_notes: string | null
+          edit_reason: string | null
           employee_signature: string | null
           employee_signed_at: string | null
           end_date: string

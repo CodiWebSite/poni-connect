@@ -48,6 +48,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [editReason, setEditReason] = useState('');
   const [deductFrom, setDeductFrom] = useState<'auto' | 'carryover' | 'current'>('auto');
   const [customHolidayDates, setCustomHolidayDates] = useState<string[]>([]);
   const [customHolidayNames, setCustomHolidayNames] = useState<Record<string, string>>({});
@@ -76,6 +77,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
       setStartDate(leave.details.startDate || '');
       setEndDate(leave.details.endDate || '');
       setNotes(leave.details.notes || '');
+      setEditReason('');
       setDeductFrom(leave.details.deductFrom || 'auto');
     }
   }, [leave]);
@@ -153,10 +155,17 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
     return result;
   };
 
+  const isOnlineRequest = leave?.details?.source === 'leave_requests';
+  const trimmedEditReason = editReason.trim();
+
   const handleSave = async () => {
     if (!leave || !startDate || !endDate || !user) return;
     if (newDays <= 0) {
       toast({ title: 'Eroare', description: 'Perioada selectată nu conține zile lucrătoare.', variant: 'destructive' });
+      return;
+    }
+    if (isOnlineRequest && trimmedEditReason.length < 5) {
+      toast({ title: 'Motiv obligatoriu', description: 'Completați motivul modificării (minimum 5 caractere).', variant: 'destructive' });
       return;
     }
 
@@ -177,7 +186,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
       if (leave.details?.source === 'leave_requests') {
         const { data: savedLeave, error } = await supabase
           .from('leave_requests')
-          .update({ start_date: startDate, end_date: endDate, working_days: newDays })
+          .update({ start_date: startDate, end_date: endDate, working_days: newDays, edit_reason: trimmedEditReason })
           .eq('id', leave.id)
           .select('start_date, end_date, working_days')
           .maybeSingle();
@@ -282,6 +291,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
           new_days: newDays,
           days_diff: daysDiff,
           deduct_from: deductFrom,
+          edit_reason: trimmedEditReason || null,
         }
       });
 
@@ -397,6 +407,19 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
             </div>
           )}
 
+          {isOnlineRequest && (
+            <div className="space-y-2">
+              <Label>Motivul modificării <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="Ex: Corecție dată sfârșit la cererea angajatului..."
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+                maxLength={300}
+              />
+              <p className="text-xs text-muted-foreground">Obligatoriu — motivul rămâne salvat pe cerere și în jurnal.</p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Observații (opțional)</Label>
             <Input
@@ -409,7 +432,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Anulează</Button>
-          <Button onClick={handleSave} disabled={saving || !startDate || !endDate || newDays <= 0}>
+          <Button onClick={handleSave} disabled={saving || !startDate || !endDate || newDays <= 0 || (isOnlineRequest && trimmedEditReason.length < 5)}>
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pencil className="w-4 h-4 mr-2" />}
             Salvează
           </Button>
