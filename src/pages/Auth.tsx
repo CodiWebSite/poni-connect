@@ -99,7 +99,7 @@ const Auth = () => {
   const [signupData, setSignupData] = useState({ email: '', password: '', fullName: '' });
   const [accountType, setAccountType] = useState<'employee' | 'doctorand'>('employee');
   const [doctoralData, setDoctoralData] = useState({ phone: '', doctoralSchool: '', thesisTitle: '', studyYear: '1', startDate: '', expectedCompletionDate: '', coordinatorName: '', coordinatorId: '' });
-  const [coordinators, setCoordinators] = useState<{ id: string; full_name: string; academic_title: string | null; doctoral_school: string | null; research_field: string | null }[]>([]);
+  const [coordinators, setCoordinators] = useState<{ id: string; full_name: string; academic_title: string | null; research_field: string | null }[]>([]);
   const [loginToken, setLoginToken] = useState<string | null>(null);
   const [signupToken, setSignupToken] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -119,7 +119,7 @@ const Auth = () => {
   useEffect(() => {
     if (accountType !== 'doctorand' || coordinators.length > 0) return;
     supabase.from('doctoral_coordinators')
-      .select('id,full_name,academic_title,doctoral_school,research_field')
+      .select('id,full_name,academic_title,research_field')
       .eq('is_active', true)
       .order('full_name')
       .then(({ data }) => setCoordinators(data || []));
