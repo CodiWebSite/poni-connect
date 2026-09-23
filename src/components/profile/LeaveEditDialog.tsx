@@ -48,6 +48,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [editReason, setEditReason] = useState('');
   const [deductFrom, setDeductFrom] = useState<'auto' | 'carryover' | 'current'>('auto');
   const [customHolidayDates, setCustomHolidayDates] = useState<string[]>([]);
   const [customHolidayNames, setCustomHolidayNames] = useState<Record<string, string>>({});
