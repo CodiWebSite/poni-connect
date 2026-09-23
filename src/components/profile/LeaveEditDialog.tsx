@@ -432,7 +432,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Anulează</Button>
-          <Button onClick={handleSave} disabled={saving || !startDate || !endDate || newDays <= 0}>
+          <Button onClick={handleSave} disabled={saving || !startDate || !endDate || newDays <= 0 || (isOnlineRequest && trimmedEditReason.length < 5)}>
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pencil className="w-4 h-4 mr-2" />}
             Salvează
           </Button>
