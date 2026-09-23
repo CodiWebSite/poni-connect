@@ -77,7 +77,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
       setStartDate(leave.details.startDate || '');
       setEndDate(leave.details.endDate || '');
       setNotes(leave.details.notes || '');
-      setEditReason('');
+      setEditReason(leave.details.edit_reason || '');
       setDeductFrom(leave.details.deductFrom || 'auto');
     }
   }, [leave]);
