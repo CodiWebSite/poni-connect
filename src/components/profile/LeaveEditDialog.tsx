@@ -22,7 +22,7 @@ interface LeaveEditDialogProps {
   } | null;
   employeeRecordId: string | null;
   epdId?: string;
-  onSaved: () => void;
+  onSaved: () => void | Promise<void>;
 }
 
 const calculateWorkingDays = (startDate: string, endDate: string, customHolidayDates: string[]): number => {
@@ -175,17 +175,28 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
       };
 
       if (leave.details?.source === 'leave_requests') {
-        const { error } = await supabase
+        const { data: savedLeave, error } = await supabase
           .from('leave_requests')
           .update({ start_date: startDate, end_date: endDate, working_days: newDays })
-          .eq('id', leave.id);
+          .eq('id', leave.id)
+          .select('start_date, end_date, working_days')
+          .maybeSingle();
         if (error) throw error;
+        if (!savedLeave || savedLeave.start_date !== startDate || savedLeave.end_date !== endDate || savedLeave.working_days !== newDays) {
+          throw new Error('Modificarea concediului nu a fost confirmată de baza de date.');
+        }
       } else {
-        const { error } = await supabase
+        const { data: savedRequest, error } = await supabase
           .from('hr_requests')
           .update({ details: newDetails as any })
-          .eq('id', leave.id);
+          .eq('id', leave.id)
+          .select('details')
+          .maybeSingle();
         if (error) throw error;
+        const savedDetails = savedRequest?.details as Record<string, unknown> | null | undefined;
+        if (!savedDetails || savedDetails.startDate !== startDate || savedDetails.endDate !== endDate || savedDetails.numberOfDays !== newDays) {
+          throw new Error('Modificarea concediului nu a fost confirmată de baza de date.');
+        }
       }
 
       // Adjust leave balance if days changed
@@ -281,8 +292,8 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
           : 'Perioada concediului a fost modificată.',
       });
 
+      await onSaved();
       onOpenChange(false);
-      onSaved();
     } catch (error) {
       console.error('Edit leave error:', error);
       toast({ title: 'Eroare', description: 'Nu s-a putut modifica concediul.', variant: 'destructive' });
