@@ -153,6 +153,38 @@ Deno.serve(async (req) => {
       });
     }
 
+    // E-mailuri: angajatul află rezultatul, SRUS/HR primesc cererea de centralizat
+    if (request.user_id) {
+      try {
+        const fmt = (d: string) => {
+          const [y, m, day] = String(d).slice(0, 10).split("-");
+          return `${day}.${m}.${y}`;
+        };
+        const res = await fetch(`${supabaseUrl}/functions/v1/notify-leave-result`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-key": serviceRoleKey,
+          },
+          body: JSON.stringify({
+            employee_user_id: request.user_id,
+            employee_name: employeeName,
+            request_number: request.request_number,
+            start_date: fmt(request.start_date),
+            end_date: fmt(request.end_date),
+            working_days: request.working_days,
+            result: action === "approve" ? "approved" : "rejected",
+            rejection_reason: action === "reject" ? (reason || null) : null,
+            approver_name: "Șef compartiment",
+            notify_hr: action === "approve",
+          }),
+        });
+        if (!res.ok) console.error("notify-leave-result failed", res.status, await res.text());
+      } catch (mailErr) {
+        console.error("notify-leave-result invoke failed", mailErr);
+      }
+    }
+
     await admin
       .from("approval_links")
       .update({ used_at: now, used_action: action, used_ip: ip })

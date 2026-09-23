@@ -465,6 +465,26 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
         related_id: srusApproveDialog.id,
       });
 
+      // E-mail către angajat: cererea este aprobată definitiv
+      if (srusApproveDialog.user_id) {
+        try {
+          await supabase.functions.invoke('notify-leave-result', {
+            body: {
+              employee_user_id: srusApproveDialog.user_id,
+              employee_name: srusApproveDialog.employee_name,
+              request_number: srusApproveDialog.request_number,
+              start_date: format(parseISO(srusApproveDialog.start_date), 'dd.MM.yyyy'),
+              end_date: format(parseISO(srusApproveDialog.end_date), 'dd.MM.yyyy'),
+              working_days: srusApproveDialog.working_days,
+              result: 'approved',
+              approver_name: srusApproveOfficer || 'SRUS',
+            },
+          });
+        } catch (err) {
+          console.error('Failed to send SRUS approval email:', err);
+        }
+      }
+
       toast({ title: 'Validată SRUS', description: `Cererea ${srusApproveDialog.request_number} este acum aprobată definitiv.` });
       setSrusApproveDialog(null);
       setSrusApproveSig(null);
