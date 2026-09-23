@@ -186,7 +186,7 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
       if (leave.details?.source === 'leave_requests') {
         const { data: savedLeave, error } = await supabase
           .from('leave_requests')
-          .update({ start_date: startDate, end_date: endDate, working_days: newDays })
+          .update({ start_date: startDate, end_date: endDate, working_days: newDays, edit_reason: trimmedEditReason })
           .eq('id', leave.id)
           .select('start_date, end_date, working_days')
           .maybeSingle();
