@@ -407,6 +407,19 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
             </div>
           )}
 
+          {isOnlineRequest && (
+            <div className="space-y-2">
+              <Label>Motivul modificării <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="Ex: Corecție dată sfârșit la cererea angajatului..."
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+                maxLength={300}
+              />
+              <p className="text-xs text-muted-foreground">Obligatoriu — motivul rămâne salvat pe cerere și în jurnal.</p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Observații (opțional)</Label>
             <Input
