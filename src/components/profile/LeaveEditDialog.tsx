@@ -155,10 +155,17 @@ export const LeaveEditDialog = ({ open, onOpenChange, leave, employeeRecordId, e
     return result;
   };
 
+  const isOnlineRequest = leave?.details?.source === 'leave_requests';
+  const trimmedEditReason = editReason.trim();
+
   const handleSave = async () => {
     if (!leave || !startDate || !endDate || !user) return;
     if (newDays <= 0) {
       toast({ title: 'Eroare', description: 'Perioada selectată nu conține zile lucrătoare.', variant: 'destructive' });
+      return;
+    }
+    if (isOnlineRequest && trimmedEditReason.length < 5) {
+      toast({ title: 'Motiv obligatoriu', description: 'Completați motivul modificării (minimum 5 caractere).', variant: 'destructive' });
       return;
     }
 
