@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
         if (hrRoles) {
           for (const hr of hrRoles) {
             const { data: { user: hrUser } } = await supabaseAdmin.auth.admin.getUserById(hr.user_id);
-            if (hrUser?.email) {
+            if (hrUser?.email && !hrEmails.includes(hrUser.email)) {
               hrEmails.push(hrUser.email);
             }
           }
