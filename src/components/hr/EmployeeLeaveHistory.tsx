@@ -710,7 +710,10 @@ export const EmployeeLeaveHistory = ({ open, onOpenChange, employeeName, userId,
         leave={editingLeave}
         employeeRecordId={employeeRecordId}
         epdId={epdId}
-        onSaved={() => { fetchLeaves(); fetchCarryoverData(); onChanged(); }}
+        onSaved={async () => {
+          await Promise.all([fetchLeaves(), fetchCarryoverData()]);
+          onChanged();
+        }}
       />
     </>
   );
