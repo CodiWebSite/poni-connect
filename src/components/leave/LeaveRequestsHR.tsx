@@ -478,7 +478,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
               working_days: srusApproveDialog.working_days,
               result: 'approved',
               approver_name: srusApproveOfficer || 'SRUS',
-              notify_hr: true,
+              notify_hr: false,
             },
           });
         } catch (err) {
