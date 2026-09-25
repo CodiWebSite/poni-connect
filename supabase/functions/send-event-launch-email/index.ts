@@ -59,9 +59,13 @@ Deno.serve(async (req) => {
     }
 
     let testTo: string | null = null;
+    let offset = 0;
+    let limit = 60;
     try {
       const body = await req.json();
       if (typeof body?.test_to === "string" && body.test_to.includes("@")) testTo = body.test_to;
+      if (Number.isFinite(body?.offset)) offset = Math.max(0, Math.floor(body.offset));
+      if (Number.isFinite(body?.limit)) limit = Math.min(200, Math.max(1, Math.floor(body.limit)));
     } catch (_) { /* no body */ }
 
     const supabase = createClient(
@@ -70,6 +74,7 @@ Deno.serve(async (req) => {
     );
 
     let recipients: string[] = [];
+    let total = 0;
     if (testTo) {
       recipients = [testTo];
     } else {
@@ -78,13 +83,15 @@ Deno.serve(async (req) => {
         .select("email")
         .not("email", "is", null);
       if (error) throw error;
-      recipients = Array.from(
+      const all = Array.from(
         new Set(
           (data || [])
             .map((r: { email: string | null }) => (r.email || "").trim().toLowerCase())
             .filter((e) => e.includes("@")),
         ),
-      );
+      ).sort();
+      total = all.length;
+      recipients = all.slice(offset, offset + limit);
     }
 
     const transporter = nodemailer.createTransport({
@@ -115,7 +122,15 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, total: recipients.length, sent, failed: failed.length }),
+      JSON.stringify({
+        success: true,
+        total: testTo ? 1 : total,
+        batch: recipients.length,
+        offset,
+        sent,
+        failed: failed.length,
+        next_offset: testTo ? null : (offset + recipients.length < total ? offset + recipients.length : null),
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (_e) {
