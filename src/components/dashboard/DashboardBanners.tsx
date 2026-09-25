@@ -1,4 +1,5 @@
 import DashboardAlertsBanner from './DashboardAlertsBanner';
+import LiveEventBanner from './LiveEventBanner';
 import MFARecommendationBanner from './MFARecommendationBanner';
 import InstallAppBanner from './InstallAppBanner';
 
@@ -8,6 +9,7 @@ import InstallAppBanner from './InstallAppBanner';
  */
 const DashboardBanners = () => (
   <div className="space-y-2 empty:hidden [&>*:not(:first-child)]:mt-0">
+    <LiveEventBanner />
     <DashboardAlertsBanner />
     <MFARecommendationBanner />
     <InstallAppBanner />
