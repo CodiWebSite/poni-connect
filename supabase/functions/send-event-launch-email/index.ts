@@ -59,9 +59,13 @@ Deno.serve(async (req) => {
     }
 
     let testTo: string | null = null;
+    let offset = 0;
+    let limit = 60;
     try {
       const body = await req.json();
       if (typeof body?.test_to === "string" && body.test_to.includes("@")) testTo = body.test_to;
+      if (Number.isFinite(body?.offset)) offset = Math.max(0, Math.floor(body.offset));
+      if (Number.isFinite(body?.limit)) limit = Math.min(200, Math.max(1, Math.floor(body.limit)));
     } catch (_) { /* no body */ }
 
     const supabase = createClient(
@@ -70,21 +74,31 @@ Deno.serve(async (req) => {
     );
 
     let recipients: string[] = [];
+    let total = 0;
     if (testTo) {
       recipients = [testTo];
     } else {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("email")
-        .not("email", "is", null);
-      if (error) throw error;
-      recipients = Array.from(
-        new Set(
-          (data || [])
-            .map((r: { email: string | null }) => (r.email || "").trim().toLowerCase())
-            .filter((e) => e.includes("@")),
-        ),
-      );
+      const { data: doctoralRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "doctorand");
+      const excluded = new Set((doctoralRoles || []).map((r: { user_id: string }) => r.user_id));
+
+      const emails: string[] = [];
+      for (let page = 1; page <= 10; page++) {
+        const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
+        if (error) throw error;
+        const users = data?.users || [];
+        for (const u of users) {
+          if (!u.email || excluded.has(u.id)) continue;
+          if (u.banned_until) continue;
+          emails.push(u.email.trim().toLowerCase());
+        }
+        if (users.length < 200) break;
+      }
+      const all = Array.from(new Set(emails.filter((e) => e.includes("@")))).sort();
+      total = all.length;
+      recipients = all.slice(offset, offset + limit);
     }
 
     const transporter = nodemailer.createTransport({
@@ -115,10 +129,19 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, total: recipients.length, sent, failed: failed.length }),
+      JSON.stringify({
+        success: true,
+        total: testTo ? 1 : total,
+        batch: recipients.length,
+        offset,
+        sent,
+        failed: failed.length,
+        next_offset: testTo ? null : (offset + recipients.length < total ? offset + recipients.length : null),
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (_e) {
+    console.error("send-event-launch-email failed:", JSON.stringify(_e instanceof Error ? _e.message : _e));
     return new Response(JSON.stringify({ error: "Failed to send emails" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
