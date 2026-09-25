@@ -134,6 +134,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (_e) {
+    console.error("send-event-launch-email failed:", _e instanceof Error ? _e.message : String(_e));
     return new Response(JSON.stringify({ error: "Failed to send emails" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
