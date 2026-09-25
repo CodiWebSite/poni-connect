@@ -78,18 +78,25 @@ Deno.serve(async (req) => {
     if (testTo) {
       recipients = [testTo];
     } else {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("email")
-        .not("email", "is", null);
-      if (error) throw error;
-      const all = Array.from(
-        new Set(
-          (data || [])
-            .map((r: { email: string | null }) => (r.email || "").trim().toLowerCase())
-            .filter((e) => e.includes("@")),
-        ),
-      ).sort();
+      const { data: doctoralRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "doctorand");
+      const excluded = new Set((doctoralRoles || []).map((r: { user_id: string }) => r.user_id));
+
+      const emails: string[] = [];
+      for (let page = 1; page <= 10; page++) {
+        const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
+        if (error) throw error;
+        const users = data?.users || [];
+        for (const u of users) {
+          if (!u.email || excluded.has(u.id)) continue;
+          if (u.banned_until) continue;
+          emails.push(u.email.trim().toLowerCase());
+        }
+        if (users.length < 200) break;
+      }
+      const all = Array.from(new Set(emails.filter((e) => e.includes("@")))).sort();
       total = all.length;
       recipients = all.slice(offset, offset + limit);
     }
@@ -134,7 +141,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (_e) {
-    console.error("send-event-launch-email failed:", _e instanceof Error ? _e.message : String(_e));
+    console.error("send-event-launch-email failed:", JSON.stringify(_e instanceof Error ? _e.message : _e));
     return new Response(JSON.stringify({ error: "Failed to send emails" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
