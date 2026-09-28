@@ -117,10 +117,22 @@ const Announcements = () => {
   };
 
   const resetForm = () => {
-    setFormData({ title: '', content: '', priority: 'normal', is_pinned: false, links: [], attachments: [] });
+    setFormData({ title: '', content: '', priority: 'normal', is_pinned: false, links: [], attachments: [], kioskOption: '30' });
     setNewLink({ label: '', url: '' });
     setEditingId(null);
   };
+
+  const extendKiosk = async (id: string) => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    const { error } = await supabase.from('announcements').update({ kiosk_until: d.toISOString() }).eq('id', id);
+    if (error) toast.error('Eroare la prelungire');
+    else {
+      toast.success('Anunțul rămâne pe ecranul din hol încă 30 de zile');
+      fetchAnnouncements();
+    }
+  };
+
 
   const handleFileUpload = async (files: FileList) => {
     if (!files.length) return;
