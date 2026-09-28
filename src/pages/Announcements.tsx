@@ -38,7 +38,23 @@ interface Announcement {
   author_id: string | null;
   attachments: AttachmentItem[];
   links: LinkItem[];
+  kiosk_until: string | null;
 }
+
+const KIOSK_OPTIONS = [
+  { value: '30', label: '30 de zile (implicit)' },
+  { value: '60', label: '60 de zile' },
+  { value: '90', label: '90 de zile' },
+  { value: 'permanent', label: 'Permanent' },
+];
+
+const kioskUntilFromOption = (opt: string): string | null => {
+  if (opt === 'permanent') return null;
+  const d = new Date();
+  d.setDate(d.getDate() + parseInt(opt, 10));
+  return d.toISOString();
+};
+
 
 const Announcements = () => {
   const location = useLocation();
