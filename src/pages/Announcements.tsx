@@ -361,22 +361,41 @@ const Announcements = () => {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {announcements.map((announcement) => (
-            <AnnouncementCard
-              key={announcement.id}
-              id={announcement.id}
-              title={announcement.title}
-              content={announcement.content}
-              priority={announcement.priority}
-              isPinned={announcement.is_pinned}
-              createdAt={announcement.created_at}
-              attachments={announcement.attachments}
-              links={announcement.links}
-              canEdit={canEditDelete(announcement)}
-              onEdit={() => handleEdit(announcement)}
-              onDelete={() => handleDelete(announcement.id)}
-            />
-          ))}
+          {announcements.map((announcement) => {
+            const kioskActive = announcement.kiosk_until === null || new Date(announcement.kiosk_until) > new Date();
+            return (
+              <div key={announcement.id} className="space-y-1">
+                <AnnouncementCard
+                  id={announcement.id}
+                  title={announcement.title}
+                  content={announcement.content}
+                  priority={announcement.priority}
+                  isPinned={announcement.is_pinned}
+                  createdAt={announcement.created_at}
+                  attachments={announcement.attachments}
+                  links={announcement.links}
+                  canEdit={canEditDelete(announcement)}
+                  onEdit={() => handleEdit(announcement)}
+                  onDelete={() => handleDelete(announcement.id)}
+                />
+                {canEditDelete(announcement) && (
+                  <div className="flex items-center justify-between gap-2 px-1 text-xs text-muted-foreground">
+                    <span>
+                      {announcement.kiosk_until === null
+                        ? 'Pe ecranul din hol: permanent'
+                        : kioskActive
+                          ? `Pe ecranul din hol până la ${new Date(announcement.kiosk_until).toLocaleDateString('ro-RO')}`
+                          : 'Nu se mai afișează pe ecranul din hol'}
+                    </span>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => extendKiosk(announcement.id)}>
+                      Prelungește 30 de zile
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
         </div>
       )}
     </Layout>
