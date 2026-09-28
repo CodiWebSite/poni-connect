@@ -184,7 +184,9 @@ const Announcements = () => {
       is_pinned: formData.is_pinned,
       attachments: formData.attachments as any,
       links: formData.links as any,
+      kiosk_until: kioskUntilFromOption(formData.kioskOption),
     };
+
 
     if (editingId) {
       const { error } = await supabase.from('announcements').update(payload).eq('id', editingId);
