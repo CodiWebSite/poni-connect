@@ -120,6 +120,13 @@
       "when": 1790163088320,
       "tag": "0016_add_leave_requests_edit_reason",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790585825742,
+      "tag": "0017_add_announcements_kiosk_until",
+      "breakpoints": true
     }
   ]
 }
