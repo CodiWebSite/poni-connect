@@ -866,6 +866,98 @@ function hideSoundPrompt(){
   if (el) el.remove();
 }
 
+/* ── Mod Eco / Standby nocturn (program L–V 07:30–17:00) ─────── */
+var ECO = { enabled: true, start: '07:30', end: '17:00', weekend: false };
+var __ecoOn = false;
+var __ecoWakeUntil = 0;
+var __ecoMovedAt = 0;
+
+function ecoMinutes(str){
+  var p = String(str || '').split(':');
+  var h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+  if (isNaN(h)) h = 0; if (isNaN(m)) m = 0;
+  return h * 60 + m;
+}
+
+function ecoWithinProgram(now){
+  var day = now.getDay();
+  if (!ECO.weekend && (day === 0 || day === 6)) return false;
+  var cur = now.getHours() * 60 + now.getMinutes();
+  return cur >= ecoMinutes(ECO.start) && cur < ecoMinutes(ECO.end);
+}
+
+function ecoMoveClock(){
+  var el = document.getElementById('ecoClock');
+  if (!el) return;
+  var left = 18 + Math.round(Math.random() * 64);
+  var top = 18 + Math.round(Math.random() * 64);
+  el.style.left = left + '%';
+  el.style.top = top + '%';
+}
+
+function ecoEnter(){
+  if (__ecoOn) return;
+  __ecoOn = true;
+  var ov = document.getElementById('ecoOverlay');
+  if (ov) ov.style.display = 'block';
+  try {
+    var v = document.getElementById('video');
+    if (v) { v.pause(); }
+  } catch(_){}
+  try { if (__bgMusicAudio) __bgMusicAudio.pause(); } catch(_){}
+  try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch(_){}
+  clearTimeout(slideshowTimer);
+  clearSectionTimers();
+  ecoMoveClock();
+  __ecoMovedAt = Date.now();
+}
+
+function ecoExit(){
+  if (!__ecoOn) return;
+  __ecoOn = false;
+  var ov = document.getElementById('ecoOverlay');
+  if (ov) ov.style.display = 'none';
+  try { if (__bgMusicAudio && __bgMusicAudio.src) __bgMusicAudio.play().catch(function(){}); } catch(_){}
+  try { if (__bgYtPlayer && __bgYtPlayer.playVideo) __bgYtPlayer.playVideo(); } catch(_){}
+  if (slideshowActive) { showSlide(); } else { playVideo(); }
+  goTo(0);
+  fetchAnnouncements();
+  fetchRooms();
+  fetchWeather();
+}
+
+function ecoTick(){
+  var now = new Date();
+  var t = document.getElementById('ecoTime');
+  var d = document.getElementById('ecoDate');
+  if (t) t.textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  if (d) d.textContent = DAYS_RO[now.getDay()] + ', ' + now.getDate() + ' ' + MONTHS_RO[now.getMonth()];
+
+  if (!ECO.enabled) { ecoExit(); return; }
+
+  var shouldRun = ecoWithinProgram(now) || Date.now() < __ecoWakeUntil;
+  if (shouldRun) { ecoExit(); }
+  else {
+    ecoEnter();
+    if (Date.now() - __ecoMovedAt > 600000) { ecoMoveClock(); __ecoMovedAt = Date.now(); }
+  }
+}
+setInterval(ecoTick, 15000);
+ecoTick();
+
+// Trezire manuală 15 minute la orice interacțiune (telecomandă / atingere / click)
+['click','touchstart','keydown','pointerdown'].forEach(function(ev){
+  window.addEventListener(ev, function(){
+    if (__ecoOn) { __ecoWakeUntil = Date.now() + 15 * 60 * 1000; ecoTick(); }
+  }, true);
+});
+
+// Reîncărcare zilnică de igienizare a memoriei (06:30) — eliberează RAM pe Samsung TV
+setInterval(function(){
+  var n = new Date();
+  if (n.getHours() === 6 && n.getMinutes() === 30) { location.reload(); }
+}, 60000);
+
 
 </script>
 </body>
