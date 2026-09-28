@@ -213,7 +213,9 @@ const Announcements = () => {
       is_pinned: a.is_pinned,
       links: a.links || [],
       attachments: a.attachments || [],
+      kioskOption: a.kiosk_until === null ? 'permanent' : '30',
     });
+
     setIsOpen(true);
   };
 
