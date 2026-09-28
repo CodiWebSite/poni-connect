@@ -698,6 +698,15 @@ function fetchSettings() {
 
     slideshowImages = Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [];
 
+    // Program de funcționare (Eco standby) — suprascriere opțională din Administrare
+    if (typeof ECO !== 'undefined') {
+      ECO.enabled = map.kiosk_schedule_enabled !== false;
+      if (typeof map.kiosk_schedule_start === 'string' && map.kiosk_schedule_start) ECO.start = map.kiosk_schedule_start;
+      if (typeof map.kiosk_schedule_end === 'string' && map.kiosk_schedule_end) ECO.end = map.kiosk_schedule_end;
+      ECO.weekend = map.kiosk_weekend_active === true;
+      if (typeof ecoTick === 'function') ecoTick();
+    }
+
     if (map.kiosk_enabled === false) {
       document.querySelector('.kiosk').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;background:#0c1222"><div><div style="font-size:56px;color:#334155;margin-bottom:20px">📺</div><h1 style="font-size:28px;font-weight:700;color:#64748b;font-family:Playfair Display,serif">Mod Kiosk dezactivat</h1><p style="color:#475569;margin-top:10px;font-size:20px">Ecranul TV este momentan oprit de administrator.</p></div></div>';
     }
