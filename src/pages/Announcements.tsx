@@ -77,6 +77,7 @@ const Announcements = () => {
     is_pinned: boolean;
     links: LinkItem[];
     attachments: AttachmentItem[];
+    kioskOption: string;
   }>({
     title: '',
     content: '',
@@ -84,7 +85,9 @@ const Announcements = () => {
     is_pinned: false,
     links: [],
     attachments: [],
+    kioskOption: '30',
   });
+
 
   const [newLink, setNewLink] = useState({ label: '', url: '' });
 
