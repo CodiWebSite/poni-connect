@@ -209,6 +209,14 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
     <div class="ticker-inner" id="tickerInner"></div>
   </div>
 
+  <!-- Eco standby overlay -->
+  <div id="ecoOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:99999">
+    <div id="ecoClock" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:'Inter',sans-serif;font-size:64px;font-weight:600;color:#1f2937;letter-spacing:0.06em;transition:left 2s ease,top 2s ease;text-align:center">
+      <div id="ecoTime">--:--</div>
+      <div id="ecoDate" style="font-size:20px;color:#111827;margin-top:10px;font-weight:400"></div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <div class="footer">
     <div class="footer-left">
@@ -690,6 +698,15 @@ function fetchSettings() {
 
     slideshowImages = Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [];
 
+    // Program de funcționare (Eco standby) — suprascriere opțională din Administrare
+    if (typeof ECO !== 'undefined' && ECO) {
+      ECO.enabled = map.kiosk_schedule_enabled !== false;
+      if (typeof map.kiosk_schedule_start === 'string' && map.kiosk_schedule_start) ECO.start = map.kiosk_schedule_start;
+      if (typeof map.kiosk_schedule_end === 'string' && map.kiosk_schedule_end) ECO.end = map.kiosk_schedule_end;
+      ECO.weekend = map.kiosk_weekend_active === true;
+      if (typeof ecoTick === 'function') ecoTick();
+    }
+
     if (map.kiosk_enabled === false) {
       document.querySelector('.kiosk').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;background:#0c1222"><div><div style="font-size:56px;color:#334155;margin-bottom:20px">📺</div><h1 style="font-size:28px;font-weight:700;color:#64748b;font-family:Playfair Display,serif">Mod Kiosk dezactivat</h1><p style="color:#475569;margin-top:10px;font-size:20px">Ecranul TV este momentan oprit de administrator.</p></div></div>';
     }
@@ -857,6 +874,98 @@ function hideSoundPrompt(){
   var el = document.getElementById('soundPrompt');
   if (el) el.remove();
 }
+
+/* ── Mod Eco / Standby nocturn (program L–V 07:30–17:00) ─────── */
+var ECO = { enabled: true, start: '07:30', end: '17:00', weekend: false };
+var __ecoOn = false;
+var __ecoWakeUntil = 0;
+var __ecoMovedAt = 0;
+
+function ecoMinutes(str){
+  var p = String(str || '').split(':');
+  var h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+  if (isNaN(h)) h = 0; if (isNaN(m)) m = 0;
+  return h * 60 + m;
+}
+
+function ecoWithinProgram(now){
+  var day = now.getDay();
+  if (!ECO.weekend && (day === 0 || day === 6)) return false;
+  var cur = now.getHours() * 60 + now.getMinutes();
+  return cur >= ecoMinutes(ECO.start) && cur < ecoMinutes(ECO.end);
+}
+
+function ecoMoveClock(){
+  var el = document.getElementById('ecoClock');
+  if (!el) return;
+  var left = 18 + Math.round(Math.random() * 64);
+  var top = 18 + Math.round(Math.random() * 64);
+  el.style.left = left + '%';
+  el.style.top = top + '%';
+}
+
+function ecoEnter(){
+  if (__ecoOn) return;
+  __ecoOn = true;
+  var ov = document.getElementById('ecoOverlay');
+  if (ov) ov.style.display = 'block';
+  try {
+    var v = document.getElementById('video');
+    if (v) { v.pause(); }
+  } catch(_){}
+  try { if (__bgMusicAudio) __bgMusicAudio.pause(); } catch(_){}
+  try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch(_){}
+  clearTimeout(slideshowTimer);
+  clearSectionTimers();
+  ecoMoveClock();
+  __ecoMovedAt = Date.now();
+}
+
+function ecoExit(){
+  if (!__ecoOn) return;
+  __ecoOn = false;
+  var ov = document.getElementById('ecoOverlay');
+  if (ov) ov.style.display = 'none';
+  try { if (__bgMusicAudio && __bgMusicAudio.src) __bgMusicAudio.play().catch(function(){}); } catch(_){}
+  try { if (__bgYtPlayer && __bgYtPlayer.playVideo) __bgYtPlayer.playVideo(); } catch(_){}
+  if (slideshowActive) { showSlide(); } else { playVideo(); }
+  goTo(0);
+  fetchAnnouncements();
+  fetchRooms();
+  fetchWeather();
+}
+
+function ecoTick(){
+  var now = new Date();
+  var t = document.getElementById('ecoTime');
+  var d = document.getElementById('ecoDate');
+  if (t) t.textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  if (d) d.textContent = DAYS_RO[now.getDay()] + ', ' + now.getDate() + ' ' + MONTHS_RO[now.getMonth()];
+
+  if (!ECO.enabled) { ecoExit(); return; }
+
+  var shouldRun = ecoWithinProgram(now) || Date.now() < __ecoWakeUntil;
+  if (shouldRun) { ecoExit(); }
+  else {
+    ecoEnter();
+    if (Date.now() - __ecoMovedAt > 600000) { ecoMoveClock(); __ecoMovedAt = Date.now(); }
+  }
+}
+setInterval(ecoTick, 15000);
+ecoTick();
+
+// Trezire manuală 15 minute la orice interacțiune (telecomandă / atingere / click)
+['click','touchstart','keydown','pointerdown'].forEach(function(ev){
+  window.addEventListener(ev, function(){
+    if (__ecoOn) { __ecoWakeUntil = Date.now() + 15 * 60 * 1000; ecoTick(); }
+  }, true);
+});
+
+// Reîncărcare zilnică de igienizare a memoriei (06:30) — eliberează RAM pe Samsung TV
+setInterval(function(){
+  var n = new Date();
+  if (n.getHours() === 6 && n.getMinutes() === 30) { location.reload(); }
+}, 60000);
 
 
 </script>
