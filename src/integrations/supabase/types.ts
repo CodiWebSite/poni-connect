@@ -165,6 +165,7 @@ export type Database = {
           created_at: string
           id: string
           is_pinned: boolean | null
+          kiosk_until: string | null
           links: Json | null
           priority: string | null
           title: string
@@ -177,6 +178,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean | null
+          kiosk_until?: string | null
           links?: Json | null
           priority?: string | null
           title: string
@@ -189,6 +191,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean | null
+          kiosk_until?: string | null
           links?: Json | null
           priority?: string | null
           title?: string

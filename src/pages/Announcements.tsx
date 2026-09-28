@@ -38,7 +38,23 @@ interface Announcement {
   author_id: string | null;
   attachments: AttachmentItem[];
   links: LinkItem[];
+  kiosk_until: string | null;
 }
+
+const KIOSK_OPTIONS = [
+  { value: '30', label: '30 de zile (implicit)' },
+  { value: '60', label: '60 de zile' },
+  { value: '90', label: '90 de zile' },
+  { value: 'permanent', label: 'Permanent' },
+];
+
+const kioskUntilFromOption = (opt: string): string | null => {
+  if (opt === 'permanent') return null;
+  const d = new Date();
+  d.setDate(d.getDate() + parseInt(opt, 10));
+  return d.toISOString();
+};
+
 
 const Announcements = () => {
   const location = useLocation();
@@ -61,6 +77,7 @@ const Announcements = () => {
     is_pinned: boolean;
     links: LinkItem[];
     attachments: AttachmentItem[];
+    kioskOption: string;
   }>({
     title: '',
     content: '',
@@ -68,7 +85,9 @@ const Announcements = () => {
     is_pinned: false,
     links: [],
     attachments: [],
+    kioskOption: '30',
   });
+
 
   const [newLink, setNewLink] = useState({ label: '', url: '' });
 
@@ -98,10 +117,22 @@ const Announcements = () => {
   };
 
   const resetForm = () => {
-    setFormData({ title: '', content: '', priority: 'normal', is_pinned: false, links: [], attachments: [] });
+    setFormData({ title: '', content: '', priority: 'normal', is_pinned: false, links: [], attachments: [], kioskOption: '30' });
     setNewLink({ label: '', url: '' });
     setEditingId(null);
   };
+
+  const extendKiosk = async (id: string) => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    const { error } = await supabase.from('announcements').update({ kiosk_until: d.toISOString() }).eq('id', id);
+    if (error) toast.error('Eroare la prelungire');
+    else {
+      toast.success('Anunțul rămâne pe ecranul din hol încă 30 de zile');
+      fetchAnnouncements();
+    }
+  };
+
 
   const handleFileUpload = async (files: FileList) => {
     if (!files.length) return;
@@ -153,7 +184,9 @@ const Announcements = () => {
       is_pinned: formData.is_pinned,
       attachments: formData.attachments as any,
       links: formData.links as any,
+      kiosk_until: kioskUntilFromOption(formData.kioskOption),
     };
+
 
     if (editingId) {
       const { error } = await supabase.from('announcements').update(payload).eq('id', editingId);
@@ -180,7 +213,9 @@ const Announcements = () => {
       is_pinned: a.is_pinned,
       links: a.links || [],
       attachments: a.attachments || [],
+      kioskOption: a.kiosk_until === null ? 'permanent' : '30',
     });
+
     setIsOpen(true);
   };
 
@@ -249,6 +284,18 @@ const Announcements = () => {
                   <Label htmlFor="pinned">Fixează anunțul</Label>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="kiosk">Afișare pe ecranul din hol</Label>
+                  <Select value={formData.kioskOption} onValueChange={(v) => setFormData({ ...formData, kioskOption: v })}>
+                    <SelectTrigger id="kiosk"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {KIOSK_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">După această perioadă anunțul dispare de pe televizorul din hol, dar rămâne aici.</p>
+                </div>
+
+
                 {/* Attachments */}
                 <div className="space-y-2">
                   <Label>Atașamente</Label>
@@ -314,22 +361,41 @@ const Announcements = () => {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {announcements.map((announcement) => (
-            <AnnouncementCard
-              key={announcement.id}
-              id={announcement.id}
-              title={announcement.title}
-              content={announcement.content}
-              priority={announcement.priority}
-              isPinned={announcement.is_pinned}
-              createdAt={announcement.created_at}
-              attachments={announcement.attachments}
-              links={announcement.links}
-              canEdit={canEditDelete(announcement)}
-              onEdit={() => handleEdit(announcement)}
-              onDelete={() => handleDelete(announcement.id)}
-            />
-          ))}
+          {announcements.map((announcement) => {
+            const kioskActive = announcement.kiosk_until === null || new Date(announcement.kiosk_until) > new Date();
+            return (
+              <div key={announcement.id} className="space-y-1">
+                <AnnouncementCard
+                  id={announcement.id}
+                  title={announcement.title}
+                  content={announcement.content}
+                  priority={announcement.priority}
+                  isPinned={announcement.is_pinned}
+                  createdAt={announcement.created_at}
+                  attachments={announcement.attachments}
+                  links={announcement.links}
+                  canEdit={canEditDelete(announcement)}
+                  onEdit={() => handleEdit(announcement)}
+                  onDelete={() => handleDelete(announcement.id)}
+                />
+                {canEditDelete(announcement) && (
+                  <div className="flex items-center justify-between gap-2 px-1 text-xs text-muted-foreground">
+                    <span>
+                      {announcement.kiosk_until === null
+                        ? 'Pe ecranul din hol: permanent'
+                        : kioskActive
+                          ? `Pe ecranul din hol până la ${new Date(announcement.kiosk_until).toLocaleDateString('ro-RO')}`
+                          : 'Nu se mai afișează pe ecranul din hol'}
+                    </span>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => extendKiosk(announcement.id)}>
+                      Prelungește 30 de zile
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
         </div>
       )}
     </Layout>

@@ -573,7 +573,12 @@ setInterval(fetchWeather, 600000);
 
 // ── Announcements ──
 function fetchAnnouncements() {
-  sbFetch('announcements', 'select=id,title,content,priority,is_pinned,created_at&or=(is_pinned.eq.true,priority.eq.urgent,priority.eq.high)&order=created_at.desc&limit=6', function(data) {
+  var nowIso = new Date().toISOString();
+  var q = 'select=id,title,content,priority,is_pinned,created_at,kiosk_until'
+    + '&or=(is_pinned.eq.true,priority.eq.urgent,priority.eq.high)'
+    + '&and=(or(kiosk_until.is.null,kiosk_until.gt.' + nowIso + '))'
+    + '&order=created_at.desc&limit=6';
+  sbFetch('announcements', q, function(data) {
     var target = document.getElementById('annContent');
     var prev = target.innerHTML;
     var html;
