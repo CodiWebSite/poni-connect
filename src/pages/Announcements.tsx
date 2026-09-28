@@ -284,6 +284,18 @@ const Announcements = () => {
                   <Label htmlFor="pinned">Fixează anunțul</Label>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="kiosk">Afișare pe ecranul din hol</Label>
+                  <Select value={formData.kioskOption} onValueChange={(v) => setFormData({ ...formData, kioskOption: v })}>
+                    <SelectTrigger id="kiosk"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {KIOSK_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">După această perioadă anunțul dispare de pe televizorul din hol, dar rămâne aici.</p>
+                </div>
+
+
                 {/* Attachments */}
                 <div className="space-y-2">
                   <Label>Atașamente</Label>
