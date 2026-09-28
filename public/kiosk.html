@@ -699,7 +699,7 @@ function fetchSettings() {
     slideshowImages = Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [];
 
     // Program de funcționare (Eco standby) — suprascriere opțională din Administrare
-    if (typeof ECO !== 'undefined') {
+    if (typeof ECO !== 'undefined' && ECO) {
       ECO.enabled = map.kiosk_schedule_enabled !== false;
       if (typeof map.kiosk_schedule_start === 'string' && map.kiosk_schedule_start) ECO.start = map.kiosk_schedule_start;
       if (typeof map.kiosk_schedule_end === 'string' && map.kiosk_schedule_end) ECO.end = map.kiosk_schedule_end;
