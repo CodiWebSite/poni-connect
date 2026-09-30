@@ -215,6 +215,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
       <div id="ecoTime">--:--</div>
       <div id="ecoDate" style="font-size:20px;color:#111827;margin-top:10px;font-weight:400"></div>
     </div>
+    <button id="ecoWakeBtn" type="button" style="position:absolute;right:24px;bottom:24px;background:rgba(255,255,255,0.06);color:#4b5563;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 16px;font-family:'Inter',sans-serif;font-size:14px;cursor:pointer">☀ Trezește ecranul</button>
   </div>
 
   <!-- Footer -->
@@ -223,8 +224,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
       <span>⏰ Program: L–V 7:30–16:00</span>
       <span>📞 Secretariat: <strong>0332 880 220</strong></span>
       <a href="mailto:pponi@icmpp.ro">pponi@icmpp.ro</a>
+      <button id="ecoModeBtn" type="button" style="background:rgba(201,162,39,0.12);color:rgba(201,162,39,0.9);border:1px solid rgba(201,162,39,0.35);border-radius:8px;padding:4px 10px;font-family:inherit;font-size:12px;cursor:pointer">🌙 Repaus: Automat</button>
     </div>
     <div>🏛 Aleea Grigore Ghica Vodă 41A, 700487 Iași</div>
+
   </div>
 </div>
 
@@ -891,6 +894,9 @@ var ECO = { enabled: true, start: '07:30', end: '16:00', weekend: false };
 var __ecoOn = false;
 var __ecoWakeUntil = 0;
 var __ecoMovedAt = 0;
+var __ecoManual = 'auto';
+try { __ecoManual = localStorage.getItem('kiosk_eco_manual') || 'auto'; } catch(_){}
+
 
 function ecoMinutes(str){
   var p = String(str || '').split(':');
@@ -953,6 +959,13 @@ function ecoTick(){
   if (t) t.textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
   if (d) d.textContent = DAYS_RO[now.getDay()] + ', ' + now.getDate() + ' ' + MONTHS_RO[now.getMonth()];
 
+  if (__ecoManual === 'sleep') {
+    ecoEnter();
+    if (Date.now() - __ecoMovedAt > 600000) { ecoMoveClock(); __ecoMovedAt = Date.now(); }
+    return;
+  }
+  if (__ecoManual === 'awake') { ecoExit(); return; }
+
   if (!ECO.enabled) { ecoExit(); return; }
 
   var shouldRun = ecoWithinProgram(now) || Date.now() < __ecoWakeUntil;
@@ -965,12 +978,42 @@ function ecoTick(){
 setInterval(ecoTick, 15000);
 ecoTick();
 
+/* ── Comandă manuală repaus (Automat / Repaus / Pornit) ─────── */
+function ecoSetManual(mode){
+  __ecoManual = mode;
+  try { localStorage.setItem('kiosk_eco_manual', mode); } catch(_){}
+  __ecoWakeUntil = 0;
+  ecoRenderBtn();
+  ecoTick();
+}
+function ecoRenderBtn(){
+  var b = document.getElementById('ecoModeBtn');
+  if (!b) return;
+  b.textContent = __ecoManual === 'sleep' ? '🌙 Repaus: Pornit manual'
+    : __ecoManual === 'awake' ? '☀ Repaus: Dezactivat'
+    : '🌙 Repaus: Automat';
+}
+(function(){
+  var b = document.getElementById('ecoModeBtn');
+  if (b) b.addEventListener('click', function(e){
+    e.stopPropagation();
+    ecoSetManual(__ecoManual === 'auto' ? 'sleep' : __ecoManual === 'sleep' ? 'awake' : 'auto');
+  }, true);
+  var w = document.getElementById('ecoWakeBtn');
+  if (w) w.addEventListener('click', function(e){
+    e.stopPropagation();
+    ecoSetManual('awake');
+  }, true);
+  ecoRenderBtn();
+})();
+
 // Trezire manuală 15 minute la orice interacțiune (telecomandă / atingere / click)
 ['click','touchstart','keydown','pointerdown'].forEach(function(ev){
   window.addEventListener(ev, function(){
-    if (__ecoOn) { __ecoWakeUntil = Date.now() + 15 * 60 * 1000; ecoTick(); }
+    if (__ecoOn && __ecoManual === 'auto') { __ecoWakeUntil = Date.now() + 15 * 60 * 1000; ecoTick(); }
   }, true);
 });
+
 
 // Reîncărcare zilnică de igienizare a memoriei (06:30) — eliberează RAM pe Samsung TV
 setInterval(function(){
