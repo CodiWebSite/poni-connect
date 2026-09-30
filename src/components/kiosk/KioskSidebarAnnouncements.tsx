@@ -32,6 +32,7 @@ const KioskSidebarAnnouncements = () => {
       .from('announcements')
       .select('id, title, content, priority, is_pinned, created_at')
       .or('is_pinned.eq.true,priority.eq.urgent,priority.eq.high')
+      .or(`kiosk_until.is.null,kiosk_until.gt.${new Date().toISOString()}`)
       .order('created_at', { ascending: false })
       .limit(20);
     if (data) setAnnouncements(data);
