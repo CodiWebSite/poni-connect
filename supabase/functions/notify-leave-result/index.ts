@@ -157,7 +157,8 @@ Deno.serve(async (req) => {
     console.log(`Leave result email sent to: ${empUser.email} (${result})`);
 
     // If approved and notify_hr flag is set, also send email to HR staff
-    if (notify_hr && isApproved) {
+    // E-mailul către HR se trimite acum din coada sigură (process-email-outbox)
+    if (false && notify_hr && isApproved) {
       try {
         const { data: hrRoles } = await supabaseAdmin
           .from("user_roles")
