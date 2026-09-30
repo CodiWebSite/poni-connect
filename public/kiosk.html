@@ -648,7 +648,7 @@ function fetchRooms() {
         html += '<div style="font-size:16px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Urmează:</div>';
         next.forEach(function(b) {
           var s = new Date(b.start_time), e = new Date(b.end_time);
-          html += '<div class="item-row"><span style="max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8f0;font-weight:500">' + b.title + '</span><span style="color:#e6c04a;font-weight:600;font-variant-numeric:tabular-nums">' + String(s.getHours()).padStart(2, '0') + ':' + String(s.getMinutes()).padStart(2, '0') + '–' + String(e.getHours()).padStart(2, '0') + ':' + String(e.getMinutes()).padStart(2, '0') + '</span></div>';
+          html += '<div class="item-row" style="align-items:flex-start"><span style="flex:1;min-width:0;color:#e2e8f0;font-weight:500;overflow-wrap:anywhere">' + b.title + '</span><span style="flex-shrink:0;color:#e6c04a;font-weight:600;font-variant-numeric:tabular-nums">' + String(s.getHours()).padStart(2, '0') + ':' + String(s.getMinutes()).padStart(2, '0') + '–' + String(e.getHours()).padStart(2, '0') + ':' + String(e.getMinutes()).padStart(2, '0') + '</span></div>';
         });
         html += '</div>';
       } else if (!current) {
