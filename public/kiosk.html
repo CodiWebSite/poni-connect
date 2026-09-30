@@ -894,6 +894,9 @@ var ECO = { enabled: true, start: '07:30', end: '16:00', weekend: false };
 var __ecoOn = false;
 var __ecoWakeUntil = 0;
 var __ecoMovedAt = 0;
+var __ecoManual = 'auto';
+try { __ecoManual = localStorage.getItem('kiosk_eco_manual') || 'auto'; } catch(_){}
+
 
 function ecoMinutes(str){
   var p = String(str || '').split(':');
