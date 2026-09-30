@@ -164,6 +164,8 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${serviceRoleKey}`,
+            "apikey": serviceRoleKey,
             "x-internal-key": serviceRoleKey,
           },
           body: JSON.stringify({
