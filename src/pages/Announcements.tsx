@@ -123,9 +123,11 @@ const Announcements = () => {
   };
 
   const extendKiosk = async (id: string) => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    const { error } = await supabase.from('announcements').update({ kiosk_until: d.toISOString() }).eq('id', id);
+    const current = announcements.find(a => a.id === id)?.kiosk_until;
+    const now = new Date();
+    const base = current && new Date(current) > now ? new Date(current) : now;
+    base.setDate(base.getDate() + 30);
+    const { error } = await supabase.from('announcements').update({ kiosk_until: base.toISOString() }).eq('id', id);
     if (error) toast.error('Eroare la prelungire');
     else {
       toast.success('Anunțul rămâne pe ecranul din hol încă 30 de zile');
@@ -177,15 +179,17 @@ const Announcements = () => {
     if (!user) return;
     setIsLoading(true);
 
-    const payload = {
+    const payload: any = {
       title: formData.title,
       content: formData.content,
       priority: formData.priority,
       is_pinned: formData.is_pinned,
       attachments: formData.attachments as any,
       links: formData.links as any,
-      kiosk_until: kioskUntilFromOption(formData.kioskOption),
     };
+    if (formData.kioskOption !== 'keep') {
+      payload.kiosk_until = kioskUntilFromOption(formData.kioskOption);
+    }
 
 
     if (editingId) {
@@ -213,7 +217,7 @@ const Announcements = () => {
       is_pinned: a.is_pinned,
       links: a.links || [],
       attachments: a.attachments || [],
-      kioskOption: a.kiosk_until === null ? 'permanent' : '30',
+      kioskOption: a.kiosk_until === null ? 'permanent' : 'keep',
     });
 
     setIsOpen(true);
@@ -289,6 +293,9 @@ const Announcements = () => {
                   <Select value={formData.kioskOption} onValueChange={(v) => setFormData({ ...formData, kioskOption: v })}>
                     <SelectTrigger id="kiosk"><SelectValue /></SelectTrigger>
                     <SelectContent>
+                      {editingId && formData.kioskOption === 'keep' || (editingId && announcements.find(x => x.id === editingId)?.kiosk_until) ? (
+                        <SelectItem value="keep">Păstrează perioada actuală</SelectItem>
+                      ) : null}
                       {KIOSK_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
