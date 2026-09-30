@@ -612,11 +612,17 @@ function fetchRooms() {
 
   sbFetch('room_bookings', 'select=id,room,title,start_time,end_time,status&start_time=gte.' + start + '&start_time=lte.' + end + '&status=eq.confirmed&order=start_time.asc', function(data) {
     var rooms = ['Sala de Conferințe', 'Bibliotecă'];
+    var roomKeys = { 'Sala de Conferințe': ['sala conferinte', 'sala de conferinte'], 'Bibliotecă': ['biblioteca'] };
     var html = '';
 
     rooms.forEach(function(room) {
+      var seen = {};
       var rb = (data || []).filter(function(b) {
-        return normalizeRoomName(b.room) === normalizeRoomName(room);
+        if (roomKeys[room].indexOf(normalizeRoomName(b.room)) === -1) return false;
+        var k = (b.title || '') + '|' + b.start_time + '|' + b.end_time;
+        if (seen[k]) return false;
+        seen[k] = true;
+        return true;
       });
       var current = rb.find(function(b) {
         return new Date(b.start_time) <= now && new Date(b.end_time) > now;
