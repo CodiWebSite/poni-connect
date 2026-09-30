@@ -72,3 +72,5 @@ project_id = "erghywhqrxmwqptusbxd"
 
   [functions.leave-approval-link]
     verify_jwt = false
+  [functions.process-email-outbox]
+    verify_jwt = false

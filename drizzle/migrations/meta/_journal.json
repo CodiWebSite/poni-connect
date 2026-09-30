@@ -127,6 +127,13 @@
       "when": 1790585825742,
       "tag": "0017_add_announcements_kiosk_until",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790756182626,
+      "tag": "0018_email_outbox_leave_hr",
+      "breakpoints": true
     }
   ]
 }
