@@ -958,6 +958,8 @@ setInterval(function() {
     try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch (_) {}
     conferencePlayerCommand('unMute');
     conferencePlayerCommand('setVolume', [100]);
+    conferencePlayerCommand('setPlaybackQuality', ['highres']);
+    conferencePlayerCommand('setPlaybackQuality', ['hd1080']);
   }
 }, 15000);
 
