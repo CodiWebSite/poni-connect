@@ -157,7 +157,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
       </div>
       <div class="media-container" id="mediaContainer">
         <video id="video" muted playsinline autoplay src="https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4"></video>
-        <iframe id="conferenceLive" class="conference-live" title="Transmisie live EvPolyMat" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+        <iframe id="conferenceLive" class="conference-live" title="Transmisie live EvPolyMat" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
         <div class="video-progress" id="videoProgress">
           <div class="video-progress-bar" id="videoProgressBar"></div>
         </div>
@@ -330,7 +330,9 @@ function updateConferenceMedia() {
     videoEl.style.display = 'none';
     if (progress) progress.style.display = 'none';
     frame.style.display = 'block';
-    frame.src = 'https://www.youtube.com/embed/' + CONFERENCE_LIVE_ID + '?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1';
+    frame.src = 'https://www.youtube.com/embed/' + CONFERENCE_LIVE_ID
+      + '?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1'
+      + '&origin=' + encodeURIComponent(window.location.origin);
     document.getElementById('mediaLabel').textContent = 'EvPolyMat · Transmisie live';
   } else {
     frame.style.display = 'none';
