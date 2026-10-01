@@ -718,6 +718,46 @@ function fetchRooms() {
 fetchRooms();
 setInterval(fetchRooms, 30000);
 
+// ── Evenimente azi ──
+function fetchEvents() {
+  var now = new Date();
+  var startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  var endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  var q = 'select=id,title,description,location,start_date,end_date'
+    + '&start_date=gte.' + encodeURIComponent(startOfDay.toISOString())
+    + '&start_date=lte.' + encodeURIComponent(endOfDay.toISOString())
+    + '&order=start_date.asc&limit=8';
+  sbFetch('events', q, function(data) {
+    var target = document.getElementById('eventsContent');
+    if (!target) return;
+    if (!data || !data.length) {
+      target.innerHTML = '<div style="color:#64748b;font-size:20px">Niciun eveniment programat azi</div>';
+      return;
+    }
+    var html = '';
+    data.forEach(function(ev) {
+      var s = new Date(ev.start_date);
+      var e = ev.end_date ? new Date(ev.end_date) : null;
+      var hhmm = function(d) { return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+      var time = hhmm(s) + (e ? '–' + hhmm(e) : '');
+      var past = e ? (e.getTime() < now.getTime()) : (s.getTime() + 3600000 < now.getTime());
+      var live = !past && s.getTime() <= now.getTime();
+      var loc = (ev.location || '').replace(/https?:\/\/\S+/g, '').trim();
+      html += '<div class="card" style="' + (past ? 'opacity:0.45;' : '') + '">'
+        + '<div style="display:flex;align-items:flex-start;gap:12px">'
+        + '<span style="flex-shrink:0;color:#e6c04a;font-weight:700;font-variant-numeric:tabular-nums;font-size:20px">' + time + '</span>'
+        + '<span style="flex:1;min-width:0;color:#e2e8f0;font-weight:600;font-size:20px;overflow-wrap:anywhere">' + ev.title
+        + (live ? ' <span style="color:#34d399;font-size:15px;font-weight:700">● ACUM</span>' : '') + '</span>'
+        + '</div>'
+        + (loc ? '<div style="font-size:17px;color:#94a3b8;margin-top:6px">📍 ' + loc + '</div>' : '')
+        + '</div>';
+    });
+    target.innerHTML = html;
+  });
+}
+fetchEvents();
+setInterval(fetchEvents, 120000);
+
 // ── Settings (kiosk message + ticker + slideshow) ──
 function fetchSettings() {
   sbFetch('app_settings', 'select=key,value', function(data) {
