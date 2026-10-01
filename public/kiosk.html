@@ -302,11 +302,13 @@ var CONFERENCE_LIVE_ID = 'RXUZZYzsX9k';
 var conferenceLiveActive = false;
 
 function isConferenceLiveTime(now) {
-  var day = now.getDate();
-  var month = now.getMonth();
-  var year = now.getFullYear();
-  var minutes = now.getHours() * 60 + now.getMinutes();
-  return year === 2026 && month === 9 && (day === 1 || day === 2) && minutes >= 510 && minutes < 1020;
+  var timestamp = now.getTime();
+  var firstDayStart = Date.UTC(2026, 9, 1, 5, 30); // 08:30 București
+  var firstDayEnd = Date.UTC(2026, 9, 1, 14, 0);   // 17:00 București
+  var secondDayStart = Date.UTC(2026, 9, 2, 5, 30);
+  var secondDayEnd = Date.UTC(2026, 9, 2, 14, 0);
+  return (timestamp >= firstDayStart && timestamp < firstDayEnd)
+    || (timestamp >= secondDayStart && timestamp < secondDayEnd);
 }
 
 function updateConferenceMedia() {
@@ -323,6 +325,8 @@ function updateConferenceMedia() {
     var oldImgs = document.querySelectorAll('#mediaContainer img.slideshow-img');
     for (var i = 0; i < oldImgs.length; i++) oldImgs[i].remove();
     try { videoEl.pause(); } catch (_) {}
+    try { if (__bgMusicAudio) __bgMusicAudio.pause(); } catch (_) {}
+    try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch (_) {}
     videoEl.style.display = 'none';
     if (progress) progress.style.display = 'none';
     frame.style.display = 'block';
@@ -332,6 +336,8 @@ function updateConferenceMedia() {
     frame.style.display = 'none';
     frame.src = 'about:blank';
     if (progress) progress.style.display = 'block';
+    try { if (__bgMusicAudio && __bgMusicAudio.src) __bgMusicAudio.play().catch(function(){}); } catch (_) {}
+    try { if (__bgYtPlayer && __bgYtPlayer.playVideo) __bgYtPlayer.playVideo(); } catch (_) {}
     playVideo();
   }
 }
@@ -914,6 +920,8 @@ function fetchSettings() {
 }
 fetchSettings();
 setInterval(fetchSettings, 60000);
+updateConferenceMedia();
+setInterval(updateConferenceMedia, 30000);
 
 /* ── Background music (YouTube or MP3, hidden, configurable) ─────── */
 function extractYouTubeId(raw){
@@ -956,6 +964,11 @@ function teardownBgMusic(){
   if (__bgMusicMount){ __bgMusicMount.innerHTML = ''; }
 }
 function setupBgMusic(cfg){
+  if (conferenceLiveActive) {
+    __bgConfigKey = '';
+    teardownBgMusic();
+    return;
+  }
   var key = JSON.stringify(cfg);
   if (key === __bgConfigKey) return;
   __bgConfigKey = key;
