@@ -218,6 +218,13 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
     <div class="ticker-inner" id="tickerInner"></div>
   </div>
 
+  <!-- QR Zoom conferință -->
+  <div id="zoomQr" style="display:none;position:fixed;right:28px;bottom:128px;z-index:900;background:rgba(10,15,30,0.92);border:1px solid rgba(201,162,39,0.35);border-radius:14px;padding:14px 14px 10px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.45)">
+    <img src="qr-zoom.png" alt="QR Zoom" style="width:148px;height:148px;display:block;background:#fff;border-radius:8px;padding:6px">
+    <div style="margin-top:8px;font-family:'Inter',sans-serif;font-size:13px;color:#e6c04a;font-weight:600;letter-spacing:0.04em">SCANEAZĂ · INTRĂ ÎN ZOOM</div>
+    <div style="font-family:'Inter',sans-serif;font-size:11px;color:#94a3b8;margin-top:2px">Conferința EvPolyMat</div>
+  </div>
+
   <!-- Eco standby overlay -->
   <div id="ecoOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:#000;z-index:99999">
     <div id="ecoClock" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:'Inter',sans-serif;font-size:64px;font-weight:600;color:#1f2937;letter-spacing:0.06em;transition:left 2s ease,top 2s ease;text-align:center">
