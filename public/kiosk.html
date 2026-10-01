@@ -333,7 +333,7 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // ── Sidebar rotation (event-driven cu fallback) ──
-var SECTION_FALLBACK = [90000, 12000]; // ann: 90s, rooms: 12s
+var SECTION_FALLBACK = [90000, 12000, 14000]; // ann: 90s, rooms: 12s, evenimente: 14s
 var sectionTimers = [];
 function clearSectionTimers() {
   sectionTimers.forEach(function(t) { clearTimeout(t); });
