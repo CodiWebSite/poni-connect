@@ -1121,6 +1121,18 @@ setInterval(function(){
 }, 60000);
 
 
+// QR Zoom — vizibil doar în zilele conferinței EvPolyMat (1–2 octombrie 2026)
+(function(){
+  var el = document.getElementById('zoomQr');
+  if (!el) return;
+  function upd(){
+    var n = new Date();
+    var ok = (n.getFullYear() === 2026 && n.getMonth() === 9 && (n.getDate() === 1 || n.getDate() === 2));
+    el.style.display = ok ? 'block' : 'none';
+  }
+  upd();
+  setInterval(upd, 300000);
+})();
 </script>
 </body>
 </html>
