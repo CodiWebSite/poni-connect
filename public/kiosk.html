@@ -751,6 +751,10 @@ function fetchEvents() {
       var past = e ? (e.getTime() < now.getTime()) : (s.getTime() + 3600000 < now.getTime());
       var live = !past && s.getTime() <= now.getTime();
       var loc = (ev.location || '').replace(/https?:\/\/\S+/g, '').trim();
+      if (!past) {
+        var link = findMeetingLink(ev.location) || findMeetingLink(ev.description);
+        if (link) qrList.push({ title: ev.title, time: time, url: link });
+      }
       html += '<div class="card" style="' + (past ? 'opacity:0.45;' : '') + '">'
         + '<div style="display:flex;align-items:flex-start;gap:12px">'
         + '<span style="flex-shrink:0;color:#e6c04a;font-weight:700;font-variant-numeric:tabular-nums;font-size:20px">' + time + '</span>'
