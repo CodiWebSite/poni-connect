@@ -332,6 +332,7 @@ function updateConferenceMedia() {
     frame.style.display = 'block';
     frame.src = 'https://www.youtube.com/embed/' + CONFERENCE_LIVE_ID
       + '?autoplay=1&mute=0&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1'
+      + '&vq=hd1080&hd=1'
       + '&origin=' + encodeURIComponent(window.location.origin);
     document.getElementById('mediaLabel').textContent = 'EvPolyMat · Transmisie live';
     conferenceSoundMax();
@@ -358,17 +359,18 @@ function conferencePlayerCommand(func, args) {
 }
 
 function conferenceSoundMax() {
-  setTimeout(function() {
-    conferencePlayerCommand('unMute');
-    conferencePlayerCommand('setVolume', [100]);
-    conferencePlayerCommand('playVideo');
-  }, 1200);
-  setTimeout(function() {
-    conferencePlayerCommand('unMute');
-    conferencePlayerCommand('setVolume', [100]);
-    conferencePlayerCommand('playVideo');
-  }, 4500);
+  var delays = [1200, 4500, 9000];
+  for (var i = 0; i < delays.length; i++) {
+    setTimeout(function() {
+      conferencePlayerCommand('unMute');
+      conferencePlayerCommand('setVolume', [100]);
+      conferencePlayerCommand('setPlaybackQuality', ['highres']);
+      conferencePlayerCommand('setPlaybackQuality', ['hd1080']);
+      conferencePlayerCommand('playVideo');
+    }, delays[i]);
+  }
 }
+
 
 // ── Greeting ──
 var greetings = {
@@ -956,6 +958,8 @@ setInterval(function() {
     try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch (_) {}
     conferencePlayerCommand('unMute');
     conferencePlayerCommand('setVolume', [100]);
+    conferencePlayerCommand('setPlaybackQuality', ['highres']);
+    conferencePlayerCommand('setPlaybackQuality', ['hd1080']);
   }
 }, 15000);
 
