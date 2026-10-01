@@ -332,6 +332,7 @@ function updateConferenceMedia() {
     frame.style.display = 'block';
     frame.src = 'https://www.youtube.com/embed/' + CONFERENCE_LIVE_ID
       + '?autoplay=1&mute=0&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1'
+      + '&vq=hd1080&hd=1'
       + '&origin=' + encodeURIComponent(window.location.origin);
     document.getElementById('mediaLabel').textContent = 'EvPolyMat · Transmisie live';
     conferenceSoundMax();
