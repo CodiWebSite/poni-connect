@@ -390,7 +390,18 @@ function playAnnouncementsScroll() {
   setY(inner, 0);
   // Măsurare după ce secțiunea e vizibilă (Tizen raportează 0 dacă e ascunsă)
   sectionTimers.push(setTimeout(function() {
-    var distance = Math.max(0, inner.offsetHeight - viewport.clientHeight, inner.scrollHeight - viewport.clientHeight);
+    // Samsung vechi ignoră min-height:0 în flex → fixăm înălțimea în pixeli
+    var sec = document.getElementById('sec0');
+    var title = sec ? sec.querySelector('.section-title') : null;
+    if (sec) {
+      var cs = window.getComputedStyle(sec);
+      var pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+      var tH = title ? title.offsetHeight + (parseFloat(window.getComputedStyle(title).marginBottom) || 0) : 0;
+      var vh = sec.clientHeight - pad - tH;
+      if (vh > 50) { viewport.style.height = vh + 'px'; viewport.style.webkitBoxFlex = '0'; viewport.style.flex = '0 0 ' + vh + 'px'; }
+    }
+    var vpH = viewport.clientHeight;
+    var distance = Math.max(0, inner.offsetHeight - vpH, inner.scrollHeight - vpH);
     if (distance < 8) {
       armProgressBar(NO_SCROLL_MS);
       sectionTimers.push(setTimeout(function() { if (activeSection === 0) advanceSection(); }, NO_SCROLL_MS));
@@ -613,18 +624,10 @@ function fetchAnnouncements() {
     + '&order=created_at.desc&limit=6';
   sbFetch('announcements', q, function(data) {
     var target = document.getElementById('annContent');
-    var prev = target.innerHTML;
-    var html;
-    if (!data || !data.length) {
-      html = '<div style="color:#64748b;font-size:22px">Niciun anunț important</div>';
-    } else {
-      html = '';
-      data.forEach(function(a) {
-        var cls = a.priority === 'urgent' ? ' card-urgent' : a.priority === 'high' ? ' card-high' : '';
-        html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#94a3b8;margin-top:8px;white-space:pre-line">' + a.content + '</div></div>';
-      });
-    }
+    var prev = window.__lastAnnHtml;
+...
     if (html === prev) return;
+    window.__lastAnnHtml = html;
     target.innerHTML = html;
     // Dacă suntem pe secțiunea anunțuri, relansează coregrafia de scroll.
     if (activeSection === 0 && typeof playAnnouncementsScroll === 'function') {
