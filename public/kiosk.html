@@ -359,17 +359,18 @@ function conferencePlayerCommand(func, args) {
 }
 
 function conferenceSoundMax() {
-  setTimeout(function() {
-    conferencePlayerCommand('unMute');
-    conferencePlayerCommand('setVolume', [100]);
-    conferencePlayerCommand('playVideo');
-  }, 1200);
-  setTimeout(function() {
-    conferencePlayerCommand('unMute');
-    conferencePlayerCommand('setVolume', [100]);
-    conferencePlayerCommand('playVideo');
-  }, 4500);
+  var delays = [1200, 4500, 9000];
+  for (var i = 0; i < delays.length; i++) {
+    setTimeout(function() {
+      conferencePlayerCommand('unMute');
+      conferencePlayerCommand('setVolume', [100]);
+      conferencePlayerCommand('setPlaybackQuality', ['highres']);
+      conferencePlayerCommand('setPlaybackQuality', ['hd1080']);
+      conferencePlayerCommand('playVideo');
+    }, delays[i]);
+  }
 }
+
 
 // ── Greeting ──
 var greetings = {
