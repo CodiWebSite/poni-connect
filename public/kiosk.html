@@ -196,10 +196,19 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
           </div>
           <div id="roomsContent"><div style="color:#64748b;font-size:18px">Se încarcă...</div></div>
         </div>
+        <!-- Section 2: Events today -->
+        <div class="sidebar-section hidden" id="sec2">
+          <div class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+            Evenimente azi
+          </div>
+          <div id="eventsContent"><div style="color:#64748b;font-size:18px">Se încarcă...</div></div>
+        </div>
       </div>
       <div class="dots-nav" id="dotsNav">
         <button class="dot active" onclick="goTo(0)"></button>
         <button class="dot" onclick="goTo(1)"></button>
+        <button class="dot" onclick="goTo(2)"></button>
       </div>
     </div>
   </div>
@@ -264,7 +273,7 @@ var DAYS_RO = ['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă
 var MONTHS_RO = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
 var lang = 'ro';
 var activeSection = 0;
-var totalSections = 2;
+var totalSections = 3;
 
 function normalizeRoomName(room) {
   var raw = String(room || '').toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -324,7 +333,7 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // ── Sidebar rotation (event-driven cu fallback) ──
-var SECTION_FALLBACK = [90000, 12000]; // ann: 90s, rooms: 12s
+var SECTION_FALLBACK = [90000, 12000, 14000]; // ann: 90s, rooms: 12s, evenimente: 14s
 var sectionTimers = [];
 function clearSectionTimers() {
   sectionTimers.forEach(function(t) { clearTimeout(t); });
@@ -709,6 +718,46 @@ function fetchRooms() {
 fetchRooms();
 setInterval(fetchRooms, 30000);
 
+// ── Evenimente azi ──
+function fetchEvents() {
+  var now = new Date();
+  var startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  var endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  var q = 'select=id,title,description,location,start_date,end_date'
+    + '&start_date=gte.' + encodeURIComponent(startOfDay.toISOString())
+    + '&start_date=lte.' + encodeURIComponent(endOfDay.toISOString())
+    + '&order=start_date.asc&limit=8';
+  sbFetch('events', q, function(data) {
+    var target = document.getElementById('eventsContent');
+    if (!target) return;
+    if (!data || !data.length) {
+      target.innerHTML = '<div style="color:#64748b;font-size:20px">Niciun eveniment programat azi</div>';
+      return;
+    }
+    var html = '';
+    data.forEach(function(ev) {
+      var s = new Date(ev.start_date);
+      var e = ev.end_date ? new Date(ev.end_date) : null;
+      var hhmm = function(d) { return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+      var time = hhmm(s) + (e ? '–' + hhmm(e) : '');
+      var past = e ? (e.getTime() < now.getTime()) : (s.getTime() + 3600000 < now.getTime());
+      var live = !past && s.getTime() <= now.getTime();
+      var loc = (ev.location || '').replace(/https?:\/\/\S+/g, '').trim();
+      html += '<div class="card" style="' + (past ? 'opacity:0.45;' : '') + '">'
+        + '<div style="display:flex;align-items:flex-start;gap:12px">'
+        + '<span style="flex-shrink:0;color:#e6c04a;font-weight:700;font-variant-numeric:tabular-nums;font-size:20px">' + time + '</span>'
+        + '<span style="flex:1;min-width:0;color:#e2e8f0;font-weight:600;font-size:20px;overflow-wrap:anywhere">' + ev.title
+        + (live ? ' <span style="color:#34d399;font-size:15px;font-weight:700">● ACUM</span>' : '') + '</span>'
+        + '</div>'
+        + (loc ? '<div style="font-size:17px;color:#94a3b8;margin-top:6px">📍 ' + loc + '</div>' : '')
+        + '</div>';
+    });
+    target.innerHTML = html;
+  });
+}
+fetchEvents();
+setInterval(fetchEvents, 120000);
+
 // ── Settings (kiosk message + ticker + slideshow) ──
 function fetchSettings() {
   sbFetch('app_settings', 'select=key,value', function(data) {
@@ -991,6 +1040,7 @@ function ecoExit(){
   goTo(0);
   fetchAnnouncements();
   fetchRooms();
+  fetchEvents();
   fetchWeather();
 }
 
