@@ -38,6 +38,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
 .pulse-dot{width:12px;height:12px;border-radius:50%;background:#c9a227;animation:pulse 2s infinite;box-shadow:0 0 8px rgba(201,162,39,0.4)}
 .media-container{flex:1;padding:0 48px 20px;display:flex;align-items:center;justify-content:center;min-height:0;position:relative}
 .media-container video,.media-container img.slideshow-img{max-width:100%;max-height:100%;border-radius:14px;box-shadow:0 20px 60px -12px rgba(0,0,0,0.6);object-fit:contain}
+.conference-live{width:100%;height:100%;min-height:360px;border:0;border-radius:14px;box-shadow:0 20px 60px -12px rgba(0,0,0,0.6);background:#000;display:none}
 .media-container img.slideshow-img{position:absolute;transition:opacity 1s ease;object-fit:contain}
 .media-container img.slideshow-img.fade-out{opacity:0}
 .separator{position:absolute;top:0;right:0;bottom:0;width:2px;background:linear-gradient(180deg,transparent 0%,rgba(201,162,39,0.15) 20%,rgba(201,162,39,0.35) 50%,rgba(201,162,39,0.15) 80%,transparent 100%);background-size:100% 200%;animation:sep-flow 4s ease-in-out infinite}
@@ -156,6 +157,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
       </div>
       <div class="media-container" id="mediaContainer">
         <video id="video" muted playsinline autoplay src="https://icmpp.ro/files/70/INSTITUTUL%20PP%202_final.mp4"></video>
+        <iframe id="conferenceLive" class="conference-live" title="Transmisie live EvPolyMat" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
         <div class="video-progress" id="videoProgress">
           <div class="video-progress-bar" id="videoProgressBar"></div>
         </div>
@@ -296,6 +298,51 @@ var slideshowIndex = 0;
 var slideshowTimer = null;
 var slideshowActive = false;
 var SLIDE_DURATION = 90; // seconds per slide
+var CONFERENCE_LIVE_ID = 'RXUZZYzsX9k';
+var conferenceLiveActive = false;
+
+function isConferenceLiveTime(now) {
+  var timestamp = now.getTime();
+  var firstDayStart = Date.UTC(2026, 9, 1, 5, 30); // 08:30 București
+  var firstDayEnd = Date.UTC(2026, 9, 1, 14, 0);   // 17:00 București
+  var secondDayStart = Date.UTC(2026, 9, 2, 5, 30);
+  var secondDayEnd = Date.UTC(2026, 9, 2, 14, 0);
+  return (timestamp >= firstDayStart && timestamp < firstDayEnd)
+    || (timestamp >= secondDayStart && timestamp < secondDayEnd);
+}
+
+function updateConferenceMedia() {
+  var shouldShow = isConferenceLiveTime(new Date());
+  var frame = document.getElementById('conferenceLive');
+  var videoEl = document.getElementById('video');
+  var progress = document.getElementById('videoProgress');
+  if (!frame || !videoEl || shouldShow === conferenceLiveActive) return;
+
+  conferenceLiveActive = shouldShow;
+  if (shouldShow) {
+    clearTimeout(slideshowTimer);
+    slideshowActive = false;
+    var oldImgs = document.querySelectorAll('#mediaContainer img.slideshow-img');
+    for (var i = 0; i < oldImgs.length; i++) oldImgs[i].remove();
+    try { videoEl.pause(); } catch (_) {}
+    try { if (__bgMusicAudio) __bgMusicAudio.pause(); } catch (_) {}
+    try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch (_) {}
+    videoEl.style.display = 'none';
+    if (progress) progress.style.display = 'none';
+    frame.style.display = 'block';
+    frame.src = 'https://www.youtube.com/embed/' + CONFERENCE_LIVE_ID
+      + '?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1'
+      + '&origin=' + encodeURIComponent(window.location.origin);
+    document.getElementById('mediaLabel').textContent = 'EvPolyMat · Transmisie live';
+  } else {
+    frame.style.display = 'none';
+    frame.src = 'about:blank';
+    if (progress) progress.style.display = 'block';
+    try { if (__bgMusicAudio && __bgMusicAudio.src) __bgMusicAudio.play().catch(function(){}); } catch (_) {}
+    try { if (__bgYtPlayer && __bgYtPlayer.playVideo) __bgYtPlayer.playVideo(); } catch (_) {}
+    playVideo();
+  }
+}
 
 // ── Greeting ──
 var greetings = {
@@ -462,6 +509,7 @@ if ('serviceWorker' in navigator) {
 
 // ── Slideshow logic ──
 function startSlideshow() {
+  if (conferenceLiveActive) return;
   if (!slideshowImages.length) {
     playVideo();
     return;
@@ -520,6 +568,7 @@ function endSlideshow() {
 }
 
 function playVideo() {
+  if (conferenceLiveActive) return;
   var video = document.getElementById('video');
   video.style.display = '';
   document.getElementById('mediaLabel').textContent = lang === 'en' ? 'Institute Presentation' : 'Prezentare Institut';
@@ -537,7 +586,7 @@ function playVideo() {
   v.addEventListener('error', function(){ stuck = 99; });
   setInterval(function(){
     if (typeof __ecoOn !== 'undefined' && __ecoOn) return;
-    if (slideshowActive || v.style.display === 'none') return;
+    if (conferenceLiveActive || slideshowActive || v.style.display === 'none') return;
     if (v.paused || v.currentTime === lastT) stuck++; else stuck = 0;
     lastT = v.currentTime;
     if (stuck >= 1 && stuck < 4) { v.muted = true; var p = v.play(); if (p && p.catch) p.catch(function(){}); }
@@ -559,6 +608,7 @@ video.addEventListener('timeupdate', function() {
   }
 });
 video.addEventListener('ended', function() {
+  if (conferenceLiveActive) return;
   videoProgressBar.style.width = '0%';
   lang = lang === 'ro' ? 'en' : 'ro';
   document.getElementById('langBadge').textContent = lang === 'ro' ? '🇷🇴 RO' : '🇬🇧 EN';
@@ -872,6 +922,8 @@ function fetchSettings() {
 }
 fetchSettings();
 setInterval(fetchSettings, 60000);
+updateConferenceMedia();
+setInterval(updateConferenceMedia, 30000);
 
 /* ── Background music (YouTube or MP3, hidden, configurable) ─────── */
 function extractYouTubeId(raw){
@@ -914,6 +966,11 @@ function teardownBgMusic(){
   if (__bgMusicMount){ __bgMusicMount.innerHTML = ''; }
 }
 function setupBgMusic(cfg){
+  if (conferenceLiveActive) {
+    __bgConfigKey = '';
+    teardownBgMusic();
+    return;
+  }
   var key = JSON.stringify(cfg);
   if (key === __bgConfigKey) return;
   __bgConfigKey = key;
@@ -1065,6 +1122,8 @@ function ecoEnter(){
   try {
     var v = document.getElementById('video');
     if (v) { v.pause(); }
+    var live = document.getElementById('conferenceLive');
+    if (live && conferenceLiveActive) live.src = 'about:blank';
   } catch(_){}
   try { if (__bgMusicAudio) __bgMusicAudio.pause(); } catch(_){}
   try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch(_){}
@@ -1081,7 +1140,11 @@ function ecoExit(){
   if (ov) ov.style.display = 'none';
   try { if (__bgMusicAudio && __bgMusicAudio.src) __bgMusicAudio.play().catch(function(){}); } catch(_){}
   try { if (__bgYtPlayer && __bgYtPlayer.playVideo) __bgYtPlayer.playVideo(); } catch(_){}
-  if (slideshowActive) { showSlide(); } else { playVideo(); }
+  conferenceLiveActive = false;
+  updateConferenceMedia();
+  if (!conferenceLiveActive) {
+    if (slideshowActive) { showSlide(); } else { playVideo(); }
+  }
   goTo(0);
   fetchAnnouncements();
   fetchRooms();
