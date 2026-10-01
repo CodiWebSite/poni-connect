@@ -742,6 +742,7 @@ function fetchEvents() {
       return;
     }
     var html = '';
+    var qrList = [];
     data.forEach(function(ev) {
       var s = new Date(ev.start_date);
       var e = ev.end_date ? new Date(ev.end_date) : null;
