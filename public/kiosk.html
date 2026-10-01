@@ -625,7 +625,16 @@ function fetchAnnouncements() {
   sbFetch('announcements', q, function(data) {
     var target = document.getElementById('annContent');
     var prev = window.__lastAnnHtml;
-...
+    var html;
+    if (!data || !data.length) {
+      html = '<div style="color:#64748b;font-size:22px">Niciun anunț important</div>';
+    } else {
+      html = '';
+      data.forEach(function(a) {
+        var cls = a.priority === 'urgent' ? ' card-urgent' : a.priority === 'high' ? ' card-high' : '';
+        html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#94a3b8;margin-top:8px;white-space:pre-line">' + a.content + '</div></div>';
+      });
+    }
     if (html === prev) return;
     window.__lastAnnHtml = html;
     target.innerHTML = html;
