@@ -765,7 +765,40 @@ function fetchEvents() {
         + '</div>';
     });
     target.innerHTML = html;
+    setMeetingQrs(qrList);
   });
+}
+
+// ── QR pentru evenimentele online de azi (Zoom / Teams / Meet) ──
+function findMeetingLink(text) {
+  if (!text) return null;
+  var m = String(text).match(/https?:\/\/[^\s"'<>]*(zoom\.us|teams\.microsoft\.com|teams\.live\.com|meet\.google\.com)[^\s"'<>]*/i);
+  return m ? m[0].replace(/[.,;)\]]+$/, '') : null;
+}
+var __qrItems = [], __qrIdx = 0, __qrTimer = null;
+function renderMeetingQr() {
+  var box = document.getElementById('zoomQr');
+  var img = document.getElementById('zoomQrImg');
+  var ttl = document.getElementById('zoomQrTitle');
+  if (!box || !img || !ttl) return;
+  if (!__qrItems.length) { box.style.display = 'none'; return; }
+  if (__qrIdx >= __qrItems.length) __qrIdx = 0;
+  var it = __qrItems[__qrIdx];
+  var src = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=8&ecc=M&data=' + encodeURIComponent(it.url);
+  if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+  ttl.innerHTML = it.time + ' · ' + it.title;
+  box.style.display = 'block';
+}
+function setMeetingQrs(list) {
+  var sig = list.map(function(i){ return i.url; }).join('|');
+  if (sig !== (window.__qrSig || '')) { window.__qrSig = sig; __qrIdx = 0; }
+  __qrItems = list;
+  renderMeetingQr();
+  if (!__qrTimer) {
+    __qrTimer = setInterval(function(){
+      if (__qrItems.length > 1) { __qrIdx = (__qrIdx + 1) % __qrItems.length; renderMeetingQr(); }
+    }, 15000);
+  }
 }
 fetchEvents();
 setInterval(fetchEvents, 120000);
