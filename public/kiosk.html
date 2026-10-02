@@ -306,7 +306,7 @@ function isConferenceLiveTime(now) {
   var firstDayStart = Date.UTC(2026, 9, 1, 5, 30); // 08:30 București
   var firstDayEnd = Date.UTC(2026, 9, 1, 14, 0);   // 17:00 București
   var secondDayStart = Date.UTC(2026, 9, 2, 5, 30);
-  var secondDayEnd = Date.UTC(2026, 9, 2, 14, 0);
+  var secondDayEnd = Date.UTC(2026, 9, 2, 10, 55); // închis manual la 13:55 București
   return (timestamp >= firstDayStart && timestamp < firstDayEnd)
     || (timestamp >= secondDayStart && timestamp < secondDayEnd);
 }
