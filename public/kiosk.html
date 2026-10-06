@@ -418,12 +418,14 @@ updateClock();
 // ── Sidebar rotation (event-driven cu fallback) ──
 var SECTION_FALLBACK = [90000, 12000, 14000]; // ann: 90s, rooms: 12s, evenimente: 14s
 var sectionTimers = [];
+var hasAnnouncements = true;
 function clearSectionTimers() {
   sectionTimers.forEach(function(t) { clearTimeout(t); });
   sectionTimers = [];
 }
 function goTo(idx) {
   clearSectionTimers();
+  if (idx === 0 && !hasAnnouncements) idx = 1;
   activeSection = idx;
   for (var i = 0; i < totalSections; i++) {
     var el = document.getElementById('sec' + i);
@@ -436,8 +438,10 @@ function goTo(idx) {
       dot.className = 'dot';
     }
   }
-  scheduleNext(idx);
+  // Anunțurile avansează numai după derularea completă; fallback-ul de 90s
+  // le tăia înainte să ajungă la final pe televizoarele Samsung lente.
   if (idx === 0) playAnnouncementsScroll();
+  else scheduleNext(idx);
 }
 function scheduleNext(idx) {
   var fb = SECTION_FALLBACK[idx] || 12000;
@@ -449,7 +453,6 @@ function advanceSection() {
   goTo((activeSection + 1) % totalSections);
 }
 // pornire inițială
-scheduleNext(0);
 setTimeout(playAnnouncementsScroll, 600);
 
 // ── Coregrafie scroll lin anunțuri ──
@@ -728,6 +731,7 @@ function fetchAnnouncements() {
     var target = document.getElementById('annContent');
     var prev = window.__lastAnnHtml;
     var html;
+    hasAnnouncements = !!(data && data.length);
     if (!data || !data.length) {
       html = '<div style="color:#64748b;font-size:22px">Niciun anunț important</div>';
     } else {
@@ -737,14 +741,17 @@ function fetchAnnouncements() {
         html += '<div class="card' + cls + '"><div class="item-title">' + a.title + '</div><div style="font-size:20px;color:#94a3b8;margin-top:8px;white-space:pre-line">' + a.content + '</div></div>';
       });
     }
-    if (html === prev) return;
+    if (html === prev) {
+      if (!hasAnnouncements && activeSection === 0) goTo(1);
+      return;
+    }
     window.__lastAnnHtml = html;
     target.innerHTML = html;
     // Dacă suntem pe secțiunea anunțuri, relansează coregrafia de scroll.
     if (activeSection === 0 && typeof playAnnouncementsScroll === 'function') {
       clearSectionTimers();
-      scheduleNext(0);
-      playAnnouncementsScroll();
+      if (hasAnnouncements) playAnnouncementsScroll();
+      else goTo(1);
     }
   });
 }
