@@ -294,10 +294,11 @@ function normalizeRoomName(room) {
 
 // ── Slideshow state ──
 var slideshowImages = [];
+var slideshowPages = [];
 var slideshowIndex = 0;
 var slideshowTimer = null;
 var slideshowActive = false;
-var SLIDE_DURATION = 90; // seconds per slide
+var SLIDE_DURATION = 60; // seconds per bulletin page
 var CONFERENCE_LIVE_ID = '46pHO0pD_HM';
 var conferenceLiveActive = false;
 
@@ -538,7 +539,7 @@ if ('serviceWorker' in navigator) {
 // ── Slideshow logic ──
 function startSlideshow() {
   if (conferenceLiveActive) return;
-  if (!slideshowImages.length) {
+  if (!slideshowPages.length) {
     playVideo();
     return;
   }
@@ -546,13 +547,13 @@ function startSlideshow() {
   slideshowIndex = 0;
   var video = document.getElementById('video');
   video.style.display = 'none';
-  document.getElementById('mediaLabel').textContent = lang === 'en' ? 'Photo Gallery' : 'Galerie Foto';
+  document.getElementById('mediaLabel').textContent = lang === 'en' ? 'Notice Board' : 'Avizier';
   document.getElementById('slideshowProgress').style.display = 'block';
   showSlide();
 }
 
 function showSlide() {
-  if (slideshowIndex >= slideshowImages.length) {
+  if (slideshowIndex >= slideshowPages.length) {
     endSlideshow();
     return;
   }
@@ -566,9 +567,16 @@ function showSlide() {
 
   var img = document.createElement('img');
   img.className = 'slideshow-img';
-  img.src = slideshowImages[slideshowIndex];
+  var currentSlide = slideshowPages[slideshowIndex];
+  img.src = currentSlide.url;
+  img.onerror = function() {
+    clearTimeout(slideshowTimer);
+    slideshowIndex++;
+    showSlide();
+  };
   img.style.opacity = '0';
   container.appendChild(img);
+  document.getElementById('mediaLabel').textContent = (lang === 'en' ? 'Notice Board · ' : 'Avizier · ') + currentSlide.title + ' · ' + (slideshowIndex + 1) + '/' + slideshowPages.length;
   setTimeout(function() { img.style.opacity = '1'; }, 50);
 
   var bar = document.getElementById('slideshowProgressBar');
@@ -647,7 +655,7 @@ video.addEventListener('ended', function() {
     document.getElementById('instName').innerHTML = 'Institutul de Chimie Macromoleculară <span class="institute-accent">„Petru Poni"</span> Iași';
   }
 
-  if (slideshowImages.length > 0) {
+  if (slideshowPages.length > 0) {
     startSlideshow();
   } else {
     playVideo();
@@ -925,6 +933,20 @@ function fetchSettings() {
     }
 
     slideshowImages = Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [];
+    var nowMs = Date.now();
+    var bulletins = Array.isArray(map.kiosk_bulletins) ? map.kiosk_bulletins : [];
+    var nextPages = [];
+    bulletins.forEach(function(item) {
+      if (!item || item.enabled === false || !Array.isArray(item.pages)) return;
+      if (item.expires_at && new Date(item.expires_at).getTime() < nowMs) return;
+      item.pages.forEach(function(url) {
+        if (typeof url === 'string' && url) nextPages.push({ url: url, title: item.title || 'Afiș' });
+      });
+    });
+    slideshowImages.forEach(function(url) {
+      if (typeof url === 'string' && url) nextPages.push({ url: url, title: 'Galerie foto' });
+    });
+    slideshowPages = nextPages;
 
     // Program de funcționare (Eco standby) — suprascriere opțională din Administrare
     if (typeof ECO !== 'undefined' && ECO) {
