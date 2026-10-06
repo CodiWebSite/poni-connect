@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useDoctoralCoordinator } from '@/hooks/useDoctoralCoordinator';
 import { useIsApprover } from '@/hooks/useIsApprover';
+import { useDecisionRegistryAccess } from '@/hooks/useDecisionRegistryAccess';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +45,7 @@ import {
   GraduationCap,
   BellRing,
   BarChart3,
+  ScrollText,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
