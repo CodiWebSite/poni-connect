@@ -134,6 +134,13 @@
       "when": 1790756182626,
       "tag": "0018_email_outbox_leave_hr",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791272345760,
+      "tag": "0019_decision_registry",
+      "breakpoints": true
     }
   ]
 }
