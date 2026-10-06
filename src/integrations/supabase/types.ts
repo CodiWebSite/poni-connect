@@ -989,6 +989,72 @@ export type Database = {
         }
         Relationships: []
       }
+      decision_registry: {
+        Row: {
+          author_initials: string | null
+          cancel_reason: string | null
+          created_at: string
+          created_by: string | null
+          decision_date: string | null
+          edit_reason: string | null
+          funding_source: string | null
+          id: string
+          month: number
+          number: number
+          status: string
+          title: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          author_initials?: string | null
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          decision_date?: string | null
+          edit_reason?: string | null
+          funding_source?: string | null
+          id?: string
+          month: number
+          number: number
+          status?: string
+          title: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          author_initials?: string | null
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          decision_date?: string | null
+          edit_reason?: string | null
+          funding_source?: string | null
+          id?: string
+          month?: number
+          number?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      decision_registry_access: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       doctoral_coordinators: {
         Row: {
           academic_title: string | null
@@ -5105,6 +5171,10 @@ export type Database = {
           _user_id?: string
         }
         Returns: string
+      }
+      can_access_decision_registry: {
+        Args: { _user_id: string }
+        Returns: boolean
       }
       can_access_doctoral_forum: {
         Args: { _user_id: string }
