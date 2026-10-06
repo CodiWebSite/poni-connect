@@ -111,10 +111,11 @@ const DashboardBulletinBoard = () => {
         </div>
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => openBulletin(currentSlide.bulletin, currentSlide.pageIndex)}
-        className="group relative block h-[340px] w-full overflow-hidden bg-bulletin-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:h-[440px]"
+        className="group relative block h-[340px] w-full overflow-hidden rounded-none bg-bulletin-surface p-0 hover:bg-bulletin-surface focus-visible:ring-inset sm:h-[440px]"
         aria-label={`Mărește ${currentSlide.bulletin.title}, pagina ${currentSlide.pageIndex + 1}`}
       >
         <img
@@ -126,7 +127,7 @@ const DashboardBulletinBoard = () => {
         <span className="absolute bottom-3 right-3 flex items-center gap-2 rounded-sm bg-background/90 px-3 py-2 font-bulletin-sans text-xs font-semibold text-foreground opacity-100 shadow-card sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-visible:opacity-100">
           <Expand className="h-4 w-4" /> Mărește
         </span>
-      </button>
+      </Button>
 
       <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5">
         <span className="font-bulletin-sans text-xs text-muted-foreground">
@@ -134,11 +135,13 @@ const DashboardBulletinBoard = () => {
         </span>
         <div className="flex max-w-[70%] items-center gap-1.5 overflow-hidden" aria-label="Selectează pagina">
           {slides.map((slide, index) => (
-            <button
+            <Button
               key={`${slide.bulletin.id}-${slide.pageIndex}`}
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => setActiveSlide(index)}
-              className={`h-2 shrink-0 rounded-full transition-[width,background-color] ${index === activeSlide ? 'w-7 bg-bulletin-gold' : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/60'}`}
+              className={`h-4 min-h-4 shrink-0 rounded-full p-0 transition-[width,background-color] ${index === activeSlide ? 'w-7 bg-bulletin-gold hover:bg-bulletin-gold' : 'w-4 bg-muted-foreground/30 hover:bg-muted-foreground/60'}`}
               aria-label={`Pagina ${index + 1}`}
               aria-current={index === activeSlide ? 'page' : undefined}
             />
