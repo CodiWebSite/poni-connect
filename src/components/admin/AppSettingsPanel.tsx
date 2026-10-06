@@ -8,11 +8,26 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload, Music, Play, Square, Volume2, VolumeX, AlertTriangle } from 'lucide-react';
+import { Settings, Loader2, Save, Clock, X, Monitor, Newspaper, Plus, Trash2, Image, Upload, Music, Play, Square, Volume2, VolumeX, AlertTriangle, FileText, ArrowUp, ArrowDown } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { RequireReasonDialog } from '@/components/shared/RequireReasonDialog';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/legacy/build/pdf.worker.mjs',
+  import.meta.url,
+).toString();
+
+interface KioskBulletin {
+  id: string;
+  title: string;
+  pages: string[];
+  enabled: boolean;
+  expires_at: string | null;
+  created_at: string;
+}
 
 interface SettingsState {
   leave_module_beta: boolean;
@@ -23,6 +38,7 @@ interface SettingsState {
   kiosk_message: string;
   kiosk_ticker_messages: string[];
   kiosk_slideshow_images: string[];
+  kiosk_bulletins: KioskBulletin[];
   kiosk_music_enabled: boolean;
   kiosk_music_source: 'youtube' | 'file';
   kiosk_music_url: string;
@@ -41,6 +57,7 @@ const AppSettingsPanel = () => {
     kiosk_message: '',
     kiosk_ticker_messages: [],
     kiosk_slideshow_images: [],
+    kiosk_bulletins: [],
     kiosk_music_enabled: true,
     kiosk_music_source: 'youtube',
     kiosk_music_url: 'iTC49Hi4hb8',
@@ -50,6 +67,11 @@ const AppSettingsPanel = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [bulletinTitle, setBulletinTitle] = useState('');
+  const [bulletinExpiresAt, setBulletinExpiresAt] = useState('');
+  const [bulletinPermanent, setBulletinPermanent] = useState(false);
+  const [uploadingBulletin, setUploadingBulletin] = useState(false);
+  const [bulletinUploadProgress, setBulletinUploadProgress] = useState('');
   const [uploadingMusic, setUploadingMusic] = useState(false);
   const [musicUploadProgress, setMusicUploadProgress] = useState(0);
   const [musicUploadEtaSec, setMusicUploadEtaSec] = useState<number | null>(null);
@@ -207,6 +229,7 @@ const AppSettingsPanel = () => {
           kiosk_message: typeof map.kiosk_message === 'string' ? map.kiosk_message : '',
           kiosk_ticker_messages: Array.isArray(map.kiosk_ticker_messages) ? map.kiosk_ticker_messages : [],
           kiosk_slideshow_images: Array.isArray(map.kiosk_slideshow_images) ? map.kiosk_slideshow_images : [],
+          kiosk_bulletins: Array.isArray(map.kiosk_bulletins) ? map.kiosk_bulletins : [],
           kiosk_music_enabled: map.kiosk_music_enabled !== false,
           kiosk_music_source: map.kiosk_music_source === 'file' ? 'file' : 'youtube',
           kiosk_music_url: typeof map.kiosk_music_url === 'string' ? map.kiosk_music_url : '',
@@ -222,8 +245,7 @@ const AppSettingsPanel = () => {
     setSaving(key);
     const { error } = await supabase
       .from('app_settings')
-      .update({ value: value as any, updated_at: new Date().toISOString(), updated_by: user?.id })
-      .eq('key', key);
+      .upsert({ key, value: value as any, updated_at: new Date().toISOString(), updated_by: user?.id }, { onConflict: 'key' });
 
     if (error) {
       toast({ title: 'Eroare', description: 'Nu s-a putut salva setarea.', variant: 'destructive' });
@@ -468,6 +490,154 @@ const AppSettingsPanel = () => {
     await updateSetting('kiosk_slideshow_images', updated);
   };
 
+  const uploadBulletinPage = async (blob: Blob, bulletinId: string, pageIndex: number) => {
+    const path = `bulletin/${bulletinId}/page-${pageIndex + 1}.jpg`;
+    const { error } = await supabase.storage
+      .from('kiosk-images')
+      .upload(path, blob, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
+    if (error) throw error;
+    return supabase.storage.from('kiosk-images').getPublicUrl(path).data.publicUrl;
+  };
+
+  const imageFileToJpeg = (file: File): Promise<Blob> => new Promise((resolve, reject) => {
+    const image = document.createElement('img');
+    const objectUrl = URL.createObjectURL(file);
+    image.onload = () => {
+      const maxDimension = 1920;
+      const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext('2d');
+      if (!context) {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Imaginea nu a putut fi procesată.'));
+        return;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Imaginea nu a putut fi salvată.')), 'image/jpeg', 0.9);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Imagine invalidă.'));
+    };
+    image.src = objectUrl;
+  });
+
+  const pdfFileToJpegs = async (file: File): Promise<Blob[]> => {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+    if (pdf.numPages > 20) throw new Error('PDF-ul poate avea maximum 20 de pagini.');
+    const pages: Blob[] = [];
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      setBulletinUploadProgress(`Pregătesc pagina ${pageNumber} din ${pdf.numPages}...`);
+      const page = await pdf.getPage(pageNumber);
+      const baseViewport = page.getViewport({ scale: 1 });
+      const scale = Math.min(2.5, 1920 / Math.max(baseViewport.width, baseViewport.height));
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('PDF-ul nu a putut fi procesat.');
+      await page.render({ canvasContext: context, viewport }).promise;
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(result => result ? resolve(result) : reject(new Error('Pagina nu a putut fi salvată.')), 'image/jpeg', 0.9);
+      });
+      pages.push(blob);
+      page.cleanup();
+    }
+    await pdf.destroy();
+    return pages;
+  };
+
+  const handleBulletinUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!bulletinTitle.trim()) {
+      toast({ title: 'Completează titlul', description: 'Scrie titlul afișului înainte de încărcare.', variant: 'destructive' });
+      return;
+    }
+    if (!bulletinPermanent && !bulletinExpiresAt) {
+      toast({ title: 'Alege expirarea', description: 'Selectează o dată sau bifează „Permanent”.', variant: 'destructive' });
+      return;
+    }
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/');
+    if (!isPdf && !isImage) {
+      toast({ title: 'Format neacceptat', description: 'Poți încărca PDF, JPG sau PNG.', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: 'Fișier prea mare', description: 'Dimensiunea maximă este 20 MB.', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingBulletin(true);
+    const bulletinId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const uploadedUrls: string[] = [];
+    try {
+      setBulletinUploadProgress(isPdf ? 'Deschid PDF-ul...' : 'Pregătesc imaginea...');
+      const pageBlobs = isPdf ? await pdfFileToJpegs(file) : [await imageFileToJpeg(file)];
+      for (let i = 0; i < pageBlobs.length; i += 1) {
+        setBulletinUploadProgress(`Încarc pagina ${i + 1} din ${pageBlobs.length}...`);
+        uploadedUrls.push(await uploadBulletinPage(pageBlobs[i], bulletinId, i));
+      }
+      const bulletin: KioskBulletin = {
+        id: bulletinId,
+        title: bulletinTitle.trim(),
+        pages: uploadedUrls,
+        enabled: true,
+        expires_at: bulletinPermanent ? null : `${bulletinExpiresAt}T23:59:59+03:00`,
+        created_at: new Date().toISOString(),
+      };
+      const updated = [...settings.kiosk_bulletins, bulletin];
+      setSettings(prev => ({ ...prev, kiosk_bulletins: updated }));
+      await updateSetting('kiosk_bulletins', updated);
+      setBulletinTitle('');
+      setBulletinExpiresAt('');
+      setBulletinPermanent(false);
+      toast({ title: 'Afiș adăugat', description: `${pageBlobs.length} pagină(i) vor apărea în avizier.` });
+    } catch (error) {
+      if (uploadedUrls.length) {
+        const paths = uploadedUrls.map(url => decodeURIComponent(url.split('/kiosk-images/').pop() || '')).filter(Boolean);
+        if (paths.length) await supabase.storage.from('kiosk-images').remove(paths);
+      }
+      toast({ title: 'Afișul nu a fost adăugat', description: error instanceof Error ? error.message : 'Încearcă din nou.', variant: 'destructive' });
+    } finally {
+      setUploadingBulletin(false);
+      setBulletinUploadProgress('');
+    }
+  };
+
+  const saveBulletins = async (bulletins: KioskBulletin[]) => {
+    setSettings(prev => ({ ...prev, kiosk_bulletins: bulletins }));
+    await updateSetting('kiosk_bulletins', bulletins);
+  };
+
+  const toggleBulletin = async (index: number) => {
+    const updated = settings.kiosk_bulletins.map((item, i) => i === index ? { ...item, enabled: !item.enabled } : item);
+    await saveBulletins(updated);
+  };
+
+  const moveBulletin = async (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= settings.kiosk_bulletins.length) return;
+    const updated = [...settings.kiosk_bulletins];
+    [updated[index], updated[nextIndex]] = [updated[nextIndex], updated[index]];
+    await saveBulletins(updated);
+  };
+
+  const removeBulletin = async (index: number) => {
+    const item = settings.kiosk_bulletins[index];
+    if (!window.confirm(`Elimini afișul „${item.title}” și toate paginile lui?`)) return;
+    const paths = item.pages.map(url => decodeURIComponent(url.split('/kiosk-images/').pop() || '')).filter(Boolean);
+    if (paths.length) await supabase.storage.from('kiosk-images').remove(paths);
+    await saveBulletins(settings.kiosk_bulletins.filter((_, i) => i !== index));
+  };
+
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
 
   return (
@@ -686,6 +856,80 @@ const AppSettingsPanel = () => {
                     📸 {settings.kiosk_slideshow_images.length} imagine(i) · Fiecare se afișează 90 secunde pe ecranul TV
                   </p>
                 )}
+              </div>
+
+              {/* Digital bulletin board */}
+              <div className="pt-3 border-t border-border space-y-3">
+                <div>
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" />
+                    Avizier digital
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Afișele apar după filmul institutului. Fiecare pagină rămâne pe ecran 60 de secunde.
+                  </p>
+                </div>
+
+                {settings.kiosk_bulletins.length > 0 && (
+                  <div className="space-y-2">
+                    {settings.kiosk_bulletins.map((bulletin, index) => {
+                      const expired = Boolean(bulletin.expires_at && new Date(bulletin.expires_at) < new Date());
+                      return (
+                        <div key={bulletin.id} className="border rounded-md p-3 space-y-2">
+                          <div className="flex items-start gap-3">
+                            {bulletin.pages[0] && (
+                              <img src={bulletin.pages[0]} alt="" className="w-16 h-20 object-contain bg-muted rounded border shrink-0" />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium break-words">{bulletin.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {bulletin.pages.length} pagină(i) · {bulletin.expires_at ? `până la ${new Date(bulletin.expires_at).toLocaleDateString('ro-RO')}` : 'Permanent'}
+                              </p>
+                              <p className={`text-xs font-medium mt-1 ${expired || !bulletin.enabled ? 'text-warning' : 'text-success'}`}>
+                                {expired ? 'Expirat' : bulletin.enabled ? 'Activ pe TV' : 'Dezactivat'}
+                              </p>
+                            </div>
+                            <Switch checked={bulletin.enabled} onCheckedChange={() => toggleBulletin(index)} disabled={saving === 'kiosk_bulletins'} />
+                          </div>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveBulletin(index, -1)} disabled={index === 0 || saving === 'kiosk_bulletins'} title="Mută mai sus">
+                              <ArrowUp className="w-4 h-4" />
+                            </Button>
+                            <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveBulletin(index, 1)} disabled={index === settings.kiosk_bulletins.length - 1 || saving === 'kiosk_bulletins'} title="Mută mai jos">
+                              <ArrowDown className="w-4 h-4" />
+                            </Button>
+                            <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeBulletin(index)} disabled={saving === 'kiosk_bulletins'} title="Elimină afișul">
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="bulletin-title" className="text-xs">Titlul afișului</Label>
+                    <Input id="bulletin-title" value={bulletinTitle} onChange={e => setBulletinTitle(e.target.value)} placeholder="Ex: Zilele Academice Ieșene" disabled={uploadingBulletin} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="bulletin-expiry" className="text-xs">Ultima zi de afișare</Label>
+                    <Input id="bulletin-expiry" type="date" value={bulletinExpiresAt} onChange={e => setBulletinExpiresAt(e.target.value)} disabled={bulletinPermanent || uploadingBulletin} />
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-sm cursor-pointer w-fit">
+                  <input type="checkbox" checked={bulletinPermanent} onChange={e => setBulletinPermanent(e.target.checked)} disabled={uploadingBulletin} className="h-4 w-4 accent-primary" />
+                  Afișare permanentă
+                </label>
+                <label className="block cursor-pointer">
+                  <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={handleBulletinUpload} disabled={uploadingBulletin} />
+                  <div className="flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-md p-4 hover:border-primary/50 hover:bg-muted/50 transition-colors">
+                    {uploadingBulletin ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Upload className="w-5 h-5 text-muted-foreground" />}
+                    <span className="text-sm text-muted-foreground">{uploadingBulletin ? bulletinUploadProgress : 'Încarcă PDF sau imagine'}</span>
+                  </div>
+                </label>
+                <p className="text-[11px] text-muted-foreground">Maximum 20 MB și 20 de pagini pentru un PDF.</p>
               </div>
 
               {/* Background music */}
