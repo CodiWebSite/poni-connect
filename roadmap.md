@@ -1,6 +1,7 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
+- [x] Avizier digital kiosk: PDF/imagini, expirare opțională, 60 secunde/pagină și rotație după prezentare
 - [x] Centru de notificări activ: deschidere directă și filtrare alerte false din rețeaua ICMPP
 - [x] Noutăți recente în changelog și chenar vizibil pe Dashboard
 - [x] Sărbători legale calculate automat (Vinerea Mare, Paște, Rusalii) pentru orice an
