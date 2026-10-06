@@ -5,6 +5,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useIsApprover } from '@/hooks/useIsApprover';
 import { usePageAccess } from '@/hooks/usePageAccess';
 import { useDoctoralCoordinator } from '@/hooks/useDoctoralCoordinator';
+import { useDecisionRegistryAccess } from '@/hooks/useDecisionRegistryAccess';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +64,7 @@ const Sidebar = () => {
   const { user, signOut } = useAuth();
   const { role, allRoles, isSuperAdmin, isRealSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess, isInstituteLeadership } = useUserRole();
   const { isCoordinator: isDoctoralCoordinator, studentCount: coordinatorStudents } = useDoctoralCoordinator();
+  const { canAccess: canAccessDecisions } = useDecisionRegistryAccess();
   const { isDesignatedApprover } = useIsApprover();
   const { canAccessPage } = usePageAccess();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
@@ -344,6 +346,7 @@ const Sidebar = () => {
   const canManageDoctoral = !!role && ['super_admin', 'hr', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific'].includes(role);
   const managementItems = [
     ...filterByAccess(allManagementItems),
+    ...(canAccessDecisions ? [{ icon: ScrollText, label: 'Registru Decizii', path: '/registru-decizii' }] : []),
     ...(canManageDoctoral ? [{ icon: GraduationCap, label: 'Spațiul Doctoral', path: '/doctoral' }] : []),
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: GraduationCap, label: 'Doctoranzii mei', path: '/doctoral/coordonator', badge: coordinatorStudents || undefined }] : []),
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' }] : []),
