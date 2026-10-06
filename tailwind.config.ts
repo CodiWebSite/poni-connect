@@ -16,6 +16,8 @@ export default {
       fontFamily: {
         sans: ['DM Sans', 'system-ui', 'sans-serif'],
         display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+        bulletin: ['Libre Baskerville', 'Georgia', 'serif'],
+        'bulletin-sans': ['IBM Plex Sans', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         'display-lg': ['2.5rem', { lineHeight: '1.05', letterSpacing: '-0.03em', fontWeight: '700' }],
@@ -74,6 +76,12 @@ export default {
         info: {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
+        },
+        bulletin: {
+          background: "hsl(var(--bulletin-background))",
+          surface: "hsl(var(--bulletin-surface))",
+          ink: "hsl(var(--bulletin-ink))",
+          gold: "hsl(var(--bulletin-gold))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
