@@ -104,6 +104,7 @@ const MobileNav = () => {
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
     ...((isSef || isSefSRUS || canManageHR || isSuperAdmin || isDesignatedApprover) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
     ...((isSef || isSefSRUS || canManageHR || isSuperAdmin || isDesignatedApprover) ? [{ icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' }] : []),
+    ...(canAccessDecisions ? [{ icon: ScrollText, label: 'Registru Decizii', path: '/registru-decizii' }] : []),
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request' },
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),
