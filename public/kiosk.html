@@ -563,15 +563,18 @@ function showSlide() {
 
   var container = document.getElementById('mediaContainer');
   var oldImgs = container.querySelectorAll('img.slideshow-img');
-  oldImgs.forEach(function(img) {
+  for (var oldIndex = 0; oldIndex < oldImgs.length; oldIndex++) {
+    (function(img) {
     img.classList.add('fade-out');
     setTimeout(function() { img.remove(); }, 1100);
-  });
+    })(oldImgs[oldIndex]);
+  }
 
   var img = document.createElement('img');
   img.className = 'slideshow-img';
   var currentSlide = slideshowPages[slideshowIndex];
   img.src = currentSlide.url;
+  img.setAttribute('data-page-index', String(slideshowIndex));
   img.onerror = function() {
     clearTimeout(slideshowTimer);
     slideshowIndex++;
@@ -601,7 +604,7 @@ function endSlideshow() {
   slideshowActive = false;
   var container = document.getElementById('mediaContainer');
   var imgs = container.querySelectorAll('img.slideshow-img');
-  imgs.forEach(function(img) { img.remove(); });
+  for (var imageIndex = 0; imageIndex < imgs.length; imageIndex++) imgs[imageIndex].remove();
   document.getElementById('slideshowProgress').style.display = 'none';
   playVideo();
 }
@@ -954,6 +957,10 @@ function fetchSettings() {
       if (typeof url === 'string' && url) nextPages.push({ url: url, title: 'Galerie foto' });
     });
     slideshowPages = nextPages;
+    for (var preloadIndex = 0; preloadIndex < slideshowPages.length; preloadIndex++) {
+      var preloadImage = new Image();
+      preloadImage.src = slideshowPages[preloadIndex].url;
+    }
 
     // Program de funcționare (Eco standby) — suprascriere opțională din Administrare
     if (typeof ECO !== 'undefined' && ECO) {

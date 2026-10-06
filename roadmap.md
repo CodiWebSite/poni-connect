@@ -1,6 +1,7 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
+- [x] Reorganizare avizier Dashboard în galerie academică, cu toate paginile vizibile și rotație Samsung compatibilă
 - [x] Avizier vizual comun pe toate variantele paginii principale, sincronizat cu kiosk-ul
 - [x] Avizier digital kiosk: PDF/imagini, expirare opțională, 60 secunde/pagină și rotație după prezentare
 - [x] Centru de notificări activ: deschidere directă și filtrare alerte false din rețeaua ICMPP

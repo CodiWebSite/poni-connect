@@ -43,6 +43,12 @@
     --brand-muted: 213 45% 82%;
     --brand-accent: 205 85% 72%;
 
+    /* Academic bulletin — selected institutional palette */
+    --bulletin-background: 216 38% 98%;
+    --bulletin-surface: 214 33% 93%;
+    --bulletin-ink: 212 61% 24%;
+    --bulletin-gold: 42 57% 49%;
+
     --radius: 0.625rem;
 
 
@@ -123,6 +129,11 @@
     --brand-foreground: 210 40% 98%;
     --brand-muted: 213 30% 74%;
     --brand-accent: 205 85% 70%;
+
+    --bulletin-background: 222 24% 12%;
+    --bulletin-surface: 222 18% 18%;
+    --bulletin-ink: 214 88% 76%;
+    --bulletin-gold: 42 62% 58%;
 
 
 
