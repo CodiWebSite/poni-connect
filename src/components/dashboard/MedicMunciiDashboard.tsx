@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardBanners from './DashboardBanners';
 import DashboardGreeting from './DashboardGreeting';
+import DashboardBulletinBoard from './DashboardBulletinBoard';
 import QuickActionsGrid, { QuickAction } from './QuickActionsGrid';
 import PendingActionsWidget, { PendingAction } from './PendingActionsWidget';
 import StatCard from './StatCard';
@@ -119,6 +120,7 @@ const MedicMunciiDashboard = () => {
     <MainLayout title="Dashboard Medical" description="Medicina muncii — monitorizare fișe">
       <DashboardBanners />
       <DashboardGreeting subtitle="Monitorizare medicina muncii" />
+      <DashboardBulletinBoard />
 
       {/* Room Bookings — prominent placement */}
       <div className="mt-4">

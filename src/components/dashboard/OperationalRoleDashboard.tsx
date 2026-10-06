@@ -1,6 +1,7 @@
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardBanners from './DashboardBanners';
 import DashboardGreeting from './DashboardGreeting';
+import DashboardBulletinBoard from './DashboardBulletinBoard';
 import QuickActionsGrid, { QuickAction } from './QuickActionsGrid';
 import DashboardAnnouncements from './DashboardAnnouncements';
 import ActivityHistory from './ActivityHistory';
@@ -73,6 +74,7 @@ const OperationalRoleDashboard = ({ role }: OperationalRoleDashboardProps) => {
     <MainLayout title={config.title} description={config.subtitle}>
       <DashboardBanners />
       <DashboardGreeting subtitle={config.subtitle} />
+      <DashboardBulletinBoard />
 
       {/* Room Bookings — prominent placement */}
       <div className="mt-4">
