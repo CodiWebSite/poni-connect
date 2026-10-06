@@ -56,6 +56,7 @@ const MobileNav = () => {
   const { isSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess, role, isInstituteLeadership } = useUserRole();
   const { isCoordinator: isDoctoralCoordinator } = useDoctoralCoordinator();
   const { isDesignatedApprover } = useIsApprover();
+  const { canAccess: canAccessDecisions } = useDecisionRegistryAccess();
   const [isOpen, setIsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
