@@ -2,7 +2,6 @@ import DashboardAlertsBanner from './DashboardAlertsBanner';
 import LiveEventBanner from './LiveEventBanner';
 import MFARecommendationBanner from './MFARecommendationBanner';
 import InstallAppBanner from './InstallAppBanner';
-import DashboardBulletinBoard from './DashboardBulletinBoard';
 
 /**
  * Single banner slot for every dashboard.
@@ -14,7 +13,6 @@ const DashboardBanners = () => (
     <DashboardAlertsBanner />
     <MFARecommendationBanner />
     <InstallAppBanner />
-    <DashboardBulletinBoard />
   </div>
 );
 

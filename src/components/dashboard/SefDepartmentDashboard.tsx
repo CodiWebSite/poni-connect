@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardBanners from './DashboardBanners';
 import DashboardGreeting from './DashboardGreeting';
+import DashboardBulletinBoard from './DashboardBulletinBoard';
 import QuickActionsGrid, { QuickAction } from './QuickActionsGrid';
 import PendingActionsWidget, { PendingAction } from './PendingActionsWidget';
 import DashboardAnnouncements from './DashboardAnnouncements';
@@ -98,6 +99,7 @@ const SefDepartmentDashboard = () => {
     <MainLayout title="Dashboard" description="Panou șef departament">
       <DashboardBanners />
       <DashboardGreeting subtitle="Panou de lucru conducere" />
+      <DashboardBulletinBoard />
 
       {/* Room Bookings — prominent placement */}
       <div className="mt-4">

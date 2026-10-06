@@ -7,6 +7,7 @@ import { BentoGrid, BentoMain, BentoSide, SectionTitle } from './DashboardShell'
 import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import DashboardGreeting from './DashboardGreeting';
+import DashboardBulletinBoard from './DashboardBulletinBoard';
 import QuickActionsGrid, { QuickAction } from './QuickActionsGrid';
 import DashboardAnnouncements from './DashboardAnnouncements';
 import ActivityHistory from './ActivityHistory';
@@ -94,6 +95,7 @@ const EmployeeDashboard = () => {
     <MainLayout title="Dashboard" description="Panoul tău personal">
       <DashboardBanners />
       <DashboardGreeting subtitle="Iată un rezumat al situației tale." />
+      <DashboardBulletinBoard />
 
       {/* Quick Actions */}
       <div className="mt-4">

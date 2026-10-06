@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardBanners from './DashboardBanners';
 import DashboardGreeting from './DashboardGreeting';
+import DashboardBulletinBoard from './DashboardBulletinBoard';
 import QuickActionsGrid, { QuickAction } from './QuickActionsGrid';
 import PendingActionsWidget, { PendingAction } from './PendingActionsWidget';
 import StatCard from './StatCard';
@@ -67,6 +68,7 @@ const HRStaffDashboard = () => {
     <MainLayout title="Dashboard HR" description="Centru operațional Resurse Umane">
       <DashboardBanners />
       <DashboardGreeting subtitle="Centru operațional HR" />
+      <DashboardBulletinBoard />
 
       {/* Room Bookings — prominent placement */}
       <div className="mt-4">
