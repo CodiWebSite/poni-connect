@@ -1,11 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface KioskBulletin {
+  id: string;
+  title: string;
+  pages: string[];
+  enabled: boolean;
+  expires_at: string | null;
+  created_at: string;
+}
+
 interface AppSettings {
   leave_module_beta: boolean;
   maintenance_mode: boolean;
   homepage_message: string;
   maintenance_eta: string | null;
+  kiosk_bulletins: KioskBulletin[];
 }
 
 const defaults: AppSettings = {
@@ -13,6 +23,7 @@ const defaults: AppSettings = {
   maintenance_mode: false,
   homepage_message: '',
   maintenance_eta: null,
+  kiosk_bulletins: [],
 };
 
 function parseSettings(data: { key: string; value: any }[]): AppSettings {
@@ -23,6 +34,7 @@ function parseSettings(data: { key: string; value: any }[]): AppSettings {
     maintenance_mode: map.maintenance_mode === true,
     homepage_message: typeof map.homepage_message === 'string' ? map.homepage_message : '',
     maintenance_eta: typeof map.maintenance_eta === 'string' ? map.maintenance_eta : null,
+    kiosk_bulletins: Array.isArray(map.kiosk_bulletins) ? map.kiosk_bulletins : [],
   };
 }
 
