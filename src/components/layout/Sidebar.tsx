@@ -283,6 +283,7 @@ const Sidebar = () => {
     { icon: UserCircle, label: 'Profilul Meu', path: '/my-profile' },
 
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
+    ...(canAccessDecisions ? [{ icon: ScrollText, label: 'Registru Decizii', path: '/registru-decizii' }] : []),
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request', badge: (isSef || isSefSRUS || isSuperAdmin) ? pendingHR : undefined },
     { icon: Users, label: 'Echipa Mea', path: '/my-team' },
@@ -346,7 +347,6 @@ const Sidebar = () => {
   const canManageDoctoral = !!role && ['super_admin', 'hr', 'sef_srus', 'director_institut', 'director_adjunct', 'secretar_stiintific'].includes(role);
   const managementItems = [
     ...filterByAccess(allManagementItems),
-    ...(canAccessDecisions ? [{ icon: ScrollText, label: 'Registru Decizii', path: '/registru-decizii' }] : []),
     ...(canManageDoctoral ? [{ icon: GraduationCap, label: 'Spațiul Doctoral', path: '/doctoral' }] : []),
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: GraduationCap, label: 'Doctoranzii mei', path: '/doctoral/coordonator', badge: coordinatorStudents || undefined }] : []),
     ...(isDoctoralCoordinator || canManageDoctoral ? [{ icon: Users, label: 'Comunitatea doctoranzilor', path: '/doctoral/comunitate' }] : []),
