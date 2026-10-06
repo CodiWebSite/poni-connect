@@ -42,17 +42,17 @@ async function buildWorkbook(rows: Decision[], year: number, onlyMonth?: number)
     ws.getCell('B3').value = 'Serviciul Resurse Umane Salarizare - SRUS';
     ws.getCell('B1').font = ws.getCell('B2').font = { ...f, bold: true };
     ws.getCell('B3').font = f;
-    ws.getCell('B3').alignment = { vertical: 'center' };
+    ws.getCell('B3').alignment = { vertical: 'middle' };
     ws.mergeCells('A5:E5');
     ws.getCell('A5').value = `OPIS DECIZII ${year}`;
     ws.getCell('A5').font = { ...f, bold: true, size: 18 };
-    ws.getCell('A5').alignment = { horizontal: 'center', vertical: 'center' };
+    ws.getCell('A5').alignment = { horizontal: 'center', vertical: 'middle' };
     ws.getCell('D7').value = 'Luna:';
     ws.getCell('D7').font = f;
-    ws.getCell('D7').alignment = { horizontal: 'center', vertical: 'center' };
+    ws.getCell('D7').alignment = { horizontal: 'center', vertical: 'middle' };
     ws.getCell('E7').value = MONTHS[m - 1];
     ws.getCell('E7').font = { name: 'Calibri', size: 12 };
-    ws.getCell('E7').alignment = { horizontal: 'center', vertical: 'center' };
+    ws.getCell('E7').alignment = { horizontal: 'center', vertical: 'middle' };
     const thin = { style: 'thin' } as const;
     const med = { style: 'medium' } as const;
     ws.getCell('E7').border = { top: thin, left: thin, bottom: thin, right: thin };
@@ -66,7 +66,7 @@ async function buildWorkbook(rows: Decision[], year: number, onlyMonth?: number)
     head.getCell(3).border = { top: med, left: thin, bottom: med, right: thin };
     head.getCell(4).border = { top: med, left: thin, bottom: med, right: thin };
     head.getCell(5).border = { top: med, left: thin, bottom: med, right: med };
-    for (let c = 2; c <= 5; c++) head.getCell(c).alignment = { horizontal: 'center', vertical: 'center', wrapText: true };
+    for (let c = 2; c <= 5; c++) head.getCell(c).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     const border = { top: thin, left: thin, bottom: thin, right: thin };
     let r = 10;
     rows.filter((d) => d.month === m).sort((a, b) => a.number - b.number).forEach((d) => {
@@ -77,7 +77,7 @@ async function buildWorkbook(rows: Decision[], year: number, onlyMonth?: number)
       row.getCell(5).value = d.funding_source ?? '';
       row.getCell(6).value = d.author_initials ?? '';
       for (let c = 2; c <= 5; c++) { row.getCell(c).border = border; row.getCell(c).font = f; }
-      row.getCell(2).alignment = { horizontal: 'center', vertical: 'center', wrapText: true };
+      row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       row.getCell(3).alignment = { horizontal: 'left' };
       row.getCell(4).alignment = { horizontal: 'center' };
       row.getCell(6).font = { name: 'Calibri', size: 11 };
