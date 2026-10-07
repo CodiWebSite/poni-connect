@@ -1,6 +1,7 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
+- [x] Ascundere temporară Registru Decizii pentru toți: meniuri desktop/telefon, acces direct și Administrare; date păstrate
 - [x] Reorganizare avizier Dashboard în galerie academică, cu toate paginile vizibile și rotație Samsung compatibilă
 - [x] Avizier Dashboard repoziționat sub salut, cu rotație automată între pagini
 - [x] Avizier vizual comun pe toate variantele paginii principale, sincronizat cu kiosk-ul
