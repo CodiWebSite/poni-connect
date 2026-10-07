@@ -7,8 +7,6 @@ import NotificationRulesEditor from './NotificationRulesEditor';
 import CustomRolesManager from './CustomRolesManager';
 import AnnouncementPublishersPanel from './AnnouncementPublishersPanel';
 import EventPublishersPanel from './EventPublishersPanel';
-import DecisionRegistryAccessPanel from './DecisionRegistryAccessPanel';
-import { ScrollText } from 'lucide-react';
 
 const AdminRolesAccessPanel = () => {
   return (
@@ -48,10 +46,6 @@ const AdminRolesAccessPanel = () => {
             <CalendarDays className="w-3.5 h-3.5" />
             Editori Evenimente
           </TabsTrigger>
-          <TabsTrigger value="decision-registry" className="text-xs gap-1.5">
-            <ScrollText className="w-3.5 h-3.5" />
-            Registru Decizii
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="matrix"><AccessMatrixEditor /></TabsContent>
@@ -61,7 +55,6 @@ const AdminRolesAccessPanel = () => {
         <TabsContent value="notifications"><NotificationRulesEditor /></TabsContent>
         <TabsContent value="announcement-publishers"><AnnouncementPublishersPanel /></TabsContent>
         <TabsContent value="event-publishers"><EventPublishersPanel /></TabsContent>
-        <TabsContent value="decision-registry"><DecisionRegistryAccessPanel /></TabsContent>
       </Tabs>
     </div>
   );
