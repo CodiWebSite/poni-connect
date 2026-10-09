@@ -32,6 +32,7 @@ import HRRequestsInbox from '@/components/hr/HRRequestsInbox';
 import HRNotificationsRules from '@/components/hr/HRNotificationsRules';
 
 import PensionariManager from '@/components/hr/PensionariManager';
+import LeaveYearOpening from '@/components/hr/LeaveYearOpening';
 
 import {
   Users, LayoutDashboard, FileText, Upload, Calendar, UserCheck,
@@ -227,6 +228,7 @@ const HRManagement = () => {
                 <TabsTrigger value="certificates" className="gap-1.5 text-xs px-2.5 py-1.5"><Award className="h-3.5 w-3.5" /><span className="hidden md:inline">Adeverințe</span></TabsTrigger>
                 <TabsTrigger value="dossier" className="gap-1.5 text-xs px-2.5 py-1.5"><FolderOpen className="h-3.5 w-3.5" /><span className="hidden md:inline">Dosare</span></TabsTrigger>
                 <TabsTrigger value="pensionari" className="gap-1.5 text-xs px-2.5 py-1.5"><Award className="h-3.5 w-3.5" /><span className="hidden md:inline">Pensionari</span></TabsTrigger>
+                <TabsTrigger value="year2027" className="gap-1.5 text-xs px-2.5 py-1.5"><Calendar className="h-3.5 w-3.5" /><span className="hidden md:inline">An 2027</span></TabsTrigger>
               </TabsList>
             </div>
           </div>
@@ -286,6 +288,7 @@ const HRManagement = () => {
         <TabsContent value="dossier"><EmployeeDigitalDossier employees={employees.map(e => ({ id: e.id, first_name: e.first_name, last_name: e.last_name, cnp: e.cnp, full_name: e.full_name, email: e.email, department: e.department, position: e.position, employment_date: e.employment_date, hasAccount: e.hasAccount, employee_record_id: e.employee_record_id, user_id: e.user_id }))} /></TabsContent>
 
         <TabsContent value="pensionari"><PensionariManager /></TabsContent>
+        <TabsContent value="year2027"><LeaveYearOpening /></TabsContent>
       </Tabs>
     </MainLayout>
   );

@@ -189,7 +189,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         .from('leave_carryover')
         .select('remaining_days')
         .eq('employee_personal_data_id', pd.id)
-        .eq('to_year', currentYear);
+        .eq('to_year', currentYear).is('closed_at', null);
 
       const { data: bonuses } = await supabase
         .from('leave_bonus')

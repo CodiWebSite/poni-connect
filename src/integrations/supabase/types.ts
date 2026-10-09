@@ -2317,9 +2317,13 @@ export type Database = {
       }
       leave_carryover: {
         Row: {
+          close_reason: string | null
+          closed_at: string | null
+          closed_by: string | null
           created_at: string
           created_by: string | null
           employee_personal_data_id: string
+          expires_at: string | null
           from_year: number
           id: string
           initial_days: number
@@ -2330,9 +2334,13 @@ export type Database = {
           used_days: number
         }
         Insert: {
+          close_reason?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           created_by?: string | null
           employee_personal_data_id: string
+          expires_at?: string | null
           from_year: number
           id?: string
           initial_days?: number
@@ -2343,9 +2351,13 @@ export type Database = {
           used_days?: number
         }
         Update: {
+          close_reason?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           created_by?: string | null
           employee_personal_data_id?: string
+          expires_at?: string | null
           from_year?: number
           id?: string
           initial_days?: number
@@ -2562,6 +2574,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leave_year_entitlements: {
+        Row: {
+          created_at: string
+          days: number
+          employee_personal_data_id: string
+          id: string
+          reason: string | null
+          updated_at: string
+          updated_by: string | null
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          days: number
+          employee_personal_data_id: string
+          id?: string
+          reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          year: number
+        }
+        Update: {
+          created_at?: string
+          days?: number
+          employee_personal_data_id?: string
+          id?: string
+          reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_year_entitlements_employee_personal_data_id_fkey"
+            columns: ["employee_personal_data_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_year_entitlements_employee_personal_data_id_fkey"
+            columns: ["employee_personal_data_id"]
+            isOneToOne: false
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_year_openings: {
+        Row: {
+          details: Json | null
+          employees_count: number
+          opened_at: string
+          opened_by: string | null
+          year: number
+        }
+        Insert: {
+          details?: Json | null
+          employees_count?: number
+          opened_at?: string
+          opened_by?: string | null
+          year: number
+        }
+        Update: {
+          details?: Json | null
+          employees_count?: number
+          opened_at?: string
+          opened_by?: string | null
+          year?: number
+        }
+        Relationships: []
       }
       library_books: {
         Row: {
@@ -5208,6 +5292,10 @@ export type Database = {
         Args: { _entry_id: string; _reason: string }
         Returns: undefined
       }
+      close_leave_carryover: {
+        Args: { _from_year: number; _reason: string; _to_year: number }
+        Returns: number
+      }
       ensure_department_group: { Args: { _user_id: string }; Returns: string }
       ensure_registry_temp_sequence: {
         Args: { _department_key: string }
@@ -5324,6 +5412,7 @@ export type Database = {
         Returns: boolean
       }
       is_payslip_pilot_user: { Args: { _user_id: string }; Returns: boolean }
+      leave_standard_days: { Args: { _year: number }; Returns: number }
       link_registry_entries: {
         Args: {
           _from_entry_id: string
@@ -5350,6 +5439,10 @@ export type Database = {
           _type?: string
         }
         Returns: undefined
+      }
+      open_leave_year: {
+        Args: { _force?: boolean; _year: number }
+        Returns: number
       }
       recalculate_leave_balance: {
         Args: { target_epd_id?: string }
