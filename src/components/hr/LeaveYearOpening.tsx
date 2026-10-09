@@ -10,7 +10,7 @@ import ReauthDialog from '@/components/shared/ReauthDialog';
 import { useToast } from '@/hooks/use-toast';
 import { CalendarClock, Lock, Pencil, Play } from 'lucide-react';
 
-export const STANDARD_DAYS = 36;
+export const STANDARD_DAYS = 35;
 const NEW_YEAR = 2027;
 const OLD_CARRY_YEAR = 2025;
 const OLD_CARRY_DEADLINE = '30.06.2027';
