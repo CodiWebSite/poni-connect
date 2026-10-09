@@ -34,7 +34,11 @@ export default function LeaveYearOpening() {
   const [edit, setEdit] = useState<Row | null>(null);
   const [editDays, setEditDays] = useState('');
   const [editReason, setEditReason] = useState('');
-  const [reauth, setReauth] = useState<null | 'run' | 'close'>(null);
+  const [reauth, setReauth] = useState<null | 'run' | 'close' | 'closeYear'>(null);
+  const [closure, setClosure] = useState<{ closed_at: string; reason: string } | null>(null);
+  const [yearOpen, setYearOpen] = useState(false);
+  const [yearReason, setYearReason] = useState('');
+  const [frozen, setFrozen] = useState<Map<string, number>>(new Map());
   const [closeOpen, setCloseOpen] = useState(false);
   const [closeReason, setCloseReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -48,6 +52,12 @@ export default function LeaveYearOpening() {
       supabase.from('leave_year_entitlements').select('employee_personal_data_id, days, reason').eq('year', NEW_YEAR),
       supabase.from('leave_year_openings').select('opened_at, employees_count').eq('year', NEW_YEAR).maybeSingle(),
     ]);
+    const [cl, fr] = await Promise.all([
+      supabase.from('leave_year_closures').select('closed_at, reason').eq('year', prev).maybeSingle(),
+      supabase.from('leave_carryover').select('employee_personal_data_id, initial_days').eq('from_year', prev).eq('to_year', NEW_YEAR),
+    ]);
+    setClosure(cl.data || null);
+    setFrozen(new Map((fr.data || []).map((x) => [x.employee_personal_data_id, x.initial_days || 0])));
     const b = new Map<string, number>(); (bonus.data || []).forEach((x) => b.set(x.employee_personal_data_id, (b.get(x.employee_personal_data_id) || 0) + (x.bonus_days || 0)));
     // keep the latest (highest to_year) open 2025 carryover per person
     const c = new Map<string, { to: number; rem: number }>();
@@ -95,6 +105,15 @@ export default function LeaveYearOpening() {
     load();
   };
 
+  const closeYear = async () => {
+    setBusy(true);
+    const { data, error } = await supabase.rpc('close_leave_year', { _year: NEW_YEAR - 1, _reason: yearReason.trim() });
+    setBusy(false);
+    if (error) toast({ title: 'Eroare la închiderea anului', description: error.message, variant: 'destructive' });
+    else toast({ title: `Anul ${NEW_YEAR - 1} închis`, description: `Report trecut în ${NEW_YEAR} pentru ${data} angajați.` });
+    setYearOpen(false); setYearReason(''); load();
+  };
+
   const closeOld = async () => {
     setBusy(true);
     const { data, error } = await supabase.rpc('close_leave_carryover', { _from_year: OLD_CARRY_YEAR, _to_year: NEW_YEAR, _reason: closeReason.trim() });
@@ -120,7 +139,9 @@ export default function LeaveYearOpening() {
           {opened
             ? <Badge variant="secondary">Deschis la {new Date(opened.opened_at).toLocaleString('ro-RO')} · {opened.employees_count} angajați</Badge>
             : <Badge variant="outline">Programat automat: 01.01.{NEW_YEAR}, 00:05</Badge>}
-          {!opened && <Button size="sm" onClick={() => setReauth('run')} disabled={busy}><Play className="w-4 h-4 mr-1" />Rulează acum</Button>}
+          {closure && <Badge variant="secondary">Anul {NEW_YEAR - 1} închis la {new Date(closure.closed_at).toLocaleString('ro-RO')}</Badge>}
+          {!closure && !opened && <Button size="sm" variant="default" onClick={() => setYearOpen(true)} disabled={busy}><Lock className="w-4 h-4 mr-1" />Închide anul {NEW_YEAR - 1}</Button>}
+          {!opened && <Button size="sm" variant="outline" onClick={() => setReauth('run')} disabled={busy}><Play className="w-4 h-4 mr-1" />Rulează acum</Button>}
           <Button size="sm" variant="outline" onClick={() => setCloseOpen(true)} disabled={busy}><Lock className="w-4 h-4 mr-1" />Închide report {OLD_CARRY_YEAR}</Button>
           {pastDeadline && <Badge variant="destructive">Termenul orientativ pentru reportul {OLD_CARRY_YEAR} a trecut</Badge>}
         </CardContent>
@@ -145,7 +166,7 @@ export default function LeaveYearOpening() {
             </thead>
             <tbody>
               {filtered.map((r) => {
-                const prev = opened ? null : prevYearLeftover(r.total, r.bonusPrev, r.used);
+                const prev = frozen.has(r.id) ? frozen.get(r.id)! : opened ? null : prevYearLeftover(r.total, r.bonusPrev, r.used);
                 const ent = r.entitlement ?? STANDARD_DAYS;
                 return (
                   <tr key={r.id} className="border-b border-border/50">
@@ -192,10 +213,24 @@ export default function LeaveYearOpening() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={yearOpen} onOpenChange={setYearOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Închide anul {NEW_YEAR - 1}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Zilele rămase din {NEW_YEAR - 1} se trec ca report în {NEW_YEAR} și se blochează la valoarea de acum. Reportul din {OLD_CARRY_YEAR} se păstrează.
+            Soldul de {STANDARD_DAYS} de zile intră pe 1 ianuarie. Concediile din {NEW_YEAR - 1} aprobate după închidere nu vor mai scădea din report.
+          </p>
+          <Textarea placeholder="Motiv (obligatoriu)" value={yearReason} onChange={(e) => setYearReason(e.target.value)} />
+          <DialogFooter>
+            <Button disabled={yearReason.trim().length < 5 || busy} onClick={() => setReauth('closeYear')}>Închide anul</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ReauthDialog
         open={!!reauth}
         onOpenChange={(o) => !o && setReauth(null)}
-        onSuccess={() => { const a = reauth; setReauth(null); if (a === 'run') runNow(); else closeOld(); }}
+        onSuccess={() => { const a = reauth; setReauth(null); if (a === 'run') runNow(); else if (a === 'closeYear') closeYear(); else closeOld(); }}
         title="Confirmați cu parola"
       />
     </div>

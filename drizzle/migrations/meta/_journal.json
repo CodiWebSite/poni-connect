@@ -148,6 +148,13 @@
       "when": 1791531267761,
       "tag": "0020_leave_year_opening_2027",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791531850297,
+      "tag": "0021_close_leave_year",
+      "breakpoints": true
     }
   ]
 }
