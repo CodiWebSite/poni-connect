@@ -141,6 +141,13 @@
       "when": 1791272345760,
       "tag": "0019_decision_registry",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791531267761,
+      "tag": "0020_leave_year_opening_2027",
+      "breakpoints": true
     }
   ]
 }
