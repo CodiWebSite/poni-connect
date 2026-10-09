@@ -1,7 +1,7 @@
 # Trecerea automată la anul 2027 – solduri concediu
 
 ## Regulile
-1. **Report din 2025**: zilele rămase din 2025 se pot folosi până la **21 iunie 2027**. După această dată se anulează automat.
+1. **Report din 2025**: termen orientativ **30 iunie 2027**. Nu se închide automat — rămâne activ până când HR îl închide manual (buton „Închide report 2025”, cu motiv și reconfirmare parolă). După 30.06.2027 HR primește doar un avertisment.
 2. **Report din 2026**: zilele rămase la 31.12.2026 se trec automat ca report în 2027.
 3. **Sold standard 2027**: **35 de zile pentru toată lumea**, cu posibilitatea ca HR să modifice soldul fiecărei persoane (mai multe sau mai puține zile).
 4. **Ordinea consumului**: întâi se consumă reportul cel mai vechi (2025), apoi 2026, apoi soldul 2027.
