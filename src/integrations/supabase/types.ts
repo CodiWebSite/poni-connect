@@ -2575,6 +2575,30 @@ export type Database = {
           },
         ]
       }
+      leave_year_closures: {
+        Row: {
+          closed_at: string
+          closed_by: string | null
+          employees_count: number
+          reason: string
+          year: number
+        }
+        Insert: {
+          closed_at?: string
+          closed_by?: string | null
+          employees_count?: number
+          reason: string
+          year: number
+        }
+        Update: {
+          closed_at?: string
+          closed_by?: string | null
+          employees_count?: number
+          reason?: string
+          year?: number
+        }
+        Relationships: []
+      }
       leave_year_entitlements: {
         Row: {
           created_at: string
@@ -5294,6 +5318,10 @@ export type Database = {
       }
       close_leave_carryover: {
         Args: { _from_year: number; _reason: string; _to_year: number }
+        Returns: number
+      }
+      close_leave_year: {
+        Args: { _reason: string; _year: number }
         Returns: number
       }
       ensure_department_group: { Args: { _user_id: string }; Returns: string }
