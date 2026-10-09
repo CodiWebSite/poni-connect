@@ -204,7 +204,7 @@ const MyProfile = () => {
         setEpdId(pd.id);
         setPersonalData(pd);
         const [carryRes, bonusRes] = await Promise.all([
-          supabase.from('leave_carryover').select('from_year, to_year, initial_days, used_days, remaining_days').eq('employee_personal_data_id', pd.id).order('from_year', { ascending: false }),
+          supabase.from('leave_carryover').select('from_year, to_year, initial_days, used_days, remaining_days').eq('employee_personal_data_id', pd.id).eq('to_year', new Date().getFullYear()).is('closed_at', null).order('from_year', { ascending: false }),
           supabase.from('leave_bonus').select('id, year, bonus_days, reason, legal_basis').eq('employee_personal_data_id', pd.id).eq('year', new Date().getFullYear()),
         ]);
         setCarryovers((carryRes.data as LeaveCarryover[]) || []);

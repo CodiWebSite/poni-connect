@@ -88,8 +88,8 @@ export async function checkLeaveBalance(supabase: any, userId: string) {
       .select("remaining_days")
       .eq("employee_personal_data_id", epd.id)
       .eq("to_year", currentYear)
-      .single();
-    carryoverDays = carryover?.remaining_days || 0;
+      .is("closed_at", null);
+    carryoverDays = (carryover || []).reduce((s: number, c: any) => s + (c.remaining_days || 0), 0);
   }
 
   // Check bonus
