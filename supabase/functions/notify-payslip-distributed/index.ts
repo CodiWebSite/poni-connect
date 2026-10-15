@@ -211,14 +211,38 @@ Deno.serve(async (req) => {
       },
     });
 
-    return jsonResp({
+    return {
       ok: true, done, sent,
       skipped: skipped.length,
       remaining, failed,
       next_offset: nextOffset,
       missing_email: missingEmail,
       invalid_email: invalidEmail,
-    });
+    };
+    };
+
+    // Mod fundal: un singur apel trimite TOATE e-mailurile, fără ca pagina să aștepte.
+    if (body.run_all) {
+      const task = (async () => {
+        let offset = 0;
+        let safety = 120;
+        while (safety-- > 0) {
+          const r = await processChunk(offset);
+          offset = Number(r.next_offset ?? offset);
+          if (r.done) break;
+        }
+      })();
+      const edgeRuntime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+      if (edgeRuntime?.waitUntil) {
+        edgeRuntime.waitUntil(task);
+      } else {
+        await task;
+      }
+      return jsonResp({ ok: true, background: true });
+    }
+
+    const offset = Math.max(0, Number(body.offset) || 0);
+    return jsonResp(await processChunk(offset));
 
 
   } catch (e) {
