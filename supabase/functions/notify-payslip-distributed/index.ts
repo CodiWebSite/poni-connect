@@ -122,8 +122,7 @@ Deno.serve(async (req) => {
       return jsonResp({ ok: true, test: true, sent_to: testEmail });
     }
 
-    const offset = Math.max(0, Number(body.offset) || 0);
-
+    const processChunk = async (offset: number) => {
     const { data: slips } = await admin
       .from("payslips")
       .select("id, employee_epd_id")
