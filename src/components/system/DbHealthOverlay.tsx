@@ -13,8 +13,10 @@ import { Button } from '@/components/ui/button';
  */
 const HEALTHY_INTERVAL_MS = 30_000;
 const DEGRADED_INTERVAL_MS = 8_000;
-const PING_TIMEOUT_MS = 6_000;
-const FAILURES_TO_TRIP = 4;
+// Generous timeout: heavy jobs (e.g. payslip distribution) can slow replies
+// without the platform actually being down.
+const PING_TIMEOUT_MS = 15_000;
+const FAILURES_TO_TRIP = 6;
 
 async function pingDb(): Promise<{ ok: boolean; error?: string; latency: number }> {
   const started = performance.now();

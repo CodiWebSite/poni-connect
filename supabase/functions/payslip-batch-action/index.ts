@@ -87,13 +87,22 @@ Deno.serve(async (req) => {
       const encryptedIds: string[] = [];
       const now = new Date().toISOString();
 
-      for (const s of chunk as any[]) {
+      // Preload CNP + account link for the whole chunk in one query.
+      const epdIds = (chunk as any[]).map((s) => s.employee_epd_id);
+      const { data: epdRows } = await admin
+        .from("employee_personal_data")
+        .select("id, cnp, employee_record_id")
+        .in("id", epdIds);
+      const epdMap = new Map((epdRows ?? []).map((r: any) => [r.id, r]));
+      const recIds = (epdRows ?? []).map((r: any) => r.employee_record_id).filter(Boolean);
+      const { data: recRows } = recIds.length
+        ? await admin.from("employee_records").select("id, user_id").in("id", recIds)
+        : { data: [] as any[] };
+      const recMap = new Map((recRows ?? []).map((r: any) => [r.id, r.user_id]));
+
+      const processOne = async (s: any) => {
         try {
-          const { data: epd } = await admin
-            .from("employee_personal_data")
-            .select("cnp")
-            .eq("id", s.employee_epd_id)
-            .maybeSingle();
+          const epd: any = epdMap.get(s.employee_epd_id);
           const cnp = ((epd?.cnp as string | null) ?? "").replace(/\D/g, "");
           if (cnp.length < 6) throw new Error("CNP lipsă/prea scurt");
           const password = cnp.slice(-6);
@@ -135,29 +144,17 @@ Deno.serve(async (req) => {
             file_path_encrypted: encPath,
           }).eq("id", s.id);
 
-          // In-app notification
           try {
-            const { data: epd2 } = await admin
-              .from("employee_personal_data")
-              .select("employee_record_id")
-              .eq("id", s.employee_epd_id)
-              .maybeSingle();
-            if (epd2?.employee_record_id) {
-              const { data: rec } = await admin
-                .from("employee_records")
-                .select("user_id")
-                .eq("id", epd2.employee_record_id)
-                .maybeSingle();
-              if (rec?.user_id) {
-                await admin.from("notifications").insert({
-                  user_id: rec.user_id,
-                  title: "Fluturaș nou disponibil",
-                  message: "Aveți un fluturaș nou în profil. Parola este ultimele 6 cifre din CNP.",
-                  type: "info",
-                  related_type: "payslip",
-                  related_id: s.id,
-                });
-              }
+            const uid = epd?.employee_record_id ? recMap.get(epd.employee_record_id) : null;
+            if (uid) {
+              await admin.from("notifications").insert({
+                user_id: uid,
+                title: "Fluturaș nou disponibil",
+                message: "Aveți un fluturaș nou în profil. Parola este ultimele 6 cifre din CNP.",
+                type: "info",
+                related_type: "payslip",
+                related_id: s.id,
+              });
             }
           } catch (_) { /* non-fatal */ }
 
@@ -165,6 +162,13 @@ Deno.serve(async (req) => {
         } catch (e) {
           encryptFailures.push({ id: s.id, error: (e as Error).message });
         }
+      };
+
+      // Process a few slips at once instead of strictly one by one.
+      const PARALLEL = 5;
+      const list = chunk as any[];
+      for (let i = 0; i < list.length; i += PARALLEL) {
+        await Promise.all(list.slice(i, i + PARALLEL).map(processOne));
       }
 
       const remaining = totalRemainingBefore - encryptedIds.length - encryptFailures.length;
