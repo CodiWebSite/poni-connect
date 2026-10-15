@@ -97,7 +97,7 @@ export default function PayslipUploader() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [batchStats, setBatchStats] = useState<Record<string, { ok: number; review: number; total: number }>>({});
+  const [batchStats, setBatchStats] = useState<Record<string, { ok: number; review: number; total: number; noFile: number; ready: number }>>({});
   const [openBatch, setOpenBatch] = useState<string | null>(null);
   const [slips, setSlips] = useState<Slip[]>([]);
   const [employees, setEmployees] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
@@ -143,13 +143,13 @@ export default function PayslipUploader() {
 
   const loadBatchStats = async (ids: string[]) => {
     if (!ids.length) { setBatchStats({}); return; }
-    const stats: Record<string, { ok: number; review: number; total: number }> = {};
-    ids.forEach(id => { stats[id] = { ok: 0, review: 0, total: 0 }; });
+    const stats: Record<string, { ok: number; review: number; total: number; noFile: number; ready: number }> = {};
+    ids.forEach(id => { stats[id] = { ok: 0, review: 0, total: 0, noFile: 0, ready: 0 }; });
     const page = 1000;
     for (let from = 0; ; from += page) {
       const { data, error } = await supabase
         .from('payslips')
-        .select('batch_id, match_status, employee_epd_id')
+        .select('batch_id, match_status, employee_epd_id, file_path')
         .in('batch_id', ids)
         .range(from, from + page - 1);
       if (error || !data) break;
@@ -160,6 +160,9 @@ export default function PayslipUploader() {
         const resolved = !!s.employee_epd_id &&
           ['matched', 'needs_confirm', 'distributed'].includes(s.match_status);
         if (resolved) st.ok += 1; else st.review += 1;
+        if (s.match_status !== 'distributed' && s.match_status !== 'unmatched') {
+          if (!s.file_path) st.noFile += 1; else if (s.employee_epd_id) st.ready += 1;
+        }
       });
       if (data.length < page) break;
     }
@@ -681,6 +684,8 @@ export default function PayslipUploader() {
                 const st = batchStats[b.id];
                 const okCount = st ? st.ok : b.matched_count;
                 const reviewCount = st ? st.review : b.unmatched_count;
+                const noFileCount = st?.noFile ?? 0;
+                const readyCount = st?.ready ?? 0;
                 const totalCount = st?.total || b.total_slips;
                 const pct = totalCount > 0 ? Math.round((okCount / totalCount) * 100) : 0;
                 return (
@@ -705,12 +710,12 @@ export default function PayslipUploader() {
                         <BIcon className={`w-3 h-3 ${b.status === 'processing' ? 'animate-spin' : ''}`} />
                         {bMeta.label}
                       </Badge>
-                      {b.status !== 'distributed' && (
+                      {(b.status !== 'distributed' || readyCount > 0) && (
                         <Button size="sm" variant="secondary" disabled={busy === b.id} onClick={() => distribute(b.id)}>
-                          <Send className="w-3.5 h-3.5 mr-1" /> Distribuie
+                          <Send className="w-3.5 h-3.5 mr-1" /> {b.status === 'distributed' ? `Distribuie restanți (${readyCount})` : 'Distribuie'}
                         </Button>
                       )}
-                      {reviewCount > 0 && (
+                      {(reviewCount > 0 || noFileCount > 0) && (
                         <Button
                           size="sm"
                           variant="outline"
