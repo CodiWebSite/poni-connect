@@ -153,15 +153,15 @@ Deno.serve(async (req) => {
     const missingEmail: string[] = [];
     const invalidEmail: Array<{ email: string; name: string }> = [];
 
-    for (const s of chunk as Array<{ id: string; employee_epd_id: string }>) {
+    const sendOne = async (s: { id: string; employee_epd_id: string }) => {
       const person = byId.get(s.employee_epd_id) as { email?: string | null; first_name?: string | null; last_name?: string | null } | undefined;
       const fullName = `${(person?.last_name ?? "").trim()} ${(person?.first_name ?? "").trim()}`.trim();
       const email = (person?.email ?? "").trim();
-      if (!email || !email.includes("@")) {
-        // No usable address: do NOT mark as notified, so a corrected address gets the email later.
+      // Placeholder addresses (no real mailbox) are skipped instantly — no SMTP round-trip.
+      if (!email || !email.includes("@") || /@fara-email\.local$/i.test(email) || /\.local$/i.test(email)) {
         skipped.push(s.id);
         missingEmail.push(fullName || s.employee_epd_id);
-        continue;
+        return;
       }
       try {
         await sendMailWithRetry(transporter, {
@@ -177,13 +177,18 @@ Deno.serve(async (req) => {
         const code = (e as { responseCode?: number }).responseCode;
         const permanent = (typeof code === "number" && code >= 500) || /\b5\d\d\b/.test(msg) || /rejected|no such|not exist|valid mx|unrouteable|user unknown/i.test(msg);
         if (permanent) {
-          // Bad address: stop retrying it, flag it for HR correction.
           await admin.from("payslips").update({ email_notified_at: now }).eq("id", s.id);
           invalidEmail.push({ email, name: fullName });
         } else {
           failed.push({ id: s.id, error: msg });
         }
       }
+    };
+
+    const list = chunk as Array<{ id: string; employee_epd_id: string }>;
+    const PARALLEL = 3;
+    for (let i = 0; i < list.length; i += PARALLEL) {
+      await Promise.all(list.slice(i, i + PARALLEL).map(sendOne));
     }
 
     // Rows left in place (no email / temporary failure) are stepped over via next_offset,
