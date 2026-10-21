@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
-import { Navigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -236,6 +235,7 @@ function SelfServiceView() {
   const [phone, setPhone] = useState('');
   const [variant, setVariant] = useState('classic');
   const [lang, setLang] = useState<CardLang>('ro');
+  const [qrUrl, setQrUrl] = useState('');
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -299,6 +299,7 @@ function SelfServiceView() {
     phone,
     email: employee.email,
     profileUrl: `${window.location.origin}/profil/${employee.id}`,
+    qrUrl: qrUrl.trim(),
     lang,
   };
 
@@ -351,6 +352,7 @@ function AdminView() {
   const [phone, setPhone] = useState('');
   const [variant, setVariant] = useState('classic');
   const [lang, setLang] = useState<CardLang>('ro');
+  const [qrUrl, setQrUrl] = useState('');
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -389,6 +391,7 @@ function AdminView() {
     phone,
     email: selectedEmployee.email,
     profileUrl: `${window.location.origin}/profil/${selectedEmployee.id}`,
+    qrUrl: qrUrl.trim(),
     lang,
   } : null;
 
@@ -480,10 +483,6 @@ const BusinessCards = () => {
   const { canManageHR, isSuperAdmin, loading: roleLoading } = useUserRole();
   const isAdmin = canManageHR || isSuperAdmin;
 
-  // Business cards are disabled for all employees
-  if (!roleLoading) {
-    return <Navigate to="/" replace />;
-  }
 
   if (roleLoading) {
     return (
