@@ -143,13 +143,15 @@ function EditableFields({
   position, setPosition,
   department, setDepartment,
   phone, setPhone,
-  originalName, originalPosition, originalDepartment,
+  qrUrl, setQrUrl,
+  originalName, originalPosition, originalDepartment, originalQrUrl,
 }: {
   displayName: string; setDisplayName: (v: string) => void;
   position: string; setPosition: (v: string) => void;
   department: string; setDepartment: (v: string) => void;
   phone: string; setPhone: (v: string) => void;
-  originalName: string; originalPosition: string; originalDepartment: string;
+  qrUrl: string; setQrUrl: (v: string) => void;
+  originalName: string; originalPosition: string; originalDepartment: string; originalQrUrl: string;
 }) {
   return (
     <Card>
@@ -178,6 +180,19 @@ function EditableFields({
         <div className="space-y-1.5">
           <Label htmlFor="card-phone" className="text-xs">Telefon (opțional)</Label>
           <Input id="card-phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+40 xxx xxx xxx" />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="card-qr" className="text-xs">Link cod QR (verso) — opțional</Label>
+          <Input
+            id="card-qr"
+            value={qrUrl}
+            onChange={e => setQrUrl(e.target.value)}
+            placeholder={originalQrUrl}
+            type="url"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Lăsați gol pentru profilul dumneavoastră, sau puneți orice link (site personal, ORCID, Google Scholar, ResearchGate etc.)
+          </p>
         </div>
       </CardContent>
     </Card>
