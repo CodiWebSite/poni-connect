@@ -12,6 +12,7 @@ export interface CardData {
   phone: string;
   email: string;
   profileUrl: string;
+  qrUrl: string;
   lang: CardLang;
 }
 
@@ -203,7 +204,7 @@ function ClassicBack({ data }: { data: CardData }) {
   const txt = t(data.lang);
   return (
     <div style={{ padding: '12px 16px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif', background: '#2B4C7E' }}>
-      <QRCodeCanvas value={data.profileUrl} size={90} level="M" bgColor="transparent" fgColor="#ffffff" />
+      <QRCodeCanvas value={data.qrUrl || data.profileUrl} size={90} level="M" bgColor="transparent" fgColor="#ffffff" />
       <p style={{ fontWeight: 'bold', fontSize: '13px', color: '#ffffff', marginTop: '8px', marginBottom: '6px' }}>{txt.profileLabel}</p>
       <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.5)', marginBottom: '8px' }} />
       <p style={{ fontWeight: 'bold', fontSize: '12px', color: '#ffffff', letterSpacing: '1px', margin: '0 0 4px 0' }}>{data.displayName}</p>
@@ -217,7 +218,7 @@ function ModernBack({ data }: { data: CardData }) {
   return (
     <div style={{ height: '100%', display: 'flex', fontFamily: 'Arial, Helvetica, sans-serif', background: 'linear-gradient(135deg, #1a365d 0%, #2B4C7E 50%, #3b82f6 100%)' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <QRCodeCanvas value={data.profileUrl} size={85} level="M" bgColor="transparent" fgColor="#ffffff" />
+        <QRCodeCanvas value={data.qrUrl || data.profileUrl} size={85} level="M" bgColor="transparent" fgColor="#ffffff" />
         <p style={{ fontWeight: 'bold', fontSize: '12px', color: '#ffffff', marginTop: '8px', marginBottom: '4px' }}>{txt.profileLabel}</p>
         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.5px', margin: 0 }}>{data.displayName}</p>
       </div>
@@ -229,7 +230,7 @@ function MinimalBack({ data }: { data: CardData }) {
   const txt = t(data.lang);
   return (
     <div style={{ height: '100%', padding: '20px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif', background: '#f8fafc' }}>
-      <QRCodeCanvas value={data.profileUrl} size={90} level="M" fgColor="#2B4C7E" />
+      <QRCodeCanvas value={data.qrUrl || data.profileUrl} size={90} level="M" fgColor="#2B4C7E" />
       <p style={{ fontWeight: 'bold', fontSize: '12px', color: '#1e293b', marginTop: '10px', marginBottom: '2px' }}>{data.displayName}</p>
       <p style={{ fontSize: '9px', color: '#94a3b8', margin: 0 }}>{txt.scanLabelShort}</p>
     </div>
@@ -240,7 +241,7 @@ function BoldBack({ data }: { data: CardData }) {
   const txt = t(data.lang);
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arial, Helvetica, sans-serif', background: '#0f172a' }}>
-      <QRCodeCanvas value={data.profileUrl} size={95} level="M" bgColor="transparent" fgColor="#60a5fa" />
+      <QRCodeCanvas value={data.qrUrl || data.profileUrl} size={95} level="M" bgColor="transparent" fgColor="#60a5fa" />
       <p style={{ fontWeight: 'bold', fontSize: '13px', color: '#f8fafc', marginTop: '8px', letterSpacing: '1px', marginBottom: '4px' }}>{data.displayName}</p>
       <p style={{ fontSize: '8px', color: '#64748b', margin: 0 }}>{txt.profileUpper}</p>
     </div>
