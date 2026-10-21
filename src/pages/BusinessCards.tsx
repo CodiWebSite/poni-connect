@@ -326,6 +326,8 @@ function SelfServiceView() {
         originalName={origName}
         originalPosition={employee.position || ''}
         originalDepartment={employee.department || ''}
+        originalQrUrl={`${window.location.origin}/profil/${employee.id}`}
+        qrUrl={qrUrl} setQrUrl={setQrUrl}
       />
       <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
       <Button onClick={handleDownload} disabled={generating} variant="hero" className="w-full">
@@ -455,6 +457,8 @@ function AdminView() {
                 originalName={`${selectedEmployee.last_name.toUpperCase()} ${selectedEmployee.first_name.toUpperCase()}`}
                 originalPosition={selectedEmployee.position || ''}
                 originalDepartment={selectedEmployee.department || ''}
+                originalQrUrl={`${window.location.origin}/profil/${selectedEmployee.id}`}
+                qrUrl={qrUrl} setQrUrl={setQrUrl}
               />
               <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
               <Button onClick={handleDownload} disabled={generating} className="w-full">
