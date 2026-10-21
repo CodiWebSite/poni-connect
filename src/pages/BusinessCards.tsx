@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
-import { Navigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -143,13 +142,15 @@ function EditableFields({
   position, setPosition,
   department, setDepartment,
   phone, setPhone,
-  originalName, originalPosition, originalDepartment,
+  qrUrl, setQrUrl,
+  originalName, originalPosition, originalDepartment, originalQrUrl,
 }: {
   displayName: string; setDisplayName: (v: string) => void;
   position: string; setPosition: (v: string) => void;
   department: string; setDepartment: (v: string) => void;
   phone: string; setPhone: (v: string) => void;
-  originalName: string; originalPosition: string; originalDepartment: string;
+  qrUrl: string; setQrUrl: (v: string) => void;
+  originalName: string; originalPosition: string; originalDepartment: string; originalQrUrl: string;
 }) {
   return (
     <Card>
@@ -178,6 +179,19 @@ function EditableFields({
         <div className="space-y-1.5">
           <Label htmlFor="card-phone" className="text-xs">Telefon (opțional)</Label>
           <Input id="card-phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+40 xxx xxx xxx" />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="card-qr" className="text-xs">Link cod QR (verso) — opțional</Label>
+          <Input
+            id="card-qr"
+            value={qrUrl}
+            onChange={e => setQrUrl(e.target.value)}
+            placeholder={originalQrUrl}
+            type="url"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Lăsați gol pentru profilul dumneavoastră, sau puneți orice link (site personal, ORCID, Google Scholar, ResearchGate etc.)
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -221,6 +235,7 @@ function SelfServiceView() {
   const [phone, setPhone] = useState('');
   const [variant, setVariant] = useState('classic');
   const [lang, setLang] = useState<CardLang>('ro');
+  const [qrUrl, setQrUrl] = useState('');
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -284,6 +299,7 @@ function SelfServiceView() {
     phone,
     email: employee.email,
     profileUrl: `${window.location.origin}/profil/${employee.id}`,
+    qrUrl: qrUrl.trim(),
     lang,
   };
 
@@ -310,6 +326,8 @@ function SelfServiceView() {
         originalName={origName}
         originalPosition={employee.position || ''}
         originalDepartment={employee.department || ''}
+        originalQrUrl={`${window.location.origin}/profil/${employee.id}`}
+        qrUrl={qrUrl} setQrUrl={setQrUrl}
       />
       <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
       <Button onClick={handleDownload} disabled={generating} variant="hero" className="w-full">
@@ -336,6 +354,7 @@ function AdminView() {
   const [phone, setPhone] = useState('');
   const [variant, setVariant] = useState('classic');
   const [lang, setLang] = useState<CardLang>('ro');
+  const [qrUrl, setQrUrl] = useState('');
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -374,6 +393,7 @@ function AdminView() {
     phone,
     email: selectedEmployee.email,
     profileUrl: `${window.location.origin}/profil/${selectedEmployee.id}`,
+    qrUrl: qrUrl.trim(),
     lang,
   } : null;
 
@@ -437,6 +457,8 @@ function AdminView() {
                 originalName={`${selectedEmployee.last_name.toUpperCase()} ${selectedEmployee.first_name.toUpperCase()}`}
                 originalPosition={selectedEmployee.position || ''}
                 originalDepartment={selectedEmployee.department || ''}
+                originalQrUrl={`${window.location.origin}/profil/${selectedEmployee.id}`}
+                qrUrl={qrUrl} setQrUrl={setQrUrl}
               />
               <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
               <Button onClick={handleDownload} disabled={generating} className="w-full">
@@ -465,10 +487,6 @@ const BusinessCards = () => {
   const { canManageHR, isSuperAdmin, loading: roleLoading } = useUserRole();
   const isAdmin = canManageHR || isSuperAdmin;
 
-  // Business cards are disabled for all employees
-  if (!roleLoading) {
-    return <Navigate to="/" replace />;
-  }
 
   if (roleLoading) {
     return (
