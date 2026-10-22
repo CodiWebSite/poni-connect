@@ -1,10 +1,10 @@
-// @vitest-environment node
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
 // Exercise the actual Samsung-compatible script, not a duplicate implementation.
-const html = readFileSync(new URL('../../public/kiosk.html', import.meta.url), 'utf8');
+const html = readFileSync(resolve(process.cwd(), 'public/kiosk.html'), 'utf8');
 const start = html.indexOf('var __visits =');
 const end = html.indexOf('// ── Settings', start);
 if (start < 0 || end < 0) throw new Error('Kiosk visit script not found');
