@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EditableFields, EMPTY_CUSTOMIZATION, type CardCustomizationData } from '@/components/business-cards/CardCustomization';
@@ -139,7 +139,6 @@ function CardPreview({
 async function downloadPDF(
   frontRef: React.RefObject<HTMLDivElement>,
   backRef: React.RefObject<HTMLDivElement>,
-  variant: string,
   fileName: string,
 ) {
   if (!frontRef.current || !backRef.current) throw new Error('Refs missing');
@@ -150,7 +149,7 @@ async function downloadPDF(
     scale: 4, useCORS: true, backgroundColor: null, logging: false,
     onclone: (_document, element) => { element.style.transform = 'none'; },
   })));
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H] });
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H], compress: true });
   doc.addImage(frontCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
   doc.addPage([CARD_W, CARD_H], 'landscape');
   doc.addImage(backCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
@@ -245,7 +244,7 @@ function SelfServiceView() {
   const handleDownload = async () => {
     setGenerating(true);
     try {
-      await downloadPDF(frontRef, backRef, variant, `carte-vizita-${employee.last_name}-${employee.first_name}.pdf`);
+      await downloadPDF(frontRef, backRef, `carte-vizita-${employee.last_name}-${employee.first_name}.pdf`);
       toast({ title: 'PDF generat!', description: 'Cartea de vizită a fost descărcată.' });
     } catch {
       toast({ title: 'Eroare', description: 'Nu s-a putut genera PDF-ul.', variant: 'destructive' });
@@ -345,7 +344,7 @@ function AdminView() {
     if (!selectedEmployee) return;
     setGenerating(true);
     try {
-      await downloadPDF(frontRef, backRef, variant, `carte-vizita-${selectedEmployee.last_name}-${selectedEmployee.first_name}.pdf`);
+      await downloadPDF(frontRef, backRef, `carte-vizita-${selectedEmployee.last_name}-${selectedEmployee.first_name}.pdf`);
       toast({ title: 'PDF generat!', description: 'Cartea de vizită a fost descărcată.' });
     } catch {
       toast({ title: 'Eroare', description: 'Nu s-a putut genera PDF-ul.', variant: 'destructive' });
@@ -369,7 +368,7 @@ function AdminView() {
         </Select>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-base">Angajați ({filtered.length})</CardTitle></CardHeader>
           <CardContent className="max-h-[500px] overflow-y-auto space-y-1">
@@ -385,13 +384,13 @@ function AdminView() {
                 }`}
               >
                 <p className="font-medium text-sm">{emp.last_name} {emp.first_name}</p>
-                <p className="text-xs text-muted-foreground">{emp.position} • {emp.department}</p>
+                <p className="text-xs text-muted-foreground break-words max-w-full">{emp.position} • {emp.department}</p>
               </Button>
             ))}
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {selectedEmployee && cardData ? (
             <>
               <EditableFields
@@ -404,7 +403,7 @@ function AdminView() {
                 originalDepartment={selectedEmployee.department || ''}
                 originalQrUrl={`${window.location.origin}/profil/${selectedEmployee.id}`}
                 qrUrl={qrUrl} setQrUrl={setQrUrl}
-        lang={lang} customization={customization} setCustomization={setCustomization}
+                lang={lang} customization={customization} setCustomization={setCustomization}
               />
               <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
               <Button onClick={handleDownload} disabled={generating} className="w-full">
