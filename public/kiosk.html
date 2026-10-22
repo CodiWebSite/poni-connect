@@ -920,7 +920,11 @@ function fetchVisits() {
 function renderVisit() {
   var box = document.getElementById('visitWelcome');
   if (!box) return;
-  var now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
+  // ora României calculată din UTC, independent de fusul orar setat pe televizor
+  var u = new Date(), y = u.getUTCFullYear();
+  var lastSun = function(m){ var d = new Date(Date.UTC(y, m + 1, 0, 1)); d.setUTCDate(d.getUTCDate() - d.getUTCDay()); return d.getTime(); };
+  var off = (u.getTime() >= lastSun(2) && u.getTime() < lastSun(9)) ? 180 : 120;
+  var mins = (u.getUTCHours() * 60 + u.getUTCMinutes() + off) % 1440;
   // afișat de la 60 min înainte până la 3 ore după ora vizitei
   var list = __visits.filter(function(v) {
     var t = String(v.visit_time || '').match(/(\d{1,2})[:.](\d{2})/);
