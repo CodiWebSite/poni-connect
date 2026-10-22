@@ -42,6 +42,8 @@
     --brand-foreground: 210 40% 98%;
     --brand-muted: 213 45% 82%;
     --brand-accent: 205 85% 72%;
+    --logo-indigo: 238 41% 39%;
+    --logo-indigo-light: 238 32% 57%;
 
     /* Academic bulletin — selected institutional palette */
     --bulletin-background: 216 38% 98%;
@@ -129,6 +131,8 @@
     --brand-foreground: 210 40% 98%;
     --brand-muted: 213 30% 74%;
     --brand-accent: 205 85% 70%;
+    --logo-indigo: 238 41% 39%;
+    --logo-indigo-light: 238 32% 57%;
 
     --bulletin-background: 222 24% 12%;
     --bulletin-surface: 222 18% 18%;
