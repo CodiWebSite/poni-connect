@@ -5,7 +5,7 @@
 - [x] Reîncercare e-mailuri HR verificată: automatizare activă la 15 minute, toate cele 206 mesaje trimise
 - [x] Avizier Dashboard protejat la retragerea afișului curent; test de regresie trecut
 - [x] Ghid complet Programări vizite: aspect verificat și test trimis numai către Codrin
-- [ ] Distribuirea ghidului confirmată către cei patru desemnați și toți super-adminii, cu contactul și semnătura lui Codrin; verificare trimitere
+- [x] Ghidul confirmat trimis celor patru desemnați și ambilor super-admini (6 destinatari), cu contactul și semnătura lui Codrin; trimitere acceptată fără eșecuri
 - [x] Ascundere temporară Registru Decizii pentru toți: meniuri desktop/telefon, acces direct și Administrare; date păstrate
 - [x] Reorganizare avizier Dashboard în galerie academică, cu toate paginile vizibile și rotație Samsung compatibilă
 - [x] Avizier Dashboard repoziționat sub salut, cu rotație automată între pagini
