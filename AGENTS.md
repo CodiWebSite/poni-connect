@@ -6,3 +6,4 @@
 - Decision registry frontend visibility is centralized in useDecisionRegistryAccess, including navigation and direct-route guards; hiding it must preserve database permissions and records.
 - School visits: access via can_access_school_visits (super_admin or school_visits_access); visits are never deleted, only cancelled; the kiosk reads only the kiosk_today_visits() SECURITY DEFINER function (no teacher names) so anon never reads the table.
 - Kiosk welcome visits refresh through the privacy-safe RPC every 30 seconds, clear stale visits on request failure, and never reload the page; this keeps cancellations current without exposing the visits table or interrupting playback.
+- The school-visits guide test uses the existing institutional SMTP transport in a dedicated authenticated sender with server-verified identity and role and a fixed single recipient; this preserves operational email separation and prevents unintended distribution.
