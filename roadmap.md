@@ -1,7 +1,7 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
-- [ ] Cărți de vizită: stil unic minimalist RO/EN cu contact și QR mic pe ambele fețe, personalizare bilingvă, acces din Profilul meu și căutare; verificare PDF și navigare
+- [x] Cărți de vizită: stil unic minimalist RO/EN, contact și QR mic pe ambele fețe, câmpuri bilingve; acces din Profilul meu și ambele căutări verificat în contul Codrin, QR propriu și PDF 2 pagini 85×55 mm verificate; 11 teste trecute
 - [x] Cărți de vizită: titulatură și departament opționale, imagine QR, față RO/verso EN și denumire/adresă corectate; toate stilurile, telefonul și PDF-ul 85×55 mm verificate în contul lui Codrin; 7 teste trecute
 - [x] Dragoș Tofan adăugat la Programări vizite; meniu și pagină verificate în contul său, ghid trimis numai lui fără eșecuri sau retrimitere celorlalți
 - [x] Deschidere anticipată 2027 blocată în HR și în calcul; 339 solduri verificate neschimbate
