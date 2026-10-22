@@ -1,5 +1,6 @@
 export type CardFaceLang = 'ro' | 'en';
-export type CardLang = CardFaceLang | 'ro-en';
+export type CardLang = 'ro-en';
+export const INSTITUTE_CARD_URL = 'https://www.icmpp.ro';
 
 export interface CardData {
   displayName: string;
@@ -17,7 +18,7 @@ export interface CardData {
 }
 
 export function getCardFaceLang(lang: CardLang, face: 'front' | 'back'): CardFaceLang {
-  return lang === 'ro-en' ? (face === 'front' ? 'ro' : 'en') : lang;
+  return face === 'front' ? 'ro' : 'en';
 }
 
 export function getCardName(data: Pick<CardData, 'displayName' | 'titlePrefix'>): string {
@@ -39,5 +40,18 @@ export function getCardFaceFields(data: CardData, face: 'front' | 'back') {
 export function getCardQrSource(data: Pick<CardData, 'qrImage' | 'qrUrl' | 'profileUrl'>) {
   return data.qrImage
     ? { kind: 'image' as const, value: data.qrImage }
-    : { kind: 'link' as const, value: data.qrUrl.trim() || data.profileUrl };
+    : { kind: 'link' as const, value: data.qrUrl.trim() || INSTITUTE_CARD_URL };
+}
+
+export function isInstituteCardQr(data: Pick<CardData, 'qrImage' | 'qrUrl' | 'profileUrl'>): boolean {
+  const source = getCardQrSource(data);
+  if (source.kind === 'image') return false;
+  try {
+    const url = new URL(source.value);
+    return ['https:', 'http:'].includes(url.protocol)
+      && ['icmpp.ro', 'www.icmpp.ro'].includes(url.hostname)
+      && url.pathname === '/' && !url.search && !url.hash;
+  } catch {
+    return false;
+  }
 }

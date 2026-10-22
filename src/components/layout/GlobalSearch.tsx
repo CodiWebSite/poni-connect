@@ -55,6 +55,7 @@ const typeMeta: Record<ResultType, { icon: any; label: string; color: string }> 
 
 // Pagini și acțiuni frecvente — căutabile fără să știi unde se află în meniu
 const PAGES: { title: string; description: string; url: string; keywords: string }[] = [
+  { title: 'Cărți de vizită', description: 'Cartea mea de vizită · Română / English', url: '/carti-vizita', keywords: 'carti de vizita carti vizita carte de vizita carte vizita business card' },
   { title: 'Cerere concediu', description: 'Trimite o cerere nouă de concediu', url: '/leave-request', keywords: 'concediu cerere co odihna zile libere' },
   { title: 'Calendar concedii', description: 'Concediile colegilor și ale echipei', url: '/leave-calendar', keywords: 'calendar concedii echipa' },
   { title: 'Fluturașii mei', description: 'Fluturași de salariu pe luni', url: '/salarizare', keywords: 'fluturas salariu salarizare venit' },

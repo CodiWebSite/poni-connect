@@ -16,11 +16,10 @@ import PageHeader from '@/components/layout/PageHeader';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import {
-  CARD_W, CARD_H, VARIANTS,
-  getFrontComponent, getBackComponent,
-  type CardData, type CardLang, type VariantId,
+  CARD_W, CARD_H, BusinessCardFace, type CardData,
 } from '@/components/business-cards/CardVariants';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { INSTITUTE_CARD_URL } from '@/utils/businessCards';
 
 interface Employee {
   id: string;
@@ -31,106 +30,26 @@ interface Employee {
   email: string;
 }
 
-/* ──────── Card Preview with variant selector ──────── */
+/* ──────── Bilingual minimalist preview ──────── */
 
-function CardPreview({
-  data,
-  variant,
-  onVariantChange,
-  lang,
-  onLangChange,
-  frontRef,
-  backRef,
-}: {
+function CardPreview({ data, frontRef, backRef }: {
   data: CardData;
-  variant: string;
-  onVariantChange: (v: string) => void;
-  lang: CardLang;
-  onLangChange: (v: CardLang) => void;
   frontRef: React.RefObject<HTMLDivElement>;
   backRef: React.RefObject<HTMLDivElement>;
 }) {
-  const FrontComp = getFrontComponent(variant as VariantId);
-  const BackComp = getBackComponent(variant as VariantId);
-
   return (
-    <>
-      {/* Language picker */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Limba / Language</CardTitle>
-          
-        </CardHeader>
-        <CardContent>
-          <RadioGroup value={lang} onValueChange={v => onLangChange(v as CardLang)} className="flex flex-wrap gap-x-4 gap-y-3">
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="ro" id="lang-ro" />
-              <Label htmlFor="lang-ro" className="text-sm font-medium cursor-pointer">🇷🇴 Română</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="en" id="lang-en" />
-              <Label htmlFor="lang-en" className="text-sm font-medium cursor-pointer">🇬🇧 English</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="ro-en" id="lang-ro-en" />
-              <Label htmlFor="lang-ro-en" className="text-sm font-medium cursor-pointer">Română–Engleză · față / verso</Label>
-            </div>
-          </RadioGroup>
-        </CardContent>
-      </Card>
-
-      {/* Variant picker */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Stil carte de vizită</CardTitle>
-
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {VARIANTS.map(v => (
-              <Button
-                variant="outline"
-                aria-pressed={variant === v.id}
-                key={v.id}
-                onClick={() => onVariantChange(v.id)}
-                className={`h-auto flex-col items-start whitespace-normal rounded-md border-2 p-3 text-left transition-all ${
-                  variant === v.id
-                    ? 'border-primary bg-primary/5 shadow-sm'
-                    : 'border-border hover:border-primary/40'
-                }`}
-              >
-                <p className="font-semibold text-sm">{v.label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{v.description}</p>
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Front */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Previzualizare — Față{lang === 'ro-en' ? ' · Română' : ''}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CardFacePreview faceRef={frontRef}>
-            <FrontComp data={data} />
+    <div className="space-y-4">
+      {(['front', 'back'] as const).map(face => (
+        <section key={face} className="space-y-2">
+          <h2 className="text-sm font-semibold text-foreground">
+            {face === 'front' ? 'Față · Română' : 'Verso · English'}
+          </h2>
+          <CardFacePreview faceRef={face === 'front' ? frontRef : backRef}>
+            <BusinessCardFace data={data} face={face} />
           </CardFacePreview>
-        </CardContent>
-      </Card>
-
-      {/* Back */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Previzualizare — Verso{lang === 'ro-en' ? ' · English' : ''}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CardFacePreview faceRef={backRef}>
-            <BackComp data={data} />
-          </CardFacePreview>
-        </CardContent>
-      </Card>
-    </>
+        </section>
+      ))}
+    </div>
   );
 }
 
@@ -169,8 +88,6 @@ function SelfServiceView() {
   const [position, setPosition] = useState('');
   const [department, setDepartment] = useState('');
   const [phone, setPhone] = useState('');
-  const [variant, setVariant] = useState('classic');
-  const [lang, setLang] = useState<CardLang>('ro');
   const [qrUrl, setQrUrl] = useState('');
   const [customization, setCustomization] = useState<CardCustomizationData>({ ...EMPTY_CUSTOMIZATION });
 
@@ -238,7 +155,7 @@ function SelfServiceView() {
     profileUrl: `${window.location.origin}/profil/${employee.id}`,
     qrUrl: qrUrl.trim(),
     ...customization,
-    lang,
+    lang: 'ro-en',
   };
 
   const handleDownload = async () => {
@@ -264,11 +181,11 @@ function SelfServiceView() {
         originalName={origName}
         originalPosition={employee.position || ''}
         originalDepartment={employee.department || ''}
-        originalQrUrl={`${window.location.origin}/profil/${employee.id}`}
+        originalQrUrl={INSTITUTE_CARD_URL}
         qrUrl={qrUrl} setQrUrl={setQrUrl}
-        lang={lang} customization={customization} setCustomization={setCustomization}
+        customization={customization} setCustomization={setCustomization}
       />
-      <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
+      <CardPreview data={cardData} frontRef={frontRef} backRef={backRef} />
       <Button onClick={handleDownload} disabled={generating} variant="hero" className="w-full">
         {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
         Descarcă PDF
@@ -291,8 +208,6 @@ function AdminView() {
   const [position, setPosition] = useState('');
   const [department, setDepartment] = useState('');
   const [phone, setPhone] = useState('');
-  const [variant, setVariant] = useState('classic');
-  const [lang, setLang] = useState<CardLang>('ro');
   const [qrUrl, setQrUrl] = useState('');
   const [customization, setCustomization] = useState<CardCustomizationData>({ ...EMPTY_CUSTOMIZATION });
 
@@ -337,7 +252,7 @@ function AdminView() {
     profileUrl: `${window.location.origin}/profil/${selectedEmployee.id}`,
     qrUrl: qrUrl.trim(),
     ...customization,
-    lang,
+    lang: 'ro-en',
   } : null;
 
   const handleDownload = async () => {
@@ -401,11 +316,11 @@ function AdminView() {
                 originalName={`${selectedEmployee.last_name.toUpperCase()} ${selectedEmployee.first_name.toUpperCase()}`}
                 originalPosition={selectedEmployee.position || ''}
                 originalDepartment={selectedEmployee.department || ''}
-                originalQrUrl={`${window.location.origin}/profil/${selectedEmployee.id}`}
+                originalQrUrl={INSTITUTE_CARD_URL}
                 qrUrl={qrUrl} setQrUrl={setQrUrl}
-                lang={lang} customization={customization} setCustomization={setCustomization}
+                customization={customization} setCustomization={setCustomization}
               />
-              <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
+              <CardPreview data={cardData} frontRef={frontRef} backRef={backRef} />
               <Button onClick={handleDownload} disabled={generating} className="w-full">
                 {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
                 Descarcă PDF
@@ -428,7 +343,6 @@ function AdminView() {
 /* ──────── Main page ──────── */
 
 const BusinessCards = () => {
-  const { user } = useAuth();
   const { canManageHR, isSuperAdmin, loading: roleLoading } = useUserRole();
   const isAdmin = canManageHR || isSuperAdmin;
 
@@ -449,12 +363,19 @@ const BusinessCards = () => {
         <PageHeader
           eyebrow="Identitate"
           title={isAdmin ? 'Generator Cărți de Vizită' : 'Cartea mea de vizită'}
-          description={isAdmin
-            ? 'Selectează un angajat pentru a genera cartea de vizită cu QR personalizat.'
-            : 'Previzualizează și descarcă cartea ta de vizită profesională.'}
+          description="Minimalist · Față română / Verso engleză · 85 × 55 mm"
           icon={CreditCard}
         />
-        {isAdmin ? <AdminView /> : <SelfServiceView />}
+        {isAdmin ? (
+          <Tabs defaultValue="own">
+            <TabsList className="mb-4">
+              <TabsTrigger value="own">Cartea mea de vizită</TabsTrigger>
+              <TabsTrigger value="employees">Angajați</TabsTrigger>
+            </TabsList>
+            <TabsContent value="own"><SelfServiceView /></TabsContent>
+            <TabsContent value="employees"><AdminView /></TabsContent>
+          </Tabs>
+        ) : <SelfServiceView />}
       </div>
     </MainLayout>
   );

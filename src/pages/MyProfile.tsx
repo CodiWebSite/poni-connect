@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
@@ -523,6 +524,11 @@ const MyProfile = () => {
           title="Profilul meu"
           description="Datele personale, documentele și situația concediilor"
           icon={IdCard}
+          actions={
+            <Button asChild variant="outline" className="gap-2">
+              <Link to="/carti-vizita"><CreditCard className="w-4 h-4" />Cărți de vizită</Link>
+            </Button>
+          }
         />
 
         {/* ─── Hero Header ─── */}

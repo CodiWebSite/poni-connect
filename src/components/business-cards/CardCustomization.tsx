@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import type { CardLang } from '@/utils/businessCards';
 
 export interface CardCustomizationData {
   titlePrefix: string;
@@ -24,7 +23,6 @@ interface EditableFieldsProps {
   phone: string; setPhone: (value: string) => void;
   qrUrl: string; setQrUrl: (value: string) => void;
   originalName: string; originalPosition: string; originalDepartment: string; originalQrUrl: string;
-  lang: CardLang;
   customization: CardCustomizationData;
   setCustomization: React.Dispatch<React.SetStateAction<CardCustomizationData>>;
 }
@@ -32,7 +30,7 @@ interface EditableFieldsProps {
 export function EditableFields(props: EditableFieldsProps) {
   const { displayName, setDisplayName, position, setPosition, department, setDepartment,
     phone, setPhone, qrUrl, setQrUrl, originalName, originalPosition, originalDepartment,
-    originalQrUrl, lang, customization, setCustomization } = props;
+    originalQrUrl, customization, setCustomization } = props;
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const uploadVersion = useRef(0);
@@ -86,15 +84,15 @@ export function EditableFields(props: EditableFieldsProps) {
         </div>
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="card-position" className="text-xs">Funcție{lang === 'ro-en' ? ' — română' : ''}</Label>
+            <Label htmlFor="card-position" className="text-xs">Funcție — română</Label>
             <Input id="card-position" value={position} onChange={event => setPosition(event.target.value)} placeholder={originalPosition || 'Funcție'} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="card-dept" className="text-xs">Departament{lang === 'ro-en' ? ' — română' : ''} (opțional)</Label>
+            <Label htmlFor="card-dept" className="text-xs">Departament — română (opțional)</Label>
             <Input id="card-dept" value={department} onChange={event => setDepartment(event.target.value)} placeholder={originalDepartment || 'Departament'} />
           </div>
         </div>
-        {lang !== 'ro' && <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="card-position-en" className="text-xs">Funcție — engleză (opțional)</Label>
             <Input id="card-position-en" value={customization.positionEn} onChange={event => update('positionEn', event.target.value)} placeholder="Researcher ..." />
@@ -103,17 +101,17 @@ export function EditableFields(props: EditableFieldsProps) {
             <Label htmlFor="card-dept-en" className="text-xs">Departament — engleză (opțional)</Label>
             <Input id="card-dept-en" value={customization.departmentEn} onChange={event => update('departmentEn', event.target.value)} placeholder="Laboratory ..." disabled={!department.trim()} />
           </div>
-        </div>}
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="card-phone" className="text-xs">Telefon (opțional)</Label>
           <Input id="card-phone" value={phone} onChange={event => setPhone(event.target.value)} placeholder="+40 xxx xxx xxx" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="card-qr" className="text-xs">Link cod QR (verso) — opțional</Label>
+          <Label htmlFor="card-qr" className="text-xs">Link cod QR — opțional</Label>
           <Input id="card-qr" value={qrUrl} onChange={event => setQrUrl(event.target.value)} placeholder={originalQrUrl} type="url" />
         </div>
         <div className="space-y-2 border-t pt-3">
-          <Label htmlFor="card-qr-image" className="text-xs">Imagine cod QR (verso) — opțional</Label>
+          <Label htmlFor="card-qr-image" className="text-xs">Imagine cod QR — opțional</Label>
           <Input ref={fileRef} id="card-qr-image" type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
             onChange={event => { void loadQR(event.target.files?.[0]); event.target.value = ''; }} />
           <div className="flex items-center gap-3 flex-wrap">
