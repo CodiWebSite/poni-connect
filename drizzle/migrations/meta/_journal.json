@@ -169,6 +169,13 @@
       "when": 1792647498129,
       "tag": "0023_school_visits",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792647698597,
+      "tag": "0024_school_visits_kiosk",
+      "breakpoints": true
     }
   ]
 }
