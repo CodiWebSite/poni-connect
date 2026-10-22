@@ -908,13 +908,29 @@ setInterval(fetchEvents, 120000);
 
 // ── Bine ați venit: vizitele școlilor de azi ──
 var __visits = [], __visitIdx = 0;
+var VISIT_REFRESH_MS = 30000;
+var __visitFetchPending = false;
 function fetchVisits() {
+  if (__visitFetchPending) return;
+  __visitFetchPending = true;
   var xhr = new XMLHttpRequest();
   xhr.open('POST', SUPABASE_URL + '/rest/v1/rpc/kiosk_today_visits');
+  xhr.timeout = 15000;
   xhr.setRequestHeader('apikey', SUPABASE_KEY);
   xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
   xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.onload = function() { if (xhr.status === 200) { try { __visits = JSON.parse(xhr.responseText) || []; } catch(_) { __visits = []; } renderVisit(); } };
+  function completeVisits(data) {
+    __visitFetchPending = false;
+    __visits = Array.isArray(data) ? data : [];
+    renderVisit();
+  }
+  xhr.onload = function() {
+    var data = [];
+    if (xhr.status === 200) { try { data = JSON.parse(xhr.responseText); } catch(_) {} }
+    completeVisits(data);
+  };
+  // Nu păstrăm un mesaj vechi dacă verificarea vizitelor eșuează.
+  xhr.onerror = xhr.ontimeout = xhr.onabort = function() { completeVisits([]); };
   xhr.send('{}');
 }
 function renderVisit() {
@@ -943,8 +959,11 @@ function renderVisit() {
   box.style.display = 'block';
 }
 fetchVisits();
-setInterval(fetchVisits, 300000);
+setInterval(fetchVisits, VISIT_REFRESH_MS);
 setInterval(renderVisit, 15000);
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) fetchVisits();
+});
 
 
 // ── Settings (kiosk message + ticker + slideshow) ──
