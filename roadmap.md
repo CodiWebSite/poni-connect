@@ -1,7 +1,8 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
-- [ ] Ghid complet Programări vizite: verificare aspect și trimitere test numai către Codrin; distribuire ulterioară blocată până la confirmare
+- [x] Ghid complet Programări vizite: aspect verificat și test trimis numai către Codrin
+- [ ] Distribuirea ghidului strict administratorilor vizitelor — așteaptă confirmarea lui Codrin după test
 - [x] Ascundere temporară Registru Decizii pentru toți: meniuri desktop/telefon, acces direct și Administrare; date păstrate
 - [x] Reorganizare avizier Dashboard în galerie academică, cu toate paginile vizibile și rotație Samsung compatibilă
 - [x] Avizier Dashboard repoziționat sub salut, cu rotație automată între pagini
