@@ -78,7 +78,9 @@ const DashboardBulletinBoard = () => {
     }
   };
 
-  const currentSlide = slides[activeSlide];
+  // Settings can shrink the list before the effect resets the stored index.
+  const currentSlide = slides[activeSlide] ?? slides[0];
+  if (!currentSlide) return null;
 
   return (
     <section className="mt-4 animate-fade-in overflow-hidden rounded-md border border-border bg-bulletin-background shadow-card" aria-labelledby="dashboard-bulletin-title">

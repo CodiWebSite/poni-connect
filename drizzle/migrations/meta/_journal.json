@@ -176,6 +176,13 @@
       "when": 1792647698597,
       "tag": "0024_school_visits_kiosk",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792649427783,
+      "tag": "0025_guard_leave_year_opening_date",
+      "breakpoints": true
     }
   ]
 }
