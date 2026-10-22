@@ -932,7 +932,7 @@ function renderVisit() {
   var v = list[__visitIdx % list.length]; __visitIdx++;
   document.getElementById('visitWelcomeName').textContent = v.institution;
   var sub = [];
-  if (v.class_level) sub.push('Clasa ' + v.class_level.replace(/^clasa\s*/i, ''));
+  if (v.class_level) sub.push(/^a\s/i.test(v.class_level) ? 'Clasa ' + v.class_level : v.class_level);
   if (v.participants) sub.push(v.participants + ' participanți');
   if (v.visit_time) sub.push('ora ' + v.visit_time);
   document.getElementById('visitWelcomeSub').textContent = sub.join(' · ');
