@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import ReauthDialog from '@/components/shared/ReauthDialog';
 import { useToast } from '@/hooks/use-toast';
 import { CalendarClock, Lock, Pencil, Play } from 'lucide-react';
+import { canOpenLeaveYear } from '@/utils/leaveYearOpeningDate';
 
 export const STANDARD_DAYS = 35;
 const NEW_YEAR = 2027;
@@ -85,7 +86,7 @@ export default function LeaveYearOpening() {
       employee_personal_data_id: edit.id, year: NEW_YEAR, days, reason: editReason.trim(), updated_by: user?.id, updated_at: new Date().toISOString(),
     }, { onConflict: 'employee_personal_data_id,year' });
     if (error) { toast({ title: 'Eroare la salvare', variant: 'destructive' }); return; }
-    if (opened) {
+    if (opened && canOpenLeaveYear(NEW_YEAR)) {
       // year already open: apply immediately
       const { data: epd } = await supabase.from('employee_personal_data').select('employee_record_id').eq('id', edit.id).single();
       await supabase.from('employee_personal_data').update({ total_leave_days: days }).eq('id', edit.id);
@@ -97,6 +98,10 @@ export default function LeaveYearOpening() {
   };
 
   const runNow = async () => {
+    if (!canOpenLeaveYear(NEW_YEAR)) {
+      toast({ title: `Anul ${NEW_YEAR} se poate deschide doar din 1 ianuarie ${NEW_YEAR}`, variant: 'destructive' });
+      return;
+    }
     setBusy(true);
     const { data, error } = await supabase.rpc('open_leave_year', { _year: NEW_YEAR });
     setBusy(false);
@@ -141,7 +146,7 @@ export default function LeaveYearOpening() {
             : <Badge variant="outline">Programat automat: 01.01.{NEW_YEAR}, 00:05</Badge>}
           {closure && <Badge variant="secondary">Anul {NEW_YEAR - 1} închis la {new Date(closure.closed_at).toLocaleString('ro-RO')}</Badge>}
           {!closure && !opened && <Button size="sm" variant="default" onClick={() => setYearOpen(true)} disabled={busy}><Lock className="w-4 h-4 mr-1" />Închide anul {NEW_YEAR - 1}</Button>}
-          {!opened && <Button size="sm" variant="outline" onClick={() => setReauth('run')} disabled={busy}><Play className="w-4 h-4 mr-1" />Rulează acum</Button>}
+          {!opened && canOpenLeaveYear(NEW_YEAR) && <Button size="sm" variant="outline" onClick={() => setReauth('run')} disabled={busy}><Play className="w-4 h-4 mr-1" />Rulează acum</Button>}
           <Button size="sm" variant="outline" onClick={() => setCloseOpen(true)} disabled={busy}><Lock className="w-4 h-4 mr-1" />Închide report {OLD_CARRY_YEAR}</Button>
           {pastDeadline && <Badge variant="destructive">Termenul orientativ pentru reportul {OLD_CARRY_YEAR} a trecut</Badge>}
         </CardContent>
@@ -166,7 +171,7 @@ export default function LeaveYearOpening() {
             </thead>
             <tbody>
               {filtered.map((r) => {
-                const prev = frozen.has(r.id) ? frozen.get(r.id)! : opened ? null : prevYearLeftover(r.total, r.bonusPrev, r.used);
+                const prev = frozen.get(r.id) ?? (opened ? null : prevYearLeftover(r.total, r.bonusPrev, r.used));
                 const ent = r.entitlement ?? STANDARD_DAYS;
                 return (
                   <tr key={r.id} className="border-b border-border/50">
