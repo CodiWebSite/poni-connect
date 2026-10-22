@@ -28,7 +28,7 @@ const html = `<!doctype html>
   <p>După autentificarea în <a href="https://intranet.icmpp.ro" style="color:#173a63">intranet.icmpp.ro</a>, selectați <strong>„Programări vizite” din meniul principal</strong>. Intrarea este disponibilă atât pe calculator, cât și în meniul de pe telefon.</p>
   <p style="text-align:center;margin:24px 0"><a href="${url}" style="display:inline-block;background:#173a63;color:#ffffff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold">Deschide Programări vizite ICMPP</a></p>
   <p style="font-size:13px">Link direct: <a href="${url}" style="color:#173a63;overflow-wrap:anywhere">${url}</a><br>Linkul nu ocolește autentificarea sau verificarea drepturilor de acces.</p>
-  <p>Secțiunea nu este disponibilă tuturor angajaților. Accesul este acordat administratorilor super-admin și persoanelor desemnate pentru programări: <strong>Valeria Harabagiu, Petrișor Samoilă, Mihaela Dascălu și Mirela Fernanda Zaltariov</strong>. Persoanele autorizate pot consulta, edita și exporta evidența.</p>
+  <p>Secțiunea nu este disponibilă tuturor angajaților. Accesul este acordat administratorilor super-admin și persoanelor desemnate pentru programări: <strong>Valeria Harabagiu, Petrișor Samoilă, Mihaela Dascălu, Mirela Fernanda Zaltariov și Dragoș Tofan</strong>. Persoanele autorizate pot consulta, edita și exporta evidența.</p>
   <p>Lista persoanelor autorizate poate fi gestionată de super-admin din <strong>Administrare → Roluri &amp; Acces → Programări vizite</strong>, prin căutarea persoanei și acordarea sau retragerea accesului.</p>
 
   <h2 style="color:#173a63;font-size:20px;margin-top:28px">3. Ce informații cuprinde o vizită</h2>

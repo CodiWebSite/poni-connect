@@ -19,6 +19,7 @@ describe('confirmed school visits guide distribution', () => {
     ['Petrișor Samoilă', '2babce60-d010-4036-8332-ee4a57dee7e5'],
     ['Mihaela Dascălu', '92276033-a0ad-498c-8305-429399b4b046'],
     ['Mirela Fernanda Zaltariov', 'c9dab90f-fd87-42dc-9fef-8d8c385f622d'],
+    ['Dragoș Tofan', 'beeae728-b965-406c-a6ca-1ffd0f579d75'],
   ])('includes the designated recipient %s', (_name, id) => {
     expect(guideRecipientIds(accessIds, [])).toContain(id);
   });
@@ -33,7 +34,7 @@ describe('confirmed school visits guide distribution', () => {
   });
 
   it('deduplicates a designated recipient who is also a super-admin', () => {
-    expect(guideRecipientIds(accessIds, [accessIds[0]])).toHaveLength(4);
+    expect(guideRecipientIds(accessIds, [accessIds[0]])).toHaveLength(5);
   });
 
   it('stops distribution when a designated recipient has lost access', () => {
