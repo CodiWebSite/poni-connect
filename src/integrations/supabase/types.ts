@@ -4233,6 +4233,7 @@ export type Database = {
           notes: string | null
           participants: number | null
           request_no: string | null
+          show_on_kiosk: boolean
           status: string
           teachers: string | null
           updated_at: string
@@ -4251,6 +4252,7 @@ export type Database = {
           notes?: string | null
           participants?: number | null
           request_no?: string | null
+          show_on_kiosk?: boolean
           status?: string
           teachers?: string | null
           updated_at?: string
@@ -4269,6 +4271,7 @@ export type Database = {
           notes?: string | null
           participants?: number | null
           request_no?: string | null
+          show_on_kiosk?: boolean
           status?: string
           teachers?: string | null
           updated_at?: string
@@ -5513,6 +5516,15 @@ export type Database = {
         Returns: boolean
       }
       is_payslip_pilot_user: { Args: { _user_id: string }; Returns: boolean }
+      kiosk_today_visits: {
+        Args: never
+        Returns: {
+          class_level: string
+          institution: string
+          participants: number
+          visit_time: string
+        }[]
+      }
       leave_standard_days: { Args: { _year: number }; Returns: number }
       link_registry_entries: {
         Args: {

@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 interface Visit {
   id: string; visit_date: string; visit_time: string | null; institution: string; request_no: string | null;
   approval_no: string | null; participants: number | null; class_level: string | null; teachers: string | null;
-  status: string; cancelled_at: string | null;
+  status: string; cancelled_at: string | null; show_on_kiosk: boolean;
 }
 
 const STATUS_CLS: Record<VisitStatus, string> = {
@@ -196,6 +196,10 @@ const SchoolVisits = () => {
                               <SelectTrigger className={cn('h-8 text-xs border', STATUS_CLS[st])}><span>{STATUS_LABEL[st]}</span></SelectTrigger>
                               <SelectContent><SelectItem value="auto">Automat (după aprobare)</SelectItem>{(['aprobata', 'semnare', 'intentie', 'nou'] as VisitStatus[]).map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}</SelectContent>
                             </Select>
+                            <label className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground cursor-pointer">
+                              <input type="checkbox" checked={v.show_on_kiosk} onChange={(e) => update(v.id, { show_on_kiosk: e.target.checked })} />
+                              „Bine ați venit" pe ecranul din hol
+                            </label>
                           </td>
                           <td className="w-10 p-1">
                             {v.cancelled_at
