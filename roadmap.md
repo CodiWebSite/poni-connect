@@ -1,6 +1,7 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
+- [ ] Cărți de vizită: titulatură și departament opționale, QR încărcat, față RO/verso EN și denumire/adresă corectate în toate stilurile
 - [x] Dragoș Tofan adăugat la Programări vizite; meniu și pagină verificate în contul său, ghid trimis numai lui fără eșecuri sau retrimitere celorlalți
 - [x] Deschidere anticipată 2027 blocată în HR și în calcul; 339 solduri verificate neschimbate
 - [x] Reîncercare e-mailuri HR verificată: automatizare activă la 15 minute, toate cele 206 mesaje trimise
