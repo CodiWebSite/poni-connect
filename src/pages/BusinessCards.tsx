@@ -6,17 +6,19 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { EditableFields, EMPTY_CUSTOMIZATION, type CardCustomizationData } from '@/components/business-cards/CardCustomization';
+import { CardFacePreview } from '@/components/business-cards/CardFacePreview';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CreditCard, Download, Search, Loader2, Pencil } from 'lucide-react';
+import { CreditCard, Download, Search, Loader2 } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import {
   CARD_W, CARD_H, VARIANTS,
-  getFrontComponent, getBackComponent, getBackgroundColors,
-  type CardData, type CardLang,
+  getFrontComponent, getBackComponent,
+  type CardData, type CardLang, type VariantId,
 } from '@/components/business-cards/CardVariants';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -48,9 +50,8 @@ function CardPreview({
   frontRef: React.RefObject<HTMLDivElement>;
   backRef: React.RefObject<HTMLDivElement>;
 }) {
-  const FrontComp = getFrontComponent(variant as any);
-  const BackComp = getBackComponent(variant as any);
-  const bg = getBackgroundColors(variant as any);
+  const FrontComp = getFrontComponent(variant as VariantId);
+  const BackComp = getBackComponent(variant as VariantId);
 
   return (
     <>
@@ -58,10 +59,10 @@ function CardPreview({
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Limba / Language</CardTitle>
-          <CardDescription>Alege limba pentru cartea de vizită</CardDescription>
+          
         </CardHeader>
         <CardContent>
-          <RadioGroup value={lang} onValueChange={v => onLangChange(v as CardLang)} className="flex gap-4">
+          <RadioGroup value={lang} onValueChange={v => onLangChange(v as CardLang)} className="flex flex-wrap gap-x-4 gap-y-3">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="ro" id="lang-ro" />
               <Label htmlFor="lang-ro" className="text-sm font-medium cursor-pointer">🇷🇴 Română</Label>
@@ -69,6 +70,10 @@ function CardPreview({
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="en" id="lang-en" />
               <Label htmlFor="lang-en" className="text-sm font-medium cursor-pointer">🇬🇧 English</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="ro-en" id="lang-ro-en" />
+              <Label htmlFor="lang-ro-en" className="text-sm font-medium cursor-pointer">Română–Engleză · față / verso</Label>
             </div>
           </RadioGroup>
         </CardContent>
@@ -78,15 +83,17 @@ function CardPreview({
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Stil carte de vizită</CardTitle>
-          <CardDescription>Alege varianta care ți se potrivește</CardDescription>
+
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {VARIANTS.map(v => (
-              <button
+              <Button
+                variant="outline"
+                aria-pressed={variant === v.id}
                 key={v.id}
                 onClick={() => onVariantChange(v.id)}
-                className={`rounded-lg border-2 p-3 text-left transition-all ${
+                className={`h-auto flex-col items-start whitespace-normal rounded-md border-2 p-3 text-left transition-all ${
                   variant === v.id
                     ? 'border-primary bg-primary/5 shadow-sm'
                     : 'border-border hover:border-primary/40'
@@ -94,7 +101,7 @@ function CardPreview({
               >
                 <p className="font-semibold text-sm">{v.label}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{v.description}</p>
-              </button>
+              </Button>
             ))}
           </div>
         </CardContent>
@@ -103,98 +110,27 @@ function CardPreview({
       {/* Front */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Preview — Față</CardTitle>
+          <CardTitle className="text-base">Previzualizare — Față{lang === 'ro-en' ? ' · Română' : ''}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div
-            ref={frontRef}
-            className="border rounded-xl overflow-hidden shadow-lg"
-            style={{ aspectRatio: `${CARD_W}/${CARD_H}`, background: bg.front }}
-          >
+          <CardFacePreview faceRef={frontRef}>
             <FrontComp data={data} />
-          </div>
+          </CardFacePreview>
         </CardContent>
       </Card>
 
       {/* Back */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Preview — Verso</CardTitle>
+          <CardTitle className="text-base">Previzualizare — Verso{lang === 'ro-en' ? ' · English' : ''}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div
-            ref={backRef}
-            className="border rounded-xl overflow-hidden shadow-lg"
-            style={{ aspectRatio: `${CARD_W}/${CARD_H}`, background: bg.back }}
-          >
+          <CardFacePreview faceRef={backRef}>
             <BackComp data={data} />
-          </div>
+          </CardFacePreview>
         </CardContent>
       </Card>
     </>
-  );
-}
-
-/* ──────── Editable fields panel ──────── */
-
-function EditableFields({
-  displayName, setDisplayName,
-  position, setPosition,
-  department, setDepartment,
-  phone, setPhone,
-  qrUrl, setQrUrl,
-  originalName, originalPosition, originalDepartment, originalQrUrl,
-}: {
-  displayName: string; setDisplayName: (v: string) => void;
-  position: string; setPosition: (v: string) => void;
-  department: string; setDepartment: (v: string) => void;
-  phone: string; setPhone: (v: string) => void;
-  qrUrl: string; setQrUrl: (v: string) => void;
-  originalName: string; originalPosition: string; originalDepartment: string; originalQrUrl: string;
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Pencil className="w-4 h-4" />
-          Personalizare text
-        </CardTitle>
-        <CardDescription>Modifică textul afișat pe cartea de vizită</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="card-name" className="text-xs">Nume afișat</Label>
-          <Input id="card-name" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder={originalName} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="card-position" className="text-xs">Funcție</Label>
-            <Input id="card-position" value={position} onChange={e => setPosition(e.target.value)} placeholder={originalPosition || 'Funcție'} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="card-dept" className="text-xs">Departament</Label>
-            <Input id="card-dept" value={department} onChange={e => setDepartment(e.target.value)} placeholder={originalDepartment || 'Departament'} />
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="card-phone" className="text-xs">Telefon (opțional)</Label>
-          <Input id="card-phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+40 xxx xxx xxx" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="card-qr" className="text-xs">Link cod QR (verso) — opțional</Label>
-          <Input
-            id="card-qr"
-            value={qrUrl}
-            onChange={e => setQrUrl(e.target.value)}
-            placeholder={originalQrUrl}
-            type="url"
-          />
-          <p className="text-[11px] text-muted-foreground">
-            Lăsați gol pentru profilul dumneavoastră, sau puneți orice link (site personal, ORCID, Google Scholar, ResearchGate etc.)
-          </p>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -207,12 +143,13 @@ async function downloadPDF(
   fileName: string,
 ) {
   if (!frontRef.current || !backRef.current) throw new Error('Refs missing');
-  const bg = getBackgroundColors(variant as any);
-  const scale = 4;
-  const [frontCanvas, backCanvas] = await Promise.all([
-    html2canvas(frontRef.current, { scale, useCORS: true, backgroundColor: bg.front, logging: false }),
-    html2canvas(backRef.current, { scale, useCORS: true, backgroundColor: bg.back, logging: false }),
-  ]);
+  await document.fonts.ready;
+  const faces = [frontRef.current, backRef.current];
+  await Promise.all(faces.flatMap(face => Array.from(face.querySelectorAll('img')).map(image => image.decode())));
+  const [frontCanvas, backCanvas] = await Promise.all(faces.map(face => html2canvas(face, {
+    scale: 4, useCORS: true, backgroundColor: null, logging: false,
+    onclone: (_document, element) => { element.style.transform = 'none'; },
+  })));
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H] });
   doc.addImage(frontCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
   doc.addPage([CARD_W, CARD_H], 'landscape');
@@ -236,6 +173,7 @@ function SelfServiceView() {
   const [variant, setVariant] = useState('classic');
   const [lang, setLang] = useState<CardLang>('ro');
   const [qrUrl, setQrUrl] = useState('');
+  const [customization, setCustomization] = useState<CardCustomizationData>({ ...EMPTY_CUSTOMIZATION });
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -300,6 +238,7 @@ function SelfServiceView() {
     email: employee.email,
     profileUrl: `${window.location.origin}/profil/${employee.id}`,
     qrUrl: qrUrl.trim(),
+    ...customization,
     lang,
   };
 
@@ -328,6 +267,7 @@ function SelfServiceView() {
         originalDepartment={employee.department || ''}
         originalQrUrl={`${window.location.origin}/profil/${employee.id}`}
         qrUrl={qrUrl} setQrUrl={setQrUrl}
+        lang={lang} customization={customization} setCustomization={setCustomization}
       />
       <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
       <Button onClick={handleDownload} disabled={generating} variant="hero" className="w-full">
@@ -355,6 +295,7 @@ function AdminView() {
   const [variant, setVariant] = useState('classic');
   const [lang, setLang] = useState<CardLang>('ro');
   const [qrUrl, setQrUrl] = useState('');
+  const [customization, setCustomization] = useState<CardCustomizationData>({ ...EMPTY_CUSTOMIZATION });
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -377,6 +318,8 @@ function AdminView() {
     setPosition(emp.position || '');
     setDepartment(emp.department || '');
     setPhone('');
+    setQrUrl('');
+    setCustomization({ ...EMPTY_CUSTOMIZATION });
   };
 
   const departments = [...new Set(employees.map(e => e.department).filter(Boolean))] as string[];
@@ -394,6 +337,7 @@ function AdminView() {
     email: selectedEmployee.email,
     profileUrl: `${window.location.origin}/profil/${selectedEmployee.id}`,
     qrUrl: qrUrl.trim(),
+    ...customization,
     lang,
   } : null;
 
@@ -430,10 +374,11 @@ function AdminView() {
           <CardHeader className="pb-3"><CardTitle className="text-base">Angajați ({filtered.length})</CardTitle></CardHeader>
           <CardContent className="max-h-[500px] overflow-y-auto space-y-1">
             {filtered.map(emp => (
-              <button
+              <Button
+                variant="ghost"
                 key={emp.id}
                 onClick={() => selectEmployee(emp)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${
+                className={`h-auto flex-col items-start whitespace-normal w-full text-left px-3 py-2.5 rounded-md transition-colors ${
                   selectedEmployee?.id === emp.id
                     ? 'bg-primary/10 text-primary border border-primary/20'
                     : 'hover:bg-muted'
@@ -441,7 +386,7 @@ function AdminView() {
               >
                 <p className="font-medium text-sm">{emp.last_name} {emp.first_name}</p>
                 <p className="text-xs text-muted-foreground">{emp.position} • {emp.department}</p>
-              </button>
+              </Button>
             ))}
           </CardContent>
         </Card>
@@ -459,6 +404,7 @@ function AdminView() {
                 originalDepartment={selectedEmployee.department || ''}
                 originalQrUrl={`${window.location.origin}/profil/${selectedEmployee.id}`}
                 qrUrl={qrUrl} setQrUrl={setQrUrl}
+        lang={lang} customization={customization} setCustomization={setCustomization}
               />
               <CardPreview data={cardData} variant={variant} onVariantChange={setVariant} lang={lang} onLangChange={setLang} frontRef={frontRef} backRef={backRef} />
               <Button onClick={handleDownload} disabled={generating} className="w-full">
