@@ -95,7 +95,7 @@ function ContactFace({ data, variant, face }: { data: CardData; variant: Variant
 }
 
 function ProfileBack({ data, variant }: { data: CardData; variant: VariantId }) {
-  if (data.lang === 'ro-en') return <ContactFace data={data} variant={variant} face="back" />;
+  // Română–Engleză: fața în română, verso-ul cu profilul profesional în engleză.
   const fields = getCardFaceFields(data, 'back');
   const txt = TEXTS[fields.lang];
   const isCustom = Boolean(data.qrImage || data.qrUrl.trim());
