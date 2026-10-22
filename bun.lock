@@ -17,6 +17,7 @@
         "@emoji-mart/react": "^1.1.1",
         "@fontsource/ibm-plex-sans": "^5.3.0",
         "@fontsource/libre-baskerville": "^5.3.0",
+        "@fontsource/roboto": "^5.3.0",
         "@hookform/resolvers": "^3.10.0",
         "@marsidev/react-turnstile": "^1.4.0",
         "@radix-ui/react-accordion": "^1.2.11",
@@ -419,6 +420,8 @@
     "@fontsource/ibm-plex-sans": ["@fontsource/ibm-plex-sans@5.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource/ibm-plex-sans/-/ibm-plex-sans-5.3.0.tgz", {}, "sha512-CbE4CbbEEZJX860XyUiRpsksXIQR8Rp2XDva2VO53NJox9tVNtusrysd2x5YkUEY3ErQ66W1IiiQL8/wihhw5w=="],
 
     "@fontsource/libre-baskerville": ["@fontsource/libre-baskerville@5.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource/libre-baskerville/-/libre-baskerville-5.3.0.tgz", {}, "sha512-IA6OLq36/JWMX70Fha15sri2qWsijFh7hgdDXCRZHjKUHtWarLQoiGilvm7iMqm7HiYFEv9acF3+IuRHO9kUiA=="],
+
+    "@fontsource/roboto": ["@fontsource/roboto@5.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource/roboto/-/roboto-5.3.0.tgz", {}, "sha512-BapRJOWYP+LZ21zp+wBQjfpPYKRoxc4LspJ/RLuI+HSMBD5u/X4O+ESDrSvEqDSy0rAl7GwBJ+09mdc16cVQ1Q=="],
 
     "@hookform/resolvers": ["@hookform/resolvers@3.10.0", "", { "peerDependencies": { "react-hook-form": "^7.0.0" } }, "sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag=="],
 
