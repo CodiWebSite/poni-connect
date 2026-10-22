@@ -6,6 +6,8 @@ import { useIsApprover } from '@/hooks/useIsApprover';
 import { usePageAccess } from '@/hooks/usePageAccess';
 import { useDoctoralCoordinator } from '@/hooks/useDoctoralCoordinator';
 import { useDecisionRegistryAccess } from '@/hooks/useDecisionRegistryAccess';
+import { useSchoolVisitsAccess } from '@/hooks/useSchoolVisitsAccess';
+import { School as SchoolIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +67,7 @@ const Sidebar = () => {
   const { role, allRoles, isSuperAdmin, isRealSuperAdmin, canManageHR, isSef, isSefSRUS, canManageLibrary, isSalarizare, canAccessMedical, hasDoctoralAccess, isInstituteLeadership } = useUserRole();
   const { isCoordinator: isDoctoralCoordinator, studentCount: coordinatorStudents } = useDoctoralCoordinator();
   const { canAccess: canAccessDecisions } = useDecisionRegistryAccess();
+  const { canAccess: canAccessVisits } = useSchoolVisitsAccess();
   const { isDesignatedApprover } = useIsApprover();
   const { canAccessPage } = usePageAccess();
   const { isCollapsed, toggleCollapsed } = useSidebarContext();
@@ -271,7 +274,7 @@ const Sidebar = () => {
       '/arhiva': 'arhiva', '/securitate-digitala': 'securitate-digitala', '/securitatea-mea': 'dashboard', '/raporteaza-incident': 'dashboard', '/confidentialitate': 'dashboard', '/sugestii': 'sugestii', '/ghid': 'ghid', '/install': 'install',
       '/hr-management': 'hr-management', '/salarizare': 'salarizare', '/settings': 'settings',
       '/system-status': 'system-status', '/carti-vizita': 'carti-vizita', '/admin': 'admin',
-      '/changelog': 'changelog',
+      '/changelog': 'changelog', '/programari-vizite': 'dashboard',
       '/inventory': 'admin',
     };
     return map[path] || null;
@@ -284,6 +287,7 @@ const Sidebar = () => {
 
     { icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' },
     ...(canAccessDecisions ? [{ icon: ScrollText, label: 'Registru Decizii', path: '/registru-decizii' }] : []),
+    ...(canAccessVisits ? [{ icon: SchoolIcon, label: 'Programări vizite', path: '/programari-vizite' }] : []),
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request', badge: (isSef || isSefSRUS || isSuperAdmin) ? pendingHR : undefined },
     { icon: Users, label: 'Echipa Mea', path: '/my-team' },

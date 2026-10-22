@@ -4221,6 +4221,78 @@ export type Database = {
         }
         Relationships: []
       }
+      school_visits: {
+        Row: {
+          approval_no: string | null
+          cancelled_at: string | null
+          class_level: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          institution: string
+          notes: string | null
+          participants: number | null
+          request_no: string | null
+          status: string
+          teachers: string | null
+          updated_at: string
+          updated_by: string | null
+          visit_date: string
+          visit_time: string | null
+        }
+        Insert: {
+          approval_no?: string | null
+          cancelled_at?: string | null
+          class_level?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          institution?: string
+          notes?: string | null
+          participants?: number | null
+          request_no?: string | null
+          status?: string
+          teachers?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          visit_date: string
+          visit_time?: string | null
+        }
+        Update: {
+          approval_no?: string | null
+          cancelled_at?: string | null
+          class_level?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          institution?: string
+          notes?: string | null
+          participants?: number | null
+          request_no?: string | null
+          status?: string
+          teachers?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          visit_date?: string
+          visit_time?: string | null
+        }
+        Relationships: []
+      }
+      school_visits_access: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       security_alert_preferences: {
         Row: {
           alert_on_critical_action: boolean | null
@@ -5288,6 +5360,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      can_access_school_visits: { Args: { _user_id: string }; Returns: boolean }
       can_manage_communities: { Args: { _user_id: string }; Returns: boolean }
       can_manage_content: { Args: { _user_id: string }; Returns: boolean }
       can_manage_doctoral: { Args: { _user_id: string }; Returns: boolean }
