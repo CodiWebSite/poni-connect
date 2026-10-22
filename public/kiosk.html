@@ -220,6 +220,13 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
     <div class="ticker-inner" id="tickerInner"></div>
   </div>
 
+  <!-- Bine ați venit — vizite școli -->
+  <div id="visitWelcome" style="display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:128px;z-index:899;background:linear-gradient(135deg,rgba(10,15,30,0.95),rgba(30,41,74,0.95));border:2px solid rgba(201,162,39,0.6);border-radius:18px;padding:16px 34px;text-align:center;box-shadow:0 12px 36px rgba(0,0,0,0.5);max-width:60%">
+    <div style="font-family:'Inter',sans-serif;font-size:15px;letter-spacing:0.2em;color:#e6c04a;font-weight:700">BINE AȚI VENIT LA ICMPP · WELCOME</div>
+    <div id="visitWelcomeName" style="font-family:'Inter',sans-serif;font-size:30px;color:#f8fafc;font-weight:700;margin-top:6px;line-height:1.2;overflow-wrap:anywhere"></div>
+    <div id="visitWelcomeSub" style="font-family:'Inter',sans-serif;font-size:18px;color:#94a3b8;margin-top:6px"></div>
+  </div>
+
   <!-- QR evenimente online (Zoom / Teams / Meet) -->
   <div id="zoomQr" style="display:none;position:fixed;right:28px;bottom:128px;z-index:900;background:rgba(10,15,30,0.92);border:1px solid rgba(201,162,39,0.35);border-radius:14px;padding:14px 14px 10px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.45);max-width:200px">
     <img id="zoomQrImg" src="" alt="QR" style="width:148px;height:148px;display:block;background:#fff;border-radius:8px;padding:6px">
@@ -898,6 +905,43 @@ function setMeetingQrs(list) {
 }
 fetchEvents();
 setInterval(fetchEvents, 120000);
+
+// ── Bine ați venit: vizitele școlilor de azi ──
+var __visits = [], __visitIdx = 0;
+function fetchVisits() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', SUPABASE_URL + '/rest/v1/rpc/kiosk_today_visits');
+  xhr.setRequestHeader('apikey', SUPABASE_KEY);
+  xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() { if (xhr.status === 200) { try { __visits = JSON.parse(xhr.responseText) || []; } catch(_) { __visits = []; } renderVisit(); } };
+  xhr.send('{}');
+}
+function renderVisit() {
+  var box = document.getElementById('visitWelcome');
+  if (!box) return;
+  var now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
+  // afișat de la 60 min înainte până la 3 ore după ora vizitei
+  var list = __visits.filter(function(v) {
+    var t = String(v.visit_time || '').match(/(\d{1,2})[:.](\d{2})/);
+    if (!t) return true;
+    var m = (+t[1]) * 60 + (+t[2]);
+    return mins >= m - 60 && mins <= m + 180;
+  });
+  if (!list.length) { box.style.display = 'none'; return; }
+  var v = list[__visitIdx % list.length]; __visitIdx++;
+  document.getElementById('visitWelcomeName').textContent = v.institution;
+  var sub = [];
+  if (v.class_level) sub.push('Clasa ' + v.class_level.replace(/^clasa\s*/i, ''));
+  if (v.participants) sub.push(v.participants + ' participanți');
+  if (v.visit_time) sub.push('ora ' + v.visit_time);
+  document.getElementById('visitWelcomeSub').textContent = sub.join(' · ');
+  box.style.display = 'block';
+}
+fetchVisits();
+setInterval(fetchVisits, 300000);
+setInterval(renderVisit, 15000);
+
 
 // ── Settings (kiosk message + ticker + slideshow) ──
 function fetchSettings() {
