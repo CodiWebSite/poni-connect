@@ -1,7 +1,8 @@
-export const subject = '[TEST] Programări vizite ICMPP — prezentare și ghid complet de utilizare';
 const url = 'https://intranet.icmpp.ro/programari-vizite';
 
-export const html = `<!doctype html>
+export function buildGuideMessage(mode: 'test' | 'distribute') {
+const subject = `${mode === 'test' ? '[TEST] ' : ''}Programări vizite ICMPP — prezentare și ghid complet de utilizare`;
+const html = `<!doctype html>
 <html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#ffffff;color:#202b3a;font-family:Arial,Helvetica,sans-serif;line-height:1.65">
 <div style="max-width:700px;margin:0 auto;padding:28px 22px">
@@ -10,7 +11,7 @@ export const html = `<!doctype html>
     <h1 style="font-family:Georgia,'Times New Roman',serif;color:#173a63;font-size:28px;line-height:1.25;margin:0">Programări vizite ICMPP</h1>
     <p style="margin:8px 0 0;color:#526479;font-size:14px">Institutul de Chimie Macromoleculară „Petru Poni” Iași</p>
   </div>
-  <p style="background:#f7f9fc;border-left:4px solid #c69a35;padding:12px 16px;font-size:13px"><strong>Exemplar de test pentru Codrin Condrea.</strong> Acest mesaj este trimis doar la condrea.codrin@icmpp.ro, pentru verificarea conținutului și aspectului. Nu a fost distribuit celorlalți administratori.</p>
+  ${mode === 'test' ? '<p style="background:#f7f9fc;border-left:4px solid #c69a35;padding:12px 16px;font-size:13px"><strong>Exemplar de test pentru Codrin Condrea.</strong> Acest mesaj este trimis doar la condrea.codrin@icmpp.ro, pentru verificarea conținutului și aspectului. Nu a fost distribuit celorlalți administratori.</p>' : ''}
   <p>Stimate colege, stimați colegi,</p>
   <p>În Intranet ICMPP este disponibilă secțiunea <strong>„Programări vizite”</strong>, destinată evidenței și organizării vizitelor școlilor și universităților la institut. În aceeași pagină pot fi consultate, completate și actualizate programările, inclusiv înregistrările preluate din tabelul Excel inițial.</p>
 
@@ -91,14 +92,17 @@ export const html = `<!doctype html>
     <li>În prezent nu sunt activate mementouri automate prin e-mail pentru vizite; prezentul mesaj este un ghid de lucru pentru persoanele autorizate.</li>
   </ul>
   <p style="background:#f7f9fc;border-left:4px solid #173a63;padding:14px 16px"><strong>Pe scurt:</strong> intrați în „Programări vizite”, adăugați sau corectați rândul, urmăriți starea și calendarul, activați opțional mesajul din hol și exportați evidența când este necesar.</p>
-  <p>Cu stimă,<br><strong>Echipa Intranet ICMPP</strong></p>
-  <p style="border-top:1px solid #e7edf5;padding-top:16px;margin-top:28px;font-size:12px;color:#526479">Informare internă pentru administrarea programărilor de vizite · Exemplar de test, fără distribuire către ceilalți destinatari.</p>
+  <p>Pentru orice problemă sau întrebare, vă rog să îmi trimiteți un e-mail la <a href="mailto:condrea.codrin@icmpp.ro" style="color:#173a63">condrea.codrin@icmpp.ro</a> sau să mă sunați la <a href="tel:0755649856" style="color:#173a63">0755649856</a>, respectiv la <strong>interior 330</strong>.</p>
+  <p>Cu stimă,<br><strong>Condrea Codrin Ioan</strong><br>Tehnician IT</p>
+  <p style="border-top:1px solid #e7edf5;padding-top:16px;margin-top:28px;font-size:12px;color:#526479">Informare internă pentru administrarea programărilor de vizite${mode === 'test' ? ' · Exemplar de test, fără distribuire către ceilalți destinatari.' : ' · Destinată persoanelor desemnate și administratorilor super-admin.'}</p>
 </div></body></html>`;
 
-export const text = html
+const text = html
   .replace(/<head>[\s\S]*?<\/head>/, '')
   .replace(/<\/(?:p|h1|h2|li|div)>/g, '\n\n')
   .replace(/<[^>]+>/g, '')
   .replace(/&amp;/g, '&')
   .replace(/\n\s*\n\s*\n/g, '\n\n')
   .trim();
+return { subject, html, text };
+}
