@@ -25,7 +25,7 @@ function setup() {
     SUPABASE_URL: 'https://example.test',
     SUPABASE_KEY: 'test',
     Date: class extends Date {
-      constructor() { super('2026-10-22T05:50:00Z'); }
+      constructor(value?: number | string) { super(value ?? '2026-10-22T05:50:00Z'); }
     },
     document: {
       getElementById: (id: string) => id === 'visitWelcome' ? box : { textContent: '' },
