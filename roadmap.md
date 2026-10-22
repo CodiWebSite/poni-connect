@@ -1,7 +1,7 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
-- [ ] Acces Programări vizite pentru Dragoș Tofan și trimitere ghid numai lui, fără retrimitere celorlalți
+- [x] Dragoș Tofan adăugat la Programări vizite; meniu și pagină verificate în contul său, ghid trimis numai lui fără eșecuri sau retrimitere celorlalți
 - [x] Deschidere anticipată 2027 blocată în HR și în calcul; 339 solduri verificate neschimbate
 - [x] Reîncercare e-mailuri HR verificată: automatizare activă la 15 minute, toate cele 206 mesaje trimise
 - [x] Avizier Dashboard protejat la retragerea afișului curent; test de regresie trecut
