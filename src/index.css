@@ -449,3 +449,93 @@
     box-shadow: inset 0 -1px 0 hsl(var(--border));
   }
 }
+
+/* Print-safe business card palette; deliberately independent of the screen theme. */
+:root {
+  --business-card-paper: 0 0% 100%;
+  --business-card-soft-paper: 0 0% 98%;
+  --business-card-ink: 215 49% 33%;
+  --business-card-body: 0 0% 16%;
+  --business-card-muted: 0 0% 38%;
+  --business-card-accent: 217 91% 60%;
+  --business-card-dark: 222 47% 11%;
+  --business-card-light: 210 40% 98%;
+  --business-card-dark-muted: 215 20% 75%;
+  --business-card-gradient: linear-gradient(180deg, hsl(var(--business-card-ink)), hsl(var(--business-card-accent)));
+}
+
+.business-card {
+  width: 420px;
+  height: 271.765px;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-family: 'Roboto', Arial, sans-serif;
+  background: hsl(var(--business-card-paper));
+  color: hsl(var(--business-card-body));
+  --business-card-current-heading: var(--business-card-ink);
+  --business-card-current-muted: var(--business-card-muted);
+}
+.business-card p, .business-card h2 { margin: 0; letter-spacing: 0; }
+.business-card-institute { display: flex; align-items: center; gap: 10px; min-height: 46px; }
+.business-card-institute img { width: 44px; height: 44px; object-fit: contain; flex-shrink: 0; }
+.business-card-institute p {
+  font-size: 10px;
+  line-height: 1.3;
+  color: hsl(var(--business-card-current-heading));
+  font-weight: 700;
+}
+.business-card-institute small { display: block; margin-top: 3px; font-size: 9px; color: hsl(var(--business-card-current-muted)); }
+.business-card-identity { min-width: 0; }
+.business-card h2 {
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: hsl(var(--business-card-current-heading));
+  overflow-wrap: anywhere;
+}
+.business-card-position { font-size: 11px; line-height: 1.25; margin-top: 4px !important; color: hsl(var(--business-card-current-heading)); }
+.business-card-department { font-size: 10px; line-height: 1.25; margin-top: 3px !important; color: hsl(var(--business-card-current-muted)); }
+.business-card-contact { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.business-card-contact > div:first-child { min-width: 0; }
+.business-card-contact p { font-size: 9px; line-height: 1.4; overflow-wrap: anywhere; }
+.business-card-contact-detail { color: hsl(var(--business-card-current-heading)); }
+.business-card-qr, .business-card-site-qr canvas {
+  flex-shrink: 0;
+  background: hsl(var(--business-card-paper));
+}
+.business-card-qr img { width: 100%; height: 100%; object-fit: contain; }
+.business-card-site-qr { flex-shrink: 0; text-align: center; }
+.business-card-site-qr small { display: block; font-size: 7px; margin-top: 2px; color: hsl(var(--business-card-current-muted)); }
+.business-card-classic .business-card-institute { border-bottom: 2px solid hsl(var(--business-card-ink)); padding-bottom: 7px; }
+.business-card-classic .business-card-identity { text-align: center; }
+.business-card-modern { border-left: 8px solid hsl(var(--business-card-accent)); }
+.business-card-minimal { background: hsl(var(--business-card-soft-paper)); }
+.business-card-minimal .business-card-identity { border-left: 2px solid hsl(var(--business-card-ink)); padding-left: 10px; }
+.business-card-bold {
+  background: hsl(var(--business-card-dark));
+  color: hsl(var(--business-card-dark-muted));
+  --business-card-current-heading: var(--business-card-light);
+  --business-card-current-muted: var(--business-card-dark-muted);
+}
+.business-card-bold .business-card-institute img,
+.business-card-classic.business-card-profile-back .business-card-institute img,
+.business-card-modern.business-card-profile-back .business-card-institute img { filter: brightness(0) invert(1); }
+.business-card-profile-back { align-items: center; text-align: center; justify-content: center; gap: 10px; }
+.business-card-profile-back .business-card-institute { border: none; padding: 0; align-self: flex-start; text-align: left; min-height: 38px; }
+.business-card-profile-back .business-card-institute img { width: 32px; height: 32px; }
+.business-card-profile-back .business-card-institute p { font-size: 9px; }
+.business-card-profile-back h2 { font-size: 14px; }
+.business-card-scan-label { font-size: 10px; color: hsl(var(--business-card-current-muted)); }
+.business-card-classic.business-card-profile-back,
+.business-card-modern.business-card-profile-back {
+  background: hsl(var(--business-card-ink));
+  --business-card-current-heading: var(--business-card-light);
+  --business-card-current-muted: var(--business-card-dark-muted);
+}
+.business-card-modern.business-card-profile-back { background: var(--business-card-gradient); }
