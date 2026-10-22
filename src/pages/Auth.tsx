@@ -342,7 +342,7 @@ const Auth = () => {
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-muted">
                 Academia Română
               </p>
-              <p className="font-display text-xl font-semibold">ICMPP „Petru Poni”</p>
+              <p className="font-display text-xl font-semibold" style={{ color: 'hsl(var(--logo-indigo-light))' }}>ICMPP „Petru Poni”</p>
             </div>
           </div>
 
@@ -390,7 +390,7 @@ const Auth = () => {
             <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
               Academia Română
             </p>
-            <h1 className="font-display text-2xl font-bold text-foreground">
+            <h1 className="font-display text-2xl font-bold" style={{ color: 'hsl(var(--logo-indigo))' }}>
               ICMPP „Petru Poni”
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">Intranet instituțional</p>
