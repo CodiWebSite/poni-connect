@@ -5,6 +5,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useDoctoralCoordinator } from '@/hooks/useDoctoralCoordinator';
 import { useIsApprover } from '@/hooks/useIsApprover';
 import { useDecisionRegistryAccess } from '@/hooks/useDecisionRegistryAccess';
+import { useSchoolVisitsAccess } from '@/hooks/useSchoolVisitsAccess';
+import { School as SchoolIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,6 +59,7 @@ const MobileNav = () => {
   const { isCoordinator: isDoctoralCoordinator } = useDoctoralCoordinator();
   const { isDesignatedApprover } = useIsApprover();
   const { canAccess: canAccessDecisions } = useDecisionRegistryAccess();
+  const { canAccess: canAccessVisits } = useSchoolVisitsAccess();
   const [isOpen, setIsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
@@ -105,6 +108,7 @@ const MobileNav = () => {
     ...((isSef || isSefSRUS || canManageHR || isSuperAdmin || isDesignatedApprover) ? [{ icon: Users, label: 'Echipa Mea', path: '/my-team' }] : []),
     ...((isSef || isSefSRUS || canManageHR || isSuperAdmin || isDesignatedApprover) ? [{ icon: Calendar, label: 'Calendar Concedii', path: '/leave-calendar' }] : []),
     ...(canAccessDecisions ? [{ icon: ScrollText, label: 'Registru Decizii', path: '/registru-decizii' }] : []),
+    ...(canAccessVisits ? [{ icon: SchoolIcon, label: 'Programări vizite', path: '/programari-vizite' }] : []),
     { icon: FolderDown, label: 'Formulare', path: '/formulare' },
     { icon: FileText, label: 'Cerere Concediu', path: '/leave-request' },
     ...(canManageLibrary ? [{ icon: BookOpen, label: 'Bibliotecă', path: '/library' }] : []),

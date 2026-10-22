@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, GitBranch, Route, Bell, Tag, Megaphone, CalendarDays, Eye } from 'lucide-react';
+import { School, Shield, GitBranch, Route, Bell, Tag, Megaphone, CalendarDays, Eye } from 'lucide-react';
 import AccessMatrixEditor from './AccessMatrixEditor';
 import ApprovalWorkflowEditor from './ApprovalWorkflowEditor';
 import RequestRoutingEditor from './RequestRoutingEditor';
@@ -7,6 +7,7 @@ import NotificationRulesEditor from './NotificationRulesEditor';
 import CustomRolesManager from './CustomRolesManager';
 import AnnouncementPublishersPanel from './AnnouncementPublishersPanel';
 import EventPublishersPanel from './EventPublishersPanel';
+import SchoolVisitsAccessPanel from './SchoolVisitsAccessPanel';
 
 const AdminRolesAccessPanel = () => {
   return (
@@ -46,6 +47,10 @@ const AdminRolesAccessPanel = () => {
             <CalendarDays className="w-3.5 h-3.5" />
             Editori Evenimente
           </TabsTrigger>
+          <TabsTrigger value="school-visits" className="text-xs gap-1.5">
+            <School className="w-3.5 h-3.5" />
+            Programări vizite
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="matrix"><AccessMatrixEditor /></TabsContent>
@@ -55,6 +60,7 @@ const AdminRolesAccessPanel = () => {
         <TabsContent value="notifications"><NotificationRulesEditor /></TabsContent>
         <TabsContent value="announcement-publishers"><AnnouncementPublishersPanel /></TabsContent>
         <TabsContent value="event-publishers"><EventPublishersPanel /></TabsContent>
+        <TabsContent value="school-visits"><SchoolVisitsAccessPanel /></TabsContent>
       </Tabs>
     </div>
   );
