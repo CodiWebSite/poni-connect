@@ -925,12 +925,12 @@ function renderVisit() {
   var lastSun = function(m){ var d = new Date(Date.UTC(y, m + 1, 0, 1)); d.setUTCDate(d.getUTCDate() - d.getUTCDay()); return d.getTime(); };
   var off = (u.getTime() >= lastSun(2) && u.getTime() < lastSun(9)) ? 180 : 120;
   var mins = (u.getUTCHours() * 60 + u.getUTCMinutes() + off) % 1440;
-  // afișat de la 60 min înainte până la 3 ore după ora vizitei
+  // afișat 15 min înainte și 15 min după ora vizitei (30 min în total)
   var list = __visits.filter(function(v) {
     var t = String(v.visit_time || '').match(/(\d{1,2})[:.](\d{2})/);
     if (!t) return true;
     var m = (+t[1]) * 60 + (+t[2]);
-    return mins >= m - 60 && mins <= m + 180;
+    return mins >= m - 15 && mins <= m + 15;
   });
   if (!list.length) { box.style.display = 'none'; return; }
   var v = list[__visitIdx % list.length]; __visitIdx++;
