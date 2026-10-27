@@ -86,7 +86,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
     if (!startDate || !endDate || !user || !employeeData) { setTravelConflicts([]); return; }
     let active = true;
     fetchOwnPeriodConflicts({ userId: user.id, epdId: employeeData.id, startDate, endDate })
-      .then((list) => { if (active) setTravelConflicts(list.filter(c => c.leaveType === TRAVEL_LEAVE_TYPE)); })
+      .then((list) => { if (active) setTravelConflicts(list); })
       .catch(() => { if (active) setTravelConflicts([]); });
     return () => { active = false; };
   }, [startDate, endDate, user, employeeData]);
@@ -284,39 +284,19 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
     submittingRef.current = true;
     setSubmitting(true);
 
-    // Check for duplicate: same user, same dates, active status
-    const { data: existingRequests } = await supabase
-      .from('leave_requests')
-      .select('id, request_number')
-      .eq('user_id', user.id)
-      .eq('start_date', startDate)
-      .eq('end_date', endDate)
-      .not('status', 'in', '("rejected","cancelled")')
-      .limit(1);
-
-    if (existingRequests && existingRequests.length > 0) {
-      toast({
-        title: 'Cerere duplicat detectată',
-        description: `Există deja o cerere activă (${existingRequests[0].request_number}) pentru perioada ${formatDate(startDate)} - ${formatDate(endDate)}.`,
-        variant: 'destructive',
-      });
-      setSubmitting(false);
-      submittingRef.current = false;
-      return;
-    }
-
-    // Blocare suprapunere cu deplasare deja înregistrată de HR
+    // Blocare: orice suprapunere cu o cerere/concediu/deplasare existentă
     const periodConflicts = await fetchOwnPeriodConflicts({
       userId: user.id,
       epdId: employeeData.id,
       startDate,
       endDate,
     });
-    const travelConflict = periodConflicts.find(c => c.leaveType === TRAVEL_LEAVE_TYPE);
-    if (travelConflict) {
+    if (periodConflicts.length > 0) {
+      const c = periodConflicts[0];
+      const isTravel = c.leaveType === TRAVEL_LEAVE_TYPE;
       toast({
-        title: 'Suprapunere cu deplasare',
-        description: `Aveți deja o deplasare înregistrată (${formatConflict(travelConflict)}). Nu puteți depune concediu în această perioadă. Contactați SRUS dacă deplasarea a fost anulată.`,
+        title: isTravel ? 'Suprapunere cu deplasare' : 'Perioadă deja solicitată',
+        description: `Aveți deja ${formatConflict(c)}. Nu puteți depune o nouă cerere pentru aceeași perioadă. Dacă perioada inițială e greșită, contactați SRUS pentru anulare.`,
         variant: 'destructive',
       });
       setSubmitting(false);
@@ -367,7 +347,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
     if (error) {
       console.error('Error creating leave request:', error);
-      const isDuplicate = error.code === '23505';
+      const isDuplicate = error.code === '23505' || error.code === '23P01';
       toast({
         title: isDuplicate ? 'Cerere duplicat' : 'Eroare',
         description: isDuplicate
@@ -714,13 +694,13 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
           <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-1">
             <p className="text-sm font-medium text-destructive flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-              Aveți deplasare înregistrată în această perioadă
+              Aveți deja o cerere sau o absență în această perioadă
             </p>
             {travelConflicts.map((c, i) => (
               <p key={i} className="text-xs text-destructive/90 ml-6">• {formatConflict(c)}</p>
             ))}
             <p className="text-xs text-muted-foreground ml-6">
-              Nu puteți depune cerere de concediu care se suprapune cu o deplasare. Alegeți altă perioadă sau contactați SRUS.
+              Nu puteți depune o nouă cerere peste o perioadă deja solicitată. Alegeți altă perioadă sau contactați SRUS.
             </p>
           </div>
         )}
