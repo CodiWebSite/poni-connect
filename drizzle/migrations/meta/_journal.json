@@ -183,6 +183,13 @@
       "when": 1792649427783,
       "tag": "0025_guard_leave_year_opening_date",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793083822248,
+      "tag": "0026_block_overlapping_leave_requests",
+      "breakpoints": true
     }
   ]
 }
