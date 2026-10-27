@@ -86,7 +86,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
     if (!startDate || !endDate || !user || !employeeData) { setTravelConflicts([]); return; }
     let active = true;
     fetchOwnPeriodConflicts({ userId: user.id, epdId: employeeData.id, startDate, endDate })
-      .then((list) => { if (active) setTravelConflicts(list.filter(c => c.leaveType === TRAVEL_LEAVE_TYPE)); })
+      .then((list) => { if (active) setTravelConflicts(list); })
       .catch(() => { if (active) setTravelConflicts([]); });
     return () => { active = false; };
   }, [startDate, endDate, user, employeeData]);
@@ -714,13 +714,13 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
           <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-1">
             <p className="text-sm font-medium text-destructive flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-              Aveți deplasare înregistrată în această perioadă
+              Aveți deja o cerere sau o absență în această perioadă
             </p>
             {travelConflicts.map((c, i) => (
               <p key={i} className="text-xs text-destructive/90 ml-6">• {formatConflict(c)}</p>
             ))}
             <p className="text-xs text-muted-foreground ml-6">
-              Nu puteți depune cerere de concediu care se suprapune cu o deplasare. Alegeți altă perioadă sau contactați SRUS.
+              Nu puteți depune o nouă cerere peste o perioadă deja solicitată. Alegeți altă perioadă sau contactați SRUS.
             </p>
           </div>
         )}
