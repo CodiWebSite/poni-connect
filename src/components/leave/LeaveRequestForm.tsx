@@ -347,7 +347,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
     if (error) {
       console.error('Error creating leave request:', error);
-      const isDuplicate = error.code === '23505';
+      const isDuplicate = error.code === '23505' || error.code === '23P01';
       toast({
         title: isDuplicate ? 'Cerere duplicat' : 'Eroare',
         description: isDuplicate
