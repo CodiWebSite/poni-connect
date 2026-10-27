@@ -284,39 +284,19 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
     submittingRef.current = true;
     setSubmitting(true);
 
-    // Check for duplicate: same user, same dates, active status
-    const { data: existingRequests } = await supabase
-      .from('leave_requests')
-      .select('id, request_number')
-      .eq('user_id', user.id)
-      .eq('start_date', startDate)
-      .eq('end_date', endDate)
-      .not('status', 'in', '("rejected","cancelled")')
-      .limit(1);
-
-    if (existingRequests && existingRequests.length > 0) {
-      toast({
-        title: 'Cerere duplicat detectată',
-        description: `Există deja o cerere activă (${existingRequests[0].request_number}) pentru perioada ${formatDate(startDate)} - ${formatDate(endDate)}.`,
-        variant: 'destructive',
-      });
-      setSubmitting(false);
-      submittingRef.current = false;
-      return;
-    }
-
-    // Blocare suprapunere cu deplasare deja înregistrată de HR
+    // Blocare: orice suprapunere cu o cerere/concediu/deplasare existentă
     const periodConflicts = await fetchOwnPeriodConflicts({
       userId: user.id,
       epdId: employeeData.id,
       startDate,
       endDate,
     });
-    const travelConflict = periodConflicts.find(c => c.leaveType === TRAVEL_LEAVE_TYPE);
-    if (travelConflict) {
+    if (periodConflicts.length > 0) {
+      const c = periodConflicts[0];
+      const isTravel = c.leaveType === TRAVEL_LEAVE_TYPE;
       toast({
-        title: 'Suprapunere cu deplasare',
-        description: `Aveți deja o deplasare înregistrată (${formatConflict(travelConflict)}). Nu puteți depune concediu în această perioadă. Contactați SRUS dacă deplasarea a fost anulată.`,
+        title: isTravel ? 'Suprapunere cu deplasare' : 'Perioadă deja solicitată',
+        description: `Aveți deja ${formatConflict(c)}. Nu puteți depune o nouă cerere pentru aceeași perioadă. Dacă perioada inițială e greșită, contactați SRUS pentru anulare.`,
         variant: 'destructive',
       });
       setSubmitting(false);
