@@ -482,7 +482,9 @@
 .business-card p, .business-card h2 { margin: 0; letter-spacing: 0; }
 .business-card-institute { display: flex; align-items: stretch; gap: 12px; height: 58px; }
 /* Logo matches the QR box (58px) so both sit at the same distance from the card edges. */
-.business-card-institute img { width: 58px; height: 58px; object-fit: contain; object-position: left center; flex-shrink: 0; }
+/* The logo file has transparent margins; crop to its visible drawing so its left edge lines up with the text below. */
+.business-card-logo { display: block; width: 51px; height: 58px; overflow: hidden; flex-shrink: 0; }
+.business-card-logo img { display: block; width: 72.4px; height: 77.2px; max-width: none; margin: -8px 0 0 -8.1px; }
 .business-card-institute > div { display: flex; flex-direction: column; justify-content: space-between; height: 58px; padding: 2px 0; box-sizing: border-box; }
 .business-card-institute p {
   font-size: 12px;
