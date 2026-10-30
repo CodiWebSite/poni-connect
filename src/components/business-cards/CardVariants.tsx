@@ -37,7 +37,7 @@ export function BusinessCardFace({ data, face }: { data: CardData; face: 'front'
   return (
     <div className="business-card business-card-minimal" lang={fields.lang}>
       <header className="business-card-institute">
-        <img src="/logo-icmpp.png" alt="ICMPP" crossOrigin="anonymous" />
+        <span className="business-card-logo"><img src="/logo-icmpp.png" alt="ICMPP" crossOrigin="anonymous" /></span>
         <div>
           <p>{txt.institute1}</p>
           <p>{txt.institute2}</p>
