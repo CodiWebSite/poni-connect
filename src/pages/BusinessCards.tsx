@@ -19,7 +19,7 @@ import {
   CARD_W, CARD_H, BusinessCardFace, type CardData,
 } from '@/components/business-cards/CardVariants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { INSTITUTE_CARD_URL } from '@/utils/businessCards';
+import { CARD_LANG_OPTIONS, getCardFaces, INSTITUTE_CARD_URL, type CardLang } from '@/utils/businessCards';
 
 interface Employee {
   id: string;
@@ -32,6 +32,23 @@ interface Employee {
 
 /* ──────── Bilingual minimalist preview ──────── */
 
+function CardLangPicker({ value, onChange }: { value: CardLang; onChange: (lang: CardLang) => void }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium text-foreground">Limba cărții</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Limba cărții">
+        {CARD_LANG_OPTIONS.map(option => (
+          <Button key={option.value} type="button" role="radio" aria-checked={value === option.value}
+            variant={value === option.value ? 'default' : 'outline'} size="sm"
+            className="h-auto whitespace-normal py-2 text-xs" onClick={() => onChange(option.value)}>
+            {option.label}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CardPreview({ data, frontRef, backRef }: {
   data: CardData;
   frontRef: React.RefObject<HTMLDivElement>;
@@ -39,10 +56,10 @@ function CardPreview({ data, frontRef, backRef }: {
 }) {
   return (
     <div className="space-y-4">
-      {(['front', 'back'] as const).map(face => (
+      {getCardFaces(data.lang).map(face => (
         <section key={face} className="space-y-2">
           <h2 className="text-sm font-semibold text-foreground">
-            {face === 'front' ? 'Față · Română' : 'Verso · English'}
+            {data.lang === 'ro' ? 'Față · Română' : data.lang === 'en' ? 'Front · English' : face === 'front' ? 'Față · Română' : 'Verso · English'}
           </h2>
           <CardFacePreview faceRef={face === 'front' ? frontRef : backRef}>
             <BusinessCardFace data={data} face={face} />
@@ -59,19 +76,21 @@ async function downloadPDF(
   frontRef: React.RefObject<HTMLDivElement>,
   backRef: React.RefObject<HTMLDivElement>,
   fileName: string,
+  lang: CardLang,
 ) {
-  if (!frontRef.current || !backRef.current) throw new Error('Refs missing');
+  const faces = getCardFaces(lang).map(face => (face === 'front' ? frontRef : backRef).current);
+  if (faces.some(face => !face)) throw new Error('Refs missing');
   await document.fonts.ready;
-  const faces = [frontRef.current, backRef.current];
-  await Promise.all(faces.flatMap(face => Array.from(face.querySelectorAll('img')).map(image => image.decode())));
-  const [frontCanvas, backCanvas] = await Promise.all(faces.map(face => html2canvas(face, {
+  await Promise.all((faces as HTMLDivElement[]).flatMap(face => Array.from(face.querySelectorAll('img')).map(image => image.decode())));
+  const canvases = await Promise.all((faces as HTMLDivElement[]).map(face => html2canvas(face, {
     scale: 4, useCORS: true, backgroundColor: null, logging: false,
     onclone: (_document, element) => { element.style.transform = 'none'; },
   })));
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H], compress: true });
-  doc.addImage(frontCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
-  doc.addPage([CARD_W, CARD_H], 'landscape');
-  doc.addImage(backCanvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
+  canvases.forEach((canvas, index) => {
+    if (index > 0) doc.addPage([CARD_W, CARD_H], 'landscape');
+    doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, CARD_W, CARD_H);
+  });
   doc.save(fileName);
 }
 
@@ -90,6 +109,7 @@ function SelfServiceView() {
   const [phone, setPhone] = useState('');
   const [qrUrl, setQrUrl] = useState('');
   const [customization, setCustomization] = useState<CardCustomizationData>({ ...EMPTY_CUSTOMIZATION });
+  const [cardLang, setCardLang] = useState<CardLang>('ro-en');
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -155,13 +175,13 @@ function SelfServiceView() {
     profileUrl: `${window.location.origin}/profil/${employee.id}`,
     qrUrl: qrUrl.trim(),
     ...customization,
-    lang: 'ro-en',
+    lang: cardLang,
   };
 
   const handleDownload = async () => {
     setGenerating(true);
     try {
-      await downloadPDF(frontRef, backRef, `carte-vizita-${employee.last_name}-${employee.first_name}.pdf`);
+      await downloadPDF(frontRef, backRef, `carte-vizita-${employee.last_name}-${employee.first_name}.pdf`, cardLang);
       toast({ title: 'PDF generat!', description: 'Cartea de vizită a fost descărcată.' });
     } catch {
       toast({ title: 'Eroare', description: 'Nu s-a putut genera PDF-ul.', variant: 'destructive' });
@@ -185,6 +205,7 @@ function SelfServiceView() {
         qrUrl={qrUrl} setQrUrl={setQrUrl}
         customization={customization} setCustomization={setCustomization}
       />
+      <CardLangPicker value={cardLang} onChange={setCardLang} />
       <CardPreview data={cardData} frontRef={frontRef} backRef={backRef} />
       <Button onClick={handleDownload} disabled={generating} variant="hero" className="w-full">
         {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
@@ -210,6 +231,7 @@ function AdminView() {
   const [phone, setPhone] = useState('');
   const [qrUrl, setQrUrl] = useState('');
   const [customization, setCustomization] = useState<CardCustomizationData>({ ...EMPTY_CUSTOMIZATION });
+  const [cardLang, setCardLang] = useState<CardLang>('ro-en');
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -252,14 +274,14 @@ function AdminView() {
     profileUrl: `${window.location.origin}/profil/${selectedEmployee.id}`,
     qrUrl: qrUrl.trim(),
     ...customization,
-    lang: 'ro-en',
+    lang: cardLang,
   } : null;
 
   const handleDownload = async () => {
     if (!selectedEmployee) return;
     setGenerating(true);
     try {
-      await downloadPDF(frontRef, backRef, `carte-vizita-${selectedEmployee.last_name}-${selectedEmployee.first_name}.pdf`);
+      await downloadPDF(frontRef, backRef, `carte-vizita-${selectedEmployee.last_name}-${selectedEmployee.first_name}.pdf`, cardLang);
       toast({ title: 'PDF generat!', description: 'Cartea de vizită a fost descărcată.' });
     } catch {
       toast({ title: 'Eroare', description: 'Nu s-a putut genera PDF-ul.', variant: 'destructive' });
@@ -320,7 +342,8 @@ function AdminView() {
                 qrUrl={qrUrl} setQrUrl={setQrUrl}
                 customization={customization} setCustomization={setCustomization}
               />
-              <CardPreview data={cardData} frontRef={frontRef} backRef={backRef} />
+              <CardLangPicker value={cardLang} onChange={setCardLang} />
+      <CardPreview data={cardData} frontRef={frontRef} backRef={backRef} />
               <Button onClick={handleDownload} disabled={generating} className="w-full">
                 {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
                 Descarcă PDF
