@@ -19,7 +19,7 @@ import {
   CARD_W, CARD_H, BusinessCardFace, type CardData,
 } from '@/components/business-cards/CardVariants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { INSTITUTE_CARD_URL } from '@/utils/businessCards';
+import { CARD_LANG_OPTIONS, getCardFaces, INSTITUTE_CARD_URL, type CardLang } from '@/utils/businessCards';
 
 interface Employee {
   id: string;

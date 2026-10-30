@@ -480,15 +480,17 @@
   --business-card-current-muted: var(--business-card-muted);
 }
 .business-card p, .business-card h2 { margin: 0; letter-spacing: 0; }
-.business-card-institute { display: flex; align-items: center; gap: 12px; min-height: 56px; }
-.business-card-institute img { width: 54px; height: 54px; object-fit: contain; flex-shrink: 0; }
+.business-card-institute { display: flex; align-items: stretch; gap: 12px; height: 58px; }
+/* Logo matches the QR box (58px) so both sit at the same distance from the card edges. */
+.business-card-institute img { width: 58px; height: 58px; object-fit: contain; object-position: left center; flex-shrink: 0; }
+.business-card-institute > div { display: flex; flex-direction: column; justify-content: space-between; height: 58px; padding: 2px 0; box-sizing: border-box; }
 .business-card-institute p {
   font-size: 12px;
   line-height: 1.3;
   color: hsl(var(--business-card-current-heading));
   font-weight: 700;
 }
-.business-card-institute small { display: block; margin-top: 4px; font-size: 10px; color: hsl(var(--business-card-current-muted)); }
+.business-card-institute small { display: block; margin-top: 0; line-height: 1.2; font-size: 10px; color: hsl(var(--business-card-current-muted)); }
 .business-card-identity { min-width: 0; }
 .business-card h2 {
   font-family: 'Roboto', Arial, sans-serif;
@@ -511,6 +513,6 @@
   background: hsl(var(--business-card-paper));
 }
 .business-card-qr img { width: 100%; height: 100%; object-fit: contain; }
-.business-card-site-qr { width: 80px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.business-card-site-qr small { display: block; font-size: 7px; margin-top: 3px; line-height: 1.2; color: hsl(var(--business-card-current-muted)); }
+.business-card-site-qr { width: 58px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; text-align: center; overflow: visible; }
+.business-card-site-qr small { display: block; width: 80px; font-size: 7px; margin-top: 3px; line-height: 1.2; color: hsl(var(--business-card-current-muted)); }
 .business-card-minimal { background: hsl(var(--business-card-soft-paper)); }

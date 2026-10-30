@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCardFaceFields, getCardFaceLang, getCardName, getCardQrSource, isInstituteCardQr, type CardData } from './businessCards';
+import { getCardFaces, getCardFaceFields, getCardFaceLang, getCardName, getCardQrSource, isInstituteCardQr, type CardData } from './businessCards';
 
 const data: CardData = {
   displayName: 'NUME PRENUME', titlePrefix: 'Dr.', position: 'Cercetător',
@@ -57,5 +57,12 @@ describe('personalizarea cărților de vizită', () => {
     const fields = getCardFaceFields({ ...data, positionEn: '', departmentEn: '' }, 'back');
     expect(fields.position).toBe('Cercetător');
     expect(fields.department).toBe('Laborator');
+  });
+  it('cartea doar în română sau doar în engleză are o singură față în limba aleasă', () => {
+    expect(getCardFaces('ro')).toEqual(['front']);
+    expect(getCardFaces('en')).toEqual(['front']);
+    expect(getCardFaces('ro-en')).toEqual(['front', 'back']);
+    expect(getCardFaceFields({ ...data, lang: 'en' }, 'front').position).toBe('Researcher');
+    expect(getCardFaceFields({ ...data, lang: 'ro' }, 'front').position).toBe('Cercetător');
   });
 });
