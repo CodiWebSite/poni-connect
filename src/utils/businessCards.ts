@@ -1,5 +1,17 @@
 export type CardFaceLang = 'ro' | 'en';
-export type CardLang = 'ro-en';
+export type CardLang = 'ro' | 'en' | 'ro-en';
+export type CardFace = 'front' | 'back';
+
+export const CARD_LANG_OPTIONS: { value: CardLang; label: string }[] = [
+  { value: 'ro-en', label: 'Față română · Verso engleză' },
+  { value: 'ro', label: 'Doar română' },
+  { value: 'en', label: 'Doar engleză' },
+];
+
+/** Single-language cards print one face only; the bilingual card prints front and back. */
+export function getCardFaces(lang: CardLang): CardFace[] {
+  return lang === 'ro-en' ? ['front', 'back'] : ['front'];
+}
 export const INSTITUTE_CARD_URL = 'https://www.icmpp.ro';
 
 export interface CardData {
@@ -18,6 +30,7 @@ export interface CardData {
 }
 
 export function getCardFaceLang(lang: CardLang, face: 'front' | 'back'): CardFaceLang {
+  if (lang !== 'ro-en') return lang;
   return face === 'front' ? 'ro' : 'en';
 }
 
