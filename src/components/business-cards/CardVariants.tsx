@@ -12,7 +12,7 @@ export const CARD_PREVIEW_H = CARD_PREVIEW_W * CARD_H / CARD_W;
 const TEXTS = {
   ro: {
     institute1: 'Institutul de Chimie',
-    institute2: 'Macromoleculară "Petru Poni" Iași',
+    institute2: 'Macromoleculară "Petru Poni"',
     academy: 'Academia Română',
     address1: 'Aleea Grigore Ghica Vodă, 41A',
     address2: '700487, Iași, România',
@@ -21,7 +21,7 @@ const TEXTS = {
   },
   en: {
     institute1: '"Petru Poni" Institute of',
-    institute2: 'Macromolecular Chemistry Iași',
+    institute2: 'Macromolecular Chemistry',
     academy: 'Romanian Academy',
     address1: '41A Grigore Ghica Vodă Alley',
     address2: '700487, Iași, Romania',
