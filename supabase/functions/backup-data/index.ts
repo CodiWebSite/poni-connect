@@ -78,12 +78,12 @@ async function getOrCreateBackupFolder(): Promise<string | null> {
   return data.id || null;
 }
 
-async function uploadFileToDrive(folderId: string, filename: string, jsonStr: string): Promise<{ fileId?: string; webViewLink?: string; error?: string }> {
+async function uploadFileToDrive(folderId: string, filename: string, jsonStr: Uint8Array): Promise<{ fileId?: string; webViewLink?: string; error?: string }> {
   const boundary = "----LovableBackup" + Math.random().toString(36).slice(2);
   const metadata = { name: filename, parents: [folderId], mimeType: "application/json" };
-  const body =
+  const body = new Blob([
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
-    `--${boundary}\r\nContent-Type: application/json\r\n\r\n${jsonStr}\r\n--${boundary}--`;
+    `--${boundary}\r\nContent-Type: application/json\r\n\r\n`, jsonStr, `\r\n--${boundary}--`]);
 
   const res = await driveFetch(`${DRIVE_UPLOAD_GATEWAY}/files?uploadType=multipart&fields=id,webViewLink`, {
     method: "POST",
@@ -95,7 +95,7 @@ async function uploadFileToDrive(folderId: string, filename: string, jsonStr: st
   return { fileId: data.id, webViewLink: data.webViewLink };
 }
 
-async function updateLatestFile(folderId: string, jsonStr: string): Promise<void> {
+async function updateLatestFile(folderId: string, jsonStr: Uint8Array): Promise<void> {
   // Find existing latest.json
   const q = encodeURIComponent(`name='latest.json' and '${folderId}' in parents and trashed=false`);
   const searchRes = await driveFetch(`${DRIVE_GATEWAY}/files?q=${q}&fields=files(id)`);
@@ -129,7 +129,7 @@ async function pruneOldBackups(folderId: string, keepLastN: number): Promise<num
   return deleted;
 }
 
-async function uploadToGoogleDrive(filename: string, jsonStr: string): Promise<{ fileId?: string; webViewLink?: string; error?: string; pruned?: number }> {
+async function uploadToGoogleDrive(filename: string, jsonStr: Uint8Array): Promise<{ fileId?: string; webViewLink?: string; error?: string; pruned?: number }> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const GOOGLE_DRIVE_API_KEY = Deno.env.get("GOOGLE_DRIVE_API_KEY");
   if (!LOVABLE_API_KEY || !GOOGLE_DRIVE_API_KEY) return { error: "Google Drive nu este conectat" };
@@ -166,7 +166,7 @@ function ncConfig() {
   return { folderUrl, auth };
 }
 
-async function uploadToNextcloud(filename: string, jsonStr: string): Promise<{ error?: string; pruned?: number }> {
+async function uploadToNextcloud(filename: string, jsonStr: Uint8Array): Promise<{ error?: string; pruned?: number }> {
   const cfg = ncConfig();
   if (!cfg) return { error: "Nextcloud nu este configurat" };
   try {
@@ -359,18 +359,20 @@ Deno.serve(async (req) => {
       data: backup,
     };
 
-    const jsonStr = JSON.stringify(backupPayload, null, 2);
-    const sizeBytes = new TextEncoder().encode(jsonStr).length;
+    // Compact JSON, encoded once, to stay under the function memory limit
+    let jsonText: string | null = JSON.stringify(backupPayload);
+    for (const k of Object.keys(backup)) delete backup[k];
+    const jsonStr = new TextEncoder().encode(jsonText);
+    jsonText = null;
+    const sizeBytes = jsonStr.length;
     const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
 
     const backupStatus = errors.length > 0 ? "partial" : "success";
     const filename = `backup_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
 
     // Upload to Nextcloud (primary) and Google Drive (secondary copy)
-    const [ncResult, driveResult] = await Promise.all([
-      uploadToNextcloud(filename, jsonStr),
-      uploadToGoogleDrive(filename, jsonStr),
-    ]);
+    const ncResult = await uploadToNextcloud(filename, jsonStr);
+    const driveResult = await uploadToGoogleDrive(filename, jsonStr);
     if (ncResult.error) {
       console.error("[Nextcloud Upload] Failed:", ncResult.error);
       errors.push(`Nextcloud: ${ncResult.error}`);
