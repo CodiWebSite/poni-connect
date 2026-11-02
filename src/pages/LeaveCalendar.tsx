@@ -76,15 +76,27 @@ const LeaveCalendar = () => {
     (holidays || []).forEach(h => { holidayMap[h.holiday_date] = h.name; });
     setCustomHolidays(holidayMap);
 
-    const { data: allLeaves } = await supabase.from('hr_requests').select('user_id, details').eq('request_type', 'concediu').eq('status', 'approved');
+    // Paginare: evită limita de 1000 de rânduri (altfel cele mai noi concedii dispar)
+    const fetchAll = async (build: () => any): Promise<any[]> => {
+      const out: any[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await build().range(from, from + 999);
+        if (error || !data) break;
+        out.push(...data);
+        if (data.length < 1000) break;
+      }
+      return out;
+    };
+
+    const allLeaves = await fetchAll(() => supabase.from('hr_requests').select('id, user_id, details').eq('request_type', 'concediu').eq('status', 'approved').order('id'));
 
     // Also fetch approved leave_requests
-    const { data: leaveReqs } = await supabase.from('leave_requests').select('user_id, epd_id, start_date, end_date, status').eq('status', 'approved' as any);
+    const leaveReqs = await fetchAll(() => supabase.from('leave_requests').select('id, user_id, epd_id, start_date, end_date, status').eq('status', 'approved' as any).order('id'));
 
-    const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, department, avatar_url');
-    const { data: epdData } = await supabase.from('employee_personal_data').select('id, first_name, last_name, department, employee_record_id').eq('is_archived', false);
-    const { data: records } = await supabase.from('employee_records').select('id, user_id');
-    const { data: directoryRows } = await supabase.from('employee_directory_full').select('id, user_id');
+    const profiles = await fetchAll(() => supabase.from('profiles').select('user_id, full_name, department, avatar_url').order('user_id'));
+    const epdData = await fetchAll(() => supabase.from('employee_personal_data').select('id, first_name, last_name, department, employee_record_id').eq('is_archived', false).order('id'));
+    const records = await fetchAll(() => supabase.from('employee_records').select('id, user_id').order('id'));
+    const directoryRows = await fetchAll(() => supabase.from('employee_directory_full').select('id, user_id').order('id'));
 
     const profileMap: Record<string, { name: string; department: string | null; avatarUrl: string | null }> = {};
     (profiles || []).forEach(p => { profileMap[p.user_id] = { name: p.full_name, department: p.department, avatarUrl: p.avatar_url }; });
