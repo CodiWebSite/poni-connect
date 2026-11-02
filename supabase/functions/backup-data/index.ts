@@ -154,6 +154,57 @@ async function uploadToGoogleDrive(filename: string, jsonStr: string): Promise<{
   }
 }
 
+// ============= Nextcloud (WebDAV) =============
+function ncConfig() {
+  const base = (Deno.env.get("NEXTCLOUD_URL") || "").replace(/\/+$/, "");
+  const user = Deno.env.get("NEXTCLOUD_USER") || "";
+  const pass = Deno.env.get("NEXTCLOUD_APP_PASSWORD") || "";
+  const folder = Deno.env.get("NEXTCLOUD_FOLDER") || "Backups Intranet";
+  if (!base || !user || !pass) return null;
+  const folderUrl = `${base}/remote.php/dav/files/${encodeURIComponent(user)}/${folder.split("/").map(encodeURIComponent).join("/")}/`;
+  const auth = "Basic " + btoa(`${user}:${pass}`);
+  return { folderUrl, auth };
+}
+
+async function uploadToNextcloud(filename: string, jsonStr: string): Promise<{ error?: string; pruned?: number }> {
+  const cfg = ncConfig();
+  if (!cfg) return { error: "Nextcloud nu este configurat" };
+  try {
+    // Ensure folder exists (405 = already exists)
+    await fetch(cfg.folderUrl, { method: "MKCOL", headers: { Authorization: cfg.auth } }).then((r) => r.body?.cancel());
+    const put = async (name: string) => {
+      const r = await fetch(cfg.folderUrl + encodeURIComponent(name), {
+        method: "PUT",
+        headers: { Authorization: cfg.auth, "Content-Type": "application/json" },
+        body: jsonStr,
+      });
+      const t = await r.text();
+      if (!r.ok) throw new Error(`[${r.status}] ${t.slice(0, 300)}`);
+    };
+    await put(filename);
+    try { await put("latest.json"); } catch (e) { console.warn("nextcloud latest.json failed", e); }
+
+    let pruned = 0;
+    try {
+      const list = await fetch(cfg.folderUrl, { method: "PROPFIND", headers: { Authorization: cfg.auth, Depth: "1" } });
+      const xml = await list.text();
+      const names = [...xml.matchAll(/<d:href>([^<]+)<\/d:href>/gi)]
+        .map((m) => decodeURIComponent(m[1].split("/").pop() || ""))
+        .filter((n) => /^backup_.*\.json$/.test(n))
+        .sort()
+        .reverse();
+      for (const n of names.slice(KEEP_LAST_N_BACKUPS)) {
+        const d = await fetch(cfg.folderUrl + encodeURIComponent(n), { method: "DELETE", headers: { Authorization: cfg.auth } });
+        await d.body?.cancel();
+        if (d.ok) pruned++;
+      }
+    } catch (e) { console.warn("nextcloud prune failed", e); }
+    return { pruned };
+  } catch (e: any) {
+    return { error: e.message || String(e) };
+  }
+}
+
 async function sendBackupEmail(supabase: any, userId: string, status: string, totalRows: number, sizeMB: string, errors: string[], driveLink?: string) {
   // Get super_admin email
   const { data: { user } } = await supabase.auth.admin.getUserById(userId);
@@ -187,7 +238,7 @@ async function sendBackupEmail(supabase: any, userId: string, status: string, to
         ${errorSection}
         ${driveLink ? `<p><strong>📁 Google Drive:</strong> <a href="${driveLink}" style="color:#1e3a5f;">Deschide backup-ul</a></p>` : ""}
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;"/>
-        <p style="color:#6b7280;font-size:13px;">Backup-ul automat a fost executat${driveLink ? " și încărcat în Google Drive (folder: ICMPP Backups)" : ""}.</p>
+        <p style="color:#6b7280;font-size:13px;">Backup-ul automat a fost executat și încărcat în Nextcloud (cloud.icmpp.ro)${driveLink ? " și în Google Drive (folder: ICMPP Backups)" : ""}.</p>
       </div>
     </div>
   `;
@@ -315,8 +366,17 @@ Deno.serve(async (req) => {
     const backupStatus = errors.length > 0 ? "partial" : "success";
     const filename = `backup_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
 
-    // Upload to Google Drive
-    const driveResult = await uploadToGoogleDrive(filename, jsonStr);
+    // Upload to Nextcloud (primary) and Google Drive (secondary copy)
+    const [ncResult, driveResult] = await Promise.all([
+      uploadToNextcloud(filename, jsonStr),
+      uploadToGoogleDrive(filename, jsonStr),
+    ]);
+    if (ncResult.error) {
+      console.error("[Nextcloud Upload] Failed:", ncResult.error);
+      errors.push(`Nextcloud: ${ncResult.error}`);
+    } else {
+      console.log("[Nextcloud Upload] Success:", filename, "pruned:", ncResult.pruned);
+    }
     if (driveResult.error) {
       console.error("[Drive Upload] Failed:", driveResult.error);
       errors.push(`Google Drive: ${driveResult.error}`);
