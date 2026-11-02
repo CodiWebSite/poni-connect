@@ -84,7 +84,12 @@ async function downloadPDF(
   await Promise.all((faces as HTMLDivElement[]).flatMap(face => Array.from(face.querySelectorAll('img')).map(image => image.decode())));
   const canvases = await Promise.all((faces as HTMLDivElement[]).map(face => html2canvas(face, {
     scale: 4, useCORS: true, backgroundColor: null, logging: false,
-    onclone: (_document, element) => { element.style.transform = 'none'; },
+    onclone: (_document, element) => {
+      element.style.transform = 'none';
+      // html2canvas draws text slightly lower than the browser; lift the institute block to match the preview.
+      const institute = element.querySelector<HTMLElement>('.business-card-institute > div');
+      if (institute) institute.style.transform = 'translateY(-3px)';
+    },
   })));
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H], compress: true });
   canvases.forEach((canvas, index) => {
