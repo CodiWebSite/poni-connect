@@ -280,7 +280,7 @@ const LeaveCalendar = () => {
     return map;
   }, [leaves]);
 
-  if (!approverLoading && !hasAccess) {
+  if (!approverLoading && !roleLoading && !hasAccess) {
     return <Navigate to="/" replace />;
   }
 
