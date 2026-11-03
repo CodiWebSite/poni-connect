@@ -496,7 +496,7 @@
 .business-card-identity { min-width: 0; }
 .business-card h2 {
   font-family: 'Roboto', Arial, sans-serif;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
   color: hsl(var(--business-card-current-heading));
