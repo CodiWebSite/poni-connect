@@ -459,8 +459,8 @@
   --business-card-paper: 0 0% 100%;
   --business-card-soft-paper: 0 0% 98%;
   --business-card-ink: var(--logo-indigo);
-  --business-card-body: 0 0% 16%;
-  --business-card-muted: 0 0% 38%;
+  --business-card-body: 0 0% 0%;
+  --business-card-muted: 0 0% 0%;
 }
 
 .business-card {
