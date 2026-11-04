@@ -1,13 +1,6 @@
 // Custom push notification service worker
-// Registered separately from VitePWA's service worker
-
-self.addEventListener('install', (event) => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
+// Also imported by the main app worker (importScripts), so it must not
+// call skipWaiting/clients.claim — updates stay user-approved.
 
 self.addEventListener('push', (event) => {
   if (!event.data) return;

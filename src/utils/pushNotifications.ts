@@ -43,8 +43,9 @@ export function getNotificationPermission(): NotificationPermission | "unsupport
 }
 
 async function registerPushSW(): Promise<ServiceWorkerRegistration> {
-  // Try to find existing registration for our SW
-  const existing = await navigator.serviceWorker.getRegistration(SW_URL);
+  // Reuse whichever worker owns scope "/" (the app worker imports the push
+  // handlers), so registering push never replaces the app worker.
+  const existing = await navigator.serviceWorker.getRegistration("/");
   if (existing) return existing;
   return navigator.serviceWorker.register(SW_URL, { scope: "/" });
 }

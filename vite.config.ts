@@ -32,6 +32,9 @@ export default defineConfig(({ mode }) => ({
         skipWaiting: false,
         clientsClaim: false,
         cleanupOutdatedCaches: true,
+        // Push handlers live in the same worker that owns scope "/", so the
+        // app worker never drops notifications when it replaces push-sw.js.
+        importScripts: ["/push-sw.js"],
         runtimeCaching: [
           {
             // Always try network first for page navigations so a fresh
@@ -47,13 +50,14 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
+        id: "/",
         name: "ICMPP Intranet",
+        lang: "ro",
         short_name: "ICMPP",
         description: "Platforma intranet a Institutului de Chimie Macromoleculară Petru Poni Iași",
         theme_color: "#1e40af",
         background_color: "#ffffff",
         display: "standalone",
-        orientation: "portrait-primary",
         scope: "/",
         start_url: "/",
         categories: ["business", "productivity"],
