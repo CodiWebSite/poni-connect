@@ -4,6 +4,7 @@ import { AlertTriangle, Clock, Building2, Monitor, Phone } from 'lucide-react';
 import AnalogClock from '@/components/kiosk/AnalogClock';
 import KioskRotatingSidebar from '@/components/kiosk/KioskRotatingSidebar';
 import KioskHeaderWeather from '@/components/kiosk/KioskHeaderWeather';
+import { appWorkerOwnsScope } from '@/utils/kioskServiceWorker';
 
 // ── i18n helpers ───────────────────────────────────────
 const DAYS_RO = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];

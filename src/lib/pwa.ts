@@ -117,6 +117,16 @@ export function initPwa() {
       // Rare, cheap freshness checks — they never reload the page on their own.
       setInterval(check, 30 * 60 * 1000);
       window.addEventListener("online", check);
+      // A tab left open all day learns about a new version as soon as it is
+      // brought back to the foreground.
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") check();
+      });
+    },
+    onRegisterError(err) {
+      // Browsers can refuse registration; keep a trace so support can tell
+      // "never registered" apart from "registered but stale".
+      console.warn("[PWA] service worker registration failed", err);
     },
   });
 }
