@@ -11,6 +11,7 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 import { usePresence } from '@/hooks/usePresence';
 import { usePageTracking } from '@/hooks/useAnalytics';
 import { useIdleLogout } from '@/hooks/useIdleLogout';
+import { usePushKeepAlive } from '@/hooks/usePushKeepAlive';
 import { cn } from '@/lib/utils';
 import { AlertTriangle } from 'lucide-react';
 
@@ -28,6 +29,7 @@ const MainLayout = ({ children, title, description }: MainLayoutProps) => {
   usePresence();
   usePageTracking();
   useIdleLogout();
+  usePushKeepAlive();
 
   return (
     <div className="min-h-screen bg-background">

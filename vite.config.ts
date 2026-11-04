@@ -27,7 +27,12 @@ export default defineConfig(({ mode }) => ({
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: null,
         navigateFallbackDenylist: [/^\/~oauth/, /^\/kiosk/],
-        // Exclude HTML from precache so navigations always go network-first.
+        // HTML is never stored anywhere: not precached, and no navigation
+        // runtime cache either. A saved index.html pointing at files deleted by
+        // the next publish is the classic "white screen after deploy" — and it
+        // keeps coming back on every reopen until the network wins the race.
+        // Always-fresh HTML removes that class of failure, and the platform
+        // needs the network for its data anyway.
         globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
         skipWaiting: false,
         clientsClaim: false,
@@ -35,19 +40,6 @@ export default defineConfig(({ mode }) => ({
         // Push handlers live in the same worker that owns scope "/", so the
         // app worker never drops notifications when it replaces push-sw.js.
         importScripts: ["/push-sw.js"],
-        runtimeCaching: [
-          {
-            // Always try network first for page navigations so a fresh
-            // deploy is picked up on the next soft refresh — no CTRL+SHIFT+R.
-            urlPattern: ({ request }) => request.mode === "navigate",
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "html-navigations",
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 },
-            },
-          },
-        ],
       },
       manifest: {
         id: "/",
@@ -58,6 +50,9 @@ export default defineConfig(({ mode }) => ({
         theme_color: "#1e40af",
         background_color: "#ffffff",
         display: "standalone",
+        // Phones and tablets may be held either way; nothing in the platform
+        // is built for one orientation only.
+        orientation: "any",
         scope: "/",
         start_url: "/",
         categories: ["business", "productivity"],

@@ -529,7 +529,17 @@ if ('serviceWorker' in navigator) {
   var host = location.hostname;
   var isPreview = host.indexOf('id-preview--') !== -1 || host.indexOf('lovableproject.com') !== -1 || host.indexOf('lovable.app') !== -1;
   if (!inIframe && !isPreview && !IS_TIZEN_TV) {
-    navigator.serviceWorker.register('/kiosk-sw.js', { scope: '/' }).catch(function(err) {
+    // The intranet worker (/sw.js) owns scope "/". Registering the kiosk worker
+    // on top of it would replace that worker and silently stop the intranet's
+    // updates and notifications on this device, so the kiosk stands down.
+    navigator.serviceWorker.getRegistration('/').then(function(reg) {
+      function swPath(u){ if(!u) return ''; try { return new URL(u, location.href).pathname; } catch(e){ return ''; } }
+      var owns = !!reg && [reg.active, reg.waiting, reg.installing].some(function(w){
+        return !!w && swPath(w.scriptURL) === '/sw.js';
+      });
+      if (owns) return null;
+      return navigator.serviceWorker.register('/kiosk-sw.js', { scope: '/' });
+    }).catch(function(err) {
       console.warn('[Kiosk SW] register failed', err);
     });
   } else {

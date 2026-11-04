@@ -4,6 +4,7 @@ import { AlertTriangle, Clock, Building2, Monitor, Phone } from 'lucide-react';
 import AnalogClock from '@/components/kiosk/AnalogClock';
 import KioskRotatingSidebar from '@/components/kiosk/KioskRotatingSidebar';
 import KioskHeaderWeather from '@/components/kiosk/KioskHeaderWeather';
+import { appWorkerOwnsScope } from '@/utils/kioskServiceWorker';
 
 // ── i18n helpers ───────────────────────────────────────
 const DAYS_RO = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
@@ -112,7 +113,14 @@ const Kiosk = () => {
     }
 
     navigator.serviceWorker
-      .register('/kiosk-sw.js', { scope: '/' })
+      .getRegistration('/')
+      .then((reg) => {
+        // The intranet worker owns scope "/" — registering the kiosk worker
+        // would replace it and silently stop updates/notifications on this
+        // device, so the kiosk page stands down.
+        if (appWorkerOwnsScope(reg)) return undefined;
+        return navigator.serviceWorker.register('/kiosk-sw.js', { scope: '/' });
+      })
       .catch(err => console.warn('[Kiosk SW] register failed', err));
   }, []);
 
@@ -466,7 +474,7 @@ const Kiosk = () => {
             <span>{i.secretariat} <strong className="text-slate-200">0332 880 220</strong></span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-primary/80">pponi@icmpp.ro</span>
+            <span className="text-slate-200">pponi@icmpp.ro</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
