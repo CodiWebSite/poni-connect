@@ -110,7 +110,7 @@ export async function unsubscribeFromPush(): Promise<{ ok: boolean; error?: stri
   try {
     if (!isPushSupported()) return { ok: true };
 
-    const reg = await navigator.serviceWorker.getRegistration(SW_URL);
+    const reg = await navigator.serviceWorker.getRegistration("/");
     const sub = await reg?.pushManager.getSubscription();
 
     if (sub) {
@@ -134,7 +134,7 @@ export async function unsubscribeFromPush(): Promise<{ ok: boolean; error?: stri
 export async function isSubscribedToPush(): Promise<boolean> {
   if (!isPushSupported()) return false;
   if (Notification.permission !== "granted") return false;
-  const reg = await navigator.serviceWorker.getRegistration(SW_URL);
+  const reg = await navigator.serviceWorker.getRegistration("/");
   if (!reg) return false;
   const sub = await reg.pushManager.getSubscription();
   return !!sub && subscriptionMatchesCurrentKey(sub);
