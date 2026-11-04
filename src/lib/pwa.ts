@@ -20,8 +20,8 @@ const SW_URL = "/sw.js";
 
 function isPreviewHost(host: string) {
   return (
-    host.startsWith("id-preview--") ||
-    host.startsWith("preview--") ||
+    /^(?:id-preview|preview)(?:-[a-z0-9]+)?--.+/.test(host) ||
+    /^project--.+-dev\./.test(host) ||
     host === "lovableproject.com" ||
     host.endsWith(".lovableproject.com") ||
     host === "lovableproject-dev.com" ||
@@ -45,7 +45,7 @@ async function unregisterAppSw() {
     const regs = await navigator.serviceWorker.getRegistrations();
     await Promise.all(
       regs
-        .filter((r) => (r.active?.scriptURL || r.waiting?.scriptURL || "").includes(SW_URL))
+        .filter((r) => /\/sw\.js$/.test(r.active?.scriptURL || r.waiting?.scriptURL || ""))
         .map((r) => r.unregister().catch(() => {})),
     );
   } catch {
@@ -68,7 +68,7 @@ export function initPwa() {
   const refuse =
     !import.meta.env.PROD ||
     inIframe() ||
-    isPreviewHost(window.location.hostname) ||
+    isPreviewHost(window.location.hostname.toLowerCase()) ||
     params.get("sw") === "off";
 
   if (refuse) {

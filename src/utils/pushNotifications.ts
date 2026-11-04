@@ -43,8 +43,9 @@ export function getNotificationPermission(): NotificationPermission | "unsupport
 }
 
 async function registerPushSW(): Promise<ServiceWorkerRegistration> {
-  // Try to find existing registration for our SW
-  const existing = await navigator.serviceWorker.getRegistration(SW_URL);
+  // Reuse whichever worker owns scope "/" (the app worker imports the push
+  // handlers), so registering push never replaces the app worker.
+  const existing = await navigator.serviceWorker.getRegistration("/");
   if (existing) return existing;
   return navigator.serviceWorker.register(SW_URL, { scope: "/" });
 }
@@ -109,7 +110,7 @@ export async function unsubscribeFromPush(): Promise<{ ok: boolean; error?: stri
   try {
     if (!isPushSupported()) return { ok: true };
 
-    const reg = await navigator.serviceWorker.getRegistration(SW_URL);
+    const reg = await navigator.serviceWorker.getRegistration("/");
     const sub = await reg?.pushManager.getSubscription();
 
     if (sub) {
@@ -133,7 +134,7 @@ export async function unsubscribeFromPush(): Promise<{ ok: boolean; error?: stri
 export async function isSubscribedToPush(): Promise<boolean> {
   if (!isPushSupported()) return false;
   if (Notification.permission !== "granted") return false;
-  const reg = await navigator.serviceWorker.getRegistration(SW_URL);
+  const reg = await navigator.serviceWorker.getRegistration("/");
   if (!reg) return false;
   const sub = await reg.pushManager.getSubscription();
   return !!sub && subscriptionMatchesCurrentKey(sub);
