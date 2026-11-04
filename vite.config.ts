@@ -50,6 +50,9 @@ export default defineConfig(({ mode }) => ({
         theme_color: "#1e40af",
         background_color: "#ffffff",
         display: "standalone",
+        // Phones and tablets may be held either way; nothing in the platform
+        // is built for one orientation only.
+        orientation: "any",
         scope: "/",
         start_url: "/",
         categories: ["business", "productivity"],
