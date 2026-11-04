@@ -474,7 +474,7 @@ const Kiosk = () => {
             <span>{i.secretariat} <strong className="text-slate-200">0332 880 220</strong></span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-primary/80">pponi@icmpp.ro</span>
+            <span className="text-slate-200">pponi@icmpp.ro</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
