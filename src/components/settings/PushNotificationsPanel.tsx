@@ -10,6 +10,7 @@ import {
   isSubscribedToPush,
   subscribeToPush,
   unsubscribeFromPush,
+  ensurePushSubscription,
   getNotificationPermission,
 } from "@/utils/pushNotifications";
 import { toast } from "sonner";
@@ -31,6 +32,9 @@ const PushNotificationsPanel = () => {
     setSupported(sup);
     setPermission(getNotificationPermission());
     if (sup) {
+      // Silent keep-in-sync pass: re-registers the push address this browser is
+      // using right now, so notifications survive an address rotation.
+      await ensurePushSubscription();
       const isSub = await isSubscribedToPush();
       setSubscribed(isSub);
     }
