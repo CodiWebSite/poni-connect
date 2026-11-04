@@ -29,10 +29,11 @@ describe("kiosk worker registration guard", () => {
     expect(appWorkerOwnsScope({})).toBe(false);
   });
 
-  it("reads worker paths without exploding on junk", () => {
-    expect(swScriptPath("https://intranet.icmpp.ro/sw.js")).toBe("/sw.js");
-    expect(swScriptPath("/sw.js")).toBe("/sw.js");
+  it("never treats a junk worker URL as the intranet worker", () => {
+    expect(appWorkerOwnsScope({ active: { scriptURL: "::::" } })).toBe(false);
+    expect(appWorkerOwnsScope({ active: { scriptURL: "https://evil.test/sw.js.evil" } })).toBe(
+      false,
+    );
     expect(swScriptPath(undefined)).toBe("");
-    expect(swScriptPath("::::")).toBe("");
   });
 });
