@@ -112,7 +112,14 @@ const Kiosk = () => {
     }
 
     navigator.serviceWorker
-      .register('/kiosk-sw.js', { scope: '/' })
+      .getRegistration('/')
+      .then((reg) => {
+        // The intranet worker owns scope "/" — registering the kiosk worker
+        // would replace it and silently stop updates/notifications on this
+        // device, so the kiosk page stands down.
+        if (appWorkerOwnsScope(reg)) return undefined;
+        return navigator.serviceWorker.register('/kiosk-sw.js', { scope: '/' });
+      })
       .catch(err => console.warn('[Kiosk SW] register failed', err));
   }, []);
 
