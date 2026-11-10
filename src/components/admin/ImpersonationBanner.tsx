@@ -38,6 +38,7 @@ interface UserOption {
 }
 
 const ImpersonationBanner = () => {
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   const { user } = useAuth();
   const {
     isImpersonating, impersonatedRole, impersonatedUserName,
@@ -80,7 +81,7 @@ const ImpersonationBanner = () => {
     setLoadingUsers(false);
   };
 
-  if (!isRealSuperAdmin) return null;
+  if (!isRealSuperAdmin || pathname.startsWith('/auth')) return null;
 
   const filteredUsers = users.filter(u =>
     u.full_name.toLowerCase().includes(search.toLowerCase())

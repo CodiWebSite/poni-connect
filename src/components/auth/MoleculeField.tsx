@@ -12,7 +12,7 @@ const MoleculeField = ({ className = '' }: { className?: string }) => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const mobile = window.matchMedia('(pointer: coarse)').matches;
     const color = getComputedStyle(canvas).color || 'rgb(58,59,141)';
-    const speed = reduce ? 0 : mobile ? 0.04 : 0.18;
+    const speed = reduce ? 0.08 : mobile ? 0.12 : 0.3;
     let w = 0, h = 0, raf = 0;
     const mouse = { x: -9999, y: -9999 };
     type P = { x: number; y: number; vx: number; vy: number; r: number };
@@ -45,7 +45,7 @@ const MoleculeField = ({ className = '' }: { className?: string }) => {
         for (let j = i + 1; j < pts.length; j++) {
           const a = pts[i], b = pts[j], d = Math.hypot(a.x - b.x, a.y - b.y);
           if (d < 130) {
-            ctx.globalAlpha = (1 - d / 130) * 0.35;
+            ctx.globalAlpha = (1 - d / 130) * 0.45;
             ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
           }
@@ -56,7 +56,7 @@ const MoleculeField = ({ className = '' }: { className?: string }) => {
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalAlpha = 1;
-      if (!reduce) raf = requestAnimationFrame(draw);
+      raf = requestAnimationFrame(draw);
     };
 
     const onMove = (e: PointerEvent) => {

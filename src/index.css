@@ -541,5 +541,5 @@
 @keyframes authFloat { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,-30px) scale(1.12); } }
 @keyframes authShine { 0%,60% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 @keyframes authShake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-8px); } 40%,80% { transform: translateX(8px); } }
-@media (prefers-reduced-motion: reduce) { .auth-orb, .auth-glass::before, .auth-shimmer::after, .auth-shake { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .auth-shake { animation: none !important; } }
 @media (max-width: 640px) { .auth-glass { padding: 1.25rem; border-radius: 1.25rem; } }

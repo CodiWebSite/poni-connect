@@ -13,7 +13,7 @@ import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '@/integrations/supabase/client';
 import AccountHelpForm from '@/components/auth/AccountHelpForm';
 import HelpdeskContactForm from '@/components/auth/HelpdeskContactForm';
-import MolecularPattern from '@/components/auth/MolecularPattern';
+
 import MoleculeField from '@/components/auth/MoleculeField';
 import AuthGreeting from '@/components/auth/AuthGreeting';
 import { ShieldCheck, GraduationCap, FileLock2 } from 'lucide-react';
@@ -328,9 +328,7 @@ const Auth = () => {
       {/* Left panel — brand & trust */}
       <aside className="relative hidden lg:flex lg:w-5/12 xl:w-[38%] lg:h-dvh flex-col justify-between p-10 xl:p-14 bg-brand text-brand-foreground overflow-hidden">
 
-        <div className="absolute inset-0 opacity-[0.14] pointer-events-none animate-[pulse_9s_ease-in-out_infinite]">
-          <MolecularPattern className="w-full h-full" />
-        </div>
+        <MoleculeField className="absolute inset-0 h-full w-full text-brand-foreground opacity-40" />
         <div
           className="absolute -top-1/4 -right-1/4 w-[36rem] h-[36rem] rounded-full blur-3xl pointer-events-none"
           style={{ background: 'hsl(var(--brand-accent) / 0.12)' }}
@@ -378,7 +376,7 @@ const Auth = () => {
       </aside>
 
       {/* Right panel — auth */}
-      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-start px-5 py-6 sm:px-8 lg:h-dvh lg:justify-start lg:overflow-y-auto lg:py-12 lg:px-14 xl:px-20">
+      <main className="relative flex-1 min-w-0 flex flex-col items-center justify-start px-5 py-6 sm:px-8 lg:h-dvh lg:justify-start lg:overflow-y-auto lg:py-8 lg:px-14 xl:px-20">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="auth-orb -top-24 -left-20 h-80 w-80" style={{ background: 'hsl(var(--primary) / 0.22)' }} />
           <div className="auth-orb bottom-0 right-0 h-96 w-96" style={{ background: 'hsl(var(--logo-indigo) / 0.2)', animationDelay: '-9s' }} />
@@ -731,45 +729,21 @@ const Auth = () => {
                 </TabsContent>
               </Tabs>
 
-              <div className="mt-10 space-y-5">
-                <button
-                  type="button"
-                  onClick={() => setShowAccountHelp(true)}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary/90 transition-colors hover:text-primary"
-                >
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm">
+                <button type="button" onClick={() => setShowAccountHelp(true)} className="inline-flex items-center gap-1.5 font-medium text-primary/90 transition-colors hover:text-primary">
                   <HelpCircle className="w-4 h-4" />
-                  Nu reușești să-ți creezi cont? Solicită ajutor
+                  Ajutor cont nou
                 </button>
-
-                <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                      <Headset className="w-[18px] h-[18px]" />
-                    </div>
-                    <h3 className="text-sm font-bold text-foreground">
-                      Asistență IT instituțională
-                    </h3>
-                  </div>
-                  <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
-                    Pentru probleme de autentificare, parolă sau 2FA, contactează echipa IT a
-                    Institutului prin formularul securizat.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowHelpdeskForm(true)}
-                    className="mt-2.5 inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
-
-                  >
-                    <Headset className="w-4 h-4" />
-                    Trimite un mesaj echipei IT
-                  </button>
-                </div>
+                <button type="button" onClick={() => setShowHelpdeskForm(true)} className="inline-flex items-center gap-1.5 font-medium text-primary/90 transition-colors hover:text-primary">
+                  <Headset className="w-4 h-4" />
+                  Asistență IT (parolă, 2FA)
+                </button>
               </div>
             </>
           )}
 
           {/* GDPR / legal footer */}
-          <footer className="mt-7 pt-4 border-t border-border space-y-2 text-center">
+          <footer className="mt-5 pt-3 border-t border-border space-y-2 text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
               © {new Date().getFullYear()} ICMPP „Petru Poni” — Academia Română
             </p>
