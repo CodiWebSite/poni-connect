@@ -14,6 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 import AccountHelpForm from '@/components/auth/AccountHelpForm';
 import HelpdeskContactForm from '@/components/auth/HelpdeskContactForm';
 import MolecularPattern from '@/components/auth/MolecularPattern';
+import MoleculeField from '@/components/auth/MoleculeField';
+import AuthGreeting from '@/components/auth/AuthGreeting';
 import { ShieldCheck, GraduationCap, FileLock2 } from 'lucide-react';
 import { BiometricUnlockButton } from '@/components/native/BiometricUnlockButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -110,6 +112,7 @@ const Auth = () => {
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const [loginCaptchaError, setLoginCaptchaError] = useState(false);
   const [signupCaptchaError, setSignupCaptchaError] = useState(false);
+  const [shake, setShake] = useState(0);
   const loginTurnstileRef = useRef<TurnstileInstance>(null);
   const signupTurnstileRef = useRef<TurnstileInstance>(null);
   const { signIn, signUp, user } = useAuth();
@@ -188,6 +191,7 @@ const Auth = () => {
       } else {
         toast.error('Eroare la autentificare. Încercați din nou.');
       }
+      setShake((n) => n + 1);
       loginTurnstileRef.current?.reset();
       setLoginToken(null);
     } else {
@@ -375,11 +379,13 @@ const Auth = () => {
 
       {/* Right panel — auth */}
       <main className="relative flex-1 min-w-0 flex flex-col items-center justify-start px-5 py-6 sm:px-8 lg:h-dvh lg:justify-start lg:overflow-y-auto lg:py-12 lg:px-14 xl:px-20">
-        <div className="absolute inset-0 text-primary opacity-[0.06] pointer-events-none lg:hidden">
-          <MolecularPattern className="w-full h-full" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="auth-orb -top-24 -left-20 h-80 w-80" style={{ background: 'hsl(var(--primary) / 0.22)' }} />
+          <div className="auth-orb bottom-0 right-0 h-96 w-96" style={{ background: 'hsl(var(--logo-indigo) / 0.2)', animationDelay: '-9s' }} />
+          <MoleculeField className="absolute inset-0 h-full w-full text-primary opacity-60" />
         </div>
 
-        <div className="relative my-auto w-full max-w-md animate-fade-in">
+        <div key={shake} className={`relative my-auto w-full max-w-md animate-fade-in auth-glass ${shake ? 'auth-shake' : ''}`}>
           {/* Mobile brand header */}
           <div className="lg:hidden mb-10 flex flex-col items-center text-center">
             <img
@@ -466,7 +472,7 @@ const Auth = () => {
 
                 <Button
                   type="submit"
-                  className="w-full min-h-12 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                  className="w-full min-h-12 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99] auth-shimmer"
                   variant="hero"
                   disabled={isLoading}
                 >
@@ -476,15 +482,12 @@ const Auth = () => {
             </div>
           ) : (
             <>
-              <div className="hidden lg:block mb-8">
-                <h2 className="font-display text-3xl font-bold tracking-tight">Bine ați venit</h2>
-                <p className="mt-1.5 text-muted-foreground">
-                  Autentifică-te pentru a accesa platforma.
-                </p>
+              <div className="mb-8">
+                <AuthGreeting />
               </div>
 
               <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-auto p-1 mb-8 rounded-2xl bg-muted">
+                <TabsList className="grid w-full grid-cols-2 h-auto p-1 mb-8 rounded-2xl bg-muted/70 backdrop-blur">
                   <TabsTrigger
                     value="login"
                     className="rounded-xl py-2.5 text-sm font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm"
@@ -572,7 +575,7 @@ const Auth = () => {
 
                     <Button
                       type="submit"
-                      className="w-full min-h-12 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                      className="w-full min-h-12 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99] auth-shimmer"
                       variant="hero"
                       disabled={isLoading}
                     >
@@ -718,7 +721,7 @@ const Auth = () => {
 
                     <Button
                       type="submit"
-                      className="w-full min-h-12 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                      className="w-full min-h-12 rounded-xl text-base font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.99] auth-shimmer"
                       variant="hero"
                       disabled={isLoading}
                     >

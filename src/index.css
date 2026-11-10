@@ -518,3 +518,28 @@
 .business-card-site-qr { width: 58px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; text-align: center; overflow: visible; }
 .business-card-site-qr small { display: block; width: 80px; font-size: 7px; margin-top: 3px; line-height: 1.2; color: hsl(var(--business-card-current-muted)); }
 .business-card-minimal { background: hsl(var(--business-card-soft-paper)); }
+
+/* ===== Auth page 2026 ===== */
+@property --auth-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.auth-orb { position: absolute; border-radius: 9999px; filter: blur(70px); pointer-events: none; animation: authFloat 18s ease-in-out infinite; }
+.auth-glass {
+  position: relative; border-radius: 1.75rem; padding: 2rem;
+  background: hsl(var(--card) / 0.72); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow: 0 30px 80px -30px hsl(var(--logo-indigo) / 0.45), inset 0 1px 0 hsl(var(--card) / 0.6);
+}
+.auth-glass::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: conic-gradient(from var(--auth-angle), hsl(var(--primary) / 0.05), hsl(var(--primary) / 0.6), hsl(var(--logo-indigo) / 0.05), hsl(var(--primary) / 0.05));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: authSpin 8s linear infinite;
+}
+.auth-glass input:focus-visible { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.15), 0 8px 24px -12px hsl(var(--primary) / 0.6); }
+.auth-shimmer { position: relative; overflow: hidden; }
+.auth-shimmer::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, hsl(var(--primary-foreground) / 0.35) 50%, transparent 70%); transform: translateX(-100%); animation: authShine 3.5s ease-in-out infinite; pointer-events: none; }
+.auth-shake { animation: authShake 0.45s ease-in-out; }
+@keyframes authSpin { to { --auth-angle: 360deg; } }
+@keyframes authFloat { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,-30px) scale(1.12); } }
+@keyframes authShine { 0%,60% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@keyframes authShake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-8px); } 40%,80% { transform: translateX(8px); } }
+@media (prefers-reduced-motion: reduce) { .auth-orb, .auth-glass::before, .auth-shimmer::after, .auth-shake { animation: none !important; } }
+@media (max-width: 640px) { .auth-glass { padding: 1.25rem; border-radius: 1.25rem; } }
