@@ -5511,15 +5511,6 @@ export type Database = {
         Args: { _reason: string; _year: number }
         Returns: number
       }
-      delete_email: {
-        Args: { message_id: number; queue_name: string }
-        Returns: boolean
-      }
-      email_queue_dispatch: { Args: never; Returns: undefined }
-      enqueue_email: {
-        Args: { payload: Json; queue_name: string }
-        Returns: number
-      }
       ensure_department_group: { Args: { _user_id: string }; Returns: string }
       ensure_registry_temp_sequence: {
         Args: { _department_key: string }
@@ -5664,15 +5655,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      move_to_dlq: {
-        Args: {
-          dlq_name: string
-          message_id: number
-          payload: Json
-          source_queue: string
-        }
-        Returns: number
-      }
       notify_doctoral_student: {
         Args: {
           _message: string
@@ -5685,14 +5667,6 @@ export type Database = {
       open_leave_year: {
         Args: { _force?: boolean; _year: number }
         Returns: number
-      }
-      read_email_batch: {
-        Args: { batch_size: number; queue_name: string; vt: number }
-        Returns: {
-          message: Json
-          msg_id: number
-          read_ct: number
-        }[]
       }
       recalculate_leave_balance: {
         Args: { target_epd_id?: string }
