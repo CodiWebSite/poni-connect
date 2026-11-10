@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { formatNumePrenume } from '@/utils/formatName';
@@ -14,9 +14,11 @@ const getGreeting = () => {
 
 interface DashboardGreetingProps {
   subtitle?: string;
+  summary?: ReactNode;
+  actions?: ReactNode;
 }
 
-const DashboardGreeting = ({ subtitle }: DashboardGreetingProps) => {
+const DashboardGreeting = ({ subtitle, summary, actions }: DashboardGreetingProps) => {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState('');
 
@@ -36,6 +38,7 @@ const DashboardGreeting = ({ subtitle }: DashboardGreetingProps) => {
 
   return (
     <div className="animate-fade-in flex items-start gap-3 sm:gap-4">
+      <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
       <span
         aria-hidden="true"
         className="mt-1 hidden sm:block h-12 w-[3px] shrink-0 rounded-full bg-gradient-to-b from-primary to-accent"
@@ -50,7 +53,10 @@ const DashboardGreeting = ({ subtitle }: DashboardGreetingProps) => {
         <p className="mt-0.5 text-sm text-muted-foreground sm:text-base">
           {today} {subtitle ? `— ${subtitle}` : ''}
         </p>
+        {summary && <div className="mt-2 text-sm text-foreground/80">{summary}</div>}
       </div>
+      </div>
+      {actions && <div className="shrink-0 flex items-center gap-2">{actions}</div>}
     </div>
   );
 

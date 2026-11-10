@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   Search, FileText, Megaphone, Users, Calendar, X,
-  BookOpen, Lightbulb, Boxes, Inbox, Archive, DoorOpen, Loader2,
+  BookOpen, Lightbulb, Boxes, Inbox, Archive, DoorOpen, Loader2, Zap, History,
   LifeBuoy, Presentation, Sparkles, Compass,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -74,6 +74,21 @@ const PAGES: { title: string; description: string; url: string; keywords: string
   { title: 'Starea platformei', description: 'Sănătatea sistemului și incidente', url: '/system-status', keywords: 'status sanatate platforma incidente' },
   { title: 'Noutăți', description: 'Ce s-a schimbat pe platformă', url: '/changelog', keywords: 'noutati changelog versiuni' },
 ];
+
+const QUICK_ACTIONS = [
+  { title: 'Cerere concediu nouă', url: '/leave-request', keywords: 'concediu cerere noua' },
+  { title: 'Fluturașul meu', url: '/my-profile', keywords: 'fluturas salariu' },
+  { title: 'Rezervă o sală', url: '/room-bookings', keywords: 'sala rezervare' },
+  { title: 'Cartea mea de vizită', url: '/carti-vizita', keywords: 'carte vizita' },
+  { title: 'Tichet IT / incident', url: '/raporteaza-incident', keywords: 'tichet it incident problema' },
+  { title: 'Calendar concedii', url: '/leave-calendar', keywords: 'calendar' },
+];
+const RECENT_KEY = 'icmpp-search-recent';
+type Recent = { title: string; url: string };
+const readRecent = (): Recent[] => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]').slice(0, 5); } catch { return []; } };
+const pushRecent = (r: Recent) => {
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify([r, ...readRecent().filter(x => x.url !== r.url || x.title !== r.title)].slice(0, 5))); } catch { /* ignore */ }
+};
 
 // Elimină diacriticele pentru potrivire tolerantă
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -245,7 +260,39 @@ export const GlobalSearch = () => {
     return g;
   }, [results]);
 
+  const go = (title: string, url: string) => {
+    pushRecent({ title, url });
+    navigate(url);
+    setQuery('');
+    setShowResults(false);
+    setMobileOpen(false);
+  };
+
+  const QuickPanel = () => {
+    const recent = readRecent();
+    const Item = ({ title, url, icon: Icon }: { title: string; url: string; icon: any }) => (
+      <button onClick={() => go(title, url)} className="w-full px-4 py-2 flex items-center gap-3 hover:bg-secondary/60 transition-colors text-left">
+        <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0"><Icon className="w-3.5 h-3.5" /></div>
+        <span className="text-sm text-foreground truncate">{title}</span>
+      </button>
+    );
+    return (
+      <div className="py-1">
+        <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">Acțiuni rapide</div>
+        {QUICK_ACTIONS.map(a => <Item key={a.url + a.title} title={a.title} url={a.url} icon={Zap} />)}
+        {recent.length > 0 && (
+          <>
+            <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">Recente</div>
+            {recent.map(r => <Item key={r.url + r.title} title={r.title} url={r.url} icon={History} />)}
+          </>
+        )}
+        <div className="px-4 py-2 text-[10px] text-muted-foreground/60 border-t border-border/50 mt-1">Scrie cel puțin 2 litere pentru oameni, documente, pagini…</div>
+      </div>
+    );
+  };
+
   const handleResultClick = (result: SearchResult) => {
+    pushRecent({ title: result.title, url: result.url });
     navigate(result.url);
     setQuery('');
     setShowResults(false);
@@ -346,9 +393,9 @@ export const GlobalSearch = () => {
           </kbd>
         )}
 
-        {showResults && query.length >= 2 && (
-          <div className="absolute top-full mt-2 w-[28rem] bg-card border border-border rounded-lg shadow-lg z-50 max-h-[32rem] overflow-y-auto">
-            <SearchResultsList />
+        {showResults && (
+          <div className="absolute top-full mt-2 w-[28rem] bg-card/95 backdrop-blur-xl border border-border rounded-xl shadow-lg z-50 max-h-[32rem] overflow-y-auto">
+            {query.length >= 2 ? <SearchResultsList /> : <QuickPanel />}
           </div>
         )}
       </div>
@@ -376,7 +423,7 @@ export const GlobalSearch = () => {
               />
             </div>
             <div className="max-h-[60vh] overflow-y-auto -mx-6">
-              <SearchResultsList />
+              {query.length >= 2 ? <SearchResultsList /> : <QuickPanel />}
             </div>
           </div>
         </DialogContent>

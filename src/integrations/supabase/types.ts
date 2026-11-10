@@ -5174,6 +5174,24 @@ export type Database = {
           },
         ]
       }
+      user_dashboard_layouts: {
+        Row: {
+          updated_at: string
+          user_id: string
+          widgets: Json
+        }
+        Insert: {
+          updated_at?: string
+          user_id: string
+          widgets?: Json
+        }
+        Update: {
+          updated_at?: string
+          user_id?: string
+          widgets?: Json
+        }
+        Relationships: []
+      }
       user_onboarding: {
         Row: {
           completed_at: string | null

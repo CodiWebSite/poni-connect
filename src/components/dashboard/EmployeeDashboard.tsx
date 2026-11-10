@@ -15,12 +15,17 @@ import PersonalLeaveWidget from './PersonalLeaveWidget';
 import ChangelogWidget from './ChangelogWidget';
 
 import RoomBookingsWidget from './RoomBookingsWidget';
+import SummaryStrip, { DaySummary } from './SummaryStrip';
+import CustomizeDashboardSheet from './CustomizeDashboardSheet';
+import { WidgetId, widgetById } from './dashboardWidgets';
+import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   UserCircle, Calendar, FolderDown, FileText, Plane,
-  Clock, CheckCircle2, XCircle, Inbox,
+  Clock, CheckCircle2, XCircle, Inbox, SlidersHorizontal,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -91,23 +96,23 @@ const EmployeeDashboard = () => {
     { icon: FolderDown, label: 'Formulare', path: '/formulare', gradient: 'from-warning to-accent' },
   ];
 
-  return (
-    <MainLayout title="Dashboard" description="Panoul tău personal">
-      <DashboardBanners />
-      <DashboardGreeting subtitle="Iată un rezumat al situației tale." />
-      <DashboardBulletinBoard />
+  const [customizing, setCustomizing] = useState(false);
+  const [summary, setSummary] = useState<DaySummary | null>(null);
+  const { layout, save, reset } = useDashboardLayout();
+  const visible = layout.filter(i => i.visible).map(i => i.id);
+  const top = visible.filter(id => widgetById(id).column === 'top');
+  const main = visible.filter(id => widgetById(id).column === 'main');
+  const side = visible.filter(id => widgetById(id).column === 'side');
 
-      {/* Quick Actions */}
-      <div className="mt-4">
-        <SectionTitle>Acțiuni Rapide</SectionTitle>
-        <QuickActionsGrid actions={quickActions} columns={4} />
-      </div>
+  const daySummary = (() => {
+    const parts: string[] = [];
+    if (pendingCount > 0) parts.push(`${pendingCount} ${pendingCount === 1 ? 'cerere în lucru' : 'cereri în lucru'}`);
+    if (summary?.roomsToday) parts.push(`${summary.roomsToday} ${summary.roomsToday === 1 ? 'rezervare de sală' : 'rezervări de săli'} azi`);
+    if (summary?.leaveRemaining != null) parts.push(`sold concediu ${summary.leaveRemaining} zile`);
+    return parts.length ? <>Azi: {parts.join(' · ')}</> : null;
+  })();
 
-      <BentoGrid className="mt-4">
-        <BentoMain>
-          <RoomBookingsWidget />
-          <DashboardAnnouncements />
-
+  const requestsCard = (
           <Card className="surface-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -145,14 +150,49 @@ const EmployeeDashboard = () => {
             </CardContent>
           </Card>
 
-          <ActivityHistory />
-        </BentoMain>
+  );
 
-        <BentoSide>
-          <PersonalLeaveWidget />
-          <ChangelogWidget />
-        </BentoSide>
+  const render = (id: WidgetId) => {
+    switch (id) {
+      case 'bulletin': return <DashboardBulletinBoard />;
+      case 'rooms': return <RoomBookingsWidget />;
+      case 'announcements': return <DashboardAnnouncements />;
+      case 'requests': return requestsCard;
+      case 'activity': return <ActivityHistory />;
+      case 'leave': return <PersonalLeaveWidget />;
+      case 'changelog': return <ChangelogWidget />;
+    }
+  };
+
+  return (
+    <MainLayout title="Dashboard" description="Panoul tău personal">
+      <DashboardBanners />
+      <DashboardGreeting
+        summary={daySummary}
+        actions={
+          <Button variant="outline" size="sm" className="rounded-full bg-card/60 backdrop-blur" onClick={() => setCustomizing(true)}>
+            <SlidersHorizontal className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Personalizează</span>
+          </Button>
+        }
+      />
+
+      <div className="mt-4">
+        <SummaryStrip pendingRequests={pendingCount} onSummary={setSummary} />
+      </div>
+
+      {top.map(id => <div key={id} className="mt-4">{render(id)}</div>)}
+
+      <div className="mt-4">
+        <SectionTitle>Acțiuni rapide <span className="normal-case tracking-normal font-normal text-muted-foreground/70">· sau apasă Ctrl+K</span></SectionTitle>
+        <QuickActionsGrid actions={quickActions} columns={4} />
+      </div>
+
+      <BentoGrid className="mt-4">
+        <BentoMain>{main.map(id => <div key={id}>{render(id)}</div>)}</BentoMain>
+        <BentoSide>{side.map(id => <div key={id}>{render(id)}</div>)}</BentoSide>
       </BentoGrid>
+
+      <CustomizeDashboardSheet open={customizing} onOpenChange={setCustomizing} layout={layout} onSave={save} onReset={reset} />
     </MainLayout>
   );
 };
