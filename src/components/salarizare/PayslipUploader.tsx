@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import PayslipGuide from '@/components/salarizare/PayslipGuide';
+import PayslipToResolve from '@/components/salarizare/PayslipToResolve';
 import PayslipUploadStudio from '@/components/salarizare/PayslipUploadStudio';
 
 const MONTH_NAMES_RO = [
@@ -539,8 +540,8 @@ export default function PayslipUploader() {
           {batches.length === 0 ? (
             <div className="text-sm text-muted-foreground text-center py-8">Niciun lot încărcat încă.</div>
           ) : (
-            <div className="space-y-2">
-              {batches.map(b => {
+            <div className="relative space-y-3 pl-6 before:absolute before:left-[9px] before:top-3 before:bottom-3 before:w-px before:bg-border">
+              {batches.map((b, idx) => {
                 const bMeta = batchStatusMeta[b.status] ?? batchStatusMeta.pending;
                 const BIcon = bMeta.icon;
                 const st = batchStats[b.id];
@@ -550,8 +551,16 @@ export default function PayslipUploader() {
                 const readyCount = st?.ready ?? 0;
                 const totalCount = st?.total || b.total_slips;
                 const pct = totalCount > 0 ? Math.round((okCount / totalCount) * 100) : 0;
+                const newYear = idx === 0 || batches[idx - 1].year !== b.year;
                 return (
-                <div key={b.id} className={`p-3 rounded-lg border transition-colors ${openBatch === b.id ? 'bg-accent/10 border-primary/40' : 'hover:bg-accent/5'}`}>
+                <div key={b.id} className="relative">
+                {newYear && (
+                  <div className="-ml-6 mb-2 flex items-center gap-2">
+                    <span className="relative z-10 rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5">{b.year}</span>
+                  </div>
+                )}
+                <span aria-hidden className={`absolute -left-[21px] top-4 z-10 h-3 w-3 rounded-full border-2 border-background ${b.status === 'distributed' ? 'bg-info' : b.status === 'ready' ? 'bg-success' : b.status === 'failed' ? 'bg-destructive' : 'bg-warning animate-pulse'}`} />
+                <div className={`p-3 rounded-xl border bg-card/60 backdrop-blur transition-colors ${openBatch === b.id ? 'bg-accent/10 border-primary/40' : 'hover:bg-accent/5'}`}>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <button className="text-left flex-1 min-w-0" onClick={() => openBatchView(b.id)}>
                       <div className="font-medium text-sm">
@@ -636,6 +645,7 @@ export default function PayslipUploader() {
                     </div>
                   )}
                 </div>
+                </div>
                 );
               })}
             </div>
@@ -652,6 +662,14 @@ export default function PayslipUploader() {
             <CardDescription>{slips.length} fluturași detectați</CardDescription>
           </CardHeader>
           <CardContent>
+            <PayslipToResolve
+              slips={slips}
+              employees={employees}
+              busyId={busy}
+              previewingId={previewing}
+              onAssign={assign}
+              onPreview={previewSlip}
+            />
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

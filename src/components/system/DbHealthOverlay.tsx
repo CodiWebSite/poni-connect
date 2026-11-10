@@ -40,6 +40,7 @@ async function pingDb(): Promise<{ ok: boolean; error?: string; latency: number 
 
 export default function DbHealthOverlay() {
   const [down, setDown] = useState(false);
+  const [soft, setSoft] = useState(false);
   const [recovering, setRecovering] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [downSince, setDownSince] = useState<number | null>(null);
@@ -61,6 +62,7 @@ export default function DbHealthOverlay() {
 
     if (res.ok) {
       failuresRef.current = 0;
+      setSoft(false);
       if (down) {
         // DB a revenit → NU reîncărcăm singuri pagina (datele din formulare
         // trebuie păstrate). Ascundem overlay-ul și lăsăm reîncărcarea la
@@ -82,6 +84,7 @@ export default function DbHealthOverlay() {
       setLastError(res.error || 'unknown');
       // While a long job (e.g. payslips) runs, slow replies are expected:
       // never block the screen, the job keeps going on the server.
+      if (failuresRef.current >= 2 && backgroundJob.isActive()) setSoft(true);
       if (failuresRef.current >= FAILURES_TO_TRIP && !down && !backgroundJob.isActive()) {
         setDown(true);
         setDownSince(Date.now());
@@ -112,6 +115,14 @@ export default function DbHealthOverlay() {
     return () => window.clearInterval(t);
   }, [down]);
 
+  if (!down && soft) {
+    return (
+      <div role="status" className="fixed top-3 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 rounded-full border border-warning/40 bg-card/90 backdrop-blur-xl px-4 py-2 text-sm shadow-lg animate-fade-in">
+        <Loader2 className="w-4 h-4 animate-spin text-warning" />
+        <span>Reconectare… lotul continuă pe server</span>
+      </div>
+    );
+  }
   if (!down) return null;
 
   const seconds = downSince ? Math.floor((now - downSince) / 1000) : 0;
