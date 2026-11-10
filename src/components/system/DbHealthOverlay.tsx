@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, Loader2, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { backgroundJob } from '@/utils/payslipBatchProgress';
 
 /**
  * Monitorizează conectivitatea cu baza de date.
@@ -79,7 +80,9 @@ export default function DbHealthOverlay() {
     } else {
       failuresRef.current += 1;
       setLastError(res.error || 'unknown');
-      if (failuresRef.current >= FAILURES_TO_TRIP && !down) {
+      // While a long job (e.g. payslips) runs, slow replies are expected:
+      // never block the screen, the job keeps going on the server.
+      if (failuresRef.current >= FAILURES_TO_TRIP && !down && !backgroundJob.isActive()) {
         setDown(true);
         setDownSince(Date.now());
       }

@@ -284,6 +284,128 @@ async function cropSubsetToPdf(
 }
 
 
+// ---------- Background, resumable processing ----------
+// The PDF is uploaded by the browser into storage first; this function only
+// receives its path, answers immediately and processes in the background in
+// chunks. Progress is saved after each slip, so an interrupted run resumes
+// exactly where it stopped (self re-invocation after a time budget).
+const CHUNK = 20;
+const TIME_BUDGET_MS = 100_000;
+const STALE_MS = 90_000;
+
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
+
+function background(p: Promise<unknown>) {
+  if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(p);
+}
+
+async function runBatch(admin: any, batchId: string, supabaseUrl: string, serviceKey: string) {
+  const started = Date.now();
+  const beat = (fields: Record<string, unknown>) =>
+    admin.from("payslip_batches").update({ ...fields, last_heartbeat: new Date().toISOString() }).eq("id", batchId);
+  try {
+    const { data: batch } = await admin.from("payslip_batches").select("*").eq("id", batchId).single();
+    if (!batch || batch.status !== "processing") return;
+    const { month, year } = batch;
+
+    await beat({ phase: "detecting", error: null });
+    const { data: blob, error: dlErr } = await admin.storage.from("payslips").download(batch.original_file_path);
+    if (dlErr || !blob) throw new Error("Nu am putut citi PDF-ul încărcat");
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    const detected = parseSlipCells(await extractSlipCells(buf));
+    if (detected.length === 0) {
+      await beat({ status: "failed", phase: "failed", error: "Nu s-au detectat fluturași în PDF. Verificați că este PDF-ul centralizator de la salarizare." });
+      return;
+    }
+
+    const { count: already } = await admin.from("payslips").select("id", { count: "exact", head: true }).eq("batch_id", batchId);
+    let index = already ?? 0;
+    await beat({ total_slips: detected.length, processed_count: index, phase: "matching" });
+
+    const { data: employees } = await admin.from("employee_personal_data")
+      .select("id, first_name, last_name, cnp").eq("is_archived", false);
+    const emps = (employees ?? []) as Array<{ id: string; first_name: string; last_name: string; cnp: string | null }>;
+    const byName = new Map<string, string[]>();
+    for (const e of emps) {
+      for (const key of [normalizeName(`${e.last_name} ${e.first_name}`), normalizeName(`${e.first_name} ${e.last_name}`)]) {
+        if (!byName.has(key)) byName.set(key, []);
+        if (!byName.get(key)!.includes(e.id)) byName.get(key)!.push(e.id);
+      }
+    }
+    const srcDoc = await PDFDocument.load(buf, { ignoreEncryption: true });
+    await beat({ phase: "splitting" });
+
+    while (index < detected.length) {
+      const slip = detected[index];
+      let matched: string | null = null;
+      let status: "matched" | "needs_confirm" | "unmatched" | "duplicate_name" = "unmatched";
+      let notes: string | null = null;
+      const exact = byName.get(slip.normalizedName);
+      if (exact && exact.length === 1) { matched = exact[0]; status = "matched"; }
+      else if (exact && exact.length > 1) { status = "duplicate_name"; notes = `Omonim în bază: ${exact.length} angajați cu același nume`; }
+      else {
+        let best: { id: string; dist: number; name: string } | null = null;
+        for (const [key, ids] of byName) {
+          const d = levenshtein(slip.normalizedName, key);
+          const maxLen = Math.max(slip.normalizedName.length, key.length);
+          if (!maxLen) continue;
+          if (d <= 2 && 1 - d / maxLen >= 0.9 && (!best || d < best.dist)) best = { id: ids[0], dist: d, name: key };
+        }
+        if (best) { matched = best.id; status = "needs_confirm"; notes = `Fuzzy: „${best.name}" (dist=${best.dist})`; }
+      }
+
+      let filePath: string | null = null;
+      if (matched) {
+        const emp = emps.find(e => e.id === matched);
+        const cnp = (emp?.cnp ?? "").replace(/\D/g, "");
+        if (!emp) { notes = "Angajatul asociat nu mai există în registru"; status = "unmatched"; matched = null; }
+        else if (cnp.length < 6) { notes = (notes ? notes + " | " : "") + "CNP lipsă/prea scurt — necesar pentru criptare la distribuție"; status = "unmatched"; matched = null; }
+        else {
+          try {
+            const plain = await cropSubsetToPdf(srcDoc, slip.pageIndex, slip.cropBox);
+            const path = `${year}/${String(month).padStart(2, "0")}/${matched}_${batchId}_${slip.positionOnPage}.pdf`;
+            const { error: upErr } = await admin.storage.from("payslips").upload(path, plain, { contentType: "application/pdf", upsert: true });
+            if (upErr) notes = (notes ? notes + " | " : "") + `Storage error: ${upErr.message}`;
+            else filePath = path;
+          } catch (e) { notes = (notes ? notes + " | " : "") + `Crop error: ${(e as Error).message}`; }
+        }
+      }
+
+      const { error: insErr } = await admin.from("payslips").insert({
+        batch_id: batchId, employee_epd_id: matched, name_detected: slip.rawName,
+        name_normalized: slip.normalizedName, marca_detected: slip.marca, month, year,
+        file_path: filePath, net_amount: slip.netAmount, match_status: status, match_notes: notes,
+      });
+      if (insErr) throw new Error(`Salvare fluturaș eșuată: ${insErr.message}`);
+      index++;
+
+      if (index % CHUNK === 0 || index === detected.length) await beat({ processed_count: index });
+      if (index < detected.length && Date.now() - started > TIME_BUDGET_MS) {
+        // Hand over to a fresh run before the platform cuts us off.
+        await fetch(`${supabaseUrl}/functions/v1/process-payslip-batch`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "continue", batch_id: batchId }),
+        }).catch(() => {});
+        return;
+      }
+    }
+
+    const { data: rows } = await admin.from("payslips").select("match_status").eq("batch_id", batchId);
+    const matchedCount = (rows ?? []).filter((r: any) => r.match_status === "matched").length;
+    await beat({ status: "ready", phase: "done", processed_count: detected.length,
+      matched_count: matchedCount, unmatched_count: (rows ?? []).length - matchedCount });
+    await admin.from("payslip_audit_log").insert({
+      user_id: batch.uploaded_by, batch_id: batchId, action: "upload",
+      details: { total: detected.length, matched: matchedCount, unmatched: (rows ?? []).length - matchedCount },
+    });
+  } catch (e) {
+    console.error("runBatch error", e);
+    // Keep status "processing" so it can be resumed; record the error.
+    await beat({ error: (e as Error).message, phase: "paused" });
+  }
+}
+
 // ---------- Main handler ----------
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -292,230 +414,59 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return jsonResp({ error: "Nu ești autentificat" }, 401);
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !anonKey || !serviceKey) {
-      return jsonResp({ error: "Configurare backend incompletă" }, 500);
+    if (!supabaseUrl || !anonKey || !serviceKey) return jsonResp({ error: "Configurare backend incompletă" }, 500);
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    const body = await req.json().catch(() => null) as any;
+    if (!body || typeof body.action !== "string") return jsonResp({ error: "Cerere invalidă" }, 400);
+
+    // Internal hand-over between background runs.
+    if (authHeader === `Bearer ${serviceKey}`) {
+      if (body.action !== "continue" || typeof body.batch_id !== "string") return jsonResp({ error: "Cerere invalidă" }, 400);
+      background(runBatch(admin, body.batch_id, supabaseUrl, serviceKey));
+      return jsonResp({ ok: true });
     }
 
-    const authClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const authClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
     const { data: userData, error: userErr } = await authClient.auth.getUser();
     if (userErr || !userData?.user) return jsonResp({ error: "Sesiune invalidă" }, 401);
     const userId = userData.user.id;
-
-    const admin = createClient(supabaseUrl, serviceKey);
-
-    // Role check: salarizare or super_admin
-    const { data: roles } = await admin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
+    const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
     const roleSet = new Set((roles ?? []).map((r: any) => r.role));
-    if (!roleSet.has("salarizare") && !roleSet.has("super_admin")) {
-      return jsonResp({ error: "Nu ai permisiuni pentru această acțiune" }, 403);
+    if (!roleSet.has("salarizare") && !roleSet.has("super_admin")) return jsonResp({ error: "Nu ai permisiuni pentru această acțiune" }, 403);
+
+    if (body.action === "start") {
+      const month = Number(body.month), year = Number(body.year);
+      const path = String(body.source_path ?? "");
+      if (!(month >= 1 && month <= 12) || !(year >= 2020 && year <= 2100)) return jsonResp({ error: "Lună/an invalid" }, 400);
+      if (!/^sources\/[0-9a-f-]{36}\/[\w.-]+\.pdf$/i.test(path) || !path.startsWith(`sources/${userId}/`)) return jsonResp({ error: "Fișier invalid" }, 400);
+      const { data: row, error } = await admin.from("payslip_batches").insert({
+        month, year, uploaded_by: userId, original_filename: String(body.filename ?? "fluturasi.pdf").slice(0, 200),
+        original_file_path: path, total_slips: 0, status: "processing", phase: "queued",
+        processed_count: 0, last_heartbeat: new Date().toISOString(),
+      }).select("id").single();
+      if (error || !row) return jsonResp({ error: "Nu am putut crea lotul" }, 500);
+      background(runBatch(admin, row.id, supabaseUrl, serviceKey));
+      return jsonResp({ batch_id: row.id });
     }
 
-    // Parse multipart form
-    const form = await req.formData();
-    const file = form.get("file") as File | null;
-    const month = parseInt(String(form.get("month") ?? ""), 10);
-    const year = parseInt(String(form.get("year") ?? ""), 10);
-    if (!file) return jsonResp({ error: "Fișierul PDF lipsește" }, 400);
-    if (!(month >= 1 && month <= 12) || !(year >= 2020 && year <= 2100))
-      return jsonResp({ error: "Lună/an invalid" }, 400);
-
-    const buf = new Uint8Array(await file.arrayBuffer());
-    const slipCells = await extractSlipCells(buf);
-    const detected = parseSlipCells(slipCells);
-
-    if (detected.length === 0) {
-      return jsonResp({
-        error: "Nu s-au detectat fluturași în PDF. Verificați că fișierul este PDF-ul centralizator generat de salarizare, cu blocuri LUNA și nume angajat.",
-      }, 422);
+    if (body.action === "resume") {
+      if (typeof body.batch_id !== "string") return jsonResp({ error: "Lot invalid" }, 400);
+      const { data: b } = await admin.from("payslip_batches").select("status, last_heartbeat, phase").eq("id", body.batch_id).maybeSingle();
+      if (!b || b.status !== "processing") return jsonResp({ error: "Lotul nu este în procesare" }, 400);
+      const age = b.last_heartbeat ? Date.now() - new Date(b.last_heartbeat).getTime() : Infinity;
+      if (age < STALE_MS && b.phase !== "paused") return jsonResp({ ok: true, running: true });
+      await admin.from("payslip_batches").update({ last_heartbeat: new Date().toISOString(), phase: "resuming", error: null }).eq("id", body.batch_id);
+      background(runBatch(admin, body.batch_id, supabaseUrl, serviceKey));
+      return jsonResp({ ok: true, resumed: true });
     }
 
-    // Load all active employees
-    const { data: employees } = await admin
-      .from("employee_personal_data")
-      .select("id, first_name, last_name, cnp")
-      .eq("is_archived", false);
-    const emps = (employees ?? []) as Array<{ id: string; first_name: string; last_name: string; cnp: string | null }>;
-
-    // Build lookup by normalized name (both orderings)
-    const byName = new Map<string, string[]>(); // name -> [epd_id...]
-    for (const e of emps) {
-      const a = normalizeName(`${e.last_name} ${e.first_name}`);
-      const b = normalizeName(`${e.first_name} ${e.last_name}`);
-      for (const key of [a, b]) {
-        if (!byName.has(key)) byName.set(key, []);
-        byName.get(key)!.push(e.id);
-      }
-    }
-
-    // Create batch row
-    const { data: batchRow, error: batchErr } = await admin
-      .from("payslip_batches")
-      .insert({
-        month, year,
-        uploaded_by: userId,
-        original_filename: file.name,
-        total_slips: detected.length,
-        status: "processing",
-      })
-      .select()
-      .single();
-    if (batchErr || !batchRow) return jsonResp({ error: "Nu am putut crea lotul", detail: batchErr?.message }, 500);
-    const batchId = batchRow.id as string;
-
-    // Group detected slips by their identity: consecutive slips on pages that reference same slip get merged.
-    // For now, each detected block is one slip on one page (rare exceptions).
-    // Load source pdf via pdf-lib for splitting/encrypting
-    const srcDoc = await PDFDocument.load(buf, { ignoreEncryption: true });
-
-    const results: Array<{
-      name: string;
-      marca: string | null;
-      status: string;
-      employeeId: string | null;
-      notes: string | null;
-    }> = [];
-
-    // Track duplicate normalized names within THIS batch — if 2+ detected slips
-    // map to the same normalized name AND to different employee_ids, we mark all as duplicate_name.
-    // Also: if a normalized name matches multiple employees, mark duplicate_name.
-
-    for (const slip of detected) {
-      let matched: string | null = null;
-      let status: "matched" | "needs_confirm" | "unmatched" | "duplicate_name" = "unmatched";
-      let notes: string | null = null;
-
-      // 1. Exact match
-      const exact = byName.get(slip.normalizedName);
-      if (exact && exact.length === 1) {
-        matched = exact[0];
-        status = "matched";
-      } else if (exact && exact.length > 1) {
-        status = "duplicate_name";
-        notes = `Omonim în bază: ${exact.length} angajați cu același nume normalizat`;
-      } else {
-        // 2. Fuzzy match: distance <= 2 and length ratio ok
-        let best: { id: string; dist: number; name: string } | null = null;
-        for (const [key, ids] of byName) {
-          const d = levenshtein(slip.normalizedName, key);
-          const maxLen = Math.max(slip.normalizedName.length, key.length);
-          if (maxLen === 0) continue;
-          const ratio = 1 - d / maxLen;
-          if (d <= 2 && ratio >= 0.9) {
-            if (!best || d < best.dist) {
-              best = { id: ids[0], dist: d, name: key };
-            }
-          }
-        }
-        if (best) {
-          matched = best.id;
-          status = "needs_confirm";
-          notes = `Fuzzy: „${best.name}" (dist=${best.dist})`;
-        }
-      }
-
-      // Encrypt only when we have a matched employee with a CNP
-      let filePath: string | null = null;
-      if (matched && (status === "matched" || status === "needs_confirm")) {
-        const emp = emps.find(e => e.id === matched);
-        if (!emp) {
-          notes = (notes ? notes + " | " : "") + "Angajatul asociat nu mai există în registru";
-          status = "unmatched";
-          matched = null;
-        }
-        if (!emp) {
-          await admin.from("payslips").insert({
-            batch_id: batchId,
-            employee_epd_id: matched,
-            name_detected: slip.rawName,
-            name_normalized: slip.normalizedName,
-            marca_detected: slip.marca,
-            month, year,
-            file_path: null,
-            net_amount: slip.netAmount,
-            match_status: status,
-            match_notes: notes,
-          });
-          results.push({ name: slip.rawName, marca: slip.marca, status, employeeId: matched, notes });
-          continue;
-        }
-        // Stage the plain (unencrypted) slip so admins can preview before distribution.
-        // The CNP is still validated so we know we can encrypt later at distribute time.
-        const cnp = (emp.cnp ?? "").replace(/\D/g, "");
-        if (cnp.length >= 6) {
-          try {
-            const plain = await cropSubsetToPdf(srcDoc, slip.pageIndex, slip.cropBox);
-            const path = `${year}/${String(month).padStart(2, "0")}/${matched}_${batchId}_${slip.positionOnPage}.pdf`;
-            const { error: upErr } = await admin.storage
-              .from("payslips")
-              .upload(path, plain, { contentType: "application/pdf", upsert: true });
-            if (upErr) {
-              notes = (notes ? notes + " | " : "") + `Storage error: ${upErr.message}`;
-            } else {
-              filePath = path;
-            }
-          } catch (e) {
-            notes = (notes ? notes + " | " : "") + `Crop error: ${(e as Error).message}`;
-          }
-        } else {
-          notes = (notes ? notes + " | " : "") + "CNP lipsă/prea scurt — necesar pentru criptare la distribuție";
-          status = "unmatched";
-          matched = null;
-        }
-
-      }
-
-      await admin.from("payslips").insert({
-        batch_id: batchId,
-        employee_epd_id: matched,
-        name_detected: slip.rawName,
-        name_normalized: slip.normalizedName,
-        marca_detected: slip.marca,
-        month, year,
-        file_path: filePath,
-        net_amount: slip.netAmount,
-        match_status: status,
-        match_notes: notes,
-      });
-
-      results.push({ name: slip.rawName, marca: slip.marca, status, employeeId: matched, notes });
-    }
-
-    const matchedCount = results.filter(r => r.status === "matched").length;
-    const unmatchedCount = results.filter(r => r.status !== "matched").length;
-
-    await admin.from("payslip_batches").update({
-      matched_count: matchedCount,
-      unmatched_count: unmatchedCount,
-      status: "ready",
-    }).eq("id", batchId);
-
-    await admin.from("payslip_audit_log").insert({
-      user_id: userId,
-      batch_id: batchId,
-      action: "upload",
-      ip: req.headers.get("x-forwarded-for") ?? null,
-      user_agent: req.headers.get("user-agent") ?? null,
-      details: { total: detected.length, matched: matchedCount, unmatched: unmatchedCount },
-    });
-
-    return jsonResp({
-      batch_id: batchId,
-      total: detected.length,
-      matched: matchedCount,
-      unmatched: unmatchedCount,
-      results,
-    });
+    return jsonResp({ error: "Acțiune necunoscută" }, 400);
   } catch (e) {
     console.error("process-payslip-batch error", e);
-    return jsonResp({ error: (e as Error).message }, 500);
+    return jsonResp({ error: "Eroare internă la procesare" }, 500);
   }
 });

@@ -3534,12 +3534,16 @@ export type Database = {
           car_filename: string | null
           created_at: string
           distributed_at: string | null
+          error: string | null
           id: string
+          last_heartbeat: string | null
           matched_count: number
           month: number
           notes: string | null
           original_file_path: string | null
           original_filename: string
+          phase: string | null
+          processed_count: number
           status: Database["public"]["Enums"]["payslip_batch_status"]
           total_slips: number
           unmatched_count: number
@@ -3552,12 +3556,16 @@ export type Database = {
           car_filename?: string | null
           created_at?: string
           distributed_at?: string | null
+          error?: string | null
           id?: string
+          last_heartbeat?: string | null
           matched_count?: number
           month: number
           notes?: string | null
           original_file_path?: string | null
           original_filename: string
+          phase?: string | null
+          processed_count?: number
           status?: Database["public"]["Enums"]["payslip_batch_status"]
           total_slips?: number
           unmatched_count?: number
@@ -3570,12 +3578,16 @@ export type Database = {
           car_filename?: string | null
           created_at?: string
           distributed_at?: string | null
+          error?: string | null
           id?: string
+          last_heartbeat?: string | null
           matched_count?: number
           month?: number
           notes?: string | null
           original_file_path?: string | null
           original_filename?: string
+          phase?: string | null
+          processed_count?: number
           status?: Database["public"]["Enums"]["payslip_batch_status"]
           total_slips?: number
           unmatched_count?: number
