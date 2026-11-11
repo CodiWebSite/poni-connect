@@ -1,6 +1,8 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
+- [x] Blocare încărcare fluturași remediată: loturi fără sursă neblocante, erori oprite, reluare limitată și anulare sigură; PDF invalid apoi valid verificate în contul Codrin, loturile de test eliminate
+- [x] Link Intranet din confirmări și invitații corectat și verificat; expeditor neschimbat, funcția publicată
 - [ ] Configurare e-mailuri de autentificare pe notify.intranet.icmpp.ro; păstrare SMTP operațional, publicare și verificare infrastructură
 - [x] Cărți de vizită: stil unic minimalist RO/EN, contact și QR mic pe ambele fețe, câmpuri bilingve; acces din Profilul meu și ambele căutări verificat în contul Codrin, QR propriu și PDF 2 pagini 85×55 mm verificate; 11 teste trecute
 - [x] Cărți de vizită: titulatură și departament opționale, imagine QR, față RO/verso EN și denumire/adresă corectate; toate stilurile, telefonul și PDF-ul 85×55 mm verificate în contul lui Codrin; 7 teste trecute

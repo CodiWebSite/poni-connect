@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Loader2, CheckCircle2, RotateCw, CloudUpload, X, Sparkles } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle2, RotateCw, CloudUpload, X, Sparkles, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { PIPELINE_STEPS, PipelineStep, stepFromPhase, needsResume, etaMs, backgroundJob } from '@/utils/payslipBatchProgress';
+import { PIPELINE_STEPS, PipelineStep, stepFromPhase, needsResume, isRunnableBatch, etaMs, backgroundJob } from '@/utils/payslipBatchProgress';
 
 interface Props {
   month: string;
@@ -22,6 +22,7 @@ interface LiveBatch {
   error: string | null;
   created_at: string;
   original_filename: string;
+  original_file_path: string | null;
   month: number;
   year: number;
 }
@@ -71,8 +72,12 @@ export default function PayslipUploadStudio({ month, year, onFinished }: Props) 
   const inputRef = useRef<HTMLInputElement>(null);
   const resumingRef = useRef(false);
   const finishedRef = useRef<string | null>(null);
+  const retryRef = useRef({ id: '', progress: -1, attempts: 0 });
+  const [retryLimitReached, setRetryLimitReached] = useState(false);
+  const [stopping, setStopping] = useState(false);
 
-  const busy = uploadPct !== null || (batch?.status === 'processing');
+  const runnable = batch ? isRunnableBatch(batch) : false;
+  const busy = uploadPct !== null || (runnable && !retryLimitReached);
 
   // Keep the connectivity overlay quiet while a long job runs.
   useEffect(() => {
@@ -82,10 +87,11 @@ export default function PayslipUploadStudio({ month, year, onFinished }: Props) 
   }, [busy]);
 
   const fetchBatch = useCallback(async (id: string) => {
-    const { data } = await supabase.from('payslip_batches')
-      .select('id,status,phase,processed_count,total_slips,last_heartbeat,error,created_at,original_filename,month,year')
+    const { data, error } = await supabase.from('payslip_batches')
+      .select('id,status,phase,processed_count,total_slips,last_heartbeat,error,created_at,original_filename,original_file_path,month,year')
       .eq('id', id).maybeSingle();
-    if (data) setBatch(data as LiveBatch);
+    if (error) throw error; // A network error is not a deleted batch.
+    setBatch(current => !current || current.id === id ? data as LiveBatch | null : current);
     return data as LiveBatch | null;
   }, []);
 
@@ -93,7 +99,7 @@ export default function PayslipUploadStudio({ month, year, onFinished }: Props) 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from('payslip_batches')
-        .select('id,status,phase,processed_count,total_slips,last_heartbeat,error,created_at,original_filename,month,year')
+        .select('id,status,phase,processed_count,total_slips,last_heartbeat,error,created_at,original_filename,original_file_path,month,year')
         .eq('status', 'processing').order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (data) setBatch(data as LiveBatch);
     })();
@@ -105,13 +111,18 @@ export default function PayslipUploadStudio({ month, year, onFinished }: Props) 
     try {
       const { error } = await supabase.functions.invoke('process-payslip-batch', { body: { action: 'resume', batch_id: id } });
       if (error) throw error;
+      await fetchBatch(id);
+      if (manual) {
+        retryRef.current.attempts = 0;
+        setRetryLimitReached(false);
+      }
       if (manual) toast.success('Procesarea continuă de unde a rămas.');
     } catch {
       if (manual) toast.error('Nu am putut relua acum. Încercați din nou peste un minut.');
     } finally {
       setTimeout(() => { resumingRef.current = false; }, 15_000);
     }
-  }, []);
+  }, [fetchBatch]);
 
   // Poll the live batch; auto-resume if the server went silent.
   useEffect(() => {
@@ -120,11 +131,40 @@ export default function PayslipUploadStudio({ month, year, onFinished }: Props) 
       setNow(Date.now());
       try {
         const b = await fetchBatch(batch.id);
-        if (b && needsResume(b, Date.now())) resume(b.id);
+        if (!b) return;
+        if (retryRef.current.id !== b.id || retryRef.current.progress !== b.processed_count) {
+          retryRef.current = { id: b.id, progress: b.processed_count, attempts: 0 };
+          setRetryLimitReached(false);
+        }
+        if (needsResume(b, Date.now()) && !resumingRef.current) {
+          if (retryRef.current.attempts >= 3) {
+            setRetryLimitReached(true);
+          } else {
+            retryRef.current.attempts++;
+            resume(b.id);
+          }
+        }
       } catch { /* network blip — next tick retries */ }
     }, 2500);
     return () => window.clearInterval(t);
   }, [batch?.id, batch?.status, fetchBatch, resume]);
+
+  const stop = async () => {
+    if (!batch || stopping) return;
+    setStopping(true);
+    try {
+      const { error } = await supabase.functions.invoke('process-payslip-batch', {
+        body: { action: 'cancel', batch_id: batch.id },
+      });
+      if (error) throw error;
+      await fetchBatch(batch.id);
+      toast.success('Procesare oprită. Fluturașii deja salvați rămân în istoric.');
+    } catch {
+      toast.error('Nu am putut opri procesarea. Încercați din nou.');
+    } finally {
+      setStopping(false);
+    }
+  };
 
   // Finished → notify parent once.
   useEffect(() => {
@@ -160,6 +200,9 @@ export default function PayslipUploadStudio({ month, year, onFinished }: Props) 
       setUploadPct(null);
       setFile(null);
       finishedRef.current = null;
+      retryRef.current = { id: '', progress: -1, attempts: 0 };
+      setRetryLimitReached(false);
+      setBatch(null);
       await fetchBatch(data.batch_id);
       toast.success('PDF urcat. Procesarea continuă pe server — puteți lucra în altă parte.');
     } catch (e) {
@@ -178,7 +221,8 @@ export default function PayslipUploadStudio({ month, year, onFinished }: Props) 
   const elapsed = batch ? now - new Date(batch.created_at).getTime() : 0;
   const eta = etaMs(processed, total, elapsed);
   const stale = batch ? needsResume(batch, now) : false;
-  const showPipeline = uploadPct !== null || (batch && (batch.status === 'processing' || finishedRef.current === batch.id));
+  const showPipeline = uploadPct !== null || (batch && (runnable || finishedRef.current === batch.id));
+  const blocked = batch && (batch.status === 'failed' || (batch.status === 'processing' && !runnable) || retryLimitReached);
 
   const R = 34, C = 2 * Math.PI * R;
 
@@ -230,6 +274,26 @@ export default function PayslipUploadStudio({ month, year, onFinished }: Props) 
         {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
         Procesează lotul
       </Button>
+
+      {blocked && uploadPct === null && (
+        <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+          <div className="flex items-start gap-2 text-sm">
+            <AlertCircle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+            <div className="min-w-0">
+              <p className="font-medium break-words">{batch.original_filename}</p>
+              <p className="text-muted-foreground break-words">{!batch.original_file_path
+                ? 'Lotul vechi nu are PDF-ul sursă. Încărcați din nou centralizatorul.'
+                : retryLimitReached ? 'Reluarea automată s-a oprit după trei încercări fără progres.'
+                : batch.error || 'Procesarea s-a oprit. Puteți încărca un PDF nou.'}</p>
+            </div>
+          </div>
+          {batch.original_file_path && batch.phase !== 'cancelled' && (
+            <Button size="sm" variant="outline" onClick={() => resume(batch.id, true)}>
+              <RotateCw className="w-3.5 h-3.5 mr-1.5" /> Reîncearcă procesarea
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Live pipeline */}
       {showPipeline && (
@@ -283,11 +347,14 @@ export default function PayslipUploadStudio({ month, year, onFinished }: Props) 
               {uploadPct === null && batch?.status === 'processing' && (
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span>Puteți închide pagina — serverul continuă singur.</span>
-                  {(stale || batch.error) && (
+                  {(stale || batch.error) && !blocked && (
                     <Button size="sm" variant="outline" onClick={() => resume(batch.id, true)}>
                       <RotateCw className="w-3.5 h-3.5 mr-1.5" /> Continuă procesarea
                     </Button>
                   )}
+                  <Button size="sm" variant="ghost" disabled={stopping} onClick={stop}>
+                    <X className="w-3.5 h-3.5 mr-1.5" /> Oprește procesarea
+                  </Button>
                 </div>
               )}
             </div>

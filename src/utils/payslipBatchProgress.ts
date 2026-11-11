@@ -21,13 +21,25 @@ export function stepFromPhase(phase: string | null | undefined, status?: string 
   }
 }
 
-/** A processing batch whose heartbeat is older than `staleMs` should be resumed. */
+export interface ResumableBatch {
+  status: string;
+  phase?: string | null;
+  original_file_path?: string | null;
+  last_heartbeat?: string | null;
+}
+
+/** Legacy batches without a stored source cannot run or lock a new upload. */
+export function isRunnableBatch(b: ResumableBatch): boolean {
+  return b.status === 'processing' && !!b.original_file_path && b.phase !== 'failed' && b.phase !== 'cancelled';
+}
+
+/** Only resumable processing batches may be retried automatically. */
 export function needsResume(
-  b: { status: string; phase?: string | null; last_heartbeat?: string | null },
+  b: ResumableBatch,
   nowMs: number,
   staleMs = 120_000,
 ): boolean {
-  if (b.status !== 'processing') return false;
+  if (!isRunnableBatch(b)) return false;
   if (b.phase === 'paused') return true;
   if (!b.last_heartbeat) return true;
   return nowMs - new Date(b.last_heartbeat).getTime() > staleMs;

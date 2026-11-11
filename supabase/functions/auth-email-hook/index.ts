@@ -7,6 +7,7 @@ import { MagicLinkEmail } from '../_shared/email-templates/magic-link.tsx'
 import { RecoveryEmail } from '../_shared/email-templates/recovery.tsx'
 import { EmailChangeEmail } from '../_shared/email-templates/email-change.tsx'
 import { ReauthenticationEmail } from '../_shared/email-templates/reauthentication.tsx'
+import { AUTH_EMAIL_CONFIG } from '../_shared/auth-email-config.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,9 +18,8 @@ const corsHeaders = {
 // Configuration
 const SITE_NAME = "Intranet ICMPP"
 const SENDER_DOMAIN = "notify.djfunkyevents.ro"
-const ROOT_DOMAIN = "djfunkyevents.ro"
 const FROM_DOMAIN = "djfunkyevents.ro"
-const SITE_URL = `https://${ROOT_DOMAIN}`
+const SITE_URL = AUTH_EMAIL_CONFIG.siteUrl
 
 // Template mapping for preview mode
 const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { needsResume, stepFromPhase, etaMs } from './payslipBatchProgress';
+import { needsResume as checkResume, isRunnableBatch, stepFromPhase, etaMs, type ResumableBatch } from './payslipBatchProgress';
+
+const needsResume = (batch: ResumableBatch, nowMs: number) => checkResume({ original_file_path: 'sources/user/month.pdf', ...batch }, nowMs);
 
 const now = Date.parse('2026-11-10T10:00:00Z');
 
@@ -15,6 +17,14 @@ describe('payslip batch resume rules', () => {
   });
   it('never resumes a finished batch', () => {
     expect(needsResume({ status: 'ready', phase: 'done', last_heartbeat: null }, now)).toBe(false);
+  });
+  it('never retries a legacy batch with no source file', () => {
+    expect(needsResume({ status: 'processing', phase: 'paused', original_file_path: null, last_heartbeat: null }, now)).toBe(false);
+    expect(isRunnableBatch({ status: 'processing', original_file_path: null })).toBe(false);
+  });
+  it('never retries a failed or cancelled batch automatically', () => {
+    expect(needsResume({ status: 'failed', phase: 'failed', last_heartbeat: null }, now)).toBe(false);
+    expect(needsResume({ status: 'processing', phase: 'cancelled', last_heartbeat: null }, now)).toBe(false);
   });
   it('maps phases to steps', () => {
     expect(stepFromPhase('matching')).toBe('match');

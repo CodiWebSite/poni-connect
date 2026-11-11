@@ -302,11 +302,12 @@ function background(p: Promise<unknown>) {
 async function runBatch(admin: any, batchId: string, supabaseUrl: string, serviceKey: string) {
   const started = Date.now();
   const beat = (fields: Record<string, unknown>) =>
-    admin.from("payslip_batches").update({ ...fields, last_heartbeat: new Date().toISOString() }).eq("id", batchId);
+    admin.from("payslip_batches").update({ ...fields, last_heartbeat: new Date().toISOString() }).eq("id", batchId).eq("status", "processing");
   try {
     const { data: batch } = await admin.from("payslip_batches").select("*").eq("id", batchId).single();
     if (!batch || batch.status !== "processing") return;
     const { month, year } = batch;
+    if (!batch.original_file_path) throw new Error("Lotul vechi nu are PDF-ul sursă. Încărcați din nou centralizatorul.");
 
     await beat({ phase: "detecting", error: null });
     const { data: blob, error: dlErr } = await admin.storage.from("payslips").download(batch.original_file_path);
@@ -328,14 +329,19 @@ async function runBatch(admin: any, batchId: string, supabaseUrl: string, servic
     const byName = new Map<string, string[]>();
     for (const e of emps) {
       for (const key of [normalizeName(`${e.last_name} ${e.first_name}`), normalizeName(`${e.first_name} ${e.last_name}`)]) {
-        if (!byName.has(key)) byName.set(key, []);
-        if (!byName.get(key)!.includes(e.id)) byName.get(key)!.push(e.id);
+        const ids = byName.get(key) ?? [];
+        if (!ids.includes(e.id)) ids.push(e.id);
+        byName.set(key, ids);
       }
     }
     const srcDoc = await PDFDocument.load(buf, { ignoreEncryption: true });
     await beat({ phase: "splitting" });
 
     while (index < detected.length) {
+      // Stop without deleting already saved slips; never resurrect a cancelled/deleted batch.
+      const { data: current, error: stateError } = await admin.from("payslip_batches").select("status").eq("id", batchId).maybeSingle();
+      if (stateError) throw stateError;
+      if (!current || current.status !== "processing") return;
       const slip = detected[index];
       let matched: string | null = null;
       let status: "matched" | "needs_confirm" | "unmatched" | "duplicate_name" = "unmatched";
@@ -401,8 +407,8 @@ async function runBatch(admin: any, batchId: string, supabaseUrl: string, servic
     });
   } catch (e) {
     console.error("runBatch error", e);
-    // Keep status "processing" so it can be resumed; record the error.
-    await beat({ error: (e as Error).message, phase: "paused" });
+    // Caught failures require an explicit retry, not an endless automatic loop.
+    await beat({ status: "failed", phase: "failed", error: "Procesarea PDF-ului a eșuat. Reîncercați sau încărcați din nou centralizatorul." });
   }
 }
 
@@ -453,13 +459,29 @@ Deno.serve(async (req) => {
       return jsonResp({ batch_id: row.id });
     }
 
+    if (body.action === "cancel") {
+      if (typeof body.batch_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.batch_id)) return jsonResp({ error: "Lot invalid" }, 400);
+      const { error } = await admin.from("payslip_batches").update({
+        status: "failed", phase: "cancelled", error: "Procesare oprită de utilizator. Fluturașii deja salvați rămân în istoric.",
+        last_heartbeat: new Date().toISOString(),
+      }).eq("id", body.batch_id).eq("status", "processing");
+      if (error) return jsonResp({ error: "Nu am putut opri procesarea" }, 500);
+      return jsonResp({ ok: true });
+    }
+
     if (body.action === "resume") {
       if (typeof body.batch_id !== "string") return jsonResp({ error: "Lot invalid" }, 400);
-      const { data: b } = await admin.from("payslip_batches").select("status, last_heartbeat, phase").eq("id", body.batch_id).maybeSingle();
-      if (!b || b.status !== "processing") return jsonResp({ error: "Lotul nu este în procesare" }, 400);
+      const { data: b } = await admin.from("payslip_batches").select("status, last_heartbeat, phase, original_file_path").eq("id", body.batch_id).maybeSingle();
+      if (!b || !["processing", "failed"].includes(b.status) || b.phase === "cancelled") return jsonResp({ error: "Lotul nu poate fi reluat" }, 400);
+      if (!b.original_file_path) {
+        await admin.from("payslip_batches").update({ status: "failed", phase: "failed", error: "Lotul vechi nu are PDF-ul sursă. Încărcați din nou centralizatorul." }).eq("id", body.batch_id).eq("status", b.status);
+        return jsonResp({ error: "PDF-ul sursă lipsește. Încărcați din nou centralizatorul." }, 400);
+      }
       const age = b.last_heartbeat ? Date.now() - new Date(b.last_heartbeat).getTime() : Infinity;
-      if (age < STALE_MS && b.phase !== "paused") return jsonResp({ ok: true, running: true });
-      await admin.from("payslip_batches").update({ last_heartbeat: new Date().toISOString(), phase: "resuming", error: null }).eq("id", body.batch_id);
+      if (b.status === "processing" && age < STALE_MS && b.phase !== "paused") return jsonResp({ ok: true, running: true });
+      const { data: claimed, error: claimError } = await admin.from("payslip_batches").update({ status: "processing", last_heartbeat: new Date().toISOString(), phase: "resuming", error: null }).eq("id", body.batch_id).eq("status", b.status).eq("phase", b.phase).select("id").maybeSingle();
+      if (claimError) return jsonResp({ error: "Nu am putut relua lotul" }, 500);
+      if (!claimed) return jsonResp({ ok: true, running: true });
       background(runBatch(admin, body.batch_id, supabaseUrl, serviceKey));
       return jsonResp({ ok: true, resumed: true });
     }

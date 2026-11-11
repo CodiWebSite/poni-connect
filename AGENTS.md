@@ -1,6 +1,6 @@
 # Project Architecture Rules
 
-- Cloud authentication emails use the managed scaffolded, signature-verified hook and shared auth-email-config module with queued delivery; institutional operational SMTP remains independent, so auth-domain changes cannot interrupt HR notifications.
+- Cloud authentication emails retain the managed signature-verified handler; website links come from shared auth-email-config independently of scaffolded sender settings, and institutional operational SMTP remains separate, so sender-domain changes cannot misdirect users or interrupt HR notifications.
 
 - Kiosk conference live streams must use fixed UTC windows and automatically fall back to the institute presentation, so TV timezone differences cannot break scheduling.
 - Kiosk bulletin PDFs are converted to optimized page images before TV playback; the Samsung client only rotates image URLs after the institute video.
@@ -13,5 +13,5 @@
 - Bulletin playback must resolve a valid current slide during render when settings change; effect-based index cleanup alone cannot prevent a dashboard crash after poster withdrawal.
 - Leave requests may not overlap an active request of the same employee; a DB trigger enforces it and the form pre-checks all own leave/travel periods, so duplicates cannot slip through.
 - Business cards use a single shared contact-face renderer and shared identity, face-language and QR selection helpers; fixed-size print faces are scaled only for screen previews, so bilingual content and uploaded QR images stay identical in PDF exports. Self-service stays available independently of HR employee selection and public-profile visibility.
-- Payslip PDFs are uploaded to storage first and processed by process-payslip-batch in the background in resumable chunks (progress on payslip_batches, self re-invocation, client auto-resume); the connectivity overlay stays quiet while such a job runs, so slow PCs never lose an upload.
+- Payslip PDFs are stored before resumable background processing; only processing batches with a source can lock uploads, automatic retries stop after three attempts without progress, caught failures require manual retry, and cancellation preserves saved slips with conditional worker updates, so abandoned jobs cannot block payroll.
 - The employee dashboard renders cards from the dashboardWidgets registry using a per-user layout in user_dashboard_layouts (resolveLayout drops unknown ids and appends new ones), so adding a card never breaks saved layouts.
