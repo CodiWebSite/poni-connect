@@ -54,6 +54,9 @@ export async function fetchOwnPeriodConflicts({
       if (excludeHrRequestId && row.id === excludeHrRequestId) return;
       const d = row.details || {};
       if (!d.startDate || !d.endDate) return;
+      // Intrările introduse de HR pentru alți angajați au user_id = cel care le-a creat;
+      // le ignorăm dacă aparțin altui angajat.
+      if (epdId && d.epd_id && d.epd_id !== epdId) return;
       if (!overlaps(d.startDate, d.endDate, startDate, endDate)) return;
       const key = `hr:${row.id}`;
       if (seen.has(key)) return;
