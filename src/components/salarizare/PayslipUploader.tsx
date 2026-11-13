@@ -243,65 +243,43 @@ export default function PayslipUploader() {
       setDistProgress(p => (p && p.phase === 'running' ? { ...p, elapsedMs: Date.now() - p.startedAt } : p));
     }, 500);
     try {
-      let totalDistributed = 0;
-      const allFailures: Array<{ id: string; error: string }> = [];
-      let safety = 300;
-      let transientRetries = 0;
-      while (safety-- > 0) {
-        let data: any = null;
-        try {
-          const res = await supabase.functions.invoke('payslip-batch-action', {
-            body: { action: 'distribute_batch', batch_id: batchId, chunk_size: 5 },
-          });
-          if (res.error) throw new Error(await getFunctionErrorMessage(res.error, 'Eroare la distribuție'));
-          if (res.data?.error) throw new Error(res.data.error);
-          data = res.data;
-          transientRetries = 0;
-        } catch (chunkErr) {
-          // Reîncercare pentru căderi temporare ale funcției (worker restart / timeout)
-          transientRetries++;
-          if (transientRetries > 5) throw chunkErr;
-          setDistProgress(p => (p ? { ...p, message: `Reîncerc distribuția… (încercarea ${transientRetries}/5)` } : p));
-          await new Promise((r) => setTimeout(r, 1500 * transientRetries));
-          continue;
-        }
-        totalDistributed += Number(data?.distributed ?? 0);
-        if (Array.isArray(data?.failures)) allFailures.push(...data.failures);
-        const remaining = Number(data?.remaining ?? 0);
-        setDistProgress(p => (p ? {
-          ...p,
-          done: totalDistributed,
-          total: Math.max(p.total, totalDistributed + Math.max(remaining, 0)),
-          elapsedMs: Date.now() - p.startedAt,
-          message: remaining > 0
-            ? `Se criptează și se distribuie… ${remaining} rămași`
-            : 'Se finalizează…',
-        } : p));
-        if (remaining > 0) continue;
-        break;
-      }
-
-      if (totalDistributed === 0 && allFailures.length === 0) {
+      const countRemaining = async () => {
+        const { data } = await supabase
+          .from('payslips')
+          .select('id, file_path, employee_epd_id, match_status, file_path_encrypted')
+          .eq('batch_id', batchId);
+        const rows = (data ?? []) as any[];
+        const eligible = rows.filter(s => s.file_path && s.employee_epd_id && ['matched', 'needs_confirm', 'distributed'].includes(s.match_status));
+        const done = eligible.filter(s => s.file_path_encrypted).length;
+        return { done, total: eligible.length };
+      };
+      const initial = await countRemaining();
+      const baseline = initial.done;
+      if (initial.total - initial.done <= 0) {
         toast.warning('Niciun fluturaș eligibil pentru distribuție.');
       } else {
-        toast.success(`Distribuit către ${totalDistributed} angajați.${allFailures.length ? ` ${allFailures.length} eșecuri.` : ''}`);
-      }
-
-      // Notificare pe e-mail: pornește în fundal pe server, pagina nu așteaptă.
-      let emailsInBackground = false;
-      try {
-        setDistProgress(p => (p ? { ...p, message: 'Pornesc trimiterea e-mailurilor în fundal…' } : p));
-        const res = await supabase.functions.invoke('notify-payslip-distributed', {
-          body: { batch_id: batchId, run_all: true },
+        const res = await supabase.functions.invoke('payslip-batch-action', {
+          body: { action: 'distribute_background', batch_id: batchId },
         });
-        if (res.error) throw new Error(await getFunctionErrorMessage(res.error, 'Eroare la trimiterea e-mailurilor'));
+        if (res.error) throw new Error(await getFunctionErrorMessage(res.error, 'Eroare la distribuție'));
         if (res.data?.error) throw new Error(res.data.error);
-        emailsInBackground = true;
-      } catch (mailErr) {
-        toast.warning(`Fluturașii au fost distribuiți, dar notificarea pe e-mail a eșuat: ${(mailErr as Error).message}`);
+        toast.info('Distribuția rulează pe server — puteți închide pagina, continuă singură.');
+        let lastDone = initial.done;
+        let lastChange = Date.now();
+        while (true) {
+          await new Promise(r => setTimeout(r, 4000));
+          let st;
+          try { st = await countRemaining(); } catch { continue; }
+          if (st.done !== lastDone) { lastDone = st.done; lastChange = Date.now(); }
+          const left = st.total - st.done;
+          setDistProgress(p => (p ? { ...p, done: st.done - baseline, total: initial.total - baseline, elapsedMs: Date.now() - p.startedAt,
+            message: left > 0 ? `Se criptează și se distribuie pe server… ${left} rămași (puteți închide pagina)` : 'Se finalizează…' } : p));
+          if (left <= 0) break;
+          if (Date.now() - lastChange > 5 * 60_000) throw new Error('Distribuția nu a mai avansat de 5 minute. Apăsați din nou „Distribuie” pentru restul.');
+        }
+        toast.success(`Distribuit către ${lastDone - baseline} angajați. E-mailurile pleacă automat de pe server.`);
       }
-
-      setDistProgress(p => (p ? { ...p, phase: 'done', done: totalDistributed, total: Math.max(p.total, totalDistributed), elapsedMs: Date.now() - p.startedAt, message: `Fluturașii sunt disponibili în „Fluturașii mei”.${emailsInBackground ? ' E-mailurile de notificare se trimit în fundal — vor ajunge în câteva minute.' : ''}${allFailures.length ? ` ${allFailures.length} eșecuri.` : ''}` } : p));
+            setDistProgress(p => (p ? { ...p, phase: 'done', done: p.total, total: p.total, elapsedMs: Date.now() - p.startedAt, message: 'Fluturașii sunt disponibili în „Fluturașii mei”. E-mailurile de notificare se trimit în fundal.' } : p));
       await loadBatches();
       await loadSlips(batchId);
 

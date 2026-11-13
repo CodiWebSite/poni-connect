@@ -17,49 +17,12 @@ function jsonResp(body: unknown, status = 200) {
   });
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
-  try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return jsonResp({ error: "Nu ești autentificat" }, 401);
+// One bounded chunk: encrypt + publish up to chunk_size slips.
+// deno-lint-ignore no-explicit-any
+async function distributeChunk(admin: any, batch_id: string, userId: string, chunk_size: unknown) {
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const authClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData } = await authClient.auth.getUser();
-    if (!userData?.user) return jsonResp({ error: "Sesiune invalidă" }, 401);
-    const userId = userData.user.id;
-
-    const admin = createClient(supabaseUrl, serviceKey);
-    const { data: roles } = await admin
-      .from("user_roles").select("role").eq("user_id", userId);
-    const roleSet = new Set((roles ?? []).map((r: any) => r.role));
-    const isAdmin = roleSet.has("super_admin") || roleSet.has("salarizare");
-    if (!isAdmin) return jsonResp({ error: "Nu ai permisiuni" }, 403);
-
-    const { action, payslip_id, employee_epd_id, batch_id, chunk_size } = await req.json();
-
-    if (action === "assign") {
-      if (!payslip_id || !employee_epd_id) return jsonResp({ error: "params" }, 400);
-      // Just link; encryption/upload was already done if matched previously.
-      // For unmatched slips (no file), we do NOT auto-encrypt now — admin should re-upload the batch.
-      await admin.from("payslips")
-        .update({ employee_epd_id, match_status: "needs_confirm", match_notes: "Asociat manual — necesită re-procesare pentru criptare" })
-        .eq("id", payslip_id);
-      await admin.from("payslip_audit_log").insert({
-        user_id: userId, payslip_id, action: "manual_assign",
-      });
-      return jsonResp({ ok: true });
-    }
-
-    if (action === "distribute_batch") {
-      if (!batch_id) return jsonResp({ error: "batch_id" }, 400);
-      const effectiveChunk = Math.max(1, Math.min(50, Number(chunk_size) || 15));
+            const effectiveChunk = Math.max(1, Math.min(50, Number(chunk_size) || 15));
 
       // Fetch remaining eligible slips (not yet encrypted)
       const { data: slips } = await admin
@@ -79,7 +42,7 @@ Deno.serve(async (req) => {
         // Nothing left — finalize batch if not already
         const now = new Date().toISOString();
         await admin.from("payslip_batches").update({ status: "distributed", distributed_at: now }).eq("id", batch_id);
-        return jsonResp({ ok: true, done: true, processed: 0, remaining: 0, distributed: 0 });
+        return { ok: true, done: true, processed: 0, remaining: 0, distributed: 0, failures: [] };
       }
 
       const chunk = eligibleAll.slice(0, effectiveChunk);
@@ -182,16 +145,122 @@ Deno.serve(async (req) => {
         details: { processed: encryptedIds.length, failures: encryptFailures, remaining },
       });
 
-      return jsonResp({
+      return {
         ok: true,
         done,
         processed: encryptedIds.length,
         remaining,
         distributed: encryptedIds.length,
         failures: encryptFailures,
-      });
+      };
     }
 
+const BG_BUDGET_MS = 100_000;
+const BG_MAX_HOPS = 40;
+const BG_COOLDOWN_MS = 2_000;
+
+// Background loop: runs chunks until done or budget spent, then re-invokes itself (bounded by hops).
+// deno-lint-ignore no-explicit-any
+async function distributeInBackground(admin: any, batch_id: string, userId: string, hopsLeft: number) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const started = Date.now();
+  let failStreak = 0;
+  while (Date.now() - started < BG_BUDGET_MS) {
+    try {
+      const r = await distributeChunk(admin, batch_id, userId, 5);
+      failStreak = 0;
+      if (r.done) {
+        await fetch(`${supabaseUrl}/functions/v1/notify-payslip-distributed`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ batch_id, run_all: true }),
+        }).then((x) => x.text()).catch((e) => console.error("notify start failed", e));
+        return;
+      }
+      // Stop if a whole chunk failed (nothing progressed) to avoid looping on broken slips.
+      if (r.processed === 0) return;
+    } catch (e) {
+      console.error("bg chunk error", e);
+      if (++failStreak >= 3) {
+        await admin.from("payslip_audit_log").insert({
+          user_id: userId, batch_id, action: "distribute_failed", details: { error: (e as Error).message },
+        });
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 3000 * failStreak));
+    }
+  }
+  if (hopsLeft <= 0) return;
+  await new Promise((r) => setTimeout(r, BG_COOLDOWN_MS));
+  await fetch(`${supabaseUrl}/functions/v1/payslip-batch-action`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "distribute_continue", batch_id, actor_id: userId, hops_left: hopsLeft - 1 }),
+  }).then((x) => x.text()).catch((e) => console.error("continue failed", e));
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) return jsonResp({ error: "Nu ești autentificat" }, 401);
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const token = authHeader.slice(7);
+    if (token === serviceKey) {
+      const body = await req.json();
+      if (body?.action !== "distribute_continue" || !body.batch_id || !body.actor_id) return jsonResp({ error: "params" }, 400);
+      const svc = createClient(supabaseUrl, serviceKey);
+      // @ts-ignore EdgeRuntime is provided by the edge runtime
+      EdgeRuntime.waitUntil(distributeInBackground(svc, body.batch_id, body.actor_id, Math.max(0, Math.min(BG_MAX_HOPS, Number(body.hops_left) || 0))));
+      return jsonResp({ ok: true });
+    }
+
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData } = await authClient.auth.getUser();
+    if (!userData?.user) return jsonResp({ error: "Sesiune invalidă" }, 401);
+    const userId = userData.user.id;
+
+    const admin = createClient(supabaseUrl, serviceKey);
+    const { data: roles } = await admin
+      .from("user_roles").select("role").eq("user_id", userId);
+    const roleSet = new Set((roles ?? []).map((r: any) => r.role));
+    const isAdmin = roleSet.has("super_admin") || roleSet.has("salarizare");
+    if (!isAdmin) return jsonResp({ error: "Nu ai permisiuni" }, 403);
+
+    const { action, payslip_id, employee_epd_id, batch_id, chunk_size } = await req.json();
+
+    if (action === "assign") {
+      if (!payslip_id || !employee_epd_id) return jsonResp({ error: "params" }, 400);
+      // Just link; encryption/upload was already done if matched previously.
+      // For unmatched slips (no file), we do NOT auto-encrypt now — admin should re-upload the batch.
+      await admin.from("payslips")
+        .update({ employee_epd_id, match_status: "needs_confirm", match_notes: "Asociat manual — necesită re-procesare pentru criptare" })
+        .eq("id", payslip_id);
+      await admin.from("payslip_audit_log").insert({
+        user_id: userId, payslip_id, action: "manual_assign",
+      });
+      return jsonResp({ ok: true });
+    }
+
+    if (action === "distribute_batch") {
+      if (!batch_id) return jsonResp({ error: "batch_id" }, 400);
+      return jsonResp(await distributeChunk(admin, batch_id, userId, chunk_size));
+    }
+
+    if (action === "distribute_background") {
+      if (!batch_id) return jsonResp({ error: "batch_id" }, 400);
+      // @ts-ignore EdgeRuntime is provided by the edge runtime
+      EdgeRuntime.waitUntil(distributeInBackground(admin, batch_id, userId, BG_MAX_HOPS));
+      return jsonResp({ ok: true, started: true });
+    }
 
     if (action === "delete_batch") {
       if (!batch_id) return jsonResp({ error: "batch_id" }, 400);
