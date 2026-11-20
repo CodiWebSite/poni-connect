@@ -430,6 +430,9 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
     setDeleting(null);
   };
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null)); }, []);
+
   const handleSrusApprove = async () => {
     if (!srusApproveDialog) return;
     setProcessing(srusApproveDialog.id);
@@ -817,7 +820,10 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {r.status === 'pending_srus' && (
+                        {r.status === 'pending_srus' && r.user_id === currentUserId && (
+                          <span className="text-xs text-muted-foreground">Cererea proprie — validează alt coleg SRUS</span>
+                        )}
+                        {r.status === 'pending_srus' && r.user_id !== currentUserId && (
                           <Button
                             variant="default"
                             size="sm"
