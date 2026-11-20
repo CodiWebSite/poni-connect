@@ -23,6 +23,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { fetchOwnPeriodConflicts, formatConflict, TRAVEL_LEAVE_TYPE, type PeriodConflict } from '@/utils/leaveTravelConflicts';
+import { canActOnLeaveRequest } from '@/utils/leaveSelfApproval';
 import { useFormDraft } from '@/hooks/useFormDraft';
 import { DraftRestoreBanner } from '@/components/shared/DraftRestoreBanner';
 
@@ -314,17 +315,18 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       .eq('employee_user_id', user.id)
       .maybeSingle();
 
-    if (approverMapping) {
-      designatedApproverId = approverMapping.approver_user_id;
-    } else if (employeeData.department) {
-      // Fallback: check department-level approver
+    if (canActOnLeaveRequest(user.id, approverMapping?.approver_user_id)) {
+      designatedApproverId = approverMapping!.approver_user_id;
+    }
+    if (!designatedApproverId && employeeData.department) {
+      // Fallback: check department-level approver; a self-assignment is ignored.
       const { data: deptApprover } = await supabase
         .from('leave_department_approvers')
         .select('approver_user_id')
         .eq('department', employeeData.department)
         .maybeSingle();
-      if (deptApprover) {
-        designatedApproverId = deptApprover.approver_user_id;
+      if (canActOnLeaveRequest(user.id, deptApprover?.approver_user_id)) {
+        designatedApproverId = deptApprover!.approver_user_id;
       }
     }
 
@@ -384,6 +386,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
           if (activeDelegates && activeDelegates.length > 0) {
             for (const del of activeDelegates) {
+              if (!canActOnLeaveRequest(user.id, (del as any).delegate_user_id)) continue;
               await supabase.from('notifications').insert({
                 user_id: (del as any).delegate_user_id,
                 title: 'Cerere nouă de concediu (înlocuitor)',
@@ -403,6 +406,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
 
           if (deptHeadProfiles) {
             for (const profile of deptHeadProfiles) {
+              if (!canActOnLeaveRequest(user.id, profile.user_id)) continue;
               const { data: roleData } = await supabase
                 .from('user_roles')
                 .select('role')
@@ -440,7 +444,9 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
             .eq('is_active', true)
             .lte('start_date', today)
             .gte('end_date', today);
-          delegateUserIds = (activeDels || []).map((d: any) => d.delegate_user_id);
+          delegateUserIds = (activeDels || [])
+            .map((d: any) => d.delegate_user_id)
+            .filter((delegateId: string) => canActOnLeaveRequest(user.id, delegateId));
         }
 
         supabase.functions.invoke('notify-leave-email', {

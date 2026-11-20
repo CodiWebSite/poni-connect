@@ -17,6 +17,7 @@ import { ro } from 'date-fns/locale';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { getClientIP } from '@/utils/getClientIP';
 import { resolveEmployeeName } from '@/utils/roleHelpers';
+import { canActOnLeaveRequest, withoutOwnLeaveRequests } from '@/utils/leaveSelfApproval';
 
 // Digital IP signature is used by sef_srus role instead of manual SignaturePad
 
@@ -265,6 +266,9 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
       };
     });
 
+    // Nobody receives their own request as an approval task, including super-admins.
+    enrichedRequests = withoutOwnLeaveRequests(enrichedRequests, user.id);
+
     if (!isSuperAdmin) {
       const { data: myProfile } = await supabase
         .from('profiles')
@@ -334,6 +338,11 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
   const handleApproveWithSignature = async () => {
     if (!user || !approveDialog) return;
+    if (!canActOnLeaveRequest(approveDialog.user_id, user.id)) {
+      toast({ title: 'Acțiune indisponibilă', description: 'Propria cerere trebuie aprobată de alt aprobator.', variant: 'destructive' });
+      setApproveDialog(null);
+      return;
+    }
 
     setProcessing(approveDialog.id);
     const now = new Date().toISOString();
@@ -413,7 +422,7 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
       if (hrRoles) {
         for (const hr of hrRoles) {
-          if (hr.user_id === user!.id) continue; // Don't notify yourself
+          if (hr.user_id === user!.id || hr.user_id === request.user_id) continue; // No self-approval tasks
           await supabase.from('notifications').insert({
             user_id: hr.user_id,
             title: 'Cerere concediu — necesită validare SRUS',
@@ -518,6 +527,11 @@ export function LeaveApprovalPanel({ onUpdated }: LeaveApprovalPanelProps) {
 
   const handleReject = async () => {
     if (!user || !rejectDialog) return;
+    if (!canActOnLeaveRequest(rejectDialog.user_id, user.id)) {
+      toast({ title: 'Acțiune indisponibilă', description: 'Propria cerere trebuie procesată de alt aprobator.', variant: 'destructive' });
+      setRejectDialog(null);
+      return;
+    }
     setProcessing(rejectDialog.id);
 
     const { error } = await supabase

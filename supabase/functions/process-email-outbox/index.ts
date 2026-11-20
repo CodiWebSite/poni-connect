@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { sendMailWithRetry } from "../_shared/smtp-retry.ts";
 import { logOpsFailure } from "../_shared/ops-log.ts";
+import { isOwnLeaveEmail } from "../_shared/leave-self-approval.ts";
 
 const MAX_ATTEMPTS = 40; // ~ câteva zile de reîncercări
 
@@ -50,6 +51,13 @@ Deno.serve(async () => {
         .maybeSingle();
       if (!r) {
         await admin.from("email_outbox").update({ status: "cancelled", last_error: "cerere ștearsă" }).eq("id", row.id);
+        continue;
+      }
+
+      // Also stop older queued rows: the requester never validates their own request.
+      const { data: { user: requester } } = await admin.auth.admin.getUserById(r.user_id);
+      if (isOwnLeaveEmail(requester?.email, row.to_email)) {
+        await admin.from("email_outbox").update({ status: "cancelled", last_error: "solicitantul nu își validează propria cerere" }).eq("id", row.id);
         continue;
       }
 

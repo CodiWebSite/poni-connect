@@ -17,6 +17,7 @@ import { format, parseISO } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { generateLeaveDocx } from '@/utils/generateLeaveDocx';
 import { getClientIP } from '@/utils/getClientIP';
+import { canActOnLeaveRequest } from '@/utils/leaveSelfApproval';
 
 interface LeaveRequestRow {
   id: string;
@@ -435,6 +436,11 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
 
   const handleSrusApprove = async () => {
     if (!srusApproveDialog) return;
+    if (!canActOnLeaveRequest(srusApproveDialog.user_id, currentUserId)) {
+      toast({ title: 'Validare indisponibilă', description: 'Propria cerere trebuie validată de alt coleg SRUS.', variant: 'destructive' });
+      setSrusApproveDialog(null);
+      return;
+    }
     setProcessing(srusApproveDialog.id);
     setFetchingIP(true);
     const now = new Date().toISOString();
@@ -823,7 +829,7 @@ export function LeaveRequestsHR({ refreshTrigger }: LeaveRequestsHRProps) {
                         {r.status === 'pending_srus' && r.user_id === currentUserId && (
                           <span className="text-xs text-muted-foreground">Cererea proprie — validează alt coleg SRUS</span>
                         )}
-                        {r.status === 'pending_srus' && r.user_id !== currentUserId && (
+                        {r.status === 'pending_srus' && canActOnLeaveRequest(r.user_id, currentUserId) && (
                           <Button
                             variant="default"
                             size="sm"

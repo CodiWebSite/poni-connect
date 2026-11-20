@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { isOwnLeaveApproval } from "../_shared/leave-self-approval.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -43,6 +44,9 @@ Deno.serve(async (req) => {
 
     if (requestError) console.error("leave_requests select failed", requestError);
     if (!request) return json({ error: "Cererea nu a fost găsită" }, 404);
+    if (isOwnLeaveApproval(request.user_id, link.approver_user_id)) {
+      return json({ error: "Propria cerere trebuie procesată de alt aprobator." }, 403);
+    }
 
     let employeeName: string | null = null;
     let department: string | null = null;
@@ -117,9 +121,10 @@ Deno.serve(async (req) => {
         .from("user_roles")
         .select("user_id")
         .in("role", ["hr", "sef_srus", "super_admin"]);
-      if (hrRoles?.length) {
+      const hrNotifications = (hrRoles || []).filter((r: any) => r.user_id !== request.user_id);
+      if (hrNotifications.length) {
         await admin.from("notifications").insert(
-          hrRoles.map((r: any) => ({
+          hrNotifications.map((r: any) => ({
             user_id: r.user_id,
             title: "Cerere concediu — necesită validare SRUS",
             message: `${employeeName || "Angajat"} — cererea ${request.request_number} a fost aprobată de șeful de compartiment.`,

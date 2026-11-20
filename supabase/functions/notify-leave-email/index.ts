@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { sendMailWithRetry } from "../_shared/smtp-retry.ts";
+import { isOwnLeaveApproval, isOwnLeaveEmail } from "../_shared/leave-self-approval.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,15 +70,31 @@ Deno.serve(async (req) => {
     // Use service role to find recipients
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
+    // The requester must never receive an approval task for their own request.
+    let requesterUserId: string | null = null;
+    let requesterEmail: string | null = null;
+    if (request_id) {
+      const { data: leaveRequest } = await supabaseAdmin
+        .from("leave_requests")
+        .select("user_id")
+        .eq("id", request_id)
+        .maybeSingle();
+      requesterUserId = leaveRequest?.user_id ?? null;
+      if (requesterUserId) {
+        const { data: { user: requester } } = await supabaseAdmin.auth.admin.getUserById(requesterUserId);
+        requesterEmail = requester?.email ?? null;
+      }
+    }
+
     const recipientEmails: string[] = [];
     const delegateEmails: string[] = [];
     const recipientIds: string[] = [];
     const delegateIds: string[] = [];
 
-    if (approver_user_id) {
+    if (approver_user_id && !isOwnLeaveApproval(requesterUserId, approver_user_id)) {
       // Send to the designated approver
       const { data: { user: approverUser } } = await supabaseAdmin.auth.admin.getUserById(approver_user_id);
-      if (approverUser?.email) {
+      if (approverUser?.email && !isOwnLeaveEmail(requesterEmail, approverUser.email)) {
         recipientEmails.push(approverUser.email);
         recipientIds.push(approver_user_id);
       }
@@ -90,6 +107,7 @@ Deno.serve(async (req) => {
 
       if (deptProfiles && deptProfiles.length > 0) {
         for (const profile of deptProfiles) {
+          if (isOwnLeaveApproval(requesterUserId, profile.user_id)) continue;
           const { data: roleData } = await supabaseAdmin
             .from("user_roles")
             .select("role")
@@ -99,7 +117,7 @@ Deno.serve(async (req) => {
 
           if (roleData) {
             const { data: { user: headUser } } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
-            if (headUser?.email) {
+            if (headUser?.email && !isOwnLeaveEmail(requesterEmail, headUser.email)) {
               recipientEmails.push(headUser.email);
               recipientIds.push(profile.user_id);
             }
@@ -111,8 +129,9 @@ Deno.serve(async (req) => {
     // Collect delegate emails
     if (delegate_user_ids && Array.isArray(delegate_user_ids)) {
       for (const delId of delegate_user_ids) {
+        if (isOwnLeaveApproval(requesterUserId, delId)) continue;
         const { data: { user: delUser } } = await supabaseAdmin.auth.admin.getUserById(delId);
-        if (delUser?.email) {
+        if (delUser?.email && !isOwnLeaveEmail(requesterEmail, delUser.email)) {
           delegateEmails.push(delUser.email);
           delegateIds.push(delId);
         }
@@ -165,7 +184,7 @@ Deno.serve(async (req) => {
       : "https://intranet.icmpp.ro";
 
     const createApprovalLink = async (approverId: string): Promise<string | null> => {
-      if (!request_id || !approverId) return null;
+      if (!request_id || !approverId || isOwnLeaveApproval(requesterUserId, approverId)) return null;
       try {
         const bytes = new Uint8Array(32);
         crypto.getRandomValues(bytes);

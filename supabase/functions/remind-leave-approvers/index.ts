@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { sendMailWithRetry } from "../_shared/smtp-retry.ts";
+import { isOwnLeaveApproval, isOwnLeaveEmail } from "../_shared/leave-self-approval.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -174,6 +175,8 @@ Deno.serve(async (req) => {
       }
 
       const enrichedReq = { ...req, employee_name: employeeName, department };
+      const { data: { user: requester } } = await supabaseAdmin.auth.admin.getUserById(req.user_id);
+      const requesterEmail = requester?.email ?? null;
 
       // Determine who should approve
       const approverEmails: string[] = [];
@@ -263,8 +266,9 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 6. For pending_srus status, notify only HR users (not sef_srus)
+      // 6. For pending_srus status, notify only HR users (not previous approvers).
       if (req.status === "pending_srus") {
+        approverEmails.length = 0;
         const { data: hrUsers } = await supabaseAdmin
           .from("user_roles")
           .select("user_id")
@@ -272,14 +276,16 @@ Deno.serve(async (req) => {
 
         if (hrUsers) {
           for (const hr of hrUsers) {
+            if (isOwnLeaveApproval(req.user_id, hr.user_id)) continue;
             const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(hr.user_id);
-            if (user?.email && !approverEmails.includes(user.email)) approverEmails.push(user.email);
+            if (user?.email && !isOwnLeaveEmail(requesterEmail, user.email) && !approverEmails.includes(user.email)) approverEmails.push(user.email);
           }
         }
       }
 
-      // Add to grouped map
+      // Add to grouped map, never creating an approval task for the requester.
       for (const email of approverEmails) {
+        if (isOwnLeaveEmail(requesterEmail, email)) continue;
         if (!approverRequests[email]) {
           approverRequests[email] = { email, requests: [] };
         }

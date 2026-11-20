@@ -211,6 +211,13 @@
       "when": 1795162659820,
       "tag": "0029_block_srus_self_validation",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795163051569,
+      "tag": "0030_exclude_requester_from_leave_hr_emails",
+      "breakpoints": true
     }
   ]
 }
