@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
 
     const pending = (slips ?? []).filter((s: { employee_epd_id: string | null }) => s.employee_epd_id);
     if (pending.length <= offset) {
-      return jsonResp({ ok: true, done: true, sent: 0, skipped: 0, remaining: 0, failed: [], next_offset: offset, missing_email: [], invalid_email: [] });
+      return { ok: true, done: true, sent: 0, skipped: 0, remaining: 0, failed: [], next_offset: offset, missing_email: [], invalid_email: [] };
     }
 
     const chunk = pending.slice(offset, offset + chunkSize);
