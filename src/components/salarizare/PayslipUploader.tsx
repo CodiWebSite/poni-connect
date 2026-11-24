@@ -243,6 +243,7 @@ export default function PayslipUploader() {
       setDistProgress(p => (p && p.phase === 'running' ? { ...p, elapsedMs: Date.now() - p.startedAt } : p));
     }, 500);
     try {
+      let runStartedAt: string | null = null;
       const countRemaining = async () => {
         const { data } = await supabase
           .from('payslips')
@@ -251,7 +252,9 @@ export default function PayslipUploader() {
         const rows = (data ?? []) as any[];
         const eligible = rows.filter(s => s.file_path && s.employee_epd_id && ['matched', 'needs_confirm', 'distributed'].includes(s.match_status));
         const done = eligible.filter(s => s.file_path_encrypted).length;
-        return { done, total: eligible.length };
+        const { data: b } = await supabase.from('payslip_batches').select('status, distributed_at').eq('id', batchId).maybeSingle();
+        const bb = b as any;
+        return { done, total: eligible.length, finished: !!runStartedAt && bb?.status === 'distributed' && !!bb?.distributed_at && bb.distributed_at >= runStartedAt };
       };
       const initial = await countRemaining();
       const baseline = initial.done;
@@ -263,8 +266,10 @@ export default function PayslipUploader() {
         });
         if (res.error) throw new Error(await getFunctionErrorMessage(res.error, 'Eroare la distribuție'));
         if (res.data?.error) throw new Error(res.data.error);
+        runStartedAt = res.data?.started_at ?? null;
         toast.info('Distribuția rulează pe server — puteți închide pagina, continuă singură.');
         let lastDone = initial.done;
+        let failedLeft = 0;
         let lastChange = Date.now();
         while (true) {
           await new Promise(r => setTimeout(r, 4000));
@@ -275,9 +280,11 @@ export default function PayslipUploader() {
           setDistProgress(p => (p ? { ...p, done: st.done - baseline, total: initial.total - baseline, elapsedMs: Date.now() - p.startedAt,
             message: left > 0 ? `Se criptează și se distribuie pe server… ${left} rămași (puteți închide pagina)` : 'Se finalizează…' } : p));
           if (left <= 0) break;
+          if (st.finished) { failedLeft = left; break; }
           if (Date.now() - lastChange > 5 * 60_000) throw new Error('Distribuția nu a mai avansat de 5 minute. Apăsați din nou „Distribuie” pentru restul.');
         }
         toast.success(`Distribuit către ${lastDone - baseline} angajați. E-mailurile pleacă automat de pe server.`);
+        if (failedLeft > 0) toast.warning(`${failedLeft} fluturași nu au putut fi distribuiți (ex. CNP lipsă). Corectați datele și apăsați din nou „Distribuie”.`);
       }
             setDistProgress(p => (p ? { ...p, phase: 'done', done: p.total, total: p.total, elapsedMs: Date.now() - p.startedAt, message: 'Fluturașii sunt disponibili în „Fluturașii mei”. E-mailurile de notificare se trimit în fundal.' } : p));
       await loadBatches();

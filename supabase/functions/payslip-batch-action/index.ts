@@ -20,7 +20,7 @@ function jsonResp(body: unknown, status = 200) {
 
 // One bounded chunk: encrypt + publish up to chunk_size slips.
 // deno-lint-ignore no-explicit-any
-async function distributeChunk(admin: any, batch_id: string, userId: string, chunk_size: unknown) {
+async function distributeChunk(admin: any, batch_id: string, userId: string, chunk_size: unknown, exclude: Set<string> = new Set()) {
 
             const effectiveChunk = Math.max(1, Math.min(50, Number(chunk_size) || 15));
 
@@ -32,7 +32,8 @@ async function distributeChunk(admin: any, batch_id: string, userId: string, chu
         .is("file_path_encrypted", null);
       const eligibleAll = (slips ?? []).filter((s: any) =>
         s.file_path && s.employee_epd_id &&
-        (s.match_status === "matched" || s.match_status === "needs_confirm"),
+        (s.match_status === "matched" || s.match_status === "needs_confirm") &&
+        !exclude.has(s.id),
       );
 
       // Total remaining before this run
@@ -161,14 +162,16 @@ const BG_COOLDOWN_MS = 2_000;
 
 // Background loop: runs chunks until done or budget spent, then re-invokes itself (bounded by hops).
 // deno-lint-ignore no-explicit-any
-async function distributeInBackground(admin: any, batch_id: string, userId: string, hopsLeft: number) {
+async function distributeInBackground(admin: any, batch_id: string, userId: string, hopsLeft: number, failedIds: string[] = []) {
+  const failed = new Set<string>(failedIds);
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const started = Date.now();
   let failStreak = 0;
   while (Date.now() - started < BG_BUDGET_MS) {
     try {
-      const r = await distributeChunk(admin, batch_id, userId, 5);
+      const r = await distributeChunk(admin, batch_id, userId, 5, failed);
+      for (const f of r.failures) failed.add(f.id);
       failStreak = 0;
       if (r.done) {
         await fetch(`${supabaseUrl}/functions/v1/notify-payslip-distributed`, {
@@ -178,8 +181,6 @@ async function distributeInBackground(admin: any, batch_id: string, userId: stri
         }).then((x) => x.text()).catch((e) => console.error("notify start failed", e));
         return;
       }
-      // Stop if a whole chunk failed (nothing progressed) to avoid looping on broken slips.
-      if (r.processed === 0) return;
     } catch (e) {
       console.error("bg chunk error", e);
       if (++failStreak >= 3) {
@@ -196,7 +197,7 @@ async function distributeInBackground(admin: any, batch_id: string, userId: stri
   await fetch(`${supabaseUrl}/functions/v1/payslip-batch-action`, {
     method: "POST",
     headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "distribute_continue", batch_id, actor_id: userId, hops_left: hopsLeft - 1 }),
+    body: JSON.stringify({ action: "distribute_continue", batch_id, actor_id: userId, hops_left: hopsLeft - 1, failed_ids: [...failed].slice(0, 2000) }),
   }).then((x) => x.text()).catch((e) => console.error("continue failed", e));
 }
 
@@ -217,7 +218,7 @@ Deno.serve(async (req) => {
       if (body?.action !== "distribute_continue" || !body.batch_id || !body.actor_id) return jsonResp({ error: "params" }, 400);
       const svc = createClient(supabaseUrl, serviceKey);
       // @ts-ignore EdgeRuntime is provided by the edge runtime
-      EdgeRuntime.waitUntil(distributeInBackground(svc, body.batch_id, body.actor_id, Math.max(0, Math.min(BG_MAX_HOPS, Number(body.hops_left) || 0))));
+      EdgeRuntime.waitUntil(distributeInBackground(svc, body.batch_id, body.actor_id, Math.max(0, Math.min(BG_MAX_HOPS, Number(body.hops_left) || 0)), Array.isArray(body.failed_ids) ? body.failed_ids.filter((x: unknown) => typeof x === "string").slice(0, 2000) : []));
       return jsonResp({ ok: true });
     }
 
@@ -259,7 +260,7 @@ Deno.serve(async (req) => {
       if (!batch_id) return jsonResp({ error: "batch_id" }, 400);
       // @ts-ignore EdgeRuntime is provided by the edge runtime
       EdgeRuntime.waitUntil(distributeInBackground(admin, batch_id, userId, BG_MAX_HOPS));
-      return jsonResp({ ok: true, started: true });
+      return jsonResp({ ok: true, started: true, started_at: new Date().toISOString() });
     }
 
     if (action === "delete_batch") {
