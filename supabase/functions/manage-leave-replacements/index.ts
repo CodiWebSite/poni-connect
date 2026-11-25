@@ -19,7 +19,40 @@ const BodySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("create"), delegate_user_id: z.string().uuid(), start_date: dateField, end_date: dateField, reason: z.enum(["concediu", "delegatie", "altele"]).default("concediu") }),
   z.object({ action: z.literal("transfer"), source_delegation_id: z.string().uuid(), new_delegate_user_id: z.string().uuid() }),
   z.object({ action: z.literal("deactivate"), delegation_id: z.string().uuid() }),
+  z.object({ action: z.literal("send-preview") }),
 ]);
+const PREVIEW_RECIPIENT = "condrea.codrin@icmpp.ro";
+
+type MailKind = "create" | "transfer" | "deactivate";
+const buildMail = (kind: MailKind, isNewDelegate: boolean, p: { scope: string; period: string; delegatorName: string; delegateName: string; actorName: string }) => {
+  const { scope, period, delegatorName, delegateName, actorName } = p;
+  const subject = kind === "deactivate" ? `Înlocuire dezactivată — ${scope}`
+    : isNewDelegate ? `Ai fost desemnat înlocuitor pentru aprobări — ${scope}`
+    : kind === "transfer" ? `Ștafeta pentru aprobări a fost transferată — ${scope}`
+    : `Înlocuitor desemnat pentru aprobări — ${scope}`;
+  const actionText = kind === "deactivate"
+    ? `Înlocuirea pentru aprobări a fost dezactivată de <strong>${escapeHtml(actorName)}</strong>.`
+    : isNewDelegate
+      ? kind === "transfer"
+        ? `<strong>${escapeHtml(actorName)}</strong> ți-a transferat ștafeta primită de la <strong>${escapeHtml(delegatorName)}</strong>.`
+        : `<strong>${escapeHtml(delegatorName)}</strong> te-a desemnat ca înlocuitor pentru aprobarea cererilor de concediu.`
+      : `<strong>${escapeHtml(delegateName)}</strong> ${kind === "transfer" ? `preia ștafeta de la <strong>${escapeHtml(actorName)}</strong>` : "a fost desemnat înlocuitor pentru aprobări"}.`;
+  const html = `
+          <div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;padding:24px;color:#172554">
+            <h2 style="color:#3a3b8d">Intranet ICMPP — înlocuitor pentru aprobări</h2>
+            <p>Bună ziua,</p><p>${actionText}</p>
+            <div style="background:#f5f7ff;border:1px solid #dbe2ff;border-radius:10px;padding:16px;margin:20px 0">
+              <p><strong>Compartiment:</strong> ${escapeHtml(scope)}</p>
+              <p><strong>Perioada:</strong> ${escapeHtml(period)}</p>
+              <p><strong>Șef original:</strong> ${escapeHtml(delegatorName)}</p>
+              <p><strong>Înlocuitor:</strong> ${escapeHtml(delegateName)}</p>
+            </div>
+            ${isNewDelegate ? `<p>Poți vedea și aproba cererile de concediu ale colegilor din compartimentul menționat, numai în perioada înlocuirii. Propriile cereri trebuie aprobate de alt coleg.</p>` : ""}
+            <p><a href="${kind === "deactivate" ? DELEGATION_URL : APPROVAL_URL}" style="display:inline-block;background:#3a3b8d;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Deschide Intranet ICMPP</a></p>
+            <p style="font-size:12px;color:#64748b;margin-top:28px">Mesaj automat trimis de Intranet ICMPP. Nu răspundeți la acest mesaj.</p>
+          </div>`;
+  return { subject, html };
+};
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -177,36 +210,34 @@ Deno.serve(async (req) => {
         const { data: { user } } = await admin.auth.admin.getUserById(userId);
         if (!user?.email) { failed++; continue; }
         const isNewDelegate = userId === delegate?.user_id && kind !== "deactivate";
-        const subject = kind === "deactivate" ? `Înlocuire dezactivată — ${scope}`
-          : isNewDelegate ? `Ai fost desemnat înlocuitor pentru aprobări — ${scope}`
-          : kind === "transfer" ? `Ștafeta pentru aprobări a fost transferată — ${scope}`
-          : `Înlocuitor desemnat pentru aprobări — ${scope}`;
-        const actionText = kind === "deactivate"
-          ? `Înlocuirea pentru aprobări a fost dezactivată de <strong>${escapeHtml(actorName)}</strong>.`
-          : isNewDelegate
-            ? kind === "transfer"
-              ? `<strong>${escapeHtml(actorName)}</strong> ți-a transferat ștafeta primită de la <strong>${escapeHtml(delegatorName)}</strong>.`
-              : `<strong>${escapeHtml(delegatorName)}</strong> te-a desemnat ca înlocuitor pentru aprobarea cererilor de concediu.`
-            : `<strong>${escapeHtml(delegateName)}</strong> ${kind === "transfer" ? `preia ștafeta de la <strong>${escapeHtml(actorName)}</strong>` : "a fost desemnat înlocuitor pentru aprobări"}.`;
-        const html = `
-          <div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;padding:24px;color:#172554">
-            <h2 style="color:#3a3b8d">Intranet ICMPP — înlocuitor pentru aprobări</h2>
-            <p>Bună ziua,</p><p>${actionText}</p>
-            <div style="background:#f5f7ff;border:1px solid #dbe2ff;border-radius:10px;padding:16px;margin:20px 0">
-              <p><strong>Compartiment:</strong> ${escapeHtml(scope)}</p>
-              <p><strong>Perioada:</strong> ${escapeHtml(period)}</p>
-              <p><strong>Șef original:</strong> ${escapeHtml(delegatorName)}</p>
-              <p><strong>Înlocuitor:</strong> ${escapeHtml(delegateName)}</p>
-            </div>
-            ${isNewDelegate ? `<p>Poți vedea și aproba cererile de concediu ale colegilor din compartimentul menționat, numai în perioada înlocuirii. Propriile cereri trebuie aprobate de alt coleg.</p>` : ""}
-            <p><a href="${kind === "deactivate" ? DELEGATION_URL : APPROVAL_URL}" style="display:inline-block;background:#3a3b8d;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Deschide Intranet ICMPP</a></p>
-            <p style="font-size:12px;color:#64748b;margin-top:28px">Mesaj automat trimis de Intranet ICMPP. Nu răspundeți la acest mesaj.</p>
-          </div>`;
+        const { subject, html } = buildMail(kind, isNewDelegate, { scope, period, delegatorName, delegateName, actorName });
         const result = await trySendMail(transporter, { from: fromAddress, to: user.email, subject, html }, { label: "manage-leave-replacements" });
         if (result.ok) sent++; else failed++;
       }
       return { sent, failed };
     };
+
+    if (body.action === "send-preview") {
+      const { data: sa } = await admin.from("user_roles").select("role").eq("user_id", actorId).eq("role", "super_admin").limit(1);
+      if (!sa?.length) return json({ error: "Doar super-adminii pot trimite e-mailuri de test." }, 403);
+      const smtpHost = Deno.env.get("SMTP_HOST");
+      const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
+      const smtpUser = Deno.env.get("SMTP_USER");
+      const smtpPass = Deno.env.get("SMTP_PASS");
+      const smtpFrom = Deno.env.get("SMTP_FROM") || "";
+      if (!smtpHost || !smtpUser || !smtpPass) return json({ error: "SMTP indisponibil." }, 500);
+      const transporter = nodemailer.createTransport({ host: smtpHost, port: smtpPort, secure: smtpPort === 465, auth: { user: smtpUser, pass: smtpPass } });
+      const fromAddress = smtpFrom.includes("@") ? smtpFrom : `"${smtpFrom}" <${smtpUser}>`;
+      const sample = { scope: "Laborator exemplu", period: "02.12.2026 – 07.12.2026", delegatorName: "Ciornei Cezar", delegateName: "Tabără Lucian", actorName: "Coleg anterior" };
+      const variants: [MailKind, boolean][] = [["create", true], ["create", false], ["transfer", true], ["transfer", false], ["deactivate", false]];
+      let sent = 0;
+      for (const [kind, isNew] of variants) {
+        const { subject, html } = buildMail(kind, isNew, kind === "transfer" ? { ...sample, actorName: "Tabără Lucian", delegateName: "Noul înlocuitor" } : sample);
+        const r = await trySendMail(transporter, { from: fromAddress, to: PREVIEW_RECIPIENT, subject: `[TEST] ${subject}`, html }, { label: "manage-leave-replacements-preview" });
+        if (r.ok) sent++;
+      }
+      return json({ success: true, sent, total: variants.length });
+    }
 
     if (body.action === "check-replacement") {
       if (!await canSelectReplacement(body.replacement_epd_id)) return json({ error: "Nu puteți selecta acest înlocuitor." }, 403);
