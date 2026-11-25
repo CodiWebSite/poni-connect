@@ -29,6 +29,8 @@ project_id = "erghywhqrxmwqptusbxd"
     verify_jwt = false
   [functions.notify-leave-email]
     verify_jwt = true
+  [functions.manage-leave-replacements]
+    verify_jwt = true
   [functions.notify-maintenance-end]
     verify_jwt = true
   [functions.send-promo-email]

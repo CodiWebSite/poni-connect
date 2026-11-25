@@ -73,13 +73,15 @@ Deno.serve(async (req) => {
     // The requester must never receive an approval task for their own request.
     let requesterUserId: string | null = null;
     let requesterEmail: string | null = null;
+    let replacementEpdId: string | null = null;
     if (request_id) {
       const { data: leaveRequest } = await supabaseAdmin
         .from("leave_requests")
-        .select("user_id")
+        .select("user_id, replacement_epd_id")
         .eq("id", request_id)
         .maybeSingle();
       requesterUserId = leaveRequest?.user_id ?? null;
+      replacementEpdId = leaveRequest?.replacement_epd_id ?? null;
       if (requesterUserId) {
         const { data: { user: requester } } = await supabaseAdmin.auth.admin.getUserById(requesterUserId);
         requesterEmail = requester?.email ?? null;
@@ -138,7 +140,29 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (recipientEmails.length === 0 && delegateEmails.length === 0) {
+    // Persoana aleasă pentru înlocuirea activității primește un mesaj separat,
+    // fără drepturi implicite de aprobare.
+    let replacementEmail: string | null = null;
+    if (replacementEpdId) {
+      const { data: replacementEpd } = await supabaseAdmin
+        .from("employee_personal_data")
+        .select("employee_record_id")
+        .eq("id", replacementEpdId)
+        .maybeSingle();
+      if (replacementEpd?.employee_record_id) {
+        const { data: replacementRecord } = await supabaseAdmin
+          .from("employee_records")
+          .select("user_id")
+          .eq("id", replacementEpd.employee_record_id)
+          .maybeSingle();
+        if (replacementRecord?.user_id && replacementRecord.user_id !== requesterUserId) {
+          const { data: { user: replacementUser } } = await supabaseAdmin.auth.admin.getUserById(replacementRecord.user_id);
+          if (replacementUser?.email && replacementUser.email !== requesterEmail) replacementEmail = replacementUser.email;
+        }
+      }
+    }
+
+    if (recipientEmails.length === 0 && delegateEmails.length === 0 && !replacementEmail) {
       return new Response(
         JSON.stringify({ message: "No recipients found" }),
         {
@@ -279,6 +303,24 @@ Deno.serve(async (req) => {
         html: buildHtmlBody(true, approvalUrl),
       });
       console.log(`Priority email sent to delegate: ${email}`);
+      totalSent++;
+    }
+
+    if (replacementEmail) {
+      await sendMailWithRetry(transporter, {
+        from: fromAddress,
+        to: replacementEmail,
+        subject: `Ai fost ales înlocuitor pentru concediul — ${employee_name}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;color:#1e293b">
+            <h2 style="color:#3a3b8d">Intranet ICMPP — înlocuire pe perioada concediului</h2>
+            <p>Bună ziua,</p>
+            <p><strong>${employee_name}</strong> v-a ales ca înlocuitor pentru perioada <strong>${start_date} — ${end_date}</strong>.</p>
+            <p>Cererea ${request_number} este pentru compartimentul <strong>${department}</strong>.</p>
+            <p>Această alegere privește continuitatea activității și <strong>nu oferă automat drepturi de aprobare</strong>. Dacă trebuie să aprobați și cererile de concediu, șeful compartimentului vă va desemna separat ca înlocuitor pentru aprobări.</p>
+            <p style="font-size:12px;color:#718096;margin-top:30px">Mesaj automat trimis de Intranet ICMPP. Nu răspundeți la acest mesaj.</p>
+          </div>`,
+      });
       totalSent++;
     }
 

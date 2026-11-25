@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { fetchOwnPeriodConflicts, formatConflict, TRAVEL_LEAVE_TYPE, type PeriodConflict } from '@/utils/leaveTravelConflicts';
 import { canActOnLeaveRequest } from '@/utils/leaveSelfApproval';
+import { formatReplacementConflict, type ReplacementConflict } from '@/utils/leaveReplacementRules';
 import { useFormDraft } from '@/hooks/useFormDraft';
 import { DraftRestoreBanner } from '@/components/shared/DraftRestoreBanner';
 
@@ -71,6 +72,9 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
   const [delegateReminderOpen, setDelegateReminderOpen] = useState(false);
   const [delegatePeriod, setDelegatePeriod] = useState<{ start: string; end: string } | null>(null);
   const [travelConflicts, setTravelConflicts] = useState<PeriodConflict[]>([]);
+  const [replacementConflicts, setReplacementConflicts] = useState<ReplacementConflict[]>([]);
+  const [checkingReplacement, setCheckingReplacement] = useState(false);
+  const [incomingDelegationCount, setIncomingDelegationCount] = useState(0);
 
   // Salvare automată a completării (draft local, 7 zile)
   const draft = useFormDraft('leave-request', { startDate, endDate, replacementId });
@@ -91,6 +95,35 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       .catch(() => { if (active) setTravelConflicts([]); });
     return () => { active = false; };
   }, [startDate, endDate, user, employeeData]);
+
+  // Înlocuitorul trebuie să fie disponibil pe toată perioada cererii.
+  useEffect(() => {
+    setReplacementConflicts([]);
+    if (!replacementId || !startDate || !endDate) return;
+    let active = true;
+    setCheckingReplacement(true);
+    const timer = window.setTimeout(() => {
+      void supabase.functions.invoke('manage-leave-replacements', {
+        body: { action: 'check-replacement', replacement_epd_id: replacementId, start_date: startDate, end_date: endDate },
+      }).then(({ data, error }) => {
+        if (!active) return;
+        if (error) console.warn('Verificarea înlocuitorului nu a reușit', error);
+        else setReplacementConflicts((data?.conflicts || []) as ReplacementConflict[]);
+      }).finally(() => { if (active) setCheckingReplacement(false); });
+    }, 250);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [replacementId, startDate, endDate]);
+
+  // Dacă solicitantul are deja o delegare primită, îi oferim calea directă pentru transferul ștafetei.
+  useEffect(() => {
+    if (!user || !startDate || !endDate) { setIncomingDelegationCount(0); return; }
+    let active = true;
+    void supabase.from('leave_approval_delegates').select('id')
+      .eq('delegate_user_id', user.id).eq('is_active', true)
+      .lte('start_date', endDate).gte('end_date', startDate)
+      .then(({ data }) => { if (active) setIncomingDelegationCount((data || []).length); });
+    return () => { active = false; };
+  }, [user, startDate, endDate]);
 
 
   useEffect(() => {
@@ -305,6 +338,24 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       return;
     }
 
+    if (replacementId) {
+      const { data: availability, error: availabilityError } = await supabase.functions.invoke('manage-leave-replacements', {
+        body: { action: 'check-replacement', replacement_epd_id: replacementId, start_date: startDate, end_date: endDate },
+      });
+      const conflicts = (availability?.conflicts || []) as ReplacementConflict[];
+      if (availabilityError || availability?.error || conflicts.length > 0) {
+        setReplacementConflicts(conflicts);
+        toast({
+          title: 'Înlocuitor indisponibil',
+          description: conflicts.length > 0 ? 'Colegul are un concediu aprobat sau în așteptare în această perioadă. Selectați alt înlocuitor.' : 'Disponibilitatea înlocuitorului nu a putut fi verificată. Încercați din nou.',
+          variant: 'destructive',
+        });
+        setSubmitting(false);
+        submittingRef.current = false;
+        return;
+      }
+    }
+
     const selectedColleague = colleagues.find(c => c.id === replacementId);
 
     // Lookup designated approver: per-employee first, then per-department fallback
@@ -339,6 +390,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
       year: requestYear,
       replacement_name: selectedColleague?.name || '',
       replacement_position: selectedColleague?.position || '',
+      replacement_epd_id: replacementId || null,
       status: 'pending_department_head' as any,
       employee_signature: signature,
       employee_signed_at: new Date().toISOString(),
@@ -350,11 +402,14 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
     if (error) {
       console.error('Error creating leave request:', error);
       const isDuplicate = error.code === '23505' || error.code === '23P01';
+      const isReplacementConflict = error.message?.includes('Înlocuitorul selectat');
       toast({
-        title: isDuplicate ? 'Cerere duplicat' : 'Eroare',
+        title: isDuplicate ? 'Cerere duplicat' : isReplacementConflict ? 'Înlocuitor indisponibil' : 'Eroare',
         description: isDuplicate
           ? 'Există deja o cerere activă pentru aceeași perioadă. Nu se poate trimite din nou.'
-          : 'Nu s-a putut trimite cererea.',
+          : isReplacementConflict
+            ? 'Colegul are un concediu aprobat sau în așteptare în această perioadă. Selectați alt înlocuitor.'
+            : 'Nu s-a putut trimite cererea.',
         variant: 'destructive',
       });
     } else {
@@ -711,6 +766,19 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
           </div>
         )}
 
+        {incomingDelegationCount > 0 && (
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm space-y-2">
+            <p className="flex items-center gap-2 font-medium"><AlertTriangle className="h-4 w-4 text-warning" /> Aveți o înlocuire pentru aprobări în această perioadă</p>
+            <p className="text-xs text-muted-foreground">Dacă plecați în concediu, transferați ștafeta altui coleg ca cererile să nu rămână fără aprobator.</p>
+            <Button type="button" variant="outline" size="sm" onClick={() => {
+              const sp = new URLSearchParams(window.location.search);
+              sp.set('tab', 'delegate');
+              window.history.pushState({}, '', `${window.location.pathname}?${sp.toString()}`);
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}>Deschide transferul ștafetei</Button>
+          </div>
+        )}
+
         {/* Replacement */}
         <div className="space-y-2">
           <Label>Înlocuitor pe perioada concediului</Label>
@@ -731,6 +799,14 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
               Nu s-au găsit colegi în același departament.
             </p>
           )}
+          {checkingReplacement && <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Verificăm disponibilitatea înlocuitorului…</p>}
+          {replacementConflicts.length > 0 && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <p className="flex items-center gap-2 font-medium"><AlertTriangle className="h-4 w-4" /> Înlocuitorul nu poate fi ales</p>
+              {replacementConflicts.map((conflict, index) => <p key={index} className="ml-6 mt-1 text-xs">• {formatReplacementConflict(conflict)}</p>)}
+              <p className="ml-6 mt-1 text-xs">Selectați alt coleg sau modificați perioada.</p>
+            </div>
+          )}
         </div>
 
         {/* Signature */}
@@ -744,7 +820,7 @@ export function LeaveRequestForm({ onSubmitted }: LeaveRequestFormProps) {
         <div className="flex justify-end">
           <Button
             onClick={handleSubmit}
-            disabled={submitting || !signature || !startDate || !endDate || workingDays <= 0 || travelConflicts.length > 0}
+            disabled={submitting || checkingReplacement || replacementConflicts.length > 0 || !signature || !startDate || !endDate || workingDays <= 0 || travelConflicts.length > 0}
             className="gap-2"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

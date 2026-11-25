@@ -200,6 +200,32 @@ export async function createLeaveRequest(
   }
 
   const approver = await findApprover(supabase, userId);
+
+  // IRIS primește numele, dar salvarea folosește identitatea exactă a înlocuitorului,
+  // astfel încât regula de suprapunere să nu poată fi ocolită.
+  let replacementEpdId: string | null = null;
+  let replacementPosition: string | null = null;
+  const normalizedReplacementName = replacementName?.trim();
+  if (normalizedReplacementName && normalizedReplacementName !== "—") {
+    const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+    const { data: requesterEpd } = await serviceClient.from("employee_personal_data").select("department").eq("id", balance.epdId).maybeSingle();
+    const { data: candidates } = await serviceClient.from("employee_personal_data")
+      .select("id, first_name, last_name, department, position").eq("is_archived", false);
+    const matches = (candidates || []).filter((candidate: any) => {
+      const direct = `${candidate.first_name} ${candidate.last_name}`;
+      const reversed = `${candidate.last_name} ${candidate.first_name}`;
+      return [normalize(direct), normalize(reversed)].includes(normalize(normalizedReplacementName));
+    });
+    if (matches.length !== 1) return { error: "Înlocuitorul nu a putut fi identificat unic. Selectați colegul din formularul de concediu." };
+    const match = matches[0];
+    if (match.department !== requesterEpd?.department) {
+      const { data: override } = await serviceClient.from("leave_replacement_overrides").select("employee_epd_id")
+        .eq("employee_epd_id", balance.epdId).eq("replacement_epd_id", match.id).maybeSingle();
+      if (!override) return { error: "Înlocuitorul trebuie să fie din compartimentul dumneavoastră sau din excepțiile aprobate de HR." };
+    }
+    replacementEpdId = match.id;
+    replacementPosition = match.position || null;
+  }
   
   const year = new Date(startDate).getFullYear();
 
@@ -211,6 +237,8 @@ export async function createLeaveRequest(
       end_date: endDate,
       working_days: workingDays,
       replacement_name: replacementName || "—",
+      replacement_position: replacementPosition,
+      replacement_epd_id: replacementEpdId,
       year,
       status: "pending_department_head",
       approver_id: approver?.userId || null,
@@ -222,6 +250,9 @@ export async function createLeaveRequest(
   if (insertError) {
     if (insertError.code === "23505") {
       return { error: "Cerere duplicat — există deja o cerere pentru această perioadă." };
+    }
+    if (insertError.message?.includes("Înlocuitorul selectat")) {
+      return { error: "Înlocuitorul are un concediu aprobat sau în așteptare în această perioadă. Alegeți alt coleg." };
     }
     console.error("Leave insert error:", insertError);
     return { error: "Eroare la crearea cererii de concediu: " + insertError.message };

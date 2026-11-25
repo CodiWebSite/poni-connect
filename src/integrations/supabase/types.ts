@@ -2300,6 +2300,8 @@ export type Database = {
       leave_approval_delegates: {
         Row: {
           created_at: string
+          deactivated_at: string | null
+          deactivated_by_user_id: string | null
           delegate_user_id: string
           delegator_user_id: string
           department: string | null
@@ -2308,9 +2310,14 @@ export type Database = {
           is_active: boolean
           reason: string | null
           start_date: string
+          transferred_at: string | null
+          transferred_by_user_id: string | null
+          transferred_from_delegation_id: string | null
         }
         Insert: {
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by_user_id?: string | null
           delegate_user_id: string
           delegator_user_id: string
           department?: string | null
@@ -2319,9 +2326,14 @@ export type Database = {
           is_active?: boolean
           reason?: string | null
           start_date: string
+          transferred_at?: string | null
+          transferred_by_user_id?: string | null
+          transferred_from_delegation_id?: string | null
         }
         Update: {
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by_user_id?: string | null
           delegate_user_id?: string
           delegator_user_id?: string
           department?: string | null
@@ -2330,8 +2342,19 @@ export type Database = {
           is_active?: boolean
           reason?: string | null
           start_date?: string
+          transferred_at?: string | null
+          transferred_by_user_id?: string | null
+          transferred_from_delegation_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leave_approval_delegates_transferred_from_delegation_id_fkey"
+            columns: ["transferred_from_delegation_id"]
+            isOneToOne: false
+            referencedRelation: "leave_approval_delegates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leave_approvers: {
         Row: {
@@ -2561,6 +2584,7 @@ export type Database = {
           rejected_at: string | null
           rejected_by: string | null
           rejection_reason: string | null
+          replacement_epd_id: string | null
           replacement_name: string
           replacement_position: string | null
           request_number: string
@@ -2596,6 +2620,7 @@ export type Database = {
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
+          replacement_epd_id?: string | null
           replacement_name: string
           replacement_position?: string | null
           request_number?: string
@@ -2631,6 +2656,7 @@ export type Database = {
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
+          replacement_epd_id?: string | null
           replacement_name?: string
           replacement_position?: string | null
           request_number?: string
@@ -2656,6 +2682,20 @@ export type Database = {
           {
             foreignKeyName: "leave_requests_epd_id_fkey"
             columns: ["epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_personal_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_replacement_epd_id_fkey"
+            columns: ["replacement_epd_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_replacement_epd_id_fkey"
+            columns: ["replacement_epd_id"]
             isOneToOne: false
             referencedRelation: "employee_personal_data"
             referencedColumns: ["id"]
@@ -5572,6 +5612,7 @@ export type Database = {
           rejected_at: string | null
           rejected_by: string | null
           rejection_reason: string | null
+          replacement_epd_id: string | null
           replacement_name: string
           replacement_position: string | null
           request_number: string
@@ -5616,6 +5657,15 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      has_leave_replacement_conflict: {
+        Args: {
+          _end_date: string
+          _epd_id: string
+          _exclude_leave_request_id?: string
+          _start_date: string
+        }
+        Returns: boolean
       }
       has_role: {
         Args: {
