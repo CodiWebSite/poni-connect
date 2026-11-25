@@ -1,10 +1,10 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
-- [ ] Înlocuitori concedii: blocare la concedii suprapuse aprobate sau în așteptare, în interfață și la salvare
-- [ ] Delegări aprobări: e-mailuri la desemnare, cerere nouă, transfer și dezactivare
-- [ ] Ștafetă între înlocuitori cu păstrarea compartimentului original, inclusiv Ciornei–Tabără
-- [ ] Teste de reguli, publicare funcții și verificare completă desktop/mobil
+- [x] Înlocuitori concedii: blocare la concedii suprapuse aprobate sau în așteptare, în interfață și la salvare
+- [x] Delegări aprobări: e-mailuri la desemnare, cerere nouă, transfer și dezactivare
+- [x] Ștafetă între înlocuitori cu păstrarea compartimentului original, inclusiv Ciornei–Tabără
+- [x] Teste de reguli și publicare funcții; flux real neverificat într-un cont de șef
 - [x] Blocare încărcare fluturași remediată: loturi fără sursă neblocante, erori oprite, reluare limitată și anulare sigură; PDF invalid apoi valid verificate în contul Codrin, loturile de test eliminate
 - [x] Link Intranet din confirmări și invitații corectat și verificat; expeditor neschimbat, funcția publicată
 - [ ] Configurare e-mailuri de autentificare pe notify.intranet.icmpp.ro; păstrare SMTP operațional, publicare și verificare infrastructură
