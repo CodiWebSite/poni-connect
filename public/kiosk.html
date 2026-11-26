@@ -7,6 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+:root{
+  --christmas-snow:#f8fafc;
+  --christmas-gold:#ffd978;
+  --christmas-red:#c65757;
+  --christmas-green:#7fb69e;
+  --christmas-wire:rgba(255,217,120,0.28);
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:#0c1222;color:#e2e8f0}
 .kiosk{display:flex;flex-direction:column;height:100vh;width:100vw;background:linear-gradient(135deg,#0c1222 0%,#111b30 50%,#0c1222 100%)}
@@ -104,6 +111,19 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
 .video-progress{position:absolute;bottom:22px;left:50px;right:50px;height:3px;background:rgba(0,0,0,0.2);border-radius:3px;overflow:hidden;pointer-events:none}
 .video-progress-bar{height:100%;background:rgba(201,162,39,0.55);border-radius:3px;width:0;transition:width 0.3s linear}
 
+/* Decorațiuni discrete de Crăciun — fără imagini sau resurse suplimentare */
+.christmas-snow{position:fixed;inset:0;z-index:20;overflow:hidden;pointer-events:none}
+.festive-snowflake{position:absolute;top:-24px;border-radius:50%;background:var(--christmas-snow);box-shadow:0 0 6px var(--christmas-snow);animation-name:festive-snowfall;animation-timing-function:linear;animation-iteration-count:infinite;will-change:transform}
+.festive-lights{position:absolute;left:0;right:0;top:4px;height:18px;display:flex;justify-content:space-around;align-items:flex-start;z-index:3;pointer-events:none;border-top:1px solid var(--christmas-wire)}
+.festive-light{width:7px;height:11px;flex-shrink:0;border-radius:2px 2px 5px 5px;background:var(--christmas-gold);box-shadow:0 0 9px var(--christmas-gold);animation:festive-twinkle 3s ease-in-out infinite alternate}
+.festive-light:nth-child(3n+1){background:var(--christmas-red);box-shadow:0 0 9px var(--christmas-red);animation-delay:-1s}
+.festive-light:nth-child(3n+2){background:var(--christmas-green);box-shadow:0 0 9px var(--christmas-green);animation-delay:-2s}
+.christmas-season .header{border-bottom-color:var(--christmas-wire)}
+.eco-active .festive-snowflake,.eco-active .festive-light{animation-play-state:paused}
+@keyframes festive-snowfall{0%{transform:translate3d(0,-4vh,0);opacity:0}10%{opacity:0.48}85%{opacity:0.32}100%{transform:translate3d(36px,106vh,0);opacity:0}}
+@keyframes festive-twinkle{0%,35%{opacity:0.45}70%,100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.festive-snowflake,.festive-light{animation:none}.festive-snowflake{display:none}}
+
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
 @keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 @keyframes sep-flow{0%{background-position:0 0}100%{background-position:0 200%}}
@@ -111,8 +131,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
 </head>
 <body>
 <div class="kiosk">
+  <div class="christmas-snow" id="christmasSnow" aria-hidden="true"></div>
   <!-- Header -->
   <div class="header">
+    <div class="festive-lights" id="festiveLights" aria-hidden="true"></div>
     <div class="header-left">
       <img src="/logo-icmpp.png" alt="ICMPP">
       <div class="institute-info">
@@ -1265,6 +1287,7 @@ function ecoMoveClock(){
 function ecoEnter(){
   if (__ecoOn) return;
   __ecoOn = true;
+  document.body.className += document.body.className.indexOf('eco-active') === -1 ? ' eco-active' : '';
   var ov = document.getElementById('ecoOverlay');
   if (ov) ov.style.display = 'block';
   try {
@@ -1284,6 +1307,7 @@ function ecoEnter(){
 function ecoExit(){
   if (!__ecoOn) return;
   __ecoOn = false;
+  document.body.className = document.body.className.replace(/\s*eco-active/g, '');
   var ov = document.getElementById('ecoOverlay');
   if (ov) ov.style.display = 'none';
   try { if (__bgMusicAudio && __bgMusicAudio.src) __bgMusicAudio.play().catch(function(){}); } catch(_){}
@@ -1362,6 +1386,39 @@ function ecoRenderBtn(){
   }, true);
 });
 
+
+// Atmosferă discretă de sărbători: 20 noiembrie – 7 ianuarie.
+(function initChristmasDecor(){
+  var now = new Date();
+  var month = now.getMonth();
+  var day = now.getDate();
+  var isSeason = month === 11 || (month === 0 && day <= 7) || (month === 10 && day >= 20);
+  if (!isSeason) return;
+  document.body.className += ' christmas-season';
+  var snow = document.getElementById('christmasSnow');
+  var lights = document.getElementById('festiveLights');
+  if (snow) {
+    for (var i = 0; i < 18; i++) {
+      var flake = document.createElement('span');
+      var size = 3 + (i % 4);
+      flake.className = 'festive-snowflake';
+      flake.style.left = ((i * 37 + 11) % 100) + '%';
+      flake.style.width = size + 'px';
+      flake.style.height = size + 'px';
+      flake.style.animationDuration = (16 + (i % 7) * 2) + 's';
+      flake.style.animationDelay = (-i * 1.7) + 's';
+      snow.appendChild(flake);
+    }
+  }
+  if (lights) {
+    for (var j = 0; j < 24; j++) {
+      var light = document.createElement('span');
+      light.className = 'festive-light';
+      light.style.animationDelay = (-(j % 6) * 0.45) + 's';
+      lights.appendChild(light);
+    }
+  }
+})();
 
 // Reîncărcare zilnică de igienizare a memoriei (06:30) — eliberează RAM pe Samsung TV
 setInterval(function(){
