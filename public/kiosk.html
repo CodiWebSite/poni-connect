@@ -1205,41 +1205,91 @@ function setupBgMusic(cfg){
       try { __bgYtPlayer.unMute(); __bgYtPlayer.setVolume(cfg.volume); __bgYtPlayer.playVideo(); ytUnmuted = true; } catch(_){}
     };
   } else {
+    // Radio stream: try several equivalent addresses, because some Samsung TVs
+    // cannot open the HTTPS stream (certificate chain / non-standard port).
     var audUnmuted = false;
-    showSoundPrompt('🔊 Pornesc radioul…');
-    __bgMusicAudio.src = cfg.url;
-    __bgMusicAudio.loop = true;
-    __bgMusicAudio.volume = Math.max(0, Math.min(1, cfg.volume / 100));
-    __bgMusicAudio.onplaying = function(){
-      if (__bgMusicAudio.muted) {
-        showSoundPrompt('🔊 Apasă OK pentru sunet');
+    var sources = [cfg.url];
+    var baseNoSlash = cfg.url.replace(/\/+$/, '');
+    if (/\/stream$/.test(baseNoSlash)) sources.push(baseNoSlash.replace(/\/stream$/, '/;'));
+    if (/^https:\/\//i.test(cfg.url)) {
+      var httpUrl = cfg.url.replace(/^https:\/\//i, 'http://');
+      sources.push(httpUrl);
+      if (/\/stream$/.test(baseNoSlash)) sources.push(httpUrl.replace(/\/+$/, '').replace(/\/stream$/, '/;'));
+    }
+    var srcIdx = 0;
+    var watchdog = null;
+    var errName = function(){
+      var e = __bgMusicAudio.error;
+      var codes = {1:'oprit',2:'rețea',3:'decodare',4:'format/adresă nesuportată'};
+      return e ? (codes[e.code] || ('cod ' + e.code)) : 'fără răspuns';
+    };
+    var clearWatchdog = function(){ if (watchdog) { clearTimeout(watchdog); watchdog = null; } };
+    var tryNextSource = function(reason){
+      clearWatchdog();
+      if (audUnmuted) return;
+      srcIdx++;
+      if (srcIdx >= sources.length) {
+        srcIdx = 0;
+        showSoundPrompt('🔊 Radio indisponibil (' + reason + ') – OK pentru reîncercare');
         return;
       }
+      loadSource(true);
+    };
+    var loadSource = function(withSound){
+      clearWatchdog();
+      showSoundPrompt('🔊 Pornesc radioul… (' + (srcIdx + 1) + '/' + sources.length + ')');
+      try { __bgMusicAudio.pause(); } catch(_){}
+      __bgMusicAudio.src = sources[srcIdx] + (sources[srcIdx].indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+      __bgMusicAudio.muted = !withSound;
+      __bgMusicAudio.volume = Math.max(0, Math.min(1, cfg.volume / 100));
+      try { __bgMusicAudio.load(); } catch(_){}
+      watchdog = setTimeout(function(){ tryNextSource(errName()); }, 12000);
+      var p = __bgMusicAudio.play();
+      if (p && p.catch) p.catch(function(err){
+        if (err && err.name === 'NotAllowedError') {
+          clearWatchdog();
+          __bgMusicAudio.muted = true;
+          __bgMusicAudio.play().catch(function(){});
+          showSoundPrompt('🔊 Apasă OK pentru sunet');
+        }
+      });
+    };
+    __bgMusicAudio.loop = false;
+    __bgMusicAudio.onplaying = function(){
+      clearWatchdog();
+      if (__bgMusicAudio.muted) { showSoundPrompt('🔊 Apasă OK pentru sunet'); return; }
       audUnmuted = true;
       hideSoundPrompt();
     };
     __bgMusicAudio.onerror = function(){
-      showSoundPrompt('🔊 Reîncearcă radioul');
+      if (!__bgMusicAudio.getAttribute('src')) return;
+      if (audUnmuted) {
+        // Stream dropped while playing: reconnect quietly.
+        audUnmuted = false;
+        setTimeout(function(){ loadSource(true); }, 3000);
+        return;
+      }
+      tryNextSource(errName());
     };
-    // Optimistic: try unmuted first.
-    __bgMusicAudio.muted = false;
-    var optimisticPlay = __bgMusicAudio.play();
-    if (optimisticPlay && optimisticPlay.catch){
-      optimisticPlay.catch(function(){
-        // Fallback to muted autoplay; show prompt to enable sound on first gesture.
-        __bgMusicAudio.muted = true;
-        __bgMusicAudio.play().catch(function(){});
-        showSoundPrompt('🔊 Apasă OK pentru sunet');
-      });
-    }
+    __bgMusicAudio.onended = function(){ audUnmuted = false; loadSource(true); };
+    loadSource(true);
     __bgUnmuteHandler = function(){
       if (audUnmuted) return;
-      showSoundPrompt('🔊 Pornesc radioul…');
-      __bgMusicAudio.muted = false;
-      __bgMusicAudio.volume = Math.max(0, Math.min(1, cfg.volume / 100));
-      var p = __bgMusicAudio.play();
-      if (p && p.then) p.catch(function(){ showSoundPrompt('🔊 Reîncearcă radioul'); });
-      else if (!__bgMusicAudio.paused) { audUnmuted = true; hideSoundPrompt(); }
+      if (!__bgMusicAudio.paused && __bgMusicAudio.readyState >= 2) {
+        __bgMusicAudio.muted = false;
+        __bgMusicAudio.volume = Math.max(0, Math.min(1, cfg.volume / 100));
+        audUnmuted = true;
+        hideSoundPrompt();
+        return;
+      }
+      if (watchdog) {
+        // Still connecting: just make sure sound is on, don't restart the stream.
+        __bgMusicAudio.muted = false;
+        var pp = __bgMusicAudio.play();
+        if (pp && pp.catch) pp.catch(function(){});
+        return;
+      }
+      loadSource(true);
     };
   }
   ['click','touchstart','keydown','mousemove','pointerdown','wheel'].forEach(function(ev){
