@@ -13,6 +13,9 @@
   --christmas-red:#c65757;
   --christmas-green:#7fb69e;
   --christmas-wire:rgba(255,217,120,0.28);
+  --light-gold:#fff3c4;
+  --light-red:#ff9c9c;
+  --light-green:#b6f2d2;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:#0c1222;color:#e2e8f0}
@@ -115,13 +118,13 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;
 .christmas-snow{position:fixed;inset:0;z-index:20;overflow:hidden;pointer-events:none}
 .festive-snowflake{position:absolute;top:-24px;border-radius:50%;background:var(--christmas-snow);box-shadow:0 0 6px var(--christmas-snow);animation-name:festive-snowfall;animation-timing-function:linear;animation-iteration-count:infinite;will-change:transform}
 .festive-lights{position:absolute;left:0;right:0;top:4px;height:18px;display:flex;justify-content:space-around;align-items:flex-start;z-index:3;pointer-events:none;border-top:1px solid var(--christmas-wire)}
-.festive-light{width:7px;height:11px;flex-shrink:0;border-radius:2px 2px 5px 5px;background:var(--christmas-gold);box-shadow:0 0 9px var(--christmas-gold);animation:festive-twinkle 3s ease-in-out infinite alternate}
-.festive-light:nth-child(3n+1){background:var(--christmas-red);box-shadow:0 0 9px var(--christmas-red);animation-delay:-1s}
-.festive-light:nth-child(3n+2){background:var(--christmas-green);box-shadow:0 0 9px var(--christmas-green);animation-delay:-2s}
+.festive-light{width:9px;height:14px;flex-shrink:0;border-radius:3px 3px 6px 6px;background:radial-gradient(circle at 50% 32%,#fff 0%,#fff 28%,var(--light-gold) 62%,var(--christmas-gold) 100%);box-shadow:0 0 6px #fff,0 0 16px var(--light-gold),0 0 30px var(--christmas-gold);animation:festive-twinkle 3s ease-in-out infinite alternate}
+.festive-light:nth-child(3n+1){background:radial-gradient(circle at 50% 32%,#fff 0%,#fff 28%,var(--light-red) 62%,var(--christmas-red) 100%);box-shadow:0 0 6px #fff,0 0 16px var(--light-red),0 0 30px var(--christmas-red);animation-delay:-1s}
+.festive-light:nth-child(3n+2){background:radial-gradient(circle at 50% 32%,#fff 0%,#fff 28%,var(--light-green) 62%,var(--christmas-green) 100%);box-shadow:0 0 6px #fff,0 0 16px var(--light-green),0 0 30px var(--christmas-green);animation-delay:-2s}
 .christmas-season .header{border-bottom-color:var(--christmas-wire)}
 .eco-active .festive-snowflake,.eco-active .festive-light{animation-play-state:paused}
 @keyframes festive-snowfall{0%{transform:translate3d(0,-4vh,0);opacity:0}10%{opacity:0.48}85%{opacity:0.32}100%{transform:translate3d(36px,106vh,0);opacity:0}}
-@keyframes festive-twinkle{0%,35%{opacity:0.45}70%,100%{opacity:1}}
+@keyframes festive-twinkle{0%,35%{opacity:0.82}70%,100%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.festive-snowflake,.festive-light{animation:none}.festive-snowflake{display:none}}
 
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
