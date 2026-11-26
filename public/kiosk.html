@@ -355,8 +355,7 @@ function updateConferenceMedia() {
     var oldImgs = document.querySelectorAll('#mediaContainer img.slideshow-img');
     for (var i = 0; i < oldImgs.length; i++) oldImgs[i].remove();
     try { videoEl.pause(); } catch (_) {}
-    try { if (__bgMusicAudio) __bgMusicAudio.pause(); } catch (_) {}
-    try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch (_) {}
+    bgMusicPause();
     videoEl.style.display = 'none';
     if (progress) progress.style.display = 'none';
     frame.style.display = 'block';
@@ -370,8 +369,7 @@ function updateConferenceMedia() {
     frame.style.display = 'none';
     frame.src = 'about:blank';
     if (progress) progress.style.display = 'block';
-    try { if (__bgMusicAudio && __bgMusicAudio.src) __bgMusicAudio.play().catch(function(){}); } catch (_) {}
-    try { if (__bgYtPlayer && __bgYtPlayer.playVideo) __bgYtPlayer.playVideo(); } catch (_) {}
+    bgMusicResume();
     playVideo();
   }
 }
@@ -1089,8 +1087,7 @@ updateConferenceMedia();
 setInterval(updateConferenceMedia, 30000);
 setInterval(function() {
   if (conferenceLiveActive && !__ecoOn) {
-    try { if (__bgMusicAudio) __bgMusicAudio.pause(); } catch (_) {}
-    try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch (_) {}
+    bgMusicPause();
     conferencePlayerCommand('unMute');
     conferencePlayerCommand('setVolume', [100]);
     conferencePlayerCommand('setPlaybackQuality', ['highres']);
@@ -1107,6 +1104,141 @@ function extractYouTubeId(raw){
   return m ? m[1] : s;
 }
 
+/* ── Radio prin Web Audio (Samsung Tizen) ─────────────────────────
+   Televizoarele Samsung folosesc un singur player media hardware:
+   filmul de prezentare (chiar mut) „fură" sunetul elementului <audio>.
+   Aici radioul se decodează software și se redă prin Web Audio,
+   independent de film. */
+var __webRadio = null;
+var MP3_BR1 = [0,32,40,48,56,64,80,96,112,128,160,192,224,256,320];
+var MP3_BR2 = [0,8,16,24,32,40,48,56,64,80,96,112,128,144,160];
+var MP3_SR = [44100,48000,32000];
+function mp3FrameLen(b, i){
+  if (b[i] !== 0xFF || (b[i+1] & 0xE0) !== 0xE0) return 0;
+  var ver = (b[i+1] >> 3) & 3; if (ver === 1) return 0;
+  if (((b[i+1] >> 1) & 3) !== 1) return 0; // doar Layer III
+  var bri = (b[i+2] >> 4) & 15, sri = (b[i+2] >> 2) & 3;
+  if (bri === 0 || bri === 15 || sri === 3) return 0;
+  var pad = (b[i+2] >> 1) & 1;
+  var sr = MP3_SR[sri] / (ver === 3 ? 1 : (ver === 2 ? 2 : 4));
+  var br = (ver === 3 ? MP3_BR1 : MP3_BR2)[bri] * 1000;
+  return Math.floor((ver === 3 ? 144 : 72) * br / sr) + pad;
+}
+function mp3LastCut(b){
+  for (var i = b.length - 8; i > 0; i--) {
+    var len = mp3FrameLen(b, i);
+    if (len && i + len + 3 < b.length && mp3FrameLen(b, i + len)) return i + len;
+  }
+  return -1;
+}
+function webRadioSupported(){
+  return !!((window.AudioContext || window.webkitAudioContext) && window.fetch && window.ReadableStream && window.Uint8Array);
+}
+function createWebRadio(sources, volume, onState){
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var ctx = new AC();
+  var gain = ctx.createGain(); gain.gain.value = volume; gain.connect(ctx.destination);
+  ctx.onstatechange = function(){ if (playing && !paused && ctx.state === 'running') onState('playing'); };
+  var CHUNK = 80 * 1024;
+  var idx = 0, failedAll = 0, gen = 0, reader = null, pending = null;
+  var nextTime = 0, playing = false, paused = false, lastData = 0, watchdog = null, decodeChain = Promise.resolve();
+  function concat(a, b){ if (!a) return b; var c = new Uint8Array(a.length + b.length); c.set(a, 0); c.set(b, a.length); return c; }
+  function decode(bytes, myGen){
+    decodeChain = decodeChain.then(function(){
+      return new Promise(function(resolve){
+        if (myGen !== gen) return resolve();
+        var ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+        var done = false;
+        var ok = function(buf){
+          if (done) return; done = true;
+          if (myGen === gen && buf && buf.duration > 0) {
+            var now = ctx.currentTime;
+            if (ctx.state !== 'running' && nextTime - now > 20) { resolve(); return; }
+            if (nextTime < now + 0.05) nextTime = now + 0.25;
+            var src = ctx.createBufferSource(); src.buffer = buf; src.connect(gain);
+            src.start(nextTime); nextTime += buf.duration;
+            if (!playing) { playing = true; failedAll = 0; onState(ctx.state === 'running' ? 'playing' : 'needGesture'); }
+          }
+          resolve();
+        };
+        var bad = function(){ if (done) return; done = true; resolve(); };
+        try { var pr = ctx.decodeAudioData(ab, ok, bad); if (pr && pr.then) pr.then(ok, bad); } catch (e) { bad(); }
+      });
+    });
+  }
+  function stopNet(){
+    gen++;
+    if (watchdog) { clearInterval(watchdog); watchdog = null; }
+    try { if (reader) reader.cancel(); } catch (_) {}
+    reader = null; pending = null;
+  }
+  function next(reason){
+    stopNet();
+    if (paused) return;
+    idx = (idx + 1) % sources.length;
+    failedAll++;
+    if (failedAll >= sources.length && !playing) { onState('fail', reason); return; }
+    setTimeout(connect, playing ? 2000 : 300);
+  }
+  function connect(){
+    if (paused) return;
+    stopNet();
+    var myGen = gen;
+    playing = false; nextTime = 0;
+    onState('connecting', (idx + 1) + '/' + sources.length);
+    lastData = Date.now();
+    watchdog = setInterval(function(){
+      if (myGen === gen && Date.now() - lastData > 15000) next('fără răspuns');
+    }, 3000);
+    var url = sources[idx] + (sources[idx].indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+    fetch(url, { cache: 'no-store', mode: 'cors' }).then(function(res){
+      if (myGen !== gen) return;
+      if (!res.ok || !res.body || !res.body.getReader) throw new Error('http ' + res.status);
+      reader = res.body.getReader();
+      var step = function(r){
+        if (myGen !== gen) return;
+        if (r.done) { next('flux încheiat'); return; }
+        lastData = Date.now();
+        pending = concat(pending, r.value);
+        if (pending.length >= CHUNK) {
+          var cut = mp3LastCut(pending);
+          if (cut > 0) {
+            var part = pending.subarray(0, cut);
+            pending = pending.slice(cut);
+            decode(part, myGen);
+          } else if (pending.length > CHUNK * 4) { pending = null; }
+        }
+        return reader.read().then(step);
+      };
+      return reader.read().then(step);
+    }).catch(function(e){ if (myGen === gen) next('rețea'); });
+  }
+  return {
+    ctx: ctx,
+    start: function(){ paused = false; try { ctx.resume(); } catch (_) {} connect(); },
+    unlock: function(){
+      try {
+        var r = ctx.resume();
+        if (r && r.then) r.then(function(){ if (playing && ctx.state === 'running') onState('playing'); });
+      } catch (_) {}
+    },
+    pause: function(){ paused = true; stopNet(); try { ctx.suspend(); } catch (_) {} },
+    resume: function(){ if (!paused) return; paused = false; failedAll = 0; try { ctx.resume(); } catch (_) {} connect(); },
+    stop: function(){ paused = true; stopNet(); try { ctx.close(); } catch (_) {} },
+    isRunning: function(){ return playing && ctx.state === 'running'; },
+    lead: function(){ return nextTime - ctx.currentTime; }
+  };
+}
+function bgMusicPause(){
+  try { if (__webRadio) __webRadio.pause(); } catch (_) {}
+  try { if (__bgMusicAudio) __bgMusicAudio.pause(); } catch (_) {}
+  try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch (_) {}
+}
+function bgMusicResume(){
+  try { if (__webRadio) __webRadio.resume(); } catch (_) {}
+  try { if (!__webRadio && __bgMusicAudio && __bgMusicAudio.getAttribute('src')) __bgMusicAudio.play().catch(function(){}); } catch (_) {}
+  try { if (__bgYtPlayer && __bgYtPlayer.playVideo) __bgYtPlayer.playVideo(); } catch (_) {}
+}
 var __bgMusicHost = null;
 var __bgMusicMount = null;
 var __bgMusicAudio = null;
@@ -1133,6 +1265,7 @@ function teardownBgMusic(){
     });
     __bgUnmuteHandler = null;
   }
+  if (__webRadio) { try { __webRadio.stop(); } catch(_){} __webRadio = null; }
   if (__bgYtPlayer && __bgYtPlayer.destroy){ try { __bgYtPlayer.destroy(); } catch(_){} }
   __bgYtPlayer = null;
   if (__bgMusicAudio){
@@ -1216,6 +1349,35 @@ function setupBgMusic(cfg){
     if (/^https:\/\//i.test(cfg.url)) {
       addSrc(cfg.url.replace(/^https:\/\//i, 'http://'));
       if (panel) addSrc((panel[1] + ':' + panel[2] + '/' + panel[3]).replace(/^https:\/\//i, 'http://'));
+    }
+    var forceEl = /[?&]audio=element/i.test(location.search);
+    var forceWeb = /[?&]audio=web/i.test(location.search);
+    if (!forceEl && !window.__forceAudioElement && (IS_TIZEN_TV || forceWeb) && webRadioSupported()) {
+      var webVol = Math.max(0, Math.min(1, cfg.volume / 100));
+      var okTimer = null;
+      __webRadio = createWebRadio(sources, webVol, function(state, info){
+        if (state === 'connecting') showSoundPrompt('🔊 Pornesc radioul (TV)… ' + (info || ''));
+        else if (state === 'needGesture') showSoundPrompt('🔊 Apasă OK pentru sunet');
+        else if (state === 'playing') {
+          showSoundPrompt('🎵 Radio pornit');
+          clearTimeout(okTimer); okTimer = setTimeout(hideSoundPrompt, 6000);
+        } else if (state === 'fail') {
+          // Web Audio nu a mers: revenim la playerul clasic.
+          try { if (__webRadio) __webRadio.stop(); } catch(_){}
+          __webRadio = null;
+          __bgConfigKey = '';
+          window.__forceAudioElement = true;
+          setupBgMusic(cfg);
+        }
+      });
+      {
+        __webRadio.start();
+        __bgUnmuteHandler = function(){ if (__webRadio) __webRadio.unlock(); };
+        ['click','touchstart','keydown','mousemove','pointerdown','wheel'].forEach(function(ev){
+          window.addEventListener(ev, __bgUnmuteHandler, true);
+        });
+        return;
+      }
     }
     var srcIdx = 0;
     var watchdog = null;
@@ -1370,8 +1532,7 @@ function ecoEnter(){
     var live = document.getElementById('conferenceLive');
     if (live && conferenceLiveActive) live.src = 'about:blank';
   } catch(_){}
-  try { if (__bgMusicAudio) __bgMusicAudio.pause(); } catch(_){}
-  try { if (__bgYtPlayer && __bgYtPlayer.pauseVideo) __bgYtPlayer.pauseVideo(); } catch(_){}
+  bgMusicPause();
   clearTimeout(slideshowTimer);
   clearSectionTimers();
   ecoMoveClock();
@@ -1384,8 +1545,7 @@ function ecoExit(){
   document.body.className = document.body.className.replace(/\s*eco-active/g, '');
   var ov = document.getElementById('ecoOverlay');
   if (ov) ov.style.display = 'none';
-  try { if (__bgMusicAudio && __bgMusicAudio.src) __bgMusicAudio.play().catch(function(){}); } catch(_){}
-  try { if (__bgYtPlayer && __bgYtPlayer.playVideo) __bgYtPlayer.playVideo(); } catch(_){}
+  bgMusicResume();
   conferenceLiveActive = false;
   updateConferenceMedia();
   if (!conferenceLiveActive) {
