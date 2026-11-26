@@ -6,6 +6,7 @@ import KioskRotatingSidebar from '@/components/kiosk/KioskRotatingSidebar';
 import KioskHeaderWeather from '@/components/kiosk/KioskHeaderWeather';
 import { appWorkerOwnsScope } from '@/utils/kioskServiceWorker';
 import { canStartKioskAudio, radioStreamCandidates } from '@/utils/kioskAudio';
+import { createWebRadio, isTizenTv, webRadioSupported } from '@/utils/kioskWebRadio';
 
 // ── i18n helpers ───────────────────────────────────────
 const DAYS_RO = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
@@ -74,6 +75,7 @@ const Kiosk = () => {
   const [musicStatus, setMusicStatus] = useState<'idle' | 'starting' | 'blocked' | 'playing' | 'error'>('idle');
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [radioElementFallback, setRadioElementFallback] = useState(false);
   const musicUnlockRef = useRef<() => void>(() => {});
 
   const i = t[lang];
@@ -219,6 +221,22 @@ const Kiosk = () => {
         events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
         try { player?.destroy?.(); } catch {}
       };
+    } else if (isTizenTv(navigator.userAgent) && webRadioSupported() && !radioElementFallback) {
+      // Samsung: filmul de prezentare ocupă playerul media, deci radioul merge prin Web Audio.
+      const radio = createWebRadio(radioStreamCandidates(musicUrl), Math.max(0, Math.min(1, musicVolume / 100)), (state) => {
+        if (state === 'connecting') setMusicStatus('starting');
+        else if (state === 'needGesture') setMusicStatus('blocked');
+        else if (state === 'playing') setMusicStatus('playing');
+        else setRadioElementFallback(true);
+      });
+      radio.start();
+      const tryUnmute = () => radio.unlock();
+      musicUnlockRef.current = tryUnmute;
+      events.forEach(ev => window.addEventListener(ev, tryUnmute, true));
+      cleanup = () => {
+        events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
+        radio.stop();
+      };
     } else {
       const audio = audioRef.current;
       if (!audio) return;
@@ -296,7 +314,7 @@ const Kiosk = () => {
       musicUnlockRef.current = () => {};
       cleanup();
     };
-  }, [musicEnabled, musicSource, musicUrl, musicVolume]);
+  }, [musicEnabled, musicSource, musicUrl, musicVolume, radioElementFallback]);
 
 
 
