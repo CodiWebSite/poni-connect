@@ -5,7 +5,7 @@ import AnalogClock from '@/components/kiosk/AnalogClock';
 import KioskRotatingSidebar from '@/components/kiosk/KioskRotatingSidebar';
 import KioskHeaderWeather from '@/components/kiosk/KioskHeaderWeather';
 import { appWorkerOwnsScope } from '@/utils/kioskServiceWorker';
-import { canStartKioskAudio } from '@/utils/kioskAudio';
+import { canStartKioskAudio, radioStreamCandidates } from '@/utils/kioskAudio';
 
 // ── i18n helpers ───────────────────────────────────────
 const DAYS_RO = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
@@ -223,41 +223,71 @@ const Kiosk = () => {
       const audio = audioRef.current;
       if (!audio) return;
       let unmuted = false;
-      audio.src = musicUrl;
-      audio.loop = true;
-      audio.volume = Math.max(0, Math.min(1, musicVolume / 100));
-      audio.onplaying = () => {
-        if (audio.muted) {
-          setMusicStatus('blocked');
-          return;
+      const sources = radioStreamCandidates(musicUrl);
+      let srcIdx = 0;
+      let watchdog: number | null = null;
+      const clearWatchdog = () => { if (watchdog) { window.clearTimeout(watchdog); watchdog = null; } };
+      const loadSource = () => {
+        clearWatchdog();
+        setMusicStatus('starting');
+        const src = sources[srcIdx];
+        audio.src = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();
+        audio.muted = false;
+        audio.volume = Math.max(0, Math.min(1, musicVolume / 100));
+        try { audio.load(); } catch {}
+        watchdog = window.setTimeout(() => tryNext(), 12000);
+        const p = audio.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch((err: any) => {
+            if (err?.name === 'NotAllowedError') {
+              clearWatchdog();
+              setMusicStatus('blocked');
+              audio.muted = true;
+              audio.play().catch(() => {});
+            }
+          });
         }
+      };
+      const tryNext = () => {
+        clearWatchdog();
+        if (unmuted) return;
+        srcIdx += 1;
+        if (srcIdx >= sources.length) { srcIdx = 0; setMusicStatus('error'); return; }
+        loadSource();
+      };
+      audio.loop = false;
+      audio.onplaying = () => {
+        clearWatchdog();
+        if (audio.muted) { setMusicStatus('blocked'); return; }
         unmuted = true;
         setMusicStatus('playing');
       };
-      audio.onerror = () => setMusicStatus('error');
-      audio.muted = false;
-      const p = audio.play();
-      if (p && typeof p.catch === 'function') {
-        p.catch(() => {
-          setMusicStatus('blocked');
-          audio.muted = true;
-          audio.play().catch(() => {});
-        });
-      }
+      audio.onerror = () => {
+        if (!audio.getAttribute('src')) return;
+        if (unmuted) { unmuted = false; window.setTimeout(loadSource, 3000); return; }
+        tryNext();
+      };
+      audio.onended = () => { unmuted = false; loadSource(); };
+      loadSource();
 
       const tryUnmute = () => {
         if (unmuted) return;
-        setMusicStatus('starting');
-        audio.muted = false;
-        audio.volume = Math.max(0, Math.min(1, musicVolume / 100));
-        audio.play().catch(() => setMusicStatus('blocked'));
+        if (watchdog || (!audio.paused && audio.readyState >= 2)) {
+          audio.muted = false;
+          audio.volume = Math.max(0, Math.min(1, musicVolume / 100));
+          audio.play().catch(() => setMusicStatus('blocked'));
+          return;
+        }
+        loadSource();
       };
       musicUnlockRef.current = tryUnmute;
       events.forEach(ev => window.addEventListener(ev, tryUnmute, true));
       cleanup = () => {
         events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
+        clearWatchdog();
         audio.onplaying = null;
         audio.onerror = null;
+        audio.onended = null;
         try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch {}
       };
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canStartKioskAudio } from './kioskAudio';
+import { canStartKioskAudio, radioStreamCandidates } from './kioskAudio';
 
 describe('canStartKioskAudio', () => {
   it('allows audio on the published Lovable address when opened directly on a TV', () => {
@@ -12,5 +12,16 @@ describe('canStartKioskAudio', () => {
 
   it('keeps the editor preview iframe silent', () => {
     expect(canStartKioskAudio('id-preview--example.lovable.app', true)).toBe(false);
+  });
+});
+
+describe('radioStreamCandidates', () => {
+  it('tries the chosen radio first, then the Samsung-friendly fallbacks', () => {
+    expect(radioStreamCandidates('https://sonic2-rbx.cloud-center.ro:8012/stream')).toEqual([
+      'https://sonic2-rbx.cloud-center.ro:8012/stream',
+      'https://sonic2-rbx.cloud-center.ro:8012/;',
+      'http://sonic2-rbx.cloud-center.ro:8012/stream',
+      'http://sonic2-rbx.cloud-center.ro:8012/;',
+    ]);
   });
 });
