@@ -1,6 +1,7 @@
 # Roadmap intranet ICMPP
 
 ## În lucru
+- [x] Sunet radio pe Samsung TV: ambele variante pornesc pe adresa publicată, comandă vizibilă până la redare și 11 teste trecute; TV necesită deschiderea adresei cu versiune nouă după publicare
 - [x] Înlocuitori concedii: blocare la concedii suprapuse aprobate sau în așteptare, în interfață și la salvare
 - [x] Delegări aprobări: e-mailuri la desemnare, cerere nouă, transfer și dezactivare
 - [x] Ștafetă între înlocuitori cu păstrarea compartimentului original, inclusiv Ciornei–Tabără

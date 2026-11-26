@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertTriangle, Clock, Building2, Monitor, Phone } from 'lucide-react';
+import { AlertTriangle, Clock, Building2, Monitor, Phone, Volume2 } from 'lucide-react';
 import AnalogClock from '@/components/kiosk/AnalogClock';
 import KioskRotatingSidebar from '@/components/kiosk/KioskRotatingSidebar';
 import KioskHeaderWeather from '@/components/kiosk/KioskHeaderWeather';
 import { appWorkerOwnsScope } from '@/utils/kioskServiceWorker';
+import { canStartKioskAudio } from '@/utils/kioskAudio';
 
 // ── i18n helpers ───────────────────────────────────────
 const DAYS_RO = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
@@ -70,8 +71,10 @@ const Kiosk = () => {
   const [musicSource, setMusicSource] = useState<'youtube' | 'file'>('youtube');
   const [musicUrl, setMusicUrl] = useState('');
   const [musicVolume, setMusicVolume] = useState(30);
+  const [musicStatus, setMusicStatus] = useState<'idle' | 'starting' | 'blocked' | 'playing' | 'error'>('idle');
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const musicUnlockRef = useRef<() => void>(() => {});
 
   const i = t[lang];
 
@@ -124,30 +127,44 @@ const Kiosk = () => {
       .catch(err => console.warn('[Kiosk SW] register failed', err));
   }, []);
 
-  // Background music — supports YouTube (hidden IFrame) or direct audio file.
-  // Starts muted (autoplay-safe), then unmutes on first user interaction.
+  // Background music — pornește și pe adresa publicată, nu doar pe domeniul personalizat.
+  // Butonul rămâne vizibil până când browserul confirmă efectiv redarea cu sunet.
   useEffect(() => {
-    if (!musicEnabled) return;
+    if (!musicEnabled || !musicUrl) {
+      setMusicStatus('idle');
+      return;
+    }
     const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
-    const host = window.location.hostname;
-    const isPreviewHost =
-      host.includes('id-preview--') || host.includes('lovableproject.com') || host.includes('lovable.app');
-    if (isInIframe || isPreviewHost) return;
+    if (!canStartKioskAudio(window.location.hostname, isInIframe)) {
+      setMusicStatus('idle');
+      return;
+    }
 
-    const events = ['click', 'touchstart', 'keydown', 'mousemove', 'pointerdown', 'wheel'] as const;
+    setMusicStatus('starting');
+    const events = ['click', 'touchstart', 'keydown', 'pointerdown'] as const;
     let cleanup = () => {};
 
     if (musicSource === 'youtube') {
       const videoId = extractYouTubeId(musicUrl);
-      if (!videoId) return;
+      if (!videoId) {
+        setMusicStatus('error');
+        return;
+      }
       let player: any = null;
       let unmuted = false;
-      let startedWithSound = false;
 
       const tryUnmute = () => {
-        if (unmuted || startedWithSound || !player?.unMute) return;
-        try { player.unMute(); player.setVolume(musicVolume); player.playVideo(); unmuted = true; } catch {}
+        if (unmuted || !player?.unMute) return;
+        setMusicStatus('starting');
+        try {
+          player.unMute();
+          player.setVolume(musicVolume);
+          player.playVideo();
+        } catch {
+          setMusicStatus('blocked');
+        }
       };
+      musicUnlockRef.current = tryUnmute;
 
       const createPlayer = () => {
         const YT = (window as any).YT;
@@ -160,24 +177,29 @@ const Kiosk = () => {
           },
           events: {
             onReady: (e: any) => {
-              // Optimistic: try unmuted first.
               try { e.target.setVolume(musicVolume); e.target.unMute(); e.target.playVideo(); } catch {}
-              // Fallback to muted autoplay if blocked.
               window.setTimeout(() => {
                 try {
-                  const s = e.target.getPlayerState();
-                  if (s !== YT.PlayerState.PLAYING) {
-                    e.target.mute();
-                    e.target.playVideo();
+                  const isPlaying = e.target.getPlayerState() === YT.PlayerState.PLAYING;
+                  if (isPlaying && !e.target.isMuted()) {
+                    unmuted = true;
+                    setMusicStatus('playing');
                   } else {
-                    startedWithSound = true;
+                    setMusicStatus('blocked');
+                    if (!isPlaying) { e.target.mute(); e.target.playVideo(); }
                   }
-                } catch {}
+                } catch { setMusicStatus('blocked'); }
               }, 1800);
             },
             onStateChange: (e: any) => {
+              if (e.data === YT.PlayerState.PLAYING) {
+                const audible = !e.target.isMuted();
+                unmuted = audible;
+                setMusicStatus(audible ? 'playing' : 'blocked');
+              }
               if (e.data === YT.PlayerState.ENDED) { try { e.target.playVideo(); } catch {} }
             },
+            onError: () => setMusicStatus('error'),
           },
         });
       };
@@ -198,39 +220,52 @@ const Kiosk = () => {
         try { player?.destroy?.(); } catch {}
       };
     } else {
-      // Direct audio file (MP3)
       const audio = audioRef.current;
-      if (!audio || !musicUrl) return;
+      if (!audio) return;
+      let unmuted = false;
       audio.src = musicUrl;
       audio.loop = true;
       audio.volume = Math.max(0, Math.min(1, musicVolume / 100));
-      // Optimistic: try unmuted first.
+      audio.onplaying = () => {
+        if (audio.muted) {
+          setMusicStatus('blocked');
+          return;
+        }
+        unmuted = true;
+        setMusicStatus('playing');
+      };
+      audio.onerror = () => setMusicStatus('error');
       audio.muted = false;
       const p = audio.play();
       if (p && typeof p.catch === 'function') {
         p.catch(() => {
+          setMusicStatus('blocked');
           audio.muted = true;
           audio.play().catch(() => {});
         });
       }
 
-      let unmuted = false;
       const tryUnmute = () => {
         if (unmuted) return;
+        setMusicStatus('starting');
         audio.muted = false;
         audio.volume = Math.max(0, Math.min(1, musicVolume / 100));
-        audio.play().catch(() => {});
-        unmuted = true;
+        audio.play().catch(() => setMusicStatus('blocked'));
       };
+      musicUnlockRef.current = tryUnmute;
       events.forEach(ev => window.addEventListener(ev, tryUnmute, true));
       cleanup = () => {
         events.forEach(ev => window.removeEventListener(ev, tryUnmute, true));
+        audio.onplaying = null;
+        audio.onerror = null;
         try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch {}
       };
     }
 
-
-    return cleanup;
+    return () => {
+      musicUnlockRef.current = () => {};
+      cleanup();
+    };
   }, [musicEnabled, musicSource, musicUrl, musicVolume]);
 
 
@@ -336,6 +371,16 @@ const Kiosk = () => {
         <div id="kiosk-bg-music-mount" />
         <audio ref={audioRef} preload="auto" />
       </div>
+      {musicEnabled && musicStatus !== 'idle' && musicStatus !== 'playing' && (
+        <button
+          type="button"
+          onClick={() => musicUnlockRef.current()}
+          className="fixed bottom-20 right-8 z-50 inline-flex items-center gap-3 rounded-full bg-primary px-7 py-4 text-lg font-bold text-primary-foreground shadow-xl"
+        >
+          <Volume2 className="h-6 w-6" />
+          {musicStatus === 'error' ? 'Reîncearcă radioul' : musicStatus === 'starting' ? 'Pornesc radioul…' : 'Apasă OK pentru sunet'}
+        </button>
+      )}
       {/* ── Language indicator ─────────────────── */}
       <div className="absolute top-3 right-6 z-10">
         <span className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full backdrop-blur-sm">

@@ -1132,7 +1132,11 @@ function teardownBgMusic(){
   }
   if (__bgYtPlayer && __bgYtPlayer.destroy){ try { __bgYtPlayer.destroy(); } catch(_){} }
   __bgYtPlayer = null;
-  if (__bgMusicAudio){ try { __bgMusicAudio.pause(); __bgMusicAudio.removeAttribute('src'); __bgMusicAudio.load(); } catch(_){} }
+  if (__bgMusicAudio){
+    __bgMusicAudio.onplaying = null;
+    __bgMusicAudio.onerror = null;
+    try { __bgMusicAudio.pause(); __bgMusicAudio.removeAttribute('src'); __bgMusicAudio.load(); } catch(_){}
+  }
   if (__bgMusicMount){ __bgMusicMount.innerHTML = ''; }
 }
 function setupBgMusic(cfg){
@@ -1198,28 +1202,41 @@ function setupBgMusic(cfg){
       try { __bgYtPlayer.unMute(); __bgYtPlayer.setVolume(cfg.volume); __bgYtPlayer.playVideo(); ytUnmuted = true; } catch(_){}
     };
   } else {
+    var audUnmuted = false;
+    showSoundPrompt('🔊 Pornesc radioul…');
     __bgMusicAudio.src = cfg.url;
     __bgMusicAudio.loop = true;
     __bgMusicAudio.volume = Math.max(0, Math.min(1, cfg.volume / 100));
+    __bgMusicAudio.onplaying = function(){
+      if (__bgMusicAudio.muted) {
+        showSoundPrompt('🔊 Apasă OK pentru sunet');
+        return;
+      }
+      audUnmuted = true;
+      hideSoundPrompt();
+    };
+    __bgMusicAudio.onerror = function(){
+      showSoundPrompt('🔊 Reîncearcă radioul');
+    };
     // Optimistic: try unmuted first.
     __bgMusicAudio.muted = false;
     var optimisticPlay = __bgMusicAudio.play();
-    var audUnmuted = false;
     if (optimisticPlay && optimisticPlay.catch){
       optimisticPlay.catch(function(){
         // Fallback to muted autoplay; show prompt to enable sound on first gesture.
         __bgMusicAudio.muted = true;
         __bgMusicAudio.play().catch(function(){});
-        showSoundPrompt();
+        showSoundPrompt('🔊 Apasă OK pentru sunet');
       });
     }
     __bgUnmuteHandler = function(){
       if (audUnmuted) return;
+      showSoundPrompt('🔊 Pornesc radioul…');
       __bgMusicAudio.muted = false;
       __bgMusicAudio.volume = Math.max(0, Math.min(1, cfg.volume / 100));
       var p = __bgMusicAudio.play();
-      if (p && p.then) p.then(function(){ audUnmuted = true; hideSoundPrompt(); }).catch(function(){});
-      else { audUnmuted = true; hideSoundPrompt(); }
+      if (p && p.then) p.catch(function(){ showSoundPrompt('🔊 Reîncearcă radioul'); });
+      else if (!__bgMusicAudio.paused) { audUnmuted = true; hideSoundPrompt(); }
     };
   }
   ['click','touchstart','keydown','mousemove','pointerdown','wheel'].forEach(function(ev){
@@ -1228,8 +1245,12 @@ function setupBgMusic(cfg){
 }
 
 /* ── Sound enable prompt (browser autoplay fallback) ─────── */
-function showSoundPrompt(){
-  if (document.getElementById('soundPrompt')) return;
+function showSoundPrompt(message){
+  var existing = document.getElementById('soundPrompt');
+  if (existing) {
+    existing.innerHTML = message || '🔊 Apasă OK pentru sunet';
+    return;
+  }
   if (!document.getElementById('soundPromptStyle')){
     var s = document.createElement('style');
     s.id = 'soundPromptStyle';
@@ -1238,12 +1259,11 @@ function showSoundPrompt(){
   }
   var btn = document.createElement('button');
   btn.id = 'soundPrompt';
-  btn.innerHTML = '🔊 Activează sunetul';
+  btn.innerHTML = message || '🔊 Apasă OK pentru sunet';
   btn.style.cssText = 'position:fixed;bottom:80px;right:32px;z-index:9999;background:linear-gradient(135deg,#c9a227,#e6c04a);color:#0c1222;border:none;padding:18px 32px;border-radius:99px;font-size:22px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;animation:soundPulse 2s ease-in-out infinite;';
   btn.onclick = function(){
     if (__bgUnmuteHandler) __bgUnmuteHandler();
     if (__bgYtPlayer){ try { __bgYtPlayer.unMute(); __bgYtPlayer.playVideo(); } catch(_){} }
-    hideSoundPrompt();
   };
   document.body.appendChild(btn);
 }
