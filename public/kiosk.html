@@ -1208,13 +1208,14 @@ function setupBgMusic(cfg){
     // Radio stream: try several equivalent addresses, because some Samsung TVs
     // cannot open the HTTPS stream (certificate chain / non-standard port).
     var audUnmuted = false;
-    var sources = [cfg.url];
-    var baseNoSlash = cfg.url.replace(/\/+$/, '');
-    if (/\/stream$/.test(baseNoSlash)) sources.push(baseNoSlash.replace(/\/stream$/, '/;'));
+    var sources = [];
+    var addSrc = function(u){ if (sources.indexOf(u) < 0) sources.push(u); };
+    addSrc(cfg.url);
+    var panel = cfg.url.match(/^(https?:\/\/[^\/:]+)\/(\d{2,5})\/(.*)$/i);
+    if (panel) addSrc(panel[1] + ':' + panel[2] + '/' + panel[3]);
     if (/^https:\/\//i.test(cfg.url)) {
-      var httpUrl = cfg.url.replace(/^https:\/\//i, 'http://');
-      sources.push(httpUrl);
-      if (/\/stream$/.test(baseNoSlash)) sources.push(httpUrl.replace(/\/+$/, '').replace(/\/stream$/, '/;'));
+      addSrc(cfg.url.replace(/^https:\/\//i, 'http://'));
+      if (panel) addSrc((panel[1] + ':' + panel[2] + '/' + panel[3]).replace(/^https:\/\//i, 'http://'));
     }
     var srcIdx = 0;
     var watchdog = null;

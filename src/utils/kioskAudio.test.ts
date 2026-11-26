@@ -16,12 +16,12 @@ describe('canStartKioskAudio', () => {
 });
 
 describe('radioStreamCandidates', () => {
-  it('tries the chosen radio first, then the Samsung-friendly fallbacks', () => {
-    expect(radioStreamCandidates('https://sonic2-rbx.cloud-center.ro:8012/stream')).toEqual([
+  it('tries the panel address first, then the direct port and plain-HTTP fallbacks', () => {
+    expect(radioStreamCandidates('https://sonic2-rbx.cloud-center.ro/8012/stream')).toEqual([
+      'https://sonic2-rbx.cloud-center.ro/8012/stream',
       'https://sonic2-rbx.cloud-center.ro:8012/stream',
-      'https://sonic2-rbx.cloud-center.ro:8012/;',
+      'http://sonic2-rbx.cloud-center.ro/8012/stream',
       'http://sonic2-rbx.cloud-center.ro:8012/stream',
-      'http://sonic2-rbx.cloud-center.ro:8012/;',
     ]);
   });
 });
